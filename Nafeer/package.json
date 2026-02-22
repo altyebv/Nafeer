@@ -5,17 +5,15 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
-    "next": "15.3.3",
+    "next": "15.5.12",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zustand": "^5.0.10",
     "mongoose": "^8.9.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
     "jose": "^5.9.6"
   },
   "devDependencies": {
@@ -24,8 +22,6 @@
     "@types/react-dom": "^19",
     "tailwindcss": "^3.4.17",
     "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.3"
+    "postcss": "^8.4.49"
   }
 }
