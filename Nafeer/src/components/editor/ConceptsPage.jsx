@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { CONCEPT_TYPES, CONCEPT_TYPE_CONFIG } from '@/shared/constants';
-import Modal from '@/components/editor/editor/Modal';
+import Modal from '@/components/editor/Modal';
 
 export default function ConceptsPage() {
   const { concepts, sections, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore();

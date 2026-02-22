@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
-import SectionEditor from '@/components/editor/editor/SectionEditor';
-import AddBlockMenu from '@/components/editor/editor/AddBlockMenu';
+import SectionEditor from '@/components/editor/SectionEditor';
+import AddBlockMenu from '@/components/editor/AddBlockMenu';
 
 export default function LessonEditorPage({ lessonId, onBack }) {
   const { lessons, sections, updateLesson, addSection } = useDataStore();

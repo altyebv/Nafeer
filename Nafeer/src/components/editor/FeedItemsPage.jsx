@@ -6,7 +6,7 @@ import {
   INTERACTION_TYPES,
   INTERACTION_TYPE_CONFIG,
 } from '@/shared/constants';
-import Modal from '@/components/editor/editor/Modal';
+import Modal from '@/components/editor/Modal';
 
 export default function FeedItemsPage() {
   const { feedItems, concepts, addFeedItem, updateFeedItem, deleteFeedItem } = useDataStore();

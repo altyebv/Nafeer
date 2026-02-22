@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { PATH_CONFIG, STUDENT_PATHS } from '@/shared/constants';
-import UnitCard from '@/components/editor/editor/UnitCard';
-import Modal from '@/components/editor/editor/Modal';
+import UnitCard from '@/components/editor/UnitCard';
+import Modal from '@/components/editor/Modal';
 
 export default function LessonsPage({ onEditLesson }) {
   const { subject, setSubject, units, addUnit } = useDataStore();
