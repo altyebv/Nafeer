@@ -1,8 +1,4 @@
 {
   "framework": "nextjs",
-  "regions": ["fra1"],
-  "env": {
-    "MONGODB_URI": "@nafeer-mongodb-uri",
-    "JWT_SECRET": "@nafeer-jwt-secret"
-  }
+  "regions": ["fra1"]
 }
