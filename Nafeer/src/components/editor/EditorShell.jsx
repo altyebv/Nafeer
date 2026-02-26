@@ -1,14 +1,15 @@
 'use client';
 import { useState } from 'react';
-import EditorSidebar from '@/components/editor/EditorSidebar';
-import LessonsPage from '@/components/editor/LessonsPage';
-import LessonEditorPage from '@/components/editor/LessonEditorPage';
-import ConceptsPage from '@/components/editor/ConceptsPage';
-import FeedItemsPage from '@/components/editor/FeedItemsPage';
-import ExportPage from '@/components/editor/ExportPage';
+import EditorSidebar      from '@/components/editor/EditorSidebar';
+import LessonsPage        from '@/components/editor/LessonsPage';
+import LessonEditorPage   from '@/components/editor/LessonEditorPage';
+import ConceptsPage       from '@/components/editor/ConceptsPage';
+import FeedItemsPage      from '@/components/editor/FeedItemsPage';
+import QuizBankPage       from '@/components/editor/QuizBankPage';
+import ExportPage         from '@/components/editor/ExportPage';
 
 export default function EditorShell({ contributor }) {
-  const [currentPage, setCurrentPage] = useState('lessons');
+  const [currentPage,     setCurrentPage]     = useState('lessons');
   const [selectedLessonId, setSelectedLessonId] = useState(null);
 
   const navigateTo = (page, params = {}) => {
@@ -35,6 +36,8 @@ export default function EditorShell({ contributor }) {
         return <ConceptsPage />;
       case 'feeds':
         return <FeedItemsPage />;
+      case 'quizbank':
+        return <QuizBankPage />;
       case 'export':
         return <ExportPage />;
       default:
