@@ -1,45 +1,39 @@
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
-import BlockEditor from '@/components/editor/BlockEditor';
-import AddBlockMenu from '@/components/editor/AddBlockMenu';
-import ConceptLinker from '@/components/editor/ConceptLinker';
+import { LEARNING_TYPES, LEARNING_TYPE_CONFIG } from '@/shared/constants';
+import BlockEditor    from '@/components/editor/BlockEditor';
+import AddBlockMenu   from '@/components/editor/AddBlockMenu';
+import ConceptLinker  from '@/components/editor/ConceptLinker';
 
 export default function SectionEditor({ section }) {
   const { blocks, concepts, updateSection, deleteSection, addBlock } = useDataStore();
 
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [showAddBlock, setShowAddBlock] = useState(false);
+  const [isEditingTitle,   setIsEditingTitle]   = useState(false);
+  const [showAddBlock,     setShowAddBlock]      = useState(false);
   const [showConceptLinker, setShowConceptLinker] = useState(false);
 
   const sectionBlocks = blocks
     .filter((b) => b.sectionId === section.id)
     .sort((a, b) => a.order - b.order);
 
-  const linkedConcepts = concepts.filter((c) =>
-    section.conceptIds?.includes(c.id)
-  );
+  const linkedConcepts = concepts.filter((c) => section.conceptIds?.includes(c.id));
+
+  const learningTypeConfig = LEARNING_TYPE_CONFIG[section.learningType] || LEARNING_TYPE_CONFIG.UNDERSTANDING;
 
   const handleDelete = () => {
-    if (confirm('هل أنت متأكد من حذف هذا القسم وجميع محتوياته؟')) {
-      deleteSection(section.id);
-    }
+    if (confirm('هل أنت متأكد من حذف هذا القسم وجميع محتوياته؟')) deleteSection(section.id);
   };
 
   const handleAddBlock = (type) => {
-    addBlock({
-      sectionId: section.id,
-      type,
-      content: '',
-      conceptRef: null,
-    });
+    addBlock({ sectionId: section.id, type, content: '', conceptRef: null });
     setShowAddBlock(false);
   };
 
   return (
-    <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+    <div className="bg-ink-900 rounded-xl border border-ink-800 overflow-hidden">
       {/* Section Header */}
-      <div className="flex items-center gap-3 p-4 bg-stone-50 border-b border-stone-200">
-        <span className="text-stone-300 cursor-grab">⋮⋮</span>
+      <div className="flex items-center gap-3 px-4 py-3 bg-ink-800/40 border-b border-ink-800">
+        <span className="text-ink-700 cursor-grab text-sm">⋮⋮</span>
 
         {isEditingTitle ? (
           <input
@@ -48,87 +42,97 @@ export default function SectionEditor({ section }) {
             onChange={(e) => updateSection(section.id, { title: e.target.value })}
             onBlur={() => setIsEditingTitle(false)}
             onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
-            className="flex-1 px-2 py-1 text-lg font-medium border border-amber-400 rounded focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="flex-1 px-2 py-1 bg-ink-950 border border-sand-600 rounded text-sand-200 text-sm focus:outline-none font-arabic"
             autoFocus
           />
         ) : (
-          <h3
+          <button
             onClick={() => setIsEditingTitle(true)}
-            className="flex-1 text-lg font-medium text-stone-800 cursor-pointer hover:text-amber-600"
+            className="flex-1 text-right font-medium text-ink-200 hover:text-sand-300 text-sm font-arabic"
           >
             {section.title}
-          </h3>
+          </button>
         )}
 
-        {/* Concept Link Button */}
-        <button
-          onClick={() => setShowConceptLinker(!showConceptLinker)}
-          className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-colors ${
-            showConceptLinker
-              ? 'bg-amber-100 text-amber-700'
-              : 'bg-stone-100 text-stone-600 hover:bg-amber-50 hover:text-amber-600'
-          }`}
-        >
-          <span>💡</span>
-          <span>المفاهيم ({linkedConcepts.length})</span>
-        </button>
+        {/* Learning type selector */}
+        <div className="flex gap-1">
+          {Object.entries(LEARNING_TYPES).map(([key]) => {
+            const cfg    = LEARNING_TYPE_CONFIG[key];
+            const active = section.learningType === key;
+            return (
+              <button
+                key={key}
+                onClick={() => updateSection(section.id, { learningType: key })}
+                title={`${cfg.label} — ${cfg.hint}`}
+                className={`px-2 py-1 rounded text-xs transition-colors border font-arabic
+                  ${active
+                    ? 'bg-sand-900/50 text-sand-400 border-sand-700'
+                    : 'bg-ink-800 text-ink-600 border-ink-700 hover:text-ink-300'
+                  }`}
+              >
+                {cfg.icon} {cfg.label}
+              </button>
+            );
+          })}
+        </div>
 
         <button
           onClick={handleDelete}
-          className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-          title="حذف القسم"
+          className="p-1 text-ink-700 hover:text-red-500 transition-colors"
         >
-          🗑️
+          ✕
         </button>
       </div>
 
-      {/* Concept Linker */}
-      {showConceptLinker && (
-        <ConceptLinker sectionId={section.id} />
-      )}
-
-      {/* Blocks */}
+      {/* Section Body */}
       <div className="p-4 space-y-3">
-        {sectionBlocks.length === 0 ? (
-          <p className="text-center text-stone-400 py-4">لا توجد عناصر في هذا القسم</p>
-        ) : (
-          sectionBlocks.map((block) => (
-            <BlockEditor key={block.id} block={block} />
-          ))
+        {/* Linked Concepts */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-ink-600 font-arabic">مفاهيم مرتبطة:</span>
+          {linkedConcepts.length === 0 && (
+            <span className="text-xs text-ink-700 font-arabic">لا يوجد</span>
+          )}
+          {linkedConcepts.map((c) => (
+            <span
+              key={c.id}
+              className="px-2 py-0.5 bg-sand-900/30 text-sand-500 text-xs rounded border border-sand-800/50 font-arabic"
+            >
+              💡 {c.titleAr}
+            </span>
+          ))}
+          <button
+            onClick={() => setShowConceptLinker(!showConceptLinker)}
+            className="text-xs text-ink-600 hover:text-sand-400 transition-colors font-arabic"
+          >
+            {showConceptLinker ? '← إغلاق' : '+ ربط مفهوم'}
+          </button>
+        </div>
+
+        {/* Concept Linker */}
+        {showConceptLinker && (
+          <ConceptLinker
+            sectionId={section.id}
+            linkedConceptIds={section.conceptIds || []}
+          />
         )}
+
+        {/* Blocks */}
+        {sectionBlocks.map((block) => (
+          <BlockEditor key={block.id} block={block} />
+        ))}
 
         {/* Add Block */}
         {showAddBlock ? (
-          <AddBlockMenu
-            onSelect={handleAddBlock}
-            onClose={() => setShowAddBlock(false)}
-          />
+          <AddBlockMenu onSelect={handleAddBlock} onClose={() => setShowAddBlock(false)} />
         ) : (
           <button
             onClick={() => setShowAddBlock(true)}
-            className="w-full py-3 border border-dashed border-stone-300 rounded-lg text-stone-500 hover:border-amber-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+            className="w-full py-2.5 border border-dashed border-ink-700 rounded-lg text-ink-600 hover:border-sand-700 hover:text-sand-600 hover:bg-sand-900/10 transition-colors text-sm font-arabic"
           >
-            + إضافة عنصر محتوى
+            + إضافة عنصر
           </button>
         )}
       </div>
-
-      {/* Linked Concepts Footer */}
-      {linkedConcepts.length > 0 && (
-        <div className="px-4 py-3 bg-amber-50 border-t border-amber-100">
-          <p className="text-xs text-amber-700 mb-2">المفاهيم المرتبطة:</p>
-          <div className="flex flex-wrap gap-2">
-            {linkedConcepts.map((concept) => (
-              <span
-                key={concept.id}
-                className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded"
-              >
-                {concept.titleAr}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
