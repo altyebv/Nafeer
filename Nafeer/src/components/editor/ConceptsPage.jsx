@@ -1,110 +1,81 @@
 import { useState } from 'react';
-import { useDataStore } from '@/store/dataStore';
-import { CONCEPT_TYPES, CONCEPT_TYPE_CONFIG } from '@/shared/constants';
+import { useDataStore }                        from '@/store/dataStore';
+import { CONCEPT_TYPES, CONCEPT_TYPE_CONFIG }  from '@/shared/constants';
 import Modal from '@/components/editor/Modal';
 
-export default function ConceptsPage() {
-  const { concepts, sections, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore();
+const inputClass =
+  'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
 
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [filterType, setFilterType] = useState('');
-  const [search, setSearch] = useState('');
+const labelClass = 'block text-xs text-ink-500 mb-1.5 font-arabic';
+
+export default function ConceptsPage() {
+  const { concepts, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore();
+
+  const [showModal,   setShowModal]   = useState(false);
+  const [editingId,   setEditingId]   = useState(null);
+  const [filterType,  setFilterType]  = useState('');
+  const [search,      setSearch]      = useState('');
+  const [newTagName,  setNewTagName]  = useState('');
 
   const [form, setForm] = useState({
-    titleAr: '',
-    titleEn: '',
-    type: 'DEFINITION',
-    definition: '',
-    shortDefinition: '',
-    formula: '',
-    tagIds: [],
-    difficulty: 1,
+    titleAr: '', titleEn: '', type: 'DEFINITION',
+    definition: '', shortDefinition: '', formula: '',
+    tagIds: [], difficulty: 1,
   });
 
-  const [newTagName, setNewTagName] = useState('');
-
   const resetForm = () => {
-    setForm({
-      titleAr: '',
-      titleEn: '',
-      type: 'DEFINITION',
-      definition: '',
-      shortDefinition: '',
-      formula: '',
-      tagIds: [],
-      difficulty: 1,
-    });
+    setForm({ titleAr: '', titleEn: '', type: 'DEFINITION',
+      definition: '', shortDefinition: '', formula: '', tagIds: [], difficulty: 1 });
     setEditingId(null);
     setNewTagName('');
   };
 
   const handleSubmit = () => {
     if (!form.titleAr.trim()) return;
-
-    if (editingId) {
-      updateConcept(editingId, form);
-    } else {
-      addConcept(form);
-    }
-
+    if (editingId) updateConcept(editingId, form);
+    else addConcept(form);
     resetForm();
     setShowModal(false);
   };
 
   const handleEdit = (concept) => {
     setForm({
-      titleAr: concept.titleAr || '',
-      titleEn: concept.titleEn || '',
-      type: concept.type || 'DEFINITION',
-      definition: concept.definition || '',
+      titleAr:         concept.titleAr         || '',
+      titleEn:         concept.titleEn         || '',
+      type:            concept.type            || 'DEFINITION',
+      definition:      concept.definition      || '',
       shortDefinition: concept.shortDefinition || '',
-      formula: concept.formula || '',
-      tagIds: concept.tagIds || [],
-      difficulty: concept.difficulty || 1,
+      formula:         concept.formula         || '',
+      tagIds:          concept.tagIds          || [],
+      difficulty:      concept.difficulty      || 1,
     });
     setEditingId(concept.id);
     setShowModal(true);
   };
 
   const handleDelete = (id) => {
-    if (confirm('هل أنت متأكد من حذف هذا المفهوم؟')) {
-      deleteConcept(id);
-    }
+    if (confirm('هل أنت متأكد من حذف هذا المفهوم؟')) deleteConcept(id);
   };
 
   const handleAddTag = () => {
     if (!newTagName.trim()) return;
-    const newTag = { nameAr: newTagName.trim() };
-    addTag(newTag);
+    addTag({ nameAr: newTagName.trim() });
     setNewTagName('');
   };
 
-  const toggleTag = (tagId) => {
-    const newTagIds = form.tagIds.includes(tagId)
-      ? form.tagIds.filter(id => id !== tagId)
-      : [...form.tagIds, tagId];
-    setForm({ ...form, tagIds: newTagIds });
+  const toggleTagInForm = (tagId) => {
+    setForm((f) => ({
+      ...f,
+      tagIds: f.tagIds.includes(tagId)
+        ? f.tagIds.filter((id) => id !== tagId)
+        : [...f.tagIds, tagId],
+    }));
   };
 
-  const getUsageCount = (conceptId) => {
-    return sections.filter((s) => s.conceptIds?.includes(conceptId)).length;
-  };
-
-  const getTagNames = (tagIds) => {
-    return tagIds
-      ?.map(id => tags.find(t => t.id === id)?.nameAr)
-      .filter(Boolean)
-      .join('، ') || '';
-  };
-
-  const filteredConcepts = concepts.filter((c) => {
-    const matchesType = !filterType || c.type === filterType;
-    const matchesSearch =
-      !search ||
-      c.titleAr?.toLowerCase().includes(search.toLowerCase()) ||
-      c.titleEn?.toLowerCase().includes(search.toLowerCase());
-    return matchesType && matchesSearch;
+  const filtered = concepts.filter((c) => {
+    const matchType   = !filterType || c.type === filterType;
+    const matchSearch = !search || c.titleAr?.includes(search) || c.titleEn?.toLowerCase().includes(search.toLowerCase());
+    return matchType && matchSearch;
   });
 
   return (
@@ -112,121 +83,129 @@ export default function ConceptsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-semibold text-stone-800">المفاهيم</h1>
-          <p className="text-stone-500 mt-1">{concepts.length} مفهوم</p>
+          <h1 className="text-2xl font-semibold text-sand-200 font-arabic">المفاهيم</h1>
+          <p className="text-ink-500 mt-0.5 text-sm font-arabic">
+            الوحدة الذرية للمعرفة — تربط الدروس والتغذية والأسئلة
+          </p>
         </div>
-
         <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+          onClick={() => { resetForm(); setShowModal(true); }}
+          className="px-4 py-2 bg-sand-700 text-ink-950 rounded-lg hover:bg-sand-600 transition-colors font-semibold font-arabic text-sm"
         >
-          + إضافة مفهوم
+          + مفهوم جديد
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-5 gap-3 mb-6">
-        {Object.entries(CONCEPT_TYPES).slice(0, 5).map(([key, value]) => {
-          const config = CONCEPT_TYPE_CONFIG[key];
-          const count = concepts.filter((c) => c.type === value).length;
+      {/* Type Filter */}
+      <div className="flex gap-2 flex-wrap mb-4">
+        <button
+          onClick={() => setFilterType('')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-arabic transition-colors border
+            ${!filterType ? 'bg-sand-900/50 text-sand-400 border-sand-700' : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'}`}
+        >
+          الكل ({concepts.length})
+        </button>
+        {Object.entries(CONCEPT_TYPES).map(([key]) => {
+          const cfg   = CONCEPT_TYPE_CONFIG[key];
+          const count = concepts.filter((c) => c.type === key).length;
+          if (count === 0) return null;
           return (
             <button
               key={key}
-              onClick={() => setFilterType(filterType === value ? '' : value)}
-              className={`p-4 rounded-xl border text-center transition-colors ${
-                filterType === value
-                  ? 'bg-amber-50 border-amber-300'
-                  : 'bg-white border-stone-200 hover:border-amber-300'
-              }`}
+              onClick={() => setFilterType(filterType === key ? '' : key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-arabic transition-colors border flex items-center gap-1
+                ${filterType === key ? 'bg-sand-900/50 text-sand-400 border-sand-700' : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'}`}
             >
-              <div className="text-2xl mb-1">{config.icon}</div>
-              <div className="text-2xl font-semibold text-stone-800">{count}</div>
-              <div className="text-xs text-stone-500">{config.label}</div>
+              <span>{cfg.icon}</span>
+              <span>{cfg.label}</span>
+              <span className="font-mono text-ink-600">({count})</span>
             </button>
           );
         })}
       </div>
 
       {/* Search */}
-      <div className="mb-6">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-          placeholder="ابحث عن مفهوم..."
-        />
-      </div>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full px-4 py-2.5 bg-ink-900 border border-ink-800 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-600 mb-6"
+        placeholder="بحث في المفاهيم..."
+      />
 
-      {/* Concepts List */}
-      {filteredConcepts.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-stone-200">
-          <div className="text-5xl mb-4">💡</div>
-          <h2 className="text-xl font-medium text-stone-700 mb-2">
+      {/* Tags Section */}
+      {tags.length > 0 && (
+        <div className="mb-6 p-4 bg-ink-900 border border-ink-800 rounded-xl">
+          <h3 className="text-xs text-ink-500 mb-2 font-arabic">الوسوم</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <span key={tag.id} className="px-2 py-0.5 bg-ink-800 text-ink-400 text-xs rounded border border-ink-700 font-arabic">
+                #{tag.nameAr}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Concepts Grid */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-20 bg-ink-900 rounded-xl border border-ink-800">
+          <div className="text-4xl mb-4">💡</div>
+          <p className="text-ink-400 font-arabic">
             {concepts.length === 0 ? 'لا توجد مفاهيم بعد' : 'لا توجد نتائج'}
-          </h2>
-          {concepts.length === 0 && (
-            <button
-              onClick={() => setShowModal(true)}
-              className="mt-4 px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
-            >
-              أضف أول مفهوم
-            </button>
-          )}
+          </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredConcepts.map((concept) => {
-            const config = CONCEPT_TYPE_CONFIG[concept.type];
+        <div className="space-y-2">
+          {filtered.map((concept) => {
+            const cfg = CONCEPT_TYPE_CONFIG[concept.type];
+            const conceptTags = tags.filter((t) => concept.tagIds?.includes(t.id));
             return (
               <div
                 key={concept.id}
-                className="flex items-center gap-4 p-4 bg-white border border-stone-200 rounded-xl hover:border-amber-300 transition-colors"
+                className="flex items-start gap-4 p-4 bg-ink-900 rounded-xl border border-ink-800 hover:border-ink-700 transition-colors group"
               >
-                <span className="text-2xl">{config?.icon}</span>
-
-                <div className="flex-1">
-                  <div className="font-medium text-stone-800">
-                    {concept.titleAr}
-                    {concept.titleEn && (
-                      <span className="text-stone-400 text-sm mr-2">
-                        ({concept.titleEn})
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-stone-500 mt-1">
-                    {concept.shortDefinition || concept.definition?.slice(0, 80)}
-                  </div>
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    <span className="text-xs px-2 py-0.5 bg-stone-100 rounded">
-                      صعوبة: {concept.difficulty}/5
-                    </span>
-                    <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
-                      مستخدم في {getUsageCount(concept.id)} أقسام
-                    </span>
-                    {concept.tagIds?.length > 0 && (
-                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-                        {getTagNames(concept.tagIds)}
-                      </span>
-                    )}
-                  </div>
+                <div className="w-8 h-8 flex items-center justify-center bg-ink-800 rounded-lg text-sm flex-shrink-0">
+                  {cfg?.icon}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-ink-100 text-sm font-arabic">{concept.titleAr}</span>
+                    {concept.titleEn && (
+                      <span className="text-xs text-ink-600" dir="ltr">{concept.titleEn}</span>
+                    )}
+                    <span className="text-xs px-1.5 py-0.5 bg-ink-800 text-ink-500 rounded font-arabic border border-ink-700">
+                      {cfg?.label}
+                    </span>
+                    <span className="text-xs text-ink-700 font-mono">
+                      {'★'.repeat(concept.difficulty || 1)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-ink-500 line-clamp-2 font-arabic">{concept.definition}</p>
+                  {conceptTags.length > 0 && (
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                      {conceptTags.map((t) => (
+                        <span key={t.id} className="text-xs px-1.5 py-0.5 bg-ink-800 text-ink-600 rounded font-arabic">
+                          #{t.nameAr}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleEdit(concept)}
-                    className="px-3 py-1 text-sm text-stone-600 hover:bg-stone-100 rounded transition-colors"
+                    className="p-1.5 text-ink-600 hover:text-sand-400 hover:bg-ink-800 rounded transition-colors"
                   >
-                    ✏️ تعديل
+                    ✏
                   </button>
                   <button
                     onClick={() => handleDelete(concept.id)}
-                    className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
+                    className="p-1.5 text-ink-600 hover:text-red-500 hover:bg-red-900/20 rounded transition-colors"
                   >
-                    🗑️
+                    ✕
                   </button>
                 </div>
               </div>
@@ -235,39 +214,34 @@ export default function ConceptsPage() {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* Modal */}
       <Modal
         isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          resetForm();
-        }}
-        title={editingId ? 'تعديل المفهوم' : 'إضافة مفهوم جديد'}
+        onClose={() => { setShowModal(false); resetForm(); }}
+        title={editingId ? 'تعديل مفهوم' : 'إضافة مفهوم جديد'}
+        size="lg"
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">
-                العنوان بالعربية *
-              </label>
+              <label className={labelClass}>العنوان بالعربية *</label>
               <input
                 type="text"
                 value={form.titleAr}
                 onChange={(e) => setForm({ ...form, titleAr: e.target.value })}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                placeholder="مثال: خطوط العرض"
+                className={inputClass}
+                placeholder="مثال: قانون نيوتن الأول"
+                autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">
-                العنوان بالإنجليزية
-              </label>
+              <label className={labelClass}>العنوان بالإنجليزية</label>
               <input
                 type="text"
                 value={form.titleEn}
                 onChange={(e) => setForm({ ...form, titleEn: e.target.value })}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                placeholder="Example: Latitude"
+                className={`${inputClass}`}
+                placeholder="Newton's First Law"
                 dir="ltr"
               />
             </div>
@@ -275,72 +249,69 @@ export default function ConceptsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">
-                النوع
-              </label>
+              <label className={labelClass}>النوع</label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                className={`${inputClass} cursor-pointer`}
               >
-                {Object.entries(CONCEPT_TYPES).map(([key, value]) => (
-                  <option key={key} value={value}>
-                    {CONCEPT_TYPE_CONFIG[key].label}
+                {Object.entries(CONCEPT_TYPES).map(([key]) => (
+                  <option key={key} value={key}>
+                    {CONCEPT_TYPE_CONFIG[key].icon} {CONCEPT_TYPE_CONFIG[key].label}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">
-                الصعوبة (1-5)
-              </label>
-              <input
-                type="number"
-                value={form.difficulty}
-                onChange={(e) => setForm({ ...form, difficulty: parseInt(e.target.value) || 1 })}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                min="1"
-                max="5"
-              />
+              <label className={labelClass}>الصعوبة (1–5)</label>
+              <div className="flex gap-1.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setForm({ ...form, difficulty: n })}
+                    className={`flex-1 py-2 rounded-lg text-xs font-mono transition-colors border
+                      ${form.difficulty === n
+                        ? 'bg-sand-900/60 text-sand-400 border-sand-700'
+                        : 'bg-ink-800 text-ink-600 border-ink-700 hover:border-ink-600'
+                      }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              التعريف المختصر
-            </label>
-            <input
-              type="text"
-              value={form.shortDefinition}
-              onChange={(e) => setForm({ ...form, shortDefinition: e.target.value })}
-              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-              placeholder="تعريف مختصر للبطاقات"
+            <label className={labelClass}>التعريف الكامل *</label>
+            <textarea
+              value={form.definition}
+              onChange={(e) => setForm({ ...form, definition: e.target.value })}
+              className={`${inputClass} resize-y min-h-[80px]`}
+              placeholder="التعريف أو الشرح الكامل..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              التعريف الكامل
-            </label>
-            <textarea
-              value={form.definition}
-              onChange={(e) => setForm({ ...form, definition: e.target.value })}
-              className="w-full px-3 py-2 border border-stone-300 rounded-lg resize-y min-h-[80px] focus:ring-2 focus:ring-amber-500"
-              placeholder="الشرح التفصيلي..."
+            <label className={labelClass}>تعريف مختصر (يُستخدم في التغذية)</label>
+            <input
+              type="text"
+              value={form.shortDefinition}
+              onChange={(e) => setForm({ ...form, shortDefinition: e.target.value })}
+              className={inputClass}
+              placeholder="جملة واحدة تلخص المفهوم..."
             />
           </div>
 
           {(form.type === 'FORMULA' || form.type === 'LAW') && (
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">
-                المعادلة / الصيغة
-              </label>
+              <label className={labelClass}>الصيغة / المعادلة</label>
               <input
                 type="text"
                 value={form.formula}
                 onChange={(e) => setForm({ ...form, formula: e.target.value })}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                placeholder="مثال: E = mc²"
+                className={`${inputClass} font-mono`}
+                placeholder="F = ma"
                 dir="ltr"
               />
             </div>
@@ -348,69 +319,56 @@ export default function ConceptsPage() {
 
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              الوسوم (Tags)
-            </label>
-            
-            {/* Existing tags */}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {tags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => toggleTag(tag.id)}
-                    className={`px-3 py-1 text-sm rounded-lg transition-colors ${
-                      form.tagIds.includes(tag.id)
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+            <label className={labelClass}>الوسوم</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {tags.map((tag) => (
+                <button
+                  key={tag.id}
+                  onClick={() => toggleTagInForm(tag.id)}
+                  className={`px-2 py-0.5 text-xs rounded border font-arabic transition-colors
+                    ${form.tagIds.includes(tag.id)
+                      ? 'bg-sand-900/50 text-sand-400 border-sand-700'
+                      : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'
                     }`}
-                  >
-                    {tag.nameAr}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Add new tag */}
+                >
+                  #{tag.nameAr}
+                </button>
+              ))}
+            </div>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                placeholder="أضف وسم جديد..."
+                onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                className={`${inputClass} flex-1`}
+                placeholder="وسم جديد..."
               />
               <button
-                type="button"
                 onClick={handleAddTag}
                 disabled={!newTagName.trim()}
-                className="px-4 py-2 bg-stone-100 text-stone-600 rounded-lg hover:bg-stone-200 disabled:opacity-50 transition-colors"
+                className="px-3 py-2 bg-ink-800 text-ink-300 rounded-lg hover:bg-ink-700 disabled:opacity-40 transition-colors text-sm"
               >
-                +
+                + إضافة
               </button>
             </div>
           </div>
-        </div>
 
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={handleSubmit}
-            disabled={!form.titleAr.trim()}
-            className="flex-1 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors"
-          >
-            {editingId ? 'حفظ التعديلات' : 'إضافة'}
-          </button>
-          <button
-            onClick={() => {
-              setShowModal(false);
-              resetForm();
-            }}
-            className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
-          >
-            إلغاء
-          </button>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleSubmit}
+              disabled={!form.titleAr.trim()}
+              className="flex-1 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 transition-colors font-semibold font-arabic"
+            >
+              {editingId ? 'حفظ التعديلات' : 'إضافة'}
+            </button>
+            <button
+              onClick={() => { setShowModal(false); resetForm(); }}
+              className="px-4 py-2 text-ink-400 hover:bg-ink-800 rounded-lg transition-colors font-arabic"
+            >
+              إلغاء
+            </button>
+          </div>
         </div>
       </Modal>
     </div>
