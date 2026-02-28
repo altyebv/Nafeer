@@ -563,6 +563,20 @@ export const useDataStore = create(
         });
       },
 
+      // ─── Bootstrap ───────────────────────────────────────────────────────────
+      // Call this when a contributor opens the editor for the first time.
+      // It scaffolds empty units + lessons from the curriculum template so
+      // progress tracking is deterministic and IDs are consistent.
+      bootstrapFromSubject: (subjectId) => {
+        const { buildSubjectScaffold } = require('@/shared/curriculum');
+        const scaffold = buildSubjectScaffold(subjectId);
+        if (!scaffold) return;
+        const state = get();
+        // Only scaffold if the editor is truly empty (no units yet)
+        if (state.units.length > 0) return;
+        get().importData(scaffold);
+      },
+
       // ─── Reset ───────────────────────────────────────────────────────────
       resetAll: () =>
         set({
