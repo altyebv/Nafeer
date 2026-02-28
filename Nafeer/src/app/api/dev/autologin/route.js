@@ -14,8 +14,8 @@ export async function GET() {
     id:      'dev_contributor',
     name:    'مساهم تجريبي',
     email:   'dev@nafeer.local',
-    password: "asd",
-    subject: 'الجغرافيا',
+    subject: 'GEOGRAPHY',   // must match a key in SUBJECTS_CATALOG
+    password: 'devpassword', // not actually used, but required by schema
     role:    'contributor',
     status:  'approved',
   };
