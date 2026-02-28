@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { SUBJECT_IDS } from '@/shared/curriculum';
 
 const ContributorSchema = new mongoose.Schema(
   {
@@ -22,6 +23,7 @@ const ContributorSchema = new mongoose.Schema(
     subject: {
       type: String,
       required: true,
+      enum: SUBJECT_IDS,
     },
     background: {
       type: String,
