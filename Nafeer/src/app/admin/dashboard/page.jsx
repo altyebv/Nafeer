@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
 const STATUS_CONFIG = {
   pending:  { label: 'في الانتظار', color: 'text-yellow-400', bg: 'bg-yellow-900/30 border-yellow-700/40' },
@@ -262,7 +263,6 @@ export default function AdminDashboard() {
               {[
                 { key: 'name', label: 'الاسم', placeholder: 'الاسم الكامل' },
                 { key: 'email', label: 'البريد الإلكتروني', placeholder: 'email@example.com', dir: 'ltr' },
-                { key: 'subject', label: 'المادة', placeholder: 'مثال: الرياضيات' },
                 { key: 'background', label: 'الخلفية', placeholder: 'اختياري' },
                 { key: 'password', label: 'كلمة المرور', placeholder: '••••••••', type: 'password', dir: 'ltr' },
               ].map(({ key, label, placeholder, dir, type }) => (
@@ -279,6 +279,27 @@ export default function AdminDashboard() {
                   />
                 </div>
               ))}
+              {/* Subject — select from catalog so IDs are always valid */}
+              <div>
+                <label className="block text-xs text-ink-500 mb-1 font-mono">المادة</label>
+                <select
+                  required
+                  value={createForm.subject}
+                  onChange={(e) => setCreateForm({ ...createForm, subject: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-ink-800 border border-ink-700 text-sand-100 focus:outline-none focus:border-sand-600 text-sm transition-all"
+                >
+                  <option value="" disabled>اختر المادة</option>
+                  {['COMMON', 'SCIENCE', 'LITERARY'].map((track) => (
+                    <optgroup key={track} label={track === 'COMMON' ? 'مشترك' : track === 'SCIENCE' ? 'علمي' : 'أدبي'}>
+                      {SUBJECTS_CATALOG.filter((s) => s.track === track).map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nameAr}{s.isMajor ? ' (تخصص)' : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
