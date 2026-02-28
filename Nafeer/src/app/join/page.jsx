@@ -1,10 +1,12 @@
 'use client';
 import { useState } from 'react';
+import { SUBJECTS_CATALOG, TRACK_CONFIG } from '@/shared/curriculum';
 
-const subjects = [
-  'الرياضيات', 'الفيزياء', 'الكيمياء', 'الأحياء',
-  'التاريخ', 'الجغرافيا', 'اللغة العربية', 'الاقتصاد',
-  'التربية الإسلامية', 'اللغة الإنجليزية', 'أخرى',
+// Group subjects by track for a cleaner <select> with <optgroup>
+const SUBJECT_GROUPS = [
+  { trackKey: 'COMMON',   label: 'مشترك' },
+  { trackKey: 'SCIENCE',  label: 'علمي'  },
+  { trackKey: 'LITERARY', label: 'أدبي'  },
 ];
 
 const STAGES = {
@@ -136,8 +138,16 @@ export default function JoinPage() {
                 className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all"
               >
                 <option value="" disabled>اختر المادة</option>
-                {subjects.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                {SUBJECT_GROUPS.map(({ trackKey, label }) => (
+                  <optgroup key={trackKey} label={`── ${label}`}>
+                    {SUBJECTS_CATALOG
+                      .filter((s) => s.track === trackKey)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nameAr}{s.isMajor ? ' (تخصص)' : ''}
+                        </option>
+                      ))}
+                  </optgroup>
                 ))}
               </select>
             </div>
