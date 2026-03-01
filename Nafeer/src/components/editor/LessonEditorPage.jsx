@@ -1,13 +1,18 @@
 'use client';
 import { useDataStore }     from '@/store/dataStore';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
-import SectionEditor        from '@/components/editor/SectionEditor';
+import SectionEditor          from '@/components/editor/SectionEditor';
+import LessonQuestionsPanel   from '@/components/editor/LessonQuestionsPanel';
+import LessonFeedPanel        from '@/components/editor/LessonFeedPanel';
 
 const inputClass =
   'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600 text-sm';
 
-export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOverview, onNavigateLesson }) {
-  const { units, lessons, sections, blocks, updateLesson, addSection } = useDataStore();
+// Default scaffold title pattern — "درس 1", "درس 2", etc.
+const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
+
+export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOverview, onNavigateLesson, onOpenGlobal }) {
+  const { units, lessons, sections, blocks, questions, feedItems, updateLesson, addSection } = useDataStore();
 
   const lesson         = lessons.find((l) => l.id === lessonId);
   const unit           = units.find((u) => u.id === unitId);
@@ -18,21 +23,43 @@ export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOve
   const sectionIds   = lessonSections.map((s) => s.id);
   const lessonBlocks = blocks.filter((b) => sectionIds.includes(b.sectionId));
 
+  // Concept IDs linked to any section in this lesson — fed to the feed panel
+  // so linked concepts appear first in the picker
+  const lessonConceptIds = [...new Set(lessonSections.flatMap((s) => s.conceptIds || []))];
+
   const status    = lesson ? getLessonStatus(lessonId, sections, blocks, lesson) : 'empty';
   const statusCfg = STATUS_CONFIG[status];
 
-  const unitLessons = lessons
-    .filter((l) => l.unitId === unitId)
-    .sort((a, b) => a.order - b.order);
-  const lessonIndex = unitLessons.findIndex((l) => l.id === lessonId);
-  const prevLesson  = lessonIndex > 0                       ? unitLessons[lessonIndex - 1] : null;
-  const nextLesson  = lessonIndex < unitLessons.length - 1  ? unitLessons[lessonIndex + 1] : null;
+  // ── Build a flat ordered list of ALL lessons across ALL units ─────────────
+  // This powers cross-unit prev/next navigation so contributors can move
+  // linearly through the whole subject without hitting dead ends.
+  const sortedUnits   = [...units].sort((a, b) => a.order - b.order);
+  const allLessons    = sortedUnits.flatMap((u) =>
+    lessons
+      .filter((l) => l.unitId === u.id)
+      .sort((a, b) => a.order - b.order)
+      .map((l) => ({ ...l, _unitId: u.id }))
+  );
+  const globalIndex  = allLessons.findIndex((l) => l.id === lessonId);
+  const prevLesson   = globalIndex > 0                    ? allLessons[globalIndex - 1] : null;
+  const nextLesson   = globalIndex < allLessons.length - 1 ? allLessons[globalIndex + 1] : null;
+
+  // Position within own unit (for the "درس X من Y" label)
+  const unitLessons  = lessons.filter((l) => l.unitId === unitId).sort((a, b) => a.order - b.order);
+  const lessonIndex  = unitLessons.findIndex((l) => l.id === lessonId);
+
+  // ── Checklist ─────────────────────────────────────────────────────────────
+  // "عنوان" checks for a *real* title — not the scaffold placeholder "الدرس 1"
+  const lessonQuestions = questions.filter((q) => q.lessonId === lessonId);
+  const lessonFeedItems = feedItems.filter((f) => f.lessonId === lessonId);
 
   const checklist = lesson ? [
-    { label: 'عنوان',    done: lesson.title?.trim().length > 0   },
-    { label: 'ملخص',    done: lesson.summary?.trim().length > 0  },
-    { label: 'أقسام',   done: lessonSections.length > 0          },
-    { label: 'محتوى',   done: lessonBlocks.length > 0            },
+    { label: 'عنوان',  done: !!lesson.title?.trim() && !SCAFFOLD_TITLE_RE.test(lesson.title.trim()) },
+    { label: 'ملخص',  done: !!lesson.summary?.trim()        },
+    { label: 'أقسام', done: lessonSections.length > 0       },
+    { label: 'محتوى', done: lessonBlocks.length > 0         },
+    { label: 'أسئلة', done: lessonQuestions.length > 0      },
+    { label: 'تغذية', done: lessonFeedItems.length > 0      },
   ] : [];
   const completedChecks = checklist.filter((c) => c.done).length;
 
@@ -49,9 +76,12 @@ export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOve
   }
 
   const handleAddSection = () => {
+    // Use max existing order + 1 to stay correct after any deletions
+    const maxOrder = lessonSections.reduce((m, s) => Math.max(m, s.order), 0);
     addSection({
       lessonId,
       title:        `قسم ${lessonSections.length + 1}`,
+      order:        maxOrder + 1,
       conceptIds:   [],
       learningType: 'UNDERSTANDING',
     });
@@ -61,11 +91,15 @@ export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOve
     <div>
       {/* ── Breadcrumb ─────────────────────────────────────────── */}
       <nav className="flex items-center gap-2 text-xs text-ink-600 font-arabic mb-7">
-        <button onClick={onBackToOverview} className="hover:text-sand-400 transition-colors">الدروس</button>
+        <button onClick={onBackToOverview} className="hover:text-sand-400 transition-colors">
+          الدروس
+        </button>
         <span className="text-ink-700">›</span>
-        <button onClick={onBack} className="hover:text-sand-400 transition-colors">{unit?.title ?? 'الوحدة'}</button>
+        <button onClick={onBack} className="hover:text-sand-400 transition-colors max-w-[140px] truncate">
+          {unit ? `${unit.order}. ${unit.title}` : 'الوحدة'}
+        </button>
         <span className="text-ink-700">›</span>
-        <span className="text-ink-300 truncate max-w-[200px]">{lesson.title}</span>
+        <span className="text-ink-300 truncate max-w-[180px]">{lesson.title}</span>
       </nav>
 
       {/* ── Lesson meta ─────────────────────────────────────────── */}
@@ -73,6 +107,8 @@ export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOve
         <div>
           <p className="text-xs font-mono text-ink-600 mb-1">
             درس {lessonIndex + 1} من {unitLessons.length}
+            <span className="text-ink-700 mx-1.5">·</span>
+            <span className="text-ink-600">{globalIndex + 1} / {allLessons.length} إجمالاً</span>
           </p>
           <h1 className="text-xl font-bold text-sand-100 font-arabic">{lesson.title}</h1>
         </div>
@@ -85,7 +121,7 @@ export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOve
       <div className="bg-ink-900 rounded-xl border border-ink-800 p-4 mb-6">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs text-ink-500 font-arabic">اكتمال الدرس</p>
-          <span className="text-xs font-mono text-ink-400">{completedChecks}/4</span>
+          <span className="text-xs font-mono text-ink-400">{completedChecks}/6</span>
         </div>
         <div className="flex gap-2">
           {checklist.map((item) => (
@@ -152,34 +188,75 @@ export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOve
         + إضافة قسم جديد
       </button>
 
+      {/* ── Questions & Feed panels ───────────────────────────────── */}
+      <div className="mt-6 space-y-3">
+        <LessonQuestionsPanel
+          lessonId={lessonId}
+          unitId={unitId}
+          onOpenGlobal={onOpenGlobal}
+        />
+        <LessonFeedPanel
+          lessonId={lessonId}
+          unitId={unitId}
+          lessonConceptIds={lessonConceptIds}
+          onOpenGlobal={onOpenGlobal}
+        />
+      </div>
+
       {/* ── Lesson navigation ─────────────────────────────────────── */}
       <div className="flex items-center justify-between mt-8 pt-6 border-t border-ink-800">
-        {prevLesson ? (
-          <button
-            onClick={() => onNavigateLesson?.(prevLesson.id)}
-            className="flex items-center gap-2 text-sm text-ink-500 hover:text-sand-400 transition-colors font-arabic"
-          >
-            <span>→</span>
-            <span className="truncate max-w-[160px]">{prevLesson.title}</span>
-          </button>
-        ) : <div />}
+
+        {/* Prev */}
+        {prevLesson ? (() => {
+          const crossUnit = prevLesson._unitId !== unitId;
+          const prevUnit  = crossUnit ? units.find((u) => u.id === prevLesson._unitId) : null;
+          return (
+            <button
+              onClick={() => onNavigateLesson?.(prevLesson.id, prevLesson._unitId)}
+              className="flex flex-col items-start gap-0.5 text-ink-500 hover:text-sand-400 transition-colors group"
+            >
+              {crossUnit && (
+                <span className="text-[10px] font-mono text-ink-700 group-hover:text-ink-500">
+                  ← {prevUnit?.title}
+                </span>
+              )}
+              <span className="flex items-center gap-1.5 text-sm font-arabic">
+                <span>→</span>
+                <span className="truncate max-w-[150px]">{prevLesson.title}</span>
+              </span>
+            </button>
+          );
+        })() : <div />}
 
         <button
           onClick={onBack}
-          className="text-xs text-ink-600 hover:text-ink-400 transition-colors font-arabic px-3 py-1.5 rounded-lg hover:bg-ink-800"
+          className="text-xs text-ink-600 hover:text-ink-400 transition-colors font-arabic px-3 py-1.5 rounded-lg hover:bg-ink-800 shrink-0"
         >
           قائمة الدروس
         </button>
 
-        {nextLesson ? (
-          <button
-            onClick={() => onNavigateLesson?.(nextLesson.id)}
-            className="flex items-center gap-2 text-sm text-ink-500 hover:text-sand-400 transition-colors font-arabic"
-          >
-            <span className="truncate max-w-[160px]">{nextLesson.title}</span>
-            <span>←</span>
-          </button>
-        ) : <div />}
+        {/* Next */}
+        {nextLesson ? (() => {
+          const crossUnit = nextLesson._unitId !== unitId;
+          const nextUnit  = crossUnit ? units.find((u) => u.id === nextLesson._unitId) : null;
+          return (
+            <button
+              onClick={() => onNavigateLesson?.(nextLesson.id, nextLesson._unitId)}
+              className="flex flex-col items-end gap-0.5 text-ink-500 hover:text-sand-400 transition-colors group"
+            >
+              {crossUnit && (
+                <span className="text-[10px] font-mono text-ink-700 group-hover:text-ink-500">
+                  {nextUnit?.title} →
+                </span>
+              )}
+              <span className="flex items-center gap-1.5 text-sm font-arabic">
+                <span className="truncate max-w-[150px]">{nextLesson.title}</span>
+                <span>←</span>
+              </span>
+            </button>
+          );
+        })() : <div />}
+
       </div>
     </div>
   );
