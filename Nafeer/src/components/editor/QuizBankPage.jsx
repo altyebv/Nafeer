@@ -10,6 +10,7 @@ import {
 } from '@/shared/constants';
 import Modal            from '@/components/editor/Modal';
 import { QuizTableEditor } from '@/components/editor/TableEditor';
+import DeleteButton     from '@/components/editor/DeleteButton';
 
 const inputClass =
   'w-full px-3 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
@@ -17,7 +18,7 @@ const inputClass =
 const labelClass = 'block text-xs text-ink-500 mb-1.5 font-arabic';
 
 // ─── MCQ Option Builder ──────────────────────────────────────────────────────
-function MCQOptions({ options, correctAnswer, onChange, onCorrectChange }) {
+function MCQOptions({ options, correctIndex, onChange, onCorrectChange }) {
   const opts = options.length ? options : ['', '', '', ''];
 
   const updateOption = (i, val) => {
@@ -30,7 +31,8 @@ function MCQOptions({ options, correctAnswer, onChange, onCorrectChange }) {
   const removeOption = (i) => {
     const next = opts.filter((_, idx) => idx !== i);
     onChange(next);
-    if (correctAnswer === String(i)) onCorrectChange('');
+    if (correctIndex === i) onCorrectChange(-1);
+    else if (correctIndex > i) onCorrectChange(correctIndex - 1);
   };
 
   return (
@@ -38,10 +40,10 @@ function MCQOptions({ options, correctAnswer, onChange, onCorrectChange }) {
       {opts.map((opt, i) => (
         <div key={i} className="flex items-center gap-2">
           <button
-            onClick={() => onCorrectChange(opt)}
+            onClick={() => onCorrectChange(i)}
             className={`w-6 h-6 rounded-full border-2 flex-shrink-0 transition-colors
-              ${correctAnswer === opt && opt
-                ? 'border-green-500 bg-green-500/20'
+              ${correctIndex === i
+                ? 'border-emerald-500 bg-emerald-500/20'
                 : 'border-ink-600 hover:border-ink-400'
               }`}
             title="اضغط لتحديد كإجابة صحيحة"
@@ -155,6 +157,14 @@ function QuestionForm({ form, setForm, concepts, units, lessons }) {
   const [mcqOptions,   setMcqOptions]   = useState(() => {
     try { return form.options ? JSON.parse(form.options) : ['', '', '', '']; } catch { return ['', '', '', '']; }
   });
+  // Index-based correct answer — resolves text at save time, avoids text-equality bug
+  const [correctIndex, setCorrectIndex] = useState(() => {
+    if (!form.correctAnswer || !form.options) return -1;
+    try {
+      const opts = JSON.parse(form.options);
+      return Array.isArray(opts) ? opts.indexOf(form.correctAnswer) : -1;
+    } catch { return -1; }
+  });
   const [matchPairs,   setMatchPairs]   = useState(() => {
     try {
       const raw = form.options ? JSON.parse(form.options) : [];
@@ -167,7 +177,13 @@ function QuestionForm({ form, setForm, concepts, units, lessons }) {
 
   const handleMcqChange = (opts) => {
     setMcqOptions(opts);
-    setForm({ ...form, options: JSON.stringify(opts) });
+    // Re-derive correctAnswer text from the (possibly shifted) index
+    const answer = correctIndex >= 0 && correctIndex < opts.length ? opts[correctIndex] : '';
+    setForm({ ...form, options: JSON.stringify(opts), correctAnswer: answer });
+  };
+  const handleCorrectIndexChange = (idx) => {
+    setCorrectIndex(idx);
+    setForm({ ...form, correctAnswer: mcqOptions[idx] ?? '' });
   };
   const handleMatchChange = (pairs) => {
     setMatchPairs(pairs);
@@ -185,6 +201,39 @@ function QuestionForm({ form, setForm, concepts, units, lessons }) {
 
   return (
     <div className="space-y-5">
+      {/* Lesson assignment — required */}
+      <div className="grid grid-cols-2 gap-3 p-3 bg-ink-800/40 rounded-xl border border-ink-700/60">
+        <div>
+          <label className={`${labelClass} text-sand-600`}>الوحدة *</label>
+          <select
+            value={form.unitId || ''}
+            onChange={(e) => setForm({ ...form, unitId: e.target.value || null, lessonId: null })}
+            className={`${inputClass} cursor-pointer`}
+          >
+            <option value="">اختر الوحدة...</option>
+            {units.sort((a, b) => a.order - b.order).map((u) => (
+              <option key={u.id} value={u.id}>{u.title}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={`${labelClass} text-sand-600`}>الدرس *</label>
+          <select
+            value={form.lessonId || ''}
+            onChange={(e) => setForm({ ...form, lessonId: e.target.value || null })}
+            className={`${inputClass} cursor-pointer`}
+            disabled={!form.unitId}
+          >
+            <option value="">{form.unitId ? 'اختر الدرس...' : 'اختر الوحدة أولاً'}</option>
+            {lessons
+              .filter((l) => l.unitId === form.unitId)
+              .sort((a, b) => a.order - b.order)
+              .map((l) => <option key={l.id} value={l.id}>{l.title}</option>)
+            }
+          </select>
+        </div>
+      </div>
+
       {/* Question Text */}
       <div>
         <label className={labelClass}>نص السؤال بالعربية *</label>
@@ -224,9 +273,9 @@ function QuestionForm({ form, setForm, concepts, units, lessons }) {
           <label className={labelClass}>الخيارات (انقر على الدائرة لتحديد الإجابة الصحيحة)</label>
           <MCQOptions
             options={mcqOptions}
-            correctAnswer={form.correctAnswer}
+            correctIndex={correctIndex}
             onChange={handleMcqChange}
-            onCorrectChange={(val) => setForm({ ...form, correctAnswer: val })}
+            onCorrectChange={handleCorrectIndexChange}
           />
         </div>
       )}
@@ -377,34 +426,6 @@ function QuestionForm({ form, setForm, concepts, units, lessons }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={labelClass}>الوحدة (اختياري)</label>
-          <select
-            value={form.unitId || ''}
-            onChange={(e) => setForm({ ...form, unitId: e.target.value || null })}
-            className={`${inputClass} cursor-pointer`}
-          >
-            <option value="">غير محدد</option>
-            {units.map((u) => <option key={u.id} value={u.id}>{u.title}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>الدرس (اختياري)</label>
-          <select
-            value={form.lessonId || ''}
-            onChange={(e) => setForm({ ...form, lessonId: e.target.value || null })}
-            className={`${inputClass} cursor-pointer`}
-          >
-            <option value="">غير محدد</option>
-            {lessons
-              .filter((l) => !form.unitId || l.unitId === form.unitId)
-              .map((l) => <option key={l.id} value={l.id}>{l.title}</option>)
-            }
-          </select>
-        </div>
-      </div>
-
       {/* Linked Concepts */}
       <div>
         <label className={labelClass}>المفاهيم المرتبطة</label>
@@ -512,7 +533,7 @@ export default function QuizBankPage() {
   };
 
   const handleSaveQuestion = () => {
-    if (!qForm.textAr.trim()) return;
+    if (!qForm.textAr.trim() || !qForm.lessonId) return;
     if (editingQId) updateQuestion(editingQId, qForm);
     else             addQuestion(qForm);
     setShowQModal(false);
@@ -700,12 +721,7 @@ export default function QuizBankPage() {
                       >
                         ✏
                       </button>
-                      <button
-                        onClick={() => { if (confirm('حذف السؤال؟')) deleteQuestion(q.id); }}
-                        className="p-1.5 text-ink-600 hover:text-red-500 rounded transition-colors"
-                      >
-                        ✕
-                      </button>
+                      <DeleteButton onDelete={() => deleteQuestion(q.id)} />
                     </div>
                   </div>
                 );
@@ -762,18 +778,13 @@ export default function QuizBankPage() {
                       >
                         ✏ تعديل
                       </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm('حذف الامتحان؟')) {
-                            deleteExam(exam.id);
-                            if (selectedExamId === exam.id) setSelectedExamId(null);
-                          }
+                      <DeleteButton
+                        onDelete={() => {
+                          deleteExam(exam.id);
+                          if (selectedExamId === exam.id) setSelectedExamId(null);
                         }}
-                        className="text-xs text-ink-600 hover:text-red-500 transition-colors font-arabic"
-                      >
-                        ✕ حذف
-                      </button>
+                        label="✕ حذف"
+                      />
                     </div>
                   </div>
                 );
@@ -898,7 +909,7 @@ export default function QuizBankPage() {
           <div className="flex gap-3 pt-2 border-t border-ink-800 mt-5">
             <button
               onClick={handleSaveQuestion}
-              disabled={!qForm.textAr.trim()}
+              disabled={!qForm.textAr.trim() || !qForm.lessonId}
               className="flex-1 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 transition-colors font-semibold font-arabic"
             >
               {editingQId ? 'حفظ التعديلات' : 'إضافة السؤال'}
