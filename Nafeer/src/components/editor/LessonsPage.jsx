@@ -1,240 +1,128 @@
-import { useState } from 'react';
-import { useDataStore } from '@/store/dataStore';
-import { PATH_CONFIG, STUDENT_PATHS } from '@/shared/constants';
-import UnitCard from '@/components/editor/UnitCard';
-import Modal    from '@/components/editor/Modal';
-
-const inputClass =
-  'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600 text-sm';
-
-const labelClass = 'block text-sm text-ink-400 mb-1.5 font-arabic';
+import { useDataStore }    from '@/store/dataStore';
+import { SUBJECTS_BY_ID, TRACK_CONFIG } from '@/shared/curriculum';
+import { computeProgress }  from '@/lib/LessonStatus';
+import UnitCard              from '@/components/editor/UnitCard';
 
 export default function LessonsPage({ onEditLesson }) {
-  const { subject, setSubject, units, addUnit } = useDataStore();
+  const { subject, units, lessons, sections, blocks } = useDataStore();
 
-  const [showSubjectModal, setShowSubjectModal] = useState(!subject);
-  const [showUnitModal,    setShowUnitModal]    = useState(false);
-  const [subjectForm,      setSubjectForm]      = useState({
-    nameAr:   subject?.nameAr || '',
-    nameEn:   subject?.nameEn || '',
-    path:     subject?.path   || 'LITERARY',
-    isMajor:  subject?.isMajor || false,
-    colorHex: subject?.colorHex || '',
-    order:    subject?.order || 0,
-  });
-  const [unitTitle, setUnitTitle] = useState('');
+  const sortedUnits  = [...units].sort((a, b) => a.order - b.order);
+  const catalogEntry = subject ? SUBJECTS_BY_ID[subject.id] : null;
+  const trackCfg     = catalogEntry ? TRACK_CONFIG[catalogEntry.track] : null;
 
-  const handleSaveSubject = () => {
-    if (!subjectForm.nameAr.trim()) return;
-    setSubject({
-      ...subjectForm,
-      id: subject?.id || subjectForm.nameAr.toLowerCase().replace(/\s+/g, '_'),
-    });
-    setShowSubjectModal(false);
-  };
+  // Overall subject progress
+  const lessonsMap = Object.fromEntries(lessons.map((l) => [l.id, l]));
+  const { done, total, pct } = computeProgress(
+    lessons.map((l) => l.id),
+    sections,
+    blocks,
+    lessonsMap,
+  );
 
-  const handleAddUnit = () => {
-    if (!unitTitle.trim()) return;
-    addUnit({ title: unitTitle });
-    setUnitTitle('');
-    setShowUnitModal(false);
-  };
-
-  const sortedUnits = [...units].sort((a, b) => a.order - b.order);
+  // ── Waiting for bootstrap ────────────────────────────────────────────────────
+  if (!subject) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <div className="w-8 h-8 rounded-full border-2 border-sand-700 border-t-sand-400 animate-spin" />
+        <p className="text-ink-500 text-sm font-arabic">جاري تحميل هيكل المادة…</p>
+      </div>
+    );
+  }
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-sand-200 font-arabic">الدروس</h1>
-          <p className="text-ink-500 mt-0.5 text-sm font-arabic">إدارة الوحدات والدروس والمحتوى</p>
+
+      {/* ── Subject header ──────────────────────────────────────────────────── */}
+      <div className="bg-ink-900 border border-ink-800 rounded-xl p-5 mb-8">
+        <div className="flex items-start justify-between gap-4">
+
+          {/* Name + track */}
+          <div>
+            <div className="flex items-center gap-2.5 mb-1">
+              <h1 className="text-xl font-bold text-sand-100 font-arabic">
+                {subject.nameAr}
+              </h1>
+              {catalogEntry?.isMajor && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded border font-arabic
+                  bg-ember-900/30 border-ember-700/40 text-ember-400">
+                  تخصص
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {subject.nameEn && (
+                <span className="text-xs text-ink-500 font-mono" dir="ltr">
+                  {subject.nameEn}
+                </span>
+              )}
+              {trackCfg && (
+                <span className={`text-xs px-2 py-0.5 rounded border font-arabic ${trackCfg.badge}`}>
+                  {trackCfg.label}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Progress counters */}
+          <div className="text-left shrink-0">
+            <p className="text-2xl font-mono font-bold text-sand-300 leading-none mb-1">
+              {pct}<span className="text-base text-ink-500">%</span>
+            </p>
+            <p className="text-xs text-ink-600 font-arabic">
+              {done} / {total} درس مكتمل
+            </p>
+          </div>
         </div>
 
-        {subject && (
-          <button
-            onClick={() => setShowSubjectModal(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-ink-800 rounded-lg text-ink-300 hover:bg-ink-700 hover:text-sand-300 transition-colors border border-ink-700"
-          >
-            <span className="text-base">📚</span>
-            <span className="font-arabic text-sm">{subject.nameAr}</span>
-            <span className={`text-xs px-1.5 py-0.5 bg-ink-700 rounded font-arabic ${PATH_CONFIG[subject.path]?.color || ''}`}>
-              {PATH_CONFIG[subject.path]?.label}
-            </span>
-          </button>
-        )}
+        {/* Progress bar */}
+        <div className="mt-4 h-1.5 bg-ink-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+
+        {/* Unit breakdown */}
+        <div className="mt-3 flex gap-1.5 flex-wrap">
+          {sortedUnits.map((unit) => {
+            const unitLessonIds = lessons
+              .filter((l) => l.unitId === unit.id)
+              .map((l) => l.id);
+            const u = computeProgress(unitLessonIds, sections, blocks, lessonsMap);
+            return (
+              <div
+                key={unit.id}
+                title={`${unit.title} — ${u.done}/${u.total}`}
+                className="flex gap-0.5"
+              >
+                {unitLessonIds.map((lid) => {
+                  const s = sections.filter((s) => s.lessonId === lid);
+                  const b = blocks.filter((b) => s.some((sec) => sec.id === b.sectionId));
+                  const lesson = lessonsMap[lid];
+                  const isDone = s.length > 0 && b.length > 0 && lesson?.summary?.trim().length > 0;
+                  const isStarted = s.length > 0;
+                  return (
+                    <div
+                      key={lid}
+                      className={`w-2 h-2 rounded-sm transition-colors
+                        ${isDone ? 'bg-emerald-500' : isStarted ? 'bg-amber-500' : 'bg-ink-700'}`}
+                    />
+                  );
+                })}
+                <div className="w-px bg-ink-700 mx-0.5" />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Empty — no subject */}
-      {!subject && (
-        <div className="text-center py-20 bg-ink-900 rounded-xl border border-ink-800">
-          <div className="text-5xl mb-4">📚</div>
-          <h2 className="text-lg font-medium text-ink-200 mb-2 font-arabic">ابدأ بتحديد المادة</h2>
-          <p className="text-ink-500 mb-6 text-sm font-arabic">حدد المادة الدراسية أولاً لبدء إضافة الوحدات والدروس</p>
-          <button
-            onClick={() => setShowSubjectModal(true)}
-            className="px-6 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 transition-colors font-semibold font-arabic"
-          >
-            تحديد المادة
-          </button>
-        </div>
-      )}
+      {/* ── Units ───────────────────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        {sortedUnits.map((unit) => (
+          <UnitCard key={unit.id} unit={unit} onEditLesson={onEditLesson} />
+        ))}
+      </div>
 
-      {/* Units */}
-      {subject && (
-        <>
-          <div className="space-y-3">
-            {sortedUnits.map((unit) => (
-              <UnitCard key={unit.id} unit={unit} onEditLesson={onEditLesson} />
-            ))}
-          </div>
-
-          <button
-            onClick={() => setShowUnitModal(true)}
-            className="w-full mt-4 py-4 border-2 border-dashed border-ink-800 rounded-xl text-ink-600 hover:border-sand-800 hover:text-sand-500 hover:bg-sand-900/10 transition-colors font-arabic"
-          >
-            + إضافة وحدة جديدة
-          </button>
-        </>
-      )}
-
-      {/* Subject Modal */}
-      <Modal
-        isOpen={showSubjectModal}
-        onClose={() => { if (subject) setShowSubjectModal(false); }}
-        title={subject ? 'تعديل المادة الدراسية' : 'تحديد المادة الدراسية'}
-      >
-        <div className="space-y-4">
-          <div>
-            <label className={labelClass}>اسم المادة بالعربية *</label>
-            <input
-              type="text"
-              value={subjectForm.nameAr}
-              onChange={(e) => setSubjectForm({ ...subjectForm, nameAr: e.target.value })}
-              className={inputClass}
-              placeholder="مثال: الجغرافيا"
-              autoFocus
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>اسم المادة بالإنجليزية (اختياري)</label>
-            <input
-              type="text"
-              value={subjectForm.nameEn}
-              onChange={(e) => setSubjectForm({ ...subjectForm, nameEn: e.target.value })}
-              className={`${inputClass} direction-ltr`}
-              placeholder="Geography"
-              dir="ltr"
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>المسار الدراسي</label>
-            <div className="flex gap-2">
-              {Object.entries(STUDENT_PATHS).map(([key]) => (
-                <button
-                  key={key}
-                  onClick={() => setSubjectForm({ ...subjectForm, path: key })}
-                  className={`flex-1 py-2 rounded-lg text-sm font-arabic transition-colors border
-                    ${subjectForm.path === key
-                      ? 'bg-sand-900/60 text-sand-300 border-sand-700'
-                      : 'bg-ink-800 text-ink-400 border-ink-700 hover:border-ink-600'
-                    }`}
-                >
-                  {PATH_CONFIG[key].label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>لون المادة (hex)</label>
-              <input
-                type="text"
-                value={subjectForm.colorHex}
-                onChange={(e) => setSubjectForm({ ...subjectForm, colorHex: e.target.value })}
-                className={inputClass}
-                placeholder="#4CAF50"
-                dir="ltr"
-              />
-            </div>
-            <div>
-              <label className={labelClass}>ترتيب العرض</label>
-              <input
-                type="number"
-                value={subjectForm.order}
-                onChange={(e) => setSubjectForm({ ...subjectForm, order: parseInt(e.target.value) || 0 })}
-                className={inputClass}
-                min="0"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 py-1">
-            <button
-              onClick={() => setSubjectForm({ ...subjectForm, isMajor: !subjectForm.isMajor })}
-              className={`w-10 h-6 rounded-full transition-colors ${subjectForm.isMajor ? 'bg-sand-600' : 'bg-ink-700'}`}
-            >
-              <span className={`block w-4 h-4 bg-white rounded-full mx-1 transition-transform ${subjectForm.isMajor ? 'translate-x-4' : ''}`} />
-            </button>
-            <span className="text-sm text-ink-400 font-arabic">مادة رئيسية (isMajor)</span>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={handleSaveSubject}
-              disabled={!subjectForm.nameAr.trim()}
-              className="flex-1 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-semibold font-arabic"
-            >
-              حفظ
-            </button>
-            {subject && (
-              <button
-                onClick={() => setShowSubjectModal(false)}
-                className="px-4 py-2 text-ink-400 hover:bg-ink-800 rounded-lg transition-colors font-arabic"
-              >
-                إلغاء
-              </button>
-            )}
-          </div>
-        </div>
-      </Modal>
-
-      {/* Add Unit Modal */}
-      <Modal isOpen={showUnitModal} onClose={() => setShowUnitModal(false)} title="إضافة وحدة جديدة">
-        <div className="space-y-4">
-          <div>
-            <label className={labelClass}>عنوان الوحدة</label>
-            <input
-              type="text"
-              value={unitTitle}
-              onChange={(e) => setUnitTitle(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddUnit()}
-              className={inputClass}
-              placeholder="مثال: الوحدة الأولى: الجغرافيا الطبيعية"
-              autoFocus
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleAddUnit}
-              disabled={!unitTitle.trim()}
-              className="flex-1 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-semibold font-arabic"
-            >
-              إضافة
-            </button>
-            <button
-              onClick={() => setShowUnitModal(false)}
-              className="px-4 py-2 text-ink-400 hover:bg-ink-800 rounded-lg transition-colors font-arabic"
-            >
-              إلغاء
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }
