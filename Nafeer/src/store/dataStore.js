@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { buildSubjectScaffold } from '@/shared/curriculum';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -57,13 +58,14 @@ export const useDataStore = create(
       addLesson: (lesson) =>
         set((state) => {
           const unitLessons = state.lessons.filter((l) => l.unitId === lesson.unitId);
+          const nextOrder   = unitLessons.reduce((m, l) => Math.max(m, l.order), 0) + 1;
           return {
             lessons: [
               ...state.lessons,
               {
                 ...lesson,
-                id:               lesson.id || generateId('lesson'),
-                order:            unitLessons.length + 1,
+                id:               lesson.id || `${lesson.unitId}_L${nextOrder}`,
+                order:            nextOrder,
                 estimatedMinutes: lesson.estimatedMinutes || 15,
               },
             ],
@@ -567,14 +569,28 @@ export const useDataStore = create(
       // Call this when a contributor opens the editor for the first time.
       // It scaffolds empty units + lessons from the curriculum template so
       // progress tracking is deterministic and IDs are consistent.
+      //
+      // Safe to call on every editor mount — it bails out if:
+      //   • subjectId is unknown in the catalog
+      //   • the store already has units for this exact subject
+      //   • the store has units for a *different* subject (wrong session — clears first)
       bootstrapFromSubject: (subjectId) => {
-        const { buildSubjectScaffold } = require('@/shared/curriculum');
         const scaffold = buildSubjectScaffold(subjectId);
-        if (!scaffold) return;
+        if (!scaffold) return false; // unknown subjectId
+
         const state = get();
-        // Only scaffold if the editor is truly empty (no units yet)
-        if (state.units.length > 0) return;
+
+        // Already bootstrapped for this subject — nothing to do
+        if (state.subject?.id === subjectId && state.units.length > 0) return false;
+
+        // Store has data for a different subject — this shouldn't normally happen
+        // (each contributor has one assigned subject) but guard against stale cache
+        if (state.units.length > 0 && state.subject?.id !== subjectId) {
+          get().resetAll();
+        }
+
         get().importData(scaffold);
+        return true;
       },
 
       // ─── Reset ───────────────────────────────────────────────────────────
