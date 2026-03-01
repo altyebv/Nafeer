@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import DeleteButton from '@/components/editor/DeleteButton';
 
 export default function ExportPage() {
   const {
@@ -7,19 +8,31 @@ export default function ExportPage() {
     subject, units, lessons, sections, concepts, feedItems, tags, questions, exams,
   } = useDataStore();
 
-  const [showPreview, setShowPreview] = useState(false);
-  const [importError, setImportError] = useState('');
+  const [showPreview,    setShowPreview]    = useState(false);
+  const [importError,    setImportError]    = useState('');
+  const [importSuccess,  setImportSuccess]  = useState(false);
+  const [exportError,    setExportError]    = useState('');
   const fileInputRef = useRef(null);
 
   const data = exportData();
 
   const handleExport = () => {
+    // Validation guard — don't export an empty or subjectless payload
+    if (!subject) {
+      setExportError('لا يمكن التصدير: لم يتم تحميل بيانات المادة بعد.');
+      return;
+    }
+    if (lessons.length === 0) {
+      setExportError('لا يمكن التصدير: لا توجد دروس في المادة.');
+      return;
+    }
+    setExportError('');
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `basheer-${subject?.id || 'data'}-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `basheer-${subject.id}-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -30,24 +43,20 @@ export default function ExportPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setImportError('');
+    setImportSuccess(false);
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target?.result);
         importData(json);
-        alert('تم استيراد البيانات بنجاح!');
+        setImportSuccess(true);
+        setTimeout(() => setImportSuccess(false), 4000);
       } catch {
         setImportError('خطأ في قراءة الملف. تأكد من أنه ملف JSON صحيح.');
       }
     };
     reader.readAsText(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleReset = () => {
-    if (confirm('هل أنت متأكد من حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه.')) {
-      resetAll();
-    }
   };
 
   const stats = [
@@ -134,6 +143,18 @@ export default function ExportPage() {
         </div>
       )}
 
+      {importSuccess && (
+        <div className="mb-4 p-3 bg-emerald-900/20 border border-emerald-800/50 rounded-lg text-emerald-400 text-sm font-arabic">
+          ✓ تم استيراد البيانات بنجاح
+        </div>
+      )}
+
+      {exportError && (
+        <div className="mb-4 p-3 bg-amber-900/20 border border-amber-800/50 rounded-lg text-amber-400 text-sm font-arabic">
+          ⚠ {exportError}
+        </div>
+      )}
+
       {/* Preview */}
       <div className="mb-6">
         <button
@@ -165,12 +186,12 @@ export default function ExportPage() {
         <p className="text-xs text-ink-600 mb-3 font-arabic">
           سيتم حذف جميع البيانات المحلية. لا يمكن التراجع عن هذا الإجراء.
         </p>
-        <button
-          onClick={handleReset}
+        <DeleteButton
+          onDelete={resetAll}
+          label="حذف جميع البيانات"
+          size="md"
           className="px-4 py-2 bg-red-900/30 text-red-400 border border-red-800/50 rounded-lg hover:bg-red-900/50 transition-colors text-sm font-arabic"
-        >
-          حذف جميع البيانات
-        </button>
+        />
       </div>
     </div>
   );
