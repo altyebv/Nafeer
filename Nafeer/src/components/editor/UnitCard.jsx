@@ -1,33 +1,36 @@
 import { useState } from 'react';
-import { useDataStore } from '@/store/dataStore';
-import LessonItem from '@/components/editor/LessonItem';
-import Modal      from '@/components/editor/Modal';
+import { useDataStore }    from '@/store/dataStore';
+import { computeProgress } from '@/lib/LessonStatus';
+import LessonItem          from '@/components/editor/LessonItem';
+import Modal               from '@/components/editor/Modal';
+
+const inputClass =
+  'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600 text-sm';
 
 export default function UnitCard({ unit, onEditLesson }) {
-  const { lessons, sections, updateUnit, deleteUnit, addLesson } = useDataStore();
+  const { lessons, sections, blocks, updateUnit, addLesson } = useDataStore();
 
-  const [isExpanded,    setIsExpanded]    = useState(true);
-  const [isEditing,     setIsEditing]     = useState(false);
-  const [editTitle,     setEditTitle]     = useState(unit.title);
-  const [showAddLesson, setShowAddLesson] = useState(false);
+  const [isExpanded,     setIsExpanded]     = useState(true);
+  const [isEditing,      setIsEditing]      = useState(false);
+  const [editTitle,      setEditTitle]      = useState(unit.title);
+  const [showAddLesson,  setShowAddLesson]  = useState(false);
   const [newLessonTitle, setNewLessonTitle] = useState('');
 
   const unitLessons = lessons
     .filter((l) => l.unitId === unit.id)
     .sort((a, b) => a.order - b.order);
 
-  const totalSections = unitLessons.reduce(
-    (acc, lesson) => acc + sections.filter((s) => s.lessonId === lesson.id).length,
-    0
+  const lessonsMap = Object.fromEntries(lessons.map((l) => [l.id, l]));
+  const { done, total, pct } = computeProgress(
+    unitLessons.map((l) => l.id),
+    sections,
+    blocks,
+    lessonsMap,
   );
 
   const handleSaveTitle = () => {
     if (editTitle.trim()) updateUnit(unit.id, { title: editTitle });
     setIsEditing(false);
-  };
-
-  const handleDelete = () => {
-    if (confirm('هل أنت متأكد من حذف هذه الوحدة وجميع دروسها؟')) deleteUnit(unit.id);
   };
 
   const handleAddLesson = () => {
@@ -39,12 +42,13 @@ export default function UnitCard({ unit, onEditLesson }) {
 
   return (
     <div className="bg-ink-900 rounded-xl border border-ink-800 overflow-hidden">
+
       {/* Unit Header */}
       <div
         className="flex items-center gap-3 px-4 py-3 bg-ink-800/40 cursor-pointer hover:bg-ink-800/70 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <span className={`text-ink-600 text-xs transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
+        <span className={`text-ink-600 text-xs transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
           ▶
         </span>
 
@@ -56,35 +60,45 @@ export default function UnitCard({ unit, onEditLesson }) {
             onBlur={handleSaveTitle}
             onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 px-2 py-1 bg-ink-900 border border-sand-600 rounded text-sand-200 focus:outline-none focus:ring-1 focus:ring-sand-500 font-arabic"
+            className="flex-1 px-2 py-1 bg-ink-900 border border-sand-600 rounded text-sand-200 focus:outline-none focus:ring-1 focus:ring-sand-500 font-arabic text-sm"
             autoFocus
           />
         ) : (
           <h3 className="flex-1 font-semibold text-ink-100 font-arabic text-sm">{unit.title}</h3>
         )}
 
-        <span className="text-xs text-ink-500 bg-ink-800 px-2 py-0.5 rounded font-arabic">
-          {unitLessons.length} دروس
-        </span>
-        <span className="text-xs text-ink-500 bg-ink-800 px-2 py-0.5 rounded font-arabic">
-          {totalSections} أقسام
+        {/* Progress pill */}
+        <span className={`text-xs font-mono px-2 py-0.5 rounded border
+          ${pct === 100
+            ? 'bg-emerald-900/40 text-emerald-400 border-emerald-700/40'
+            : pct > 0
+              ? 'bg-amber-900/30 text-amber-400 border-amber-700/30'
+              : 'bg-ink-800 text-ink-500 border-ink-700'
+          }`}
+        >
+          {done}/{total}
         </span>
 
         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
           <button
-            onClick={() => setIsEditing(true)}
+            onClick={() => { setEditTitle(unit.title); setIsEditing(true); }}
             className="p-1.5 text-ink-600 hover:text-sand-400 hover:bg-ink-700 rounded transition-colors"
+            title="تعديل عنوان الوحدة"
           >
             ✏
           </button>
-          <button
-            onClick={handleDelete}
-            className="p-1.5 text-ink-600 hover:text-red-500 hover:bg-red-900/20 rounded transition-colors"
-          >
-            ✕
-          </button>
         </div>
       </div>
+
+      {/* Unit progress bar */}
+      {pct > 0 && (
+        <div className="h-0.5 bg-ink-800">
+          <div
+            className={`h-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
 
       {/* Lessons List */}
       {isExpanded && (
@@ -95,13 +109,17 @@ export default function UnitCard({ unit, onEditLesson }) {
             </p>
           ) : (
             unitLessons.map((lesson) => (
-              <LessonItem key={lesson.id} lesson={lesson} onEdit={() => onEditLesson(lesson.id)} />
+              <LessonItem
+                key={lesson.id}
+                lesson={lesson}
+                onEdit={() => onEditLesson(lesson.id, unit.id)}
+              />
             ))
           )}
 
           <button
             onClick={() => setShowAddLesson(true)}
-            className="w-full py-2.5 border border-dashed border-ink-700 rounded-lg text-ink-500 hover:border-sand-700 hover:text-sand-500 hover:bg-sand-900/10 transition-colors text-sm font-arabic"
+            className="w-full py-2.5 border border-dashed border-ink-700 rounded-lg text-ink-500 hover:border-sand-700 hover:text-sand-400 hover:bg-sand-900/10 transition-colors text-sm font-arabic mt-1"
           >
             + إضافة درس
           </button>
@@ -109,31 +127,30 @@ export default function UnitCard({ unit, onEditLesson }) {
       )}
 
       {/* Add Lesson Modal */}
-      <Modal isOpen={showAddLesson} onClose={() => setShowAddLesson(false)} title="إضافة درس جديد">
+      <Modal isOpen={showAddLesson} onClose={() => { setShowAddLesson(false); setNewLessonTitle(''); }} title="إضافة درس جديد">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-ink-400 mb-1.5 font-arabic">عنوان الدرس</label>
+            <label className="block text-xs text-ink-500 mb-1.5 font-arabic">عنوان الدرس</label>
             <input
               type="text"
               value={newLessonTitle}
               onChange={(e) => setNewLessonTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddLesson()}
-              className="w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600"
+              className={inputClass}
               placeholder="مثال: الإحداثيات الجغرافية"
               autoFocus
             />
           </div>
-
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-3">
             <button
               onClick={handleAddLesson}
               disabled={!newLessonTitle.trim()}
-              className="flex-1 py-2 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-semibold text-sm font-arabic"
+              className="flex-1 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-semibold text-sm font-arabic"
             >
               إضافة
             </button>
             <button
-              onClick={() => setShowAddLesson(false)}
+              onClick={() => { setShowAddLesson(false); setNewLessonTitle(''); }}
               className="px-4 py-2 text-ink-400 hover:bg-ink-800 rounded-lg transition-colors text-sm font-arabic"
             >
               إلغاء
@@ -141,6 +158,7 @@ export default function UnitCard({ unit, onEditLesson }) {
           </div>
         </div>
       </Modal>
+
     </div>
   );
 }
