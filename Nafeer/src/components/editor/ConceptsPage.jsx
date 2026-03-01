@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDataStore }                        from '@/store/dataStore';
 import { CONCEPT_TYPES, CONCEPT_TYPE_CONFIG }  from '@/shared/constants';
 import Modal from '@/components/editor/Modal';
+import DeleteButton from '@/components/editor/DeleteButton';
 
 const inputClass =
   'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
@@ -53,9 +54,7 @@ export default function ConceptsPage() {
     setShowModal(true);
   };
 
-  const handleDelete = (id) => {
-    if (confirm('هل أنت متأكد من حذف هذا المفهوم؟')) deleteConcept(id);
-  };
+  const handleDelete = (id) => deleteConcept(id);
 
   const handleAddTag = () => {
     if (!newTagName.trim()) return;
@@ -201,12 +200,7 @@ export default function ConceptsPage() {
                   >
                     ✏
                   </button>
-                  <button
-                    onClick={() => handleDelete(concept.id)}
-                    className="p-1.5 text-ink-600 hover:text-red-500 hover:bg-red-900/20 rounded transition-colors"
-                  >
-                    ✕
-                  </button>
+                  <DeleteButton onDelete={() => handleDelete(concept.id)} />
                 </div>
               </div>
             );

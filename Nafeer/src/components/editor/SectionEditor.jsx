@@ -4,6 +4,7 @@ import { LEARNING_TYPES, LEARNING_TYPE_CONFIG } from '@/shared/constants';
 import BlockEditor    from '@/components/editor/BlockEditor';
 import AddBlockMenu   from '@/components/editor/AddBlockMenu';
 import ConceptLinker  from '@/components/editor/ConceptLinker';
+import DeleteButton   from '@/components/editor/DeleteButton';
 
 export default function SectionEditor({ section }) {
   const { blocks, concepts, updateSection, deleteSection, addBlock } = useDataStore();
@@ -20,9 +21,7 @@ export default function SectionEditor({ section }) {
 
   const learningTypeConfig = LEARNING_TYPE_CONFIG[section.learningType] || LEARNING_TYPE_CONFIG.UNDERSTANDING;
 
-  const handleDelete = () => {
-    if (confirm('هل أنت متأكد من حذف هذا القسم وجميع محتوياته؟')) deleteSection(section.id);
-  };
+  const handleDelete = () => deleteSection(section.id);
 
   const handleAddBlock = (type) => {
     addBlock({ sectionId: section.id, type, content: '', conceptRef: null });
@@ -76,12 +75,7 @@ export default function SectionEditor({ section }) {
           })}
         </div>
 
-        <button
-          onClick={handleDelete}
-          className="p-1 text-ink-700 hover:text-red-500 transition-colors"
-        >
-          ✕
-        </button>
+        <DeleteButton onDelete={handleDelete} />
       </div>
 
       {/* Section Body */}

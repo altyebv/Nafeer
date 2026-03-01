@@ -1,6 +1,7 @@
 import { useDataStore }         from '@/store/dataStore';
 import { BLOCK_TYPE_CONFIG }     from '@/shared/constants';
 import { LessonTableEditor }     from '@/components/editor/TableEditor';
+import DeleteButton              from '@/components/editor/DeleteButton';
 
 const inputClass =
   'w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600 resize-y';
@@ -11,9 +12,7 @@ export default function BlockEditor({ block }) {
   const config        = BLOCK_TYPE_CONFIG[block.type] || BLOCK_TYPE_CONFIG.TEXT;
   const linkedConcept = concepts.find((c) => c.id === block.conceptRef);
 
-  const handleDelete = () => {
-    if (confirm('هل أنت متأكد من حذف هذا العنصر؟')) deleteBlock(block.id);
-  };
+  const handleDelete = () => deleteBlock(block.id);
 
   const renderEditor = () => {
     switch (block.type) {
@@ -198,13 +197,7 @@ export default function BlockEditor({ block }) {
 
         <div className="flex-1" />
 
-        <button
-          onClick={handleDelete}
-          className="p-1 text-ink-700 hover:text-red-500 transition-colors"
-          title="حذف"
-        >
-          ✕
-        </button>
+        <DeleteButton onDelete={handleDelete} />
       </div>
 
       {/* Block Content */}
