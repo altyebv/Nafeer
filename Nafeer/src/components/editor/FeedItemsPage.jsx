@@ -5,6 +5,7 @@ import {
   INTERACTION_TYPES, INTERACTION_TYPE_CONFIG,
 } from '@/shared/constants';
 import Modal from '@/components/editor/Modal';
+import DeleteButton from '@/components/editor/DeleteButton';
 
 const inputClass =
   'w-full px-3 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
@@ -12,7 +13,7 @@ const inputClass =
 const labelClass = 'block text-xs text-ink-500 mb-1.5 font-arabic';
 
 export default function FeedItemsPage() {
-  const { feedItems, concepts, questions, addFeedItem, updateFeedItem, deleteFeedItem } = useDataStore();
+  const { feedItems, concepts, questions, units, lessons, addFeedItem, updateFeedItem, deleteFeedItem } = useDataStore();
 
   const [showModal,       setShowModal]       = useState(false);
   const [editingId,       setEditingId]       = useState(null);
@@ -20,6 +21,7 @@ export default function FeedItemsPage() {
   const [filterConcept,   setFilterConcept]   = useState('');
 
   const emptyForm = {
+    unitId: '', lessonId: '',
     conceptId: '', type: 'DEFINITION', contentAr: '', back: '',
     contentEn: '', imageUrl: '', interactionType: '',
     correctAnswer: '', options: '', explanation: '',
@@ -31,9 +33,11 @@ export default function FeedItemsPage() {
   const resetForm = () => { setForm(emptyForm); setEditingId(null); };
 
   const handleSubmit = () => {
-    if (!form.conceptId || !form.contentAr.trim()) return;
+    if (!form.lessonId || !form.contentAr.trim()) return;
     const data = {
       ...form,
+      unitId:          form.unitId          || null,
+      lessonId:        form.lessonId        || null,
       back:            form.back            || null,
       interactionType: form.interactionType || null,
       options:         form.options         || null,
@@ -49,6 +53,8 @@ export default function FeedItemsPage() {
 
   const handleEdit = (item) => {
     setForm({
+      unitId:          item.unitId           || '',
+      lessonId:        item.lessonId         || '',
       conceptId:       item.conceptId       || '',
       type:            item.type            || 'DEFINITION',
       contentAr:       item.contentAr       || '',
@@ -258,12 +264,7 @@ export default function FeedItemsPage() {
                         >
                           ✏
                         </button>
-                        <button
-                          onClick={() => { if (confirm('حذف؟')) deleteFeedItem(item.id); }}
-                          className="p-1.5 text-ink-600 hover:text-red-500 rounded transition-colors"
-                        >
-                          ✕
-                        </button>
+                        <DeleteButton onDelete={() => deleteFeedItem(item.id)} />
                       </div>
                     </div>
                   );
@@ -282,15 +283,48 @@ export default function FeedItemsPage() {
         size="lg"
       >
         <div className="space-y-4">
+          {/* Lesson assignment — required */}
+          <div className="grid grid-cols-2 gap-3 p-3 bg-ink-800/40 rounded-xl border border-ink-700/60">
+            <div>
+              <label className={`${labelClass} text-sand-600`}>الوحدة *</label>
+              <select
+                value={form.unitId}
+                onChange={(e) => setForm({ ...form, unitId: e.target.value, lessonId: '' })}
+                className={`${inputClass} cursor-pointer`}
+              >
+                <option value="">اختر الوحدة...</option>
+                {[...units].sort((a, b) => a.order - b.order).map((u) => (
+                  <option key={u.id} value={u.id}>{u.title}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={`${labelClass} text-sand-600`}>الدرس *</label>
+              <select
+                value={form.lessonId}
+                onChange={(e) => setForm({ ...form, lessonId: e.target.value })}
+                className={`${inputClass} cursor-pointer`}
+                disabled={!form.unitId}
+              >
+                <option value="">{form.unitId ? 'اختر الدرس...' : 'اختر الوحدة أولاً'}</option>
+                {lessons
+                  .filter((l) => l.unitId === form.unitId)
+                  .sort((a, b) => a.order - b.order)
+                  .map((l) => <option key={l.id} value={l.id}>{l.title}</option>)
+                }
+              </select>
+            </div>
+          </div>
+
           {/* Concept */}
           <div>
-            <label className={labelClass}>المفهوم المرتبط *</label>
+            <label className={labelClass}>المفهوم المرتبط</label>
             <select
               value={form.conceptId}
               onChange={(e) => setForm({ ...form, conceptId: e.target.value })}
               className={`${inputClass} cursor-pointer`}
             >
-              <option value="">اختر مفهوم...</option>
+              <option value="">بدون مفهوم محدد</option>
               {concepts.map((c) => <option key={c.id} value={c.id}>{c.titleAr}</option>)}
             </select>
           </div>
@@ -472,7 +506,7 @@ export default function FeedItemsPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleSubmit}
-              disabled={!form.conceptId || !form.contentAr.trim()}
+              disabled={!form.lessonId || !form.contentAr.trim()}
               className="flex-1 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 transition-colors font-semibold font-arabic"
             >
               {editingId ? 'حفظ التعديلات' : 'إضافة'}
