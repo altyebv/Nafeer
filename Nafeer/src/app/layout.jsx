@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'نفير — معاً نبني بشير',
+  title: 'نفير — معاً نبني ',
   description: 'منصة المساهمين لبناء بشير — تطبيق التعلم للطلاب السودانيين',
   openGraph: {
     title: 'نفير',
