@@ -1,0 +1,66 @@
+import { requireContributor, ok, err } from '@/lib/api/guard';
+import { updateConcept, updateConceptStatus, deleteConcept } from '@/lib/api/concepts';
+
+// PUT /api/content/concepts/[id]
+export async function PUT(request, { params }) {
+  try {
+    const user = await requireContributor();
+    const body = await request.json();
+    const { note, ...updates } = body;
+
+    const allowed = [
+      'type', 'titleAr', 'titleEn', 'definition', 'shortDefinition',
+      'formula', 'imageUrl', 'difficulty', 'extraData', 'tagIds',
+    ];
+    const safeUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([k]) => allowed.includes(k))
+    );
+
+    const concept = await updateConcept(params.id, safeUpdates, user.id, note || '');
+    if (!concept) return err('المفهوم غير موجود', 404);
+
+    return ok(concept);
+  } catch (e) {
+    if (e instanceof Response) return e;
+    console.error('[PUT /api/content/concepts/[id]]', e);
+    return err('خطأ في الخادم', 500);
+  }
+}
+
+// PATCH /api/content/concepts/[id]
+export async function PATCH(request, { params }) {
+  try {
+    const user = await requireContributor();
+    const { status, note } = await request.json();
+
+    if (!['draft', 'review', 'approved', 'archived'].includes(status)) {
+      return err('حالة غير صالحة');
+    }
+    if (status === 'approved' && user.role !== 'admin') {
+      return err('الاعتماد متاح للمشرفين فقط', 403);
+    }
+
+    const concept = await updateConceptStatus(params.id, status, user.id, note || '');
+    if (!concept) return err('المفهوم غير موجود', 404);
+
+    return ok(concept);
+  } catch (e) {
+    if (e instanceof Response) return e;
+    console.error('[PATCH /api/content/concepts/[id]]', e);
+    return err('خطأ في الخادم', 500);
+  }
+}
+
+// DELETE /api/content/concepts/[id]
+export async function DELETE(request, { params }) {
+  try {
+    await requireContributor();
+    await deleteConcept(params.id);
+    return ok({ deleted: params.id });
+  } catch (e) {
+    if (e instanceof Response) return e;
+    if (e.message?.includes('معتمد')) return err(e.message, 400);
+    console.error('[DELETE /api/content/concepts/[id]]', e);
+    return err('خطأ في الخادم', 500);
+  }
+}
