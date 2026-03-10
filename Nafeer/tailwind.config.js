@@ -8,9 +8,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        arabic: ['Noto Naskh Arabic', 'serif'],
+        arabic:  ['Noto Naskh Arabic', 'serif'],
         display: ['Playfair Display', 'serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        mono:    ['JetBrains Mono', 'monospace'],
       },
       colors: {
         sand: {
@@ -42,31 +42,34 @@ module.exports = {
           400: '#f97316',
           500: '#ea6c0a',
           600: '#c2540a',
-        }
+        },
+      },
+      screens: {
+        xs: '375px',
       },
       animation: {
-        'fade-up': 'fadeUp 0.7s ease forwards',
-        'fade-in': 'fadeIn 0.5s ease forwards',
-        'slide-right': 'slideRight 0.6s ease forwards',
-        'float': 'float 6s ease-in-out infinite',
+        'fade-up':    'fadeUp 0.7s ease forwards',
+        'fade-in':    'fadeIn 0.5s ease forwards',
+        'slide-right':'slideRight 0.6s ease forwards',
+        'float':      'float 6s ease-in-out infinite',
         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         fadeUp: {
-          '0%': { opacity: '0', transform: 'translateY(24px)' },
+          '0%':   { opacity: '0', transform: 'translateY(24px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         fadeIn: {
-          '0%': { opacity: '0' },
+          '0%':   { opacity: '0' },
           '100%': { opacity: '1' },
         },
         slideRight: {
-          '0%': { opacity: '0', transform: 'translateX(-20px)' },
+          '0%':   { opacity: '0', transform: 'translateX(-20px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
         float: {
           '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-12px)' },
+          '50%':      { transform: 'translateY(-12px)' },
         },
       },
     },
