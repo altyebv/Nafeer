@@ -1,5 +1,7 @@
 'use client';
+import { useState } from 'react';
 import { useDataStore }     from '@/store/dataStore';
+import { useAtlasSync }     from '@/hooks/useAtlasSync';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import SectionEditor          from '@/components/editor/SectionEditor';
 import LessonQuestionsPanel   from '@/components/editor/LessonQuestionsPanel';
@@ -11,8 +13,10 @@ const inputClass =
 // Default scaffold title pattern — "درس 1", "درس 2", etc.
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 
-export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOverview, onNavigateLesson, onOpenGlobal }) {
+export default function LessonEditorPage({ lessonId, unitId, subjectId, onBack, onBackToOverview, onNavigateLesson, onOpenGlobal }) {
   const { units, lessons, sections, blocks, questions, feedItems, updateLesson, addSection } = useDataStore();
+  const { syncAll, isSyncing } = useAtlasSync();
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const lesson         = lessons.find((l) => l.id === lessonId);
   const unit           = units.find((u) => u.id === unitId);
@@ -75,6 +79,17 @@ export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOve
     );
   }
 
+  const handleSave = async () => {
+    if (!subjectId) return;
+    try {
+      await syncAll(lessonId, subjectId);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch {
+      // syncAll surfaces error via SyncBar in EditorShell
+    }
+  };
+
   const handleAddSection = () => {
     // Use max existing order + 1 to stay correct after any deletions
     const maxOrder = lessonSections.reduce((m, s) => Math.max(m, s.order), 0);
@@ -102,7 +117,6 @@ export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOve
         <span className="text-ink-300 truncate max-w-[180px]">{lesson.title}</span>
       </nav>
 
-      {/* ── Lesson meta ─────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4 mb-5">
         <div>
           <p className="text-xs font-mono text-ink-600 mb-1">
@@ -112,9 +126,27 @@ export default function LessonEditorPage({ lessonId, unitId, onBack, onBackToOve
           </p>
           <h1 className="text-xl font-bold text-sand-100 font-arabic">{lesson.title}</h1>
         </div>
-        <span className={`shrink-0 text-xs font-arabic px-3 py-1 rounded-full border ${statusCfg.badge}`}>
-          {statusCfg.label}
-        </span>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className={`text-xs font-arabic px-3 py-1 rounded-full border ${statusCfg.badge}`}>
+            {statusCfg.label}
+          </span>
+          <button
+            onClick={handleSave}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-4 py-2 bg-sand-700 hover:bg-sand-600 disabled:opacity-50 disabled:cursor-not-allowed text-ink-950 text-sm font-semibold rounded-lg transition-colors font-arabic"
+          >
+            {isSyncing ? (
+              <>
+                <span className="inline-block w-3.5 h-3.5 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" />
+                حفظ…
+              </>
+            ) : saveSuccess ? (
+              <>✓ تم الحفظ</>
+            ) : (
+              <>↑ حفظ</>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── Completion checklist ─────────────────────────────────── */}
