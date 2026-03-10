@@ -14,11 +14,59 @@
 
   :root {
     --grain-opacity: 0.035;
+
+    /* Dark theme (default) */
+    --bg-primary:    #0e0c09;
+    --bg-secondary:  #1a1713;
+    --bg-card:       rgba(255,255,255,0.03);
+    --border-subtle: rgba(255,255,255,0.06);
+    --border-mid:    rgba(255,255,255,0.10);
+    --text-primary:  #fdf8f0;
+    --text-secondary:#b7b0a3;
+    --text-muted:    #7d7366;
+    --accent:        #d4891e;
+    --accent-hover:  #e4a83a;
+    --accent-dim:    rgba(212,137,30,0.08);
+    --mesh-1:        rgba(212,137,30,0.08);
+    --mesh-2:        rgba(146,79,18,0.06);
+    --watermark:     rgba(253,248,240,0.03);
+    --navbar-bg:     rgba(14,12,9,0.90);
+    --navbar-border: rgba(255,255,255,0.08);
+    --card-hover-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    --glow:          rgba(212,137,30,0.3);
+  }
+
+  :root[data-theme="light"] {
+    --grain-opacity: 0.018;
+
+    --bg-primary:    #fdf8f0;
+    --bg-secondary:  #f5efe0;
+    --bg-card:       rgba(255,255,255,0.75);
+    --border-subtle: rgba(146,79,18,0.12);
+    --border-mid:    rgba(146,79,18,0.20);
+    --text-primary:  #1a1208;
+    --text-secondary:#5a3e1b;
+    --text-muted:    #9a7848;
+    --accent:        #b86c14;
+    --accent-hover:  #924f12;
+    --accent-dim:    rgba(184,108,20,0.08);
+    --mesh-1:        rgba(212,137,30,0.12);
+    --mesh-2:        rgba(146,79,18,0.08);
+    --watermark:     rgba(26,18,8,0.04);
+    --navbar-bg:     rgba(253,248,240,0.92);
+    --navbar-border: rgba(146,79,18,0.15);
+    --card-hover-shadow: 0 20px 60px rgba(100,60,10,0.15);
+    --glow:          rgba(184,108,20,0.25);
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.4s ease, color 0.4s ease;
   }
 }
 
 @layer components {
-  /* Grain texture overlay */
   .grain::after {
     content: '';
     position: fixed;
@@ -29,28 +77,24 @@
     z-index: 9999;
   }
 
-  /* Glowing amber line */
   .ember-line {
-    background: linear-gradient(90deg, transparent, #d4891e, transparent);
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
     height: 1px;
   }
 
-  /* Arabic numeral display */
   .stat-number {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
 
-  /* Card hover lift */
   .card-hover {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
   .card-hover:hover {
     transform: translateY(-4px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--card-hover-shadow);
   }
 
-  /* Animated underline */
   .link-underline {
     position: relative;
   }
@@ -61,29 +105,25 @@
     right: 0;
     width: 0;
     height: 1px;
-    background: #d4891e;
+    background: var(--accent);
     transition: width 0.3s ease;
   }
   .link-underline:hover::after {
     width: 100%;
   }
 
-  /* Mesh gradient background */
   .mesh-bg {
     background:
-      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(212, 137, 30, 0.08) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(146, 79, 18, 0.06) 0%, transparent 60%),
-      radial-gradient(ellipse 100% 80% at 50% 50%, rgba(14, 12, 9, 0) 0%, rgba(14, 12, 9, 0.8) 100%);
+      radial-gradient(ellipse 80% 50% at 20% 20%, var(--mesh-1) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, var(--mesh-2) 0%, transparent 60%);
   }
 
-  /* Blur glass card */
   .glass {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-card);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
   }
 
-  /* Stagger animation utility */
   .stagger-1 { animation-delay: 0.1s; }
   .stagger-2 { animation-delay: 0.2s; }
   .stagger-3 { animation-delay: 0.3s; }
@@ -91,21 +131,35 @@
   .stagger-5 { animation-delay: 0.5s; }
   .stagger-6 { animation-delay: 0.6s; }
 
-  .opacity-0-init {
-    opacity: 0;
+  .opacity-0-init { opacity: 0; }
+
+  .mobile-menu-open {
+    animation: mobileMenuIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .writing-vertical {
-    writing-mode: vertical-rl;
-  }
-
-  /* RTL-aware margin/padding */
+  .text-balance { text-wrap: balance; }
+  .writing-vertical { writing-mode: vertical-rl; }
   .ms-auto { margin-inline-start: auto; }
   .me-auto { margin-inline-end: auto; }
 }
+
+.gsap-hero-badge,
+.gsap-hero-title,
+.gsap-hero-desc,
+.gsap-hero-cta,
+.gsap-hero-scroll,
+.gsap-orb,
+.feature-card {
+  will-change: transform, opacity;
+}
+
+@keyframes mobileMenuIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
