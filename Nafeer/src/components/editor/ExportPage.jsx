@@ -2,23 +2,22 @@ import { useState, useRef } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import DeleteButton from '@/components/editor/DeleteButton';
 
-export default function ExportPage() {
+export default function ExportPage({ subjectId }) {
   const {
-    exportData, importData, resetAll,
+    resetAll,
     subject, units, lessons, sections, concepts, feedItems, tags, questions, exams,
   } = useDataStore();
 
-  const [showPreview,    setShowPreview]    = useState(false);
-  const [importError,    setImportError]    = useState('');
-  const [importSuccess,  setImportSuccess]  = useState(false);
-  const [exportError,    setExportError]    = useState('');
+  const [showPreview,   setShowPreview]   = useState(false);
+  const [previewData,   setPreviewData]   = useState(null);
+  const [importError,   setImportError]   = useState('');
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [exportError,   setExportError]   = useState('');
+  const [isExporting,   setIsExporting]   = useState(false);
   const fileInputRef = useRef(null);
 
-  const data = exportData();
-
-  const handleExport = () => {
-    // Validation guard — don't export an empty or subjectless payload
-    if (!subject) {
+  const handleExport = async () => {
+    if (!subject && !subjectId) {
       setExportError('لا يمكن التصدير: لم يتم تحميل بيانات المادة بعد.');
       return;
     }
@@ -26,17 +25,34 @@ export default function ExportPage() {
       setExportError('لا يمكن التصدير: لا توجد دروس في المادة.');
       return;
     }
+
     setExportError('');
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `basheer-${subject.id}-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setIsExporting(true);
+
+    try {
+      const exportSubjectId = subjectId || subject?.id;
+      const res  = await fetch(`/api/export?subjectId=${exportSubjectId}`);
+      const json = await res.json();
+
+      if (!json.ok) throw new Error(json.error || 'خطأ في التصدير');
+
+      const data = json.data;
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `basheer-${exportSubjectId}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setPreviewData(data);
+    } catch (e) {
+      setExportError(e.message || 'فشل التصدير — تحقق من الاتصال بالخادم.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleImport = (e) => {
@@ -48,7 +64,7 @@ export default function ExportPage() {
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target?.result);
-        importData(json);
+        setPreviewData(json);
         setImportSuccess(true);
         setTimeout(() => setImportSuccess(false), 4000);
       } catch {
@@ -60,17 +76,24 @@ export default function ExportPage() {
   };
 
   const stats = [
-    { label: 'الوحدات',      val: units.length     },
-    { label: 'الدروس',       val: lessons.length   },
-    { label: 'الأقسام',      val: sections.length  },
-    { label: 'المفاهيم',     val: concepts.length  },
-    { label: 'الوسوم',       val: tags.length      },
-    { label: 'التغذية',      val: feedItems.length },
-    { label: 'الأسئلة',      val: questions.length },
-    { label: 'الامتحانات',   val: exams.length     },
+    { label: 'الوحدات',    val: units.length     },
+    { label: 'الدروس',     val: lessons.length   },
+    { label: 'الأقسام',    val: sections.length  },
+    { label: 'المفاهيم',   val: concepts.length  },
+    { label: 'الوسوم',     val: tags.length      },
+    { label: 'التغذية',    val: feedItems.length },
+    { label: 'الأسئلة',    val: questions.length },
+    { label: 'الامتحانات', val: exams.length     },
   ];
 
-  const jsonSize = Math.round(JSON.stringify(data).length / 1024);
+  const exportedStats = previewData ? [
+    { label: 'الوحدات',    val: previewData.units?.length     || 0 },
+    { label: 'الدروس',     val: previewData.units?.flatMap(u => u.lessons || []).length || 0 },
+    { label: 'المفاهيم',   val: previewData.concepts?.length  || 0 },
+    { label: 'التغذية',    val: previewData.feedItems?.length || 0 },
+    { label: 'الأسئلة',    val: previewData.questions?.length || 0 },
+    { label: 'الامتحانات', val: previewData.exams?.length     || 0 },
+  ] : null;
 
   return (
     <div>
@@ -114,13 +137,17 @@ export default function ExportPage() {
       <div className="grid grid-cols-2 gap-4 mb-6">
         <button
           onClick={handleExport}
-          disabled={!subject}
+          disabled={!subject || isExporting}
           className="flex items-center justify-center gap-3 py-4 bg-sand-700 text-ink-950 rounded-xl hover:bg-sand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          <span className="text-xl">📤</span>
+          {isExporting ? (
+            <span className="inline-block w-5 h-5 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <span className="text-xl">📤</span>
+          )}
           <div className="text-right">
-            <div className="font-semibold font-arabic">تصدير JSON</div>
-            <div className="text-xs opacity-70 font-arabic">~{jsonSize}KB</div>
+            <div className="font-semibold font-arabic">{isExporting ? 'جاري التصدير…' : 'تصدير JSON'}</div>
+            <div className="text-xs opacity-70 font-arabic">المحتوى المعتمد فقط</div>
           </div>
         </button>
 
@@ -130,8 +157,8 @@ export default function ExportPage() {
         >
           <span className="text-xl">📥</span>
           <div className="text-right">
-            <div className="font-semibold font-arabic">استيراد JSON</div>
-            <div className="text-xs text-ink-500 font-arabic">استرجاع بيانات محفوظة</div>
+            <div className="font-semibold font-arabic">معاينة JSON</div>
+            <div className="text-xs text-ink-500 font-arabic">فتح ملف محلي للمعاينة</div>
           </div>
         </button>
         <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
@@ -159,22 +186,23 @@ export default function ExportPage() {
       <div className="mb-6">
         <button
           onClick={() => setShowPreview(!showPreview)}
-          className="flex items-center gap-2 text-ink-500 hover:text-ink-300 transition-colors text-sm font-arabic"
+          disabled={!previewData}
+          className="flex items-center gap-2 text-ink-500 hover:text-ink-300 transition-colors text-sm font-arabic disabled:opacity-40"
         >
           <span className={`text-xs transition-transform ${showPreview ? 'rotate-90' : ''}`}>▶</span>
           {showPreview ? 'إخفاء' : 'معاينة'} JSON
         </button>
 
-        {showPreview && (
+        {showPreview && previewData && (
           <div className="mt-3 relative">
             <button
-              onClick={() => navigator.clipboard.writeText(JSON.stringify(data, null, 2))}
+              onClick={() => navigator.clipboard.writeText(JSON.stringify(previewData, null, 2))}
               className="absolute top-3 left-3 px-2 py-1 bg-ink-800 text-ink-400 text-xs rounded hover:bg-ink-700 transition-colors font-arabic z-10"
             >
               نسخ
             </button>
             <pre className="bg-ink-950 border border-ink-800 rounded-xl p-4 pt-10 text-xs text-ink-400 overflow-auto max-h-80 font-mono" dir="ltr">
-              {JSON.stringify(data, null, 2)}
+              {JSON.stringify(previewData, null, 2)}
             </pre>
           </div>
         )}
