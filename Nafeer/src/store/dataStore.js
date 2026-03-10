@@ -1,3 +1,22 @@
+/**
+ * DEPRECATED — use individual stores from @/store/* instead.
+ * This file exists for backward compatibility with existing editor components.
+ * It re-exports useDataStore as a composite hook that merges all domain stores.
+ * Remove once all components are migrated to the new stores.
+ *
+ * @see /src/store/subjectStore.js
+ * @see /src/store/contentStore.js
+ * @see /src/store/conceptStore.js
+ * @see /src/store/feedStore.js
+ * @see /src/store/quizStore.js
+ */
+
+export { useDataStore } from './index';
+
+// ── Legacy implementation below — KEPT FOR REFERENCE, NOT USED ───────────────
+// The actual logic has moved to the individual stores above.
+// Delete this file once Phase 2 Atlas sync migration is complete.
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { buildSubjectScaffold } from '@/shared/curriculum';
