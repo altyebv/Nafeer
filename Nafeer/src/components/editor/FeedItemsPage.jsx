@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useAtlasSync } from '@/hooks/useAtlasSync';
 import {
   FEED_ITEM_TYPES, FEED_ITEM_TYPE_CONFIG,
   INTERACTION_TYPES, INTERACTION_TYPE_CONFIG,
@@ -12,8 +13,9 @@ const inputClass =
 
 const labelClass = 'block text-xs text-ink-500 mb-1.5 font-arabic';
 
-export default function FeedItemsPage() {
+export default function FeedItemsPage({ subjectId }) {
   const { feedItems, concepts, questions, units, lessons, addFeedItem, updateFeedItem, deleteFeedItem } = useDataStore();
+  const { syncFeedItem } = useAtlasSync();
 
   const [showModal,       setShowModal]       = useState(false);
   const [editingId,       setEditingId]       = useState(null);
@@ -45,8 +47,16 @@ export default function FeedItemsPage() {
       explanation:     form.explanation     || null,
       questionId:      form.questionId      || null,
     };
-    if (editingId) updateFeedItem(editingId, data);
-    else           addFeedItem(data);
+
+    if (editingId) {
+      updateFeedItem(editingId, data);
+      if (subjectId) syncFeedItem(editingId, subjectId).catch(() => {});
+    } else {
+      // Pre-generate ID so we can sync immediately after store update
+      const newId = `feed_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      addFeedItem({ ...data, id: newId });
+      if (subjectId) syncFeedItem(newId, subjectId).catch(() => {});
+    }
     resetForm();
     setShowModal(false);
   };

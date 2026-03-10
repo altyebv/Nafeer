@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useDataStore }                        from '@/store/dataStore';
+import { useDataStore }  from '@/store/dataStore';
+import { useAtlasSync }  from '@/hooks/useAtlasSync';
 import { CONCEPT_TYPES, CONCEPT_TYPE_CONFIG }  from '@/shared/constants';
 import Modal from '@/components/editor/Modal';
 import DeleteButton from '@/components/editor/DeleteButton';
@@ -9,8 +10,9 @@ const inputClass =
 
 const labelClass = 'block text-xs text-ink-500 mb-1.5 font-arabic';
 
-export default function ConceptsPage() {
+export default function ConceptsPage({ subjectId }) {
   const { concepts, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore();
+  const { syncConcept } = useAtlasSync();
 
   const [showModal,   setShowModal]   = useState(false);
   const [editingId,   setEditingId]   = useState(null);
@@ -33,8 +35,14 @@ export default function ConceptsPage() {
 
   const handleSubmit = () => {
     if (!form.titleAr.trim()) return;
-    if (editingId) updateConcept(editingId, form);
-    else addConcept(form);
+    if (editingId) {
+      updateConcept(editingId, form);
+      if (subjectId) syncConcept(editingId, subjectId).catch(() => {});
+    } else {
+      const newId = `concept_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      addConcept({ ...form, id: newId });
+      if (subjectId) syncConcept(newId, subjectId).catch(() => {});
+    }
     resetForm();
     setShowModal(false);
   };

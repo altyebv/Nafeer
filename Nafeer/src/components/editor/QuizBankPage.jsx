@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useAtlasSync } from '@/hooks/useAtlasSync';
 import {
   QUESTION_TYPES, QUESTION_TYPE_CONFIG,
   QUESTION_SOURCES, QUESTION_SOURCE_CONFIG,
@@ -468,13 +469,14 @@ function QuestionForm({ form, setForm, concepts, units, lessons }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function QuizBankPage() {
+export default function QuizBankPage({ subjectId }) {
   const {
     questions, exams, concepts, units, lessons,
     addQuestion, updateQuestion, deleteQuestion,
     addExam, updateExam, deleteExam,
     addQuestionToExam, removeQuestionFromExam,
   } = useDataStore();
+  const { syncQuestion } = useAtlasSync();
 
   const [tab,            setTab]            = useState('questions'); // 'questions' | 'exams'
   const [showQModal,     setShowQModal]     = useState(false);
@@ -534,8 +536,14 @@ export default function QuizBankPage() {
 
   const handleSaveQuestion = () => {
     if (!qForm.textAr.trim() || !qForm.lessonId) return;
-    if (editingQId) updateQuestion(editingQId, qForm);
-    else             addQuestion(qForm);
+    if (editingQId) {
+      updateQuestion(editingQId, qForm);
+      if (subjectId) syncQuestion(editingQId, subjectId).catch(() => {});
+    } else {
+      const newId = `q_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      addQuestion({ ...qForm, id: newId });
+      if (subjectId) syncQuestion(newId, subjectId).catch(() => {});
+    }
     setShowQModal(false);
   };
 
