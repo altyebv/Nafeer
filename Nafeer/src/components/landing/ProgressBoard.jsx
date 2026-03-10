@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SUBJECTS_CATALOG, TRACK_CONFIG, getTotalLessons } from '@/shared/curriculum';
@@ -22,17 +22,40 @@ const colorMap = {
   slate:   { bar: '#64748b', text: '#94a3b8', badge: { bg: 'rgba(100,116,139,0.15)', border: 'rgba(100,116,139,0.3)', color: '#94a3b8' } },
 };
 
-const LIVE_PROGRESS = {};
-
 export default function ProgressBoard() {
-  const sectionRef = useRef(null);
+  const sectionRef  = useRef(null);
+  const [liveData, setLiveData] = useState({});  // subjectId → { approvedLessons, totalLessons }
 
-  const subjects = SUBJECTS_CATALOG.map((s) => ({
-    ...s,
-    progress:     LIVE_PROGRESS[s.id]?.progress    ?? 0,
-    contributor:  LIVE_PROGRESS[s.id]?.contributor ?? null,
-    totalLessons: getTotalLessons(s.id),
-  }));
+  // ── Fetch live progress from Atlas ───────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/coverage')
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.ok) return;
+        const map = {};
+        (json.data || []).forEach((s) => {
+          map[s.subjectId] = {
+            approvedLessons: s.approvedLessons,
+            totalLessons:    s.totalLessons,
+          };
+        });
+        setLiveData(map);
+      })
+      .catch(() => {}); // fail silently — falls back to 0% progress display
+  }, []);
+
+  const subjects = SUBJECTS_CATALOG.map((s) => {
+    const live         = liveData[s.id];
+    const targetLessons = getTotalLessons(s.id);
+    const approved     = live?.approvedLessons || 0;
+    const progress     = targetLessons > 0 ? Math.round((approved / targetLessons) * 100) : 0;
+    return {
+      ...s,
+      progress,
+      totalLessons:  targetLessons,
+      contributor:   null,  // Phase 3: contributor names from Atlas
+    };
+  });
 
   const totalSubjects     = subjects.length;
   const mappedSubjects    = subjects.filter((s) => s.progress > 0).length;
