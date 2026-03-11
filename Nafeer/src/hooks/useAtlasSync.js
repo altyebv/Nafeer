@@ -23,7 +23,7 @@ export function useAtlasSync() {
   const { sections, blocks }                          = useContentStore();
   const { concepts, updateConcept }                   = useConceptStore();
   const { feedItems, updateFeedItem }                 = useFeedStore();
-  const { questions, updateQuestion }                 = useQuizStore();
+  const { questions, exams, updateQuestion }              = useQuizStore();
   const { isSyncing, syncError, lastSynced }          = useEditorStore();
 
   // ── Internal helpers ────────────────────────────────────────────────────────
@@ -410,6 +410,49 @@ export function useAtlasSync() {
     }
   }, [questions, apiFetch, setLoading, setDone, setError, updateQuestion]);
 
+  // ── Sync exam ────────────────────────────────────────────────────────────
+  // Upsert pattern: PUT first, create on 404.
+  // Note: exams are lightweight (no big status flow), so no atlasStatus tracking.
+  //
+  const syncExam = useCallback(async (examId, subjectId) => {
+    const exam = exams.find((e) => e.id === examId);
+    if (!exam) return;
+    try {
+      const payload = {
+        titleAr:            exam.titleAr,
+        titleEn:            exam.titleEn           || null,
+        source:             exam.source            || 'MINISTRY',
+        year:               exam.year              || null,
+        schoolName:         exam.schoolName        || null,
+        duration:           exam.duration          || null,
+        totalPoints:        exam.totalPoints       || null,
+        description:        exam.description       || null,
+        examType:           exam.examType          || null,
+        questionContentIds: exam.questionIds       || [],
+        sectionsJson:       exam.sectionsJson      || null,
+      };
+
+      const res  = await fetch(`/api/content/exams/${examId}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      });
+      const json = await res.json();
+
+      if (!json.ok && res.status === 404) {
+        await apiFetch('/api/content/exams', {
+          method: 'POST',
+          body:   JSON.stringify({ ...payload, contentId: examId, subjectId }),
+        });
+      } else if (!json.ok) {
+        throw new Error(json.error || 'خطأ غير معروف');
+      }
+      // Exams don't surface sync errors to SyncBar — fire-and-forget from callers
+    } catch (e) {
+      console.warn(`[syncExam] ${examId} failed:`, e.message);
+    }
+  }, [exams, apiFetch]);
+
   // ── Submit for review ─────────────────────────────────────────────────────
   // Moves a content item from 'draft' → 'review'.
   // Updates local atlasStatus optimistically so the UI reflects instantly.
@@ -470,6 +513,7 @@ export function useAtlasSync() {
     syncConcept,
     syncFeedItem,
     syncQuestion,
+    syncExam,
     submitForReview,
 
     // Delete helpers
@@ -478,5 +522,6 @@ export function useAtlasSync() {
     deleteConcept:  (id) => deleteRemote(`/api/content/concepts/${id}`),
     deleteFeedItem: (id) => deleteRemote(`/api/content/feed-items/${id}`),
     deleteQuestion: (id) => deleteRemote(`/api/content/questions/${id}`),
+    deleteExam:     (id) => deleteRemote(`/api/content/exams/${id}`),
   };
 }
