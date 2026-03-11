@@ -6,6 +6,7 @@ import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import SectionEditor          from '@/components/editor/SectionEditor';
 import LessonQuestionsPanel   from '@/components/editor/LessonQuestionsPanel';
 import LessonFeedPanel        from '@/components/editor/LessonFeedPanel';
+import StatusBadge            from '@/components/editor/StatusBadge';
 
 const inputClass =
   'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600 text-sm';
@@ -15,8 +16,9 @@ const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 
 export default function LessonEditorPage({ lessonId, unitId, subjectId, onBack, onBackToOverview, onNavigateLesson, onOpenGlobal }) {
   const { units, lessons, sections, blocks, questions, feedItems, updateLesson, addSection } = useDataStore();
-  const { syncAll, isSyncing } = useAtlasSync();
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { syncAll, submitForReview, isSyncing } = useAtlasSync();
+  const [saveSuccess,   setSaveSuccess]   = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
 
   const lesson         = lessons.find((l) => l.id === lessonId);
   const unit           = units.find((u) => u.id === unitId);
@@ -90,6 +92,19 @@ export default function LessonEditorPage({ lessonId, unitId, subjectId, onBack, 
     }
   };
 
+  const handleSubmitForReview = async () => {
+    if (!subjectId) return;
+    try {
+      // Save first, then submit
+      await syncAll(lessonId, subjectId);
+      await submitForReview(lessonId, 'lesson');
+      setReviewSuccess(true);
+      setTimeout(() => setReviewSuccess(false), 4000);
+    } catch {
+      // errors surfaced via SyncBar
+    }
+  };
+
   const handleAddSection = () => {
     // Use max existing order + 1 to stay correct after any deletions
     const maxOrder = lessonSections.reduce((m, s) => Math.max(m, s.order), 0);
@@ -124,12 +139,26 @@ export default function LessonEditorPage({ lessonId, unitId, subjectId, onBack, 
             <span className="text-ink-700 mx-1.5">·</span>
             <span className="text-ink-600">{globalIndex + 1} / {allLessons.length} إجمالاً</span>
           </p>
-          <h1 className="text-xl font-bold text-sand-100 font-arabic">{lesson.title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-sand-100 font-arabic">{lesson.title}</h1>
+            {lesson.atlasStatus && <StatusBadge status={lesson.atlasStatus} />}
+          </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <span className={`text-xs font-arabic px-3 py-1 rounded-full border ${statusCfg.badge}`}>
             {statusCfg.label}
           </span>
+          {/* Submit for review — only when status is draft (or null = unknown) */}
+          {(!lesson.atlasStatus || lesson.atlasStatus === 'draft') && (
+            <button
+              onClick={handleSubmitForReview}
+              disabled={isSyncing}
+              title="حفظ ثم إرسال للمراجعة"
+              className="flex items-center gap-1.5 px-3 py-2 bg-amber-900/40 hover:bg-amber-800/50 disabled:opacity-50 disabled:cursor-not-allowed text-amber-400 text-xs font-semibold rounded-lg transition-colors border border-amber-700/50 font-arabic"
+            >
+              {reviewSuccess ? '✓ أُرسل' : '⇪ للمراجعة'}
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={isSyncing}
@@ -148,6 +177,17 @@ export default function LessonEditorPage({ lessonId, unitId, subjectId, onBack, 
           </button>
         </div>
       </div>
+
+      {/* ── Approved content warning ──────────────────────────────── */}
+      {lesson.atlasStatus === 'approved' && (
+        <div className="mb-5 px-4 py-3 bg-amber-900/20 border border-amber-700/40 rounded-xl flex items-start gap-3">
+          <span className="text-amber-500 text-sm mt-0.5 shrink-0">⚠</span>
+          <p className="text-xs text-amber-400 font-arabic leading-relaxed">
+            هذا الدرس <strong>معتمد</strong>. أي تعديل سيُعيده تلقائياً إلى حالة المسودة ويتطلب مراجعة جديدة.
+          </p>
+        </div>
+      )}
+
 
       {/* ── Completion checklist ─────────────────────────────────── */}
       <div className="bg-ink-900 rounded-xl border border-ink-800 p-4 mb-6">
