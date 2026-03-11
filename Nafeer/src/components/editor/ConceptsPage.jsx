@@ -4,6 +4,7 @@ import { useAtlasSync }  from '@/hooks/useAtlasSync';
 import { CONCEPT_TYPES, CONCEPT_TYPE_CONFIG }  from '@/shared/constants';
 import Modal from '@/components/editor/Modal';
 import DeleteButton from '@/components/editor/DeleteButton';
+import StatusBadge from '@/components/editor/StatusBadge';
 
 const inputClass =
   'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
@@ -12,7 +13,7 @@ const labelClass = 'block text-xs text-ink-500 mb-1.5 font-arabic';
 
 export default function ConceptsPage({ subjectId }) {
   const { concepts, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore();
-  const { syncConcept } = useAtlasSync();
+  const { syncConcept, submitForReview } = useAtlasSync();
 
   const [showModal,   setShowModal]   = useState(false);
   const [editingId,   setEditingId]   = useState(null);
@@ -177,7 +178,7 @@ export default function ConceptsPage({ subjectId }) {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-medium text-ink-100 text-sm font-arabic">{concept.titleAr}</span>
                     {concept.titleEn && (
                       <span className="text-xs text-ink-600" dir="ltr">{concept.titleEn}</span>
@@ -188,6 +189,7 @@ export default function ConceptsPage({ subjectId }) {
                     <span className="text-xs text-ink-700 font-mono">
                       {'★'.repeat(concept.difficulty || 1)}
                     </span>
+                    {concept.atlasStatus && <StatusBadge status={concept.atlasStatus} />}
                   </div>
                   <p className="text-xs text-ink-500 line-clamp-2 font-arabic">{concept.definition}</p>
                   {conceptTags.length > 0 && (
@@ -202,6 +204,15 @@ export default function ConceptsPage({ subjectId }) {
                 </div>
 
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {(!concept.atlasStatus || concept.atlasStatus === 'draft') && subjectId && (
+                    <button
+                      onClick={() => submitForReview(concept.id, 'concept').catch(() => {})}
+                      className="px-2 py-1 text-[10px] bg-amber-900/30 text-amber-500 border border-amber-700/40 rounded transition-colors hover:bg-amber-800/40 font-arabic"
+                      title="إرسال للمراجعة"
+                    >
+                      ⇪
+                    </button>
+                  )}
                   <button
                     onClick={() => handleEdit(concept)}
                     className="p-1.5 text-ink-600 hover:text-sand-400 hover:bg-ink-800 rounded transition-colors"
