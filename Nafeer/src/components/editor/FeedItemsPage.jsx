@@ -7,6 +7,7 @@ import {
 } from '@/shared/constants';
 import Modal from '@/components/editor/Modal';
 import DeleteButton from '@/components/editor/DeleteButton';
+import StatusBadge from '@/components/editor/StatusBadge';
 
 const inputClass =
   'w-full px-3 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
@@ -15,7 +16,7 @@ const labelClass = 'block text-xs text-ink-500 mb-1.5 font-arabic';
 
 export default function FeedItemsPage({ subjectId }) {
   const { feedItems, concepts, questions, units, lessons, addFeedItem, updateFeedItem, deleteFeedItem } = useDataStore();
-  const { syncFeedItem } = useAtlasSync();
+  const { syncFeedItem, submitForReview } = useAtlasSync();
 
   const [showModal,       setShowModal]       = useState(false);
   const [editingId,       setEditingId]       = useState(null);
@@ -257,6 +258,7 @@ export default function FeedItemsPage({ subjectId }) {
                             </span>
                           )}
                           <span className="text-xs text-ink-700 font-mono">p:{item.priority}</span>
+                          {item.atlasStatus && <StatusBadge status={item.atlasStatus} />}
                         </div>
                         <p className="text-sm text-ink-300 line-clamp-2 font-arabic">{item.contentAr}</p>
                         {item.back && (
@@ -268,6 +270,15 @@ export default function FeedItemsPage({ subjectId }) {
                       </div>
 
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {(!item.atlasStatus || item.atlasStatus === 'draft') && subjectId && (
+                          <button
+                            onClick={() => submitForReview(item.id, 'feedItem').catch(() => {})}
+                            className="p-1.5 text-amber-600 hover:text-amber-400 rounded transition-colors"
+                            title="إرسال للمراجعة"
+                          >
+                            ⇪
+                          </button>
+                        )}
                         <button
                           onClick={() => handleEdit(item)}
                           className="p-1.5 text-ink-600 hover:text-sand-400 rounded transition-colors"
