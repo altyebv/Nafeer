@@ -12,6 +12,7 @@ import {
 import Modal            from '@/components/editor/Modal';
 import { QuizTableEditor } from '@/components/editor/TableEditor';
 import DeleteButton     from '@/components/editor/DeleteButton';
+import StatusBadge      from '@/components/editor/StatusBadge';
 
 const inputClass =
   'w-full px-3 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
@@ -476,7 +477,7 @@ export default function QuizBankPage({ subjectId }) {
     addExam, updateExam, deleteExam,
     addQuestionToExam, removeQuestionFromExam,
   } = useDataStore();
-  const { syncQuestion } = useAtlasSync();
+  const { syncQuestion, submitForReview } = useAtlasSync();
 
   const [tab,            setTab]            = useState('questions'); // 'questions' | 'exams'
   const [showQModal,     setShowQModal]     = useState(false);
@@ -718,11 +719,21 @@ export default function QuizBankPage({ subjectId }) {
                             تغذية
                           </span>
                         )}
+                        {q.atlasStatus && <StatusBadge status={q.atlasStatus} />}
                       </div>
                       <p className="text-sm text-ink-200 line-clamp-2 font-arabic">{q.textAr}</p>
                     </div>
 
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {(!q.atlasStatus || q.atlasStatus === 'draft') && subjectId && (
+                        <button
+                          onClick={() => submitForReview(q.id, 'question').catch(() => {})}
+                          className="p-1.5 text-amber-600 hover:text-amber-400 rounded transition-colors"
+                          title="إرسال للمراجعة"
+                        >
+                          ⇪
+                        </button>
+                      )}
                       <button
                         onClick={() => openEditQuestion(q)}
                         className="p-1.5 text-ink-600 hover:text-sand-400 rounded transition-colors"
