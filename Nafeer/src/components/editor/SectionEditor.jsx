@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { LEARNING_TYPES, LEARNING_TYPE_CONFIG } from '@/shared/constants';
 import BlockEditor    from '@/components/editor/BlockEditor';
 import AddBlockMenu   from '@/components/editor/AddBlockMenu';
@@ -8,6 +9,7 @@ import DeleteButton   from '@/components/editor/DeleteButton';
 
 export default function SectionEditor({ section }) {
   const { blocks, concepts, updateSection, deleteSection, addBlock } = useDataStore();
+  const { deleteSection: atlasDeleteSection } = useAtlasSync();
 
   const [isEditingTitle,   setIsEditingTitle]   = useState(false);
   const [showAddBlock,     setShowAddBlock]      = useState(false);
@@ -21,7 +23,10 @@ export default function SectionEditor({ section }) {
 
   const learningTypeConfig = LEARNING_TYPE_CONFIG[section.learningType] || LEARNING_TYPE_CONFIG.UNDERSTANDING;
 
-  const handleDelete = () => deleteSection(section.id);
+  const handleDelete = () => {
+    deleteSection(section.id);           // removes section + its blocks from store
+    atlasDeleteSection(section.id);      // fire-and-forget; server cascades blocks too
+  };
 
   const handleAddBlock = (type) => {
     addBlock({ sectionId: section.id, type, content: '', conceptRef: null });
