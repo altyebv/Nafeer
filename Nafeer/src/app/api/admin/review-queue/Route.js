@@ -1,5 +1,5 @@
 import { verifyAdminToken } from '@/lib/adminAuth';
-import { getReviewQueue, approveOrReject } from '@/lib/api/ReviewQueue';
+import { getReviewQueue, approveOrReject } from '@/lib/api/reviewQueue';
 
 const ok  = (data, extra = {}) => Response.json({ ok: true,  ...extra, data });
 const err = (msg, status = 400) => Response.json({ ok: false, error: msg }, { status });
