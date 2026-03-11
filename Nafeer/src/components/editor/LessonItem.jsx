@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDataStore }  from '@/store/dataStore';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
+import StatusBadge from '@/components/editor/StatusBadge';
 
 export default function LessonItem({ lesson, onEdit }) {
   const { sections, blocks, updateLesson } = useDataStore();
@@ -41,6 +42,8 @@ export default function LessonItem({ lesson, onEdit }) {
       ) : (
         <span className="flex-1 text-ink-200 text-sm font-arabic">{lesson.title}</span>
       )}
+
+      {lesson.atlasStatus && <StatusBadge status={lesson.atlasStatus} />}
 
       <span className="text-xs text-ink-600 font-mono whitespace-nowrap shrink-0">
         {lessonSections.length}ق · {lessonBlocks.length}ع · {lesson.estimatedMinutes}د
