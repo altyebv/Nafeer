@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { versioningFields } from './Versioning';
+import { versioningFields } from './versioning';
 import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Unit ─────────────────────────────────────────────────────────────────────
