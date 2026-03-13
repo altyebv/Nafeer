@@ -146,13 +146,25 @@
 }
 
 .gsap-hero-badge,
+.gsap-hero-eyebrow,
 .gsap-hero-title,
+.gsap-hero-subtitle,
 .gsap-hero-desc,
 .gsap-hero-cta,
+.gsap-hero-stat,
 .gsap-hero-scroll,
-.gsap-orb,
-.feature-card {
+.gsap-orb-1,
+.gsap-orb-2,
+.gsap-orb-3,
+.feature-card,
+.nafeer-step,
+.nafeer-perk,
+.subject-card {
   will-change: transform, opacity;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 @keyframes mobileMenuIn {
