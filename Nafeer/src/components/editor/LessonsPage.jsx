@@ -1,11 +1,13 @@
 import { useDataStore }    from '@/store/dataStore';
 import { SUBJECTS_BY_ID, TRACK_CONFIG } from '@/shared/curriculum';
 import { computeProgress }  from '@/lib/LessonStatus';
+import { useCoverageData }  from '@/hooks/useCoverageData';
 import UnitCard              from '@/components/editor/UnitCard';
 
 export default function LessonsPage({ onEditLesson }) {
   const { subject, units, lessons, sections, blocks } = useDataStore();
 
+  const { coverageMap, unitMap } = useCoverageData(subject?.id);
   const sortedUnits  = [...units].sort((a, b) => a.order - b.order);
   const catalogEntry = subject ? SUBJECTS_BY_ID[subject.id] : null;
   const trackCfg     = catalogEntry ? TRACK_CONFIG[catalogEntry.track] : null;
@@ -119,7 +121,13 @@ export default function LessonsPage({ onEditLesson }) {
       {/* ── Units ───────────────────────────────────────────────────────────── */}
       <div className="space-y-3">
         {sortedUnits.map((unit) => (
-          <UnitCard key={unit.id} unit={unit} onEditLesson={onEditLesson} />
+          <UnitCard
+            key={unit.id}
+            unit={unit}
+            onEditLesson={onEditLesson}
+            coverageMap={coverageMap}
+            unitCoverage={unitMap[unit.contentId]}
+          />
         ))}
       </div>
 
