@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useDataStore }  from '@/store/dataStore';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import StatusBadge from '@/components/editor/StatusBadge';
+import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
 
-export default function LessonItem({ lesson, onEdit }) {
+export default function LessonItem({ lesson, onEdit, coverageLevel }) {
   const { sections, blocks, updateLesson } = useDataStore();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -25,8 +26,14 @@ export default function LessonItem({ lesson, onEdit }) {
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 bg-ink-800/60 rounded-lg hover:bg-ink-800 transition-colors group border border-transparent hover:border-ink-700">
 
-      {/* Status dot */}
-      <div className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
+      {/* Status dot + coverage dot */}
+      <div className="flex flex-col gap-1 shrink-0 items-center">
+        <div className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
+        {coverageLevel && (() => {
+          const cvCfg = COVERAGE_LEVEL_CONFIG[coverageLevel] ?? COVERAGE_LEVEL_CONFIG.none;
+          return <div className={`w-2 h-2 rounded-full ${cvCfg.dot}`} title={cvCfg.label} />;
+        })()}
+      </div>
 
       {isEditing ? (
         <input
