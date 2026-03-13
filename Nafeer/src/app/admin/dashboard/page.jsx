@@ -12,11 +12,35 @@ const STATUS_CONFIG = {
 const TABS = ['all', 'pending', 'approved', 'rejected'];
 const TAB_LABELS = { all: 'الكل', pending: 'انتظار', approved: 'معتمدون', rejected: 'مرفوضون' };
 
+const SECTION_TABS = ['contributors', 'review', 'coverage'];
+const SECTION_LABELS = { contributors: 'المساهمون', review: 'طابور المراجعة', coverage: 'خريطة التغطية' };
+
+const ITEM_TYPE_LABELS = { lesson: 'درس', concept: 'مفهوم', feedItem: 'تغذية', question: 'سؤال' };
+const ITEM_TYPE_BADGE = {
+  lesson:   'border-blue-700/50 bg-blue-900/20 text-blue-400',
+  concept:  'border-purple-700/50 bg-purple-900/20 text-purple-400',
+  feedItem: 'border-teal-700/50 bg-teal-900/20 text-teal-400',
+  question: 'border-amber-700/50 bg-amber-900/20 text-amber-400',
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [contributors, setContributors] = useState([]);
+  const [section, setSection] = useState('contributors');
   const [tab, setTab] = useState('pending');
   const [loading, setLoading] = useState(true);
+
+  // Review queue state
+  const [reviewQueue, setReviewQueue] = useState({ lessons: [], concepts: [], feedItems: [], questions: [], total: 0 });
+  const [reviewSubjectId, setReviewSubjectId] = useState('');
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewActionLoading, setReviewActionLoading] = useState(null);
+  const [reviewNote, setReviewNote] = useState('');
+
+  // Coverage matrix state
+  const [coverageSubjectId, setCoverageSubjectId] = useState('');
+  const [coverageData, setCoverageData] = useState(null);
+  const [coverageLoading, setCoverageLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
 
   // Create contributor modal state
@@ -91,6 +115,47 @@ export default function AdminDashboard() {
     setNewPassword('');
   };
 
+  const fetchReviewQueue = useCallback(async () => {
+    setReviewLoading(true);
+    try {
+      const url = reviewSubjectId ? `/api/admin/review-queue?subjectId=${reviewSubjectId}` : '/api/admin/review-queue';
+      const res  = await fetch(url);
+      if (res.status === 401) { router.push('/admin/login'); return; }
+      const data = await res.json();
+      setReviewQueue(data.data || { lessons: [], concepts: [], feedItems: [], questions: [], total: 0 });
+    } finally {
+      setReviewLoading(false);
+    }
+  }, [reviewSubjectId, router]);
+
+  const handleReviewAction = async (contentId, type, status) => {
+    const key = contentId + status;
+    setReviewActionLoading(key);
+    await fetch('/api/admin/review-queue', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentId, type, status, note: reviewNote }),
+    });
+    setReviewActionLoading(null);
+    setReviewNote('');
+    fetchReviewQueue();
+  };
+
+  const fetchCoverage = useCallback(async () => {
+    if (!coverageSubjectId) return;
+    setCoverageLoading(true);
+    try {
+      const res  = await fetch(`/api/coverage/${coverageSubjectId}`);
+      const data = await res.json();
+      setCoverageData(data.ok ? data.data : null);
+    } finally {
+      setCoverageLoading(false);
+    }
+  }, [coverageSubjectId]);
+
+  useEffect(() => { if (section === 'review') fetchReviewQueue(); }, [section, fetchReviewQueue]);
+  useEffect(() => { if (section === 'coverage' && coverageSubjectId) fetchCoverage(); }, [section, coverageSubjectId, fetchCoverage]);
+
   const handleSignOut = async () => {
     await fetch('/api/admin/logout', { method: 'POST' });
     router.push('/admin/login');
@@ -138,31 +203,56 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          {TABS.map((t) => (
+        {/* Section nav */}
+        <div className="flex gap-2 mb-8 border-b border-ink-800 pb-2">
+          {SECTION_TABS.map((s) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-lg text-sm font-mono transition-all
-                ${tab === t
-                  ? 'bg-sand-700/40 text-sand-300 border border-sand-700/50'
-                  : 'text-ink-500 hover:text-ink-300 border border-transparent'
+              key={s}
+              onClick={() => setSection(s)}
+              className={`px-5 py-2 rounded-t-lg text-sm font-mono transition-all border-b-2 -mb-px
+                ${section === s
+                  ? 'text-sand-300 border-sand-500'
+                  : 'text-ink-500 hover:text-ink-300 border-transparent'
                 }`}
             >
-              {TAB_LABELS[t]}
+              {SECTION_LABELS[s]}
+              {s === 'review' && reviewQueue.total > 0 && (
+                <span className="mr-2 px-1.5 py-0.5 rounded-full bg-amber-900/50 border border-amber-700/40 text-amber-400 text-[10px]">
+                  {reviewQueue.total}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
-        {/* Table */}
-        {loading ? (
-          <div className="text-center py-20 text-ink-600 font-mono text-sm">LOADING...</div>
-        ) : contributors.length === 0 ? (
-          <div className="text-center py-20 text-ink-600">لا يوجد مساهمون في هذه الفئة</div>
-        ) : (
-          <div className="space-y-3">
-            {contributors.map((c) => {
+        {/* ── SECTION: Contributors ─────────────────────────────────────────────── */}
+        {section === 'contributors' && (
+          <>
+            {/* Contributor tabs */}
+            <div className="flex gap-2 mb-6">
+              {TABS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`px-4 py-2 rounded-lg text-sm font-mono transition-all
+                    ${tab === t
+                      ? 'bg-sand-700/40 text-sand-300 border border-sand-700/50'
+                      : 'text-ink-500 hover:text-ink-300 border border-transparent'
+                    }`}
+                >
+                  {TAB_LABELS[t]}
+                </button>
+              ))}
+            </div>
+
+            {/* Contributor table */}
+            {loading ? (
+              <div className="text-center py-20 text-ink-600 font-mono text-sm">LOADING...</div>
+            ) : contributors.length === 0 ? (
+              <div className="text-center py-20 text-ink-600">لا يوجد مساهمون في هذه الفئة</div>
+            ) : (
+              <div className="space-y-3">
+                {contributors.map((c) => {
               const sc = STATUS_CONFIG[c.status];
               const isActing = (action) => actionLoading === c._id + action;
               return (
@@ -247,6 +337,183 @@ export default function AdminDashboard() {
                 </div>
               );
             })}
+          </div>
+        )}
+          </>
+        )}
+
+        {/* ── SECTION: Review Queue ─────────────────────────────────────────────── */}
+        {section === 'review' && (
+          <div>
+            {/* Subject filter */}
+            <div className="flex items-center gap-4 mb-6">
+              <select
+                value={reviewSubjectId}
+                onChange={(e) => setReviewSubjectId(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-ink-800 border border-ink-700 text-sand-200 text-sm font-mono focus:outline-none focus:border-sand-600"
+              >
+                <option value="">كل المواد</option>
+                {SUBJECTS_CATALOG.map((s) => (
+                  <option key={s.id} value={s.id}>{s.nameAr}</option>
+                ))}
+              </select>
+              <span className="text-xs text-ink-600 font-mono">{reviewQueue.total} عنصر</span>
+            </div>
+
+            {reviewLoading ? (
+              <div className="text-center py-20 text-ink-600 font-mono text-sm">LOADING...</div>
+            ) : reviewQueue.total === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-ink-600 mb-2">لا يوجد محتوى في طابور المراجعة</p>
+                <p className="text-xs text-ink-700 font-mono">المساهمون يضغطون "إرسال للمراجعة" من محرر الدروس</p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {['lessons', 'concepts', 'feedItems', 'questions'].map((type) => {
+                  const items = reviewQueue[type] || [];
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={type}>
+                      <h3 className="text-sm font-mono text-ink-500 mb-3 uppercase tracking-widest">
+                        {ITEM_TYPE_LABELS[type]} — {items.length}
+                      </h3>
+                      <div className="space-y-3">
+                        {items.map((item) => (
+                          <div
+                            key={item.contentId}
+                            className="glass rounded-xl border border-ink-700/40 p-4 flex items-start justify-between gap-4"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                                <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${ITEM_TYPE_BADGE[item.type]}`}>
+                                  {ITEM_TYPE_LABELS[item.type]}
+                                </span>
+                                <span className="text-[10px] font-mono text-ink-600">{item.subjectId}</span>
+                                <span className="text-[10px] font-mono text-ink-700">v{item.version}</span>
+                              </div>
+                              <p className="text-sm text-sand-300 font-arabic leading-relaxed line-clamp-2">{item.label}</p>
+                              <p className="text-[10px] text-ink-700 font-mono mt-1">
+                                {new Date(item.createdAt).toLocaleDateString('ar-SD')}
+                              </p>
+                            </div>
+                            <div className="flex flex-col gap-2 shrink-0 min-w-[120px]">
+                              <button
+                                onClick={() => handleReviewAction(item.contentId, item.type, 'approved')}
+                                disabled={reviewActionLoading === item.contentId + 'approved'}
+                                className="px-3 py-1.5 bg-green-900/50 hover:bg-green-800/60 border border-green-700/50 text-green-400 text-xs rounded-lg transition-all font-mono disabled:opacity-50"
+                              >
+                                ✓ اعتماد
+                              </button>
+                              <button
+                                onClick={() => handleReviewAction(item.contentId, item.type, 'draft')}
+                                disabled={reviewActionLoading === item.contentId + 'draft'}
+                                className="px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 border border-red-800/40 text-red-500 text-xs rounded-lg transition-all font-mono disabled:opacity-50"
+                              >
+                                ✗ إرجاع
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── SECTION: Coverage Matrix ──────────────────────────────────────────── */}
+        {section === 'coverage' && (
+          <div>
+            <div className="flex items-center gap-4 mb-6">
+              <select
+                value={coverageSubjectId}
+                onChange={(e) => setCoverageSubjectId(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-ink-800 border border-ink-700 text-sand-200 text-sm font-mono focus:outline-none focus:border-sand-600"
+              >
+                <option value="">اختر مادة</option>
+                {SUBJECTS_CATALOG.map((s) => (
+                  <option key={s.id} value={s.id}>{s.nameAr} — {s.id}</option>
+                ))}
+              </select>
+              {coverageSubjectId && (
+                <button
+                  onClick={fetchCoverage}
+                  className="px-4 py-2 bg-sand-700/30 hover:bg-sand-700/50 border border-sand-700/40 text-sand-400 text-xs rounded-lg font-mono transition-all"
+                >
+                  تحديث
+                </button>
+              )}
+            </div>
+
+            {!coverageSubjectId ? (
+              <div className="text-center py-20 text-ink-600">اختر مادة لعرض خريطة التغطية</div>
+            ) : coverageLoading ? (
+              <div className="text-center py-20 text-ink-600 font-mono text-sm">LOADING...</div>
+            ) : !coverageData ? (
+              <div className="text-center py-20 text-ink-600">لا توجد بيانات. المادة قد لا تكون مُصدَّرة بعد.</div>
+            ) : (
+              <div className="space-y-8">
+                {(coverageData.units || []).map((unit) => (
+                  <div key={unit.unitId}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <h3 className="text-sm font-bold text-sand-300 font-arabic">{unit.title}</h3>
+                      <span className="text-xs font-mono text-ink-600">{unit.avgCoverage}% avg</span>
+                      <div className="flex-1 h-px bg-ink-800" />
+                      <span className="text-[10px] font-mono text-ink-700">
+                        {unit.approvedLessons}/{unit.totalLessons} معتمد
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs font-mono">
+                        <thead>
+                          <tr className="text-ink-600 border-b border-ink-800">
+                            <th className="text-right py-2 pr-3">الدرس</th>
+                            <th className="py-2 px-2">حالة</th>
+                            <th className="py-2 px-2">أقسام</th>
+                            <th className="py-2 px-2">مفاهيم</th>
+                            <th className="py-2 px-2">تغذية</th>
+                            <th className="py-2 px-2">أسئلة</th>
+                            <th className="py-2 px-2">تغطية</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-ink-900">
+                          {(unit.lessons || []).map((lesson) => {
+                            const lvl = lesson.coverageLevel;
+                            const barColor = lvl === 'high' ? '#22c55e' : lvl === 'medium' ? '#f59e0b' : lvl === 'low' ? '#f97316' : '#374151';
+                            return (
+                              <tr key={lesson.lessonId} className="hover:bg-ink-900/40 transition-colors">
+                                <td className="py-2.5 pr-3 text-sand-400 font-arabic text-xs max-w-[200px] truncate">{lesson.title}</td>
+                                <td className="py-2.5 px-2 text-center">
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                                    lesson.status === 'approved' ? 'bg-green-900/30 text-green-500'
+                                    : lesson.status === 'review'   ? 'bg-amber-900/30 text-amber-400'
+                                    : 'bg-ink-800 text-ink-600'
+                                  }`}>{lesson.status ?? '—'}</span>
+                                </td>
+                                <td className="py-2.5 px-2 text-center text-ink-400">{lesson.sections}</td>
+                                <td className="py-2.5 px-2 text-center text-ink-400">{lesson.concepts}</td>
+                                <td className="py-2.5 px-2 text-center text-ink-400">{lesson.feedItems}</td>
+                                <td className="py-2.5 px-2 text-center text-ink-400">{lesson.questions}</td>
+                                <td className="py-2.5 px-2 min-w-[80px]">
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-1 rounded-full bg-ink-800">
+                                      <div className="h-1 rounded-full" style={{ width: `${lesson.coverageScore}%`, background: barColor }} />
+                                    </div>
+                                    <span style={{ color: barColor }}>{lesson.coverageScore}%</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>
