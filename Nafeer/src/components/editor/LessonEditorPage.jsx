@@ -2,11 +2,13 @@
 import { useState } from 'react';
 import { useDataStore }     from '@/store/dataStore';
 import { useAtlasSync }     from '@/hooks/useAtlasSync';
+import { useCoverageData }  from '@/hooks/useCoverageData';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import SectionEditor          from '@/components/editor/SectionEditor';
 import LessonQuestionsPanel   from '@/components/editor/LessonQuestionsPanel';
 import LessonFeedPanel        from '@/components/editor/LessonFeedPanel';
 import StatusBadge            from '@/components/editor/StatusBadge';
+import CoveragePanel          from '@/components/editor/CoveragePanel';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -35,6 +37,7 @@ export default function LessonEditorPage({
     updateLesson, addSection,
   } = useDataStore();
   const { syncAll, submitForReview, isSyncing } = useAtlasSync();
+  const { coverageMap, loading: coverageLoading } = useCoverageData(subjectId);
 
   const [activeStep,    setActiveStep]    = useState(0);
   const [saveSuccess,   setSaveSuccess]   = useState(false);
@@ -219,6 +222,16 @@ export default function LessonEditorPage({
         </div>
       )}
 
+
+      {/* ─── Coverage panel ─────────────────────────────────────────────────── */}
+      {lesson?.contentId && (
+        <div className="mt-5">
+          <CoveragePanel
+            coverage={coverageMap[lesson.contentId] ?? null}
+            loading={coverageLoading}
+          />
+        </div>
+      )}
       {/* ── Step canvas ──────────────────────────────────────────────────────── */}
       <div className="mt-6">
 
