@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useDataStore }    from '@/store/dataStore';
 import { computeProgress } from '@/lib/LessonStatus';
 import LessonItem          from '@/components/editor/LessonItem';
+import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
 import Modal               from '@/components/editor/Modal';
 
 const inputClass =
   'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600 text-sm';
 
-export default function UnitCard({ unit, onEditLesson }) {
+export default function UnitCard({ unit, onEditLesson, coverageMap, unitCoverage }) {
   const { lessons, sections, blocks, updateUnit, addLesson } = useDataStore();
 
   const [isExpanded,     setIsExpanded]     = useState(true);
@@ -79,6 +80,23 @@ export default function UnitCard({ unit, onEditLesson }) {
           {done}/{total}
         </span>
 
+        {/* Atlas coverage badge */}
+        {unitCoverage != null && (() => {
+          const avg = unitCoverage.avgCoverage ?? 0;
+          const level = avg >= 80 ? 'high' : avg >= 40 ? 'medium' : avg > 0 ? 'low' : 'none';
+          const cvCfg = COVERAGE_LEVEL_CONFIG[level];
+          return (
+            <span
+              className="text-[10px] font-mono px-1.5 py-0.5 rounded border hidden sm:inline-flex items-center gap-1"
+              style={{ background: cvCfg.bg, border: `1px solid ${cvCfg.border}`, color: cvCfg.color }}
+              title={`متوسط تغطية الوحدة: ${avg}%`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${cvCfg.dot}`} />
+              {avg}%
+            </span>
+          );
+        })()}
+
         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => { setEditTitle(unit.title); setIsEditing(true); }}
@@ -113,6 +131,7 @@ export default function UnitCard({ unit, onEditLesson }) {
                 key={lesson.id}
                 lesson={lesson}
                 onEdit={() => onEditLesson(lesson.id, unit.id)}
+                coverageLevel={coverageMap?.[lesson.contentId]?.coverageLevel}
               />
             ))
           )}
