@@ -23,17 +23,17 @@ const colorMap = {
 };
 
 export default function ProgressBoard() {
-  const sectionRef  = useRef(null);
-  const [liveData, setLiveData] = useState({});  // subjectId → { approvedLessons, totalLessons }
+  const sectionRef = useRef(null);
+  const [liveData, setLiveData] = useState({});
 
-  // ── Fetch live progress from Atlas ───────────────────────────────────────
+  // ── Fetch live progress from Atlas ────────────────────────────────────────
   useEffect(() => {
     fetch('/api/coverage')
-      .then((r) => r.json())
-      .then((json) => {
+      .then(r => r.json())
+      .then(json => {
         if (!json.ok) return;
         const map = {};
-        (json.data || []).forEach((s) => {
+        (json.data || []).forEach(s => {
           map[s.subjectId] = {
             approvedLessons: s.approvedLessons,
             totalLessons:    s.totalLessons,
@@ -41,39 +41,44 @@ export default function ProgressBoard() {
         });
         setLiveData(map);
       })
-      .catch(() => {}); // fail silently — falls back to 0% progress display
+      .catch(() => {}); // fail silently
   }, []);
 
-  const subjects = SUBJECTS_CATALOG.map((s) => {
-    const live         = liveData[s.id];
+  const subjects = SUBJECTS_CATALOG.map(s => {
+    const live          = liveData[s.id];
     const targetLessons = getTotalLessons(s.id);
-    const approved     = live?.approvedLessons || 0;
-    const progress     = targetLessons > 0 ? Math.round((approved / targetLessons) * 100) : 0;
-    return {
-      ...s,
-      progress,
-      totalLessons:  targetLessons,
-      contributor:   null,  // Phase 3: contributor names from Atlas
-    };
+    const approved      = live?.approvedLessons || 0;
+    const progress      = targetLessons > 0 ? Math.round((approved / targetLessons) * 100) : 0;
+    return { ...s, progress, totalLessons: targetLessons, contributor: null };
   });
 
   const totalSubjects     = subjects.length;
-  const mappedSubjects    = subjects.filter((s) => s.progress > 0).length;
-  const totalContributors = subjects.filter((s) => s.contributor).length;
+  const mappedSubjects    = subjects.filter(s => s.progress > 0).length;
+  const totalContributors = subjects.filter(s => s.contributor).length;
 
+  // ── Scroll animations ─────────────────────────────────────────────────────
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo('.progress-header',
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: '.progress-header', start: 'top 90%', once: true } }
+        { opacity: 0, y: 32 },
+        {
+          opacity: 1, y: 0, duration: 0.85, ease: 'power3.out',
+          scrollTrigger: { trigger: '.progress-header', start: 'top 90%', once: true },
+        }
       );
       gsap.fromTo('.progress-stat',
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: '.progress-stats', start: 'top 90%', once: true } }
+        { opacity: 0, y: 20, scale: 0.9 },
+        {
+          opacity: 1, y: 0, scale: 1, duration: 0.55, stagger: 0.1, ease: 'back.out(1.4)',
+          scrollTrigger: { trigger: '.progress-stats', start: 'top 90%', once: true },
+        }
       );
       gsap.fromTo('.subject-card',
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.4, stagger: 0.04, ease: 'power3.out', scrollTrigger: { trigger: sectionRef.current, start: 'top 80%', once: true } }
+        { opacity: 0, y: 24, scale: 0.95 },
+        {
+          opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.045, ease: 'power3.out',
+          scrollTrigger: { trigger: sectionRef.current, start: 'top 80%', once: true },
+        }
       );
     }, sectionRef);
 
@@ -81,52 +86,79 @@ export default function ProgressBoard() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-20 sm:py-24 px-4 sm:px-6 relative">
+    <section ref={sectionRef} className="py-20 sm:py-28 px-4 sm:px-6 relative">
       <div className="ember-line max-w-6xl mx-auto mb-16 sm:mb-24 opacity-40" />
 
       <div className="max-w-6xl mx-auto">
+
+        {/* Header */}
         <div className="progress-header mb-12 sm:mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-8">
           <div>
-            <span className="inline-block text-sm tracking-widest uppercase mb-4 font-mono" style={{ color: 'var(--accent)' }}>
+            <span
+              className="inline-block text-xs sm:text-sm tracking-widest uppercase mb-4 font-mono"
+              style={{ color: 'var(--accent)' }}
+            >
               حالة المشروع — مباشر
             </span>
-            <h2 className="text-3xl sm:text-4xl font-arabic font-bold mb-3" style={{ color: 'var(--text-primary)' }}>خريطة المواد</h2>
-            <p className="max-w-lg leading-loose text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-              كل مادة تحتاج مساهماً متخصصاً لرسم محتواها. هذه خريطة ما اكتمل وما ينتظرك.
+            <h2
+              className="text-3xl sm:text-4xl font-arabic font-bold mb-3"
+              style={{ color: 'var(--text-primary)' }}
+            >خريطة المواد</h2>
+            <p
+              className="max-w-md leading-loose text-sm sm:text-base"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              كل مادة تحتاج مساهماً متخصصاً. هذه خريطة ما اكتمل وما ينتظرك.
             </p>
           </div>
-          <div className="progress-stats flex gap-4 sm:gap-6">
-            {[{ value: totalSubjects, label: 'مادة' }, { value: mappedSubjects, label: 'مكتملة' }, { value: totalContributors, label: 'مساهم' }].map((stat, i) => (
+
+          {/* Stats */}
+          <div className="progress-stats flex gap-5 sm:gap-8">
+            {[
+              { value: totalSubjects,     label: 'مادة' },
+              { value: mappedSubjects,    label: 'مكتملة' },
+              { value: totalContributors, label: 'مساهم' },
+            ].map((stat, i) => (
               <div key={i} className="progress-stat text-center">
-                <div className="text-3xl sm:text-4xl font-bold stat-number" style={{ color: 'var(--accent)' }}>{stat.value}</div>
+                <div
+                  className="text-3xl sm:text-4xl font-bold stat-number"
+                  style={{ color: 'var(--accent)' }}
+                >{stat.value}</div>
                 <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
 
+        {/* Track groups */}
         {[
           { trackKey: 'COMMON',   label: 'المواد المشتركة', desc: 'يأخذها جميع الطلاب' },
           { trackKey: 'SCIENCE',  label: 'المسار العلمي',   desc: 'مسار + تخصص (اختر واحداً من الثلاثة)' },
           { trackKey: 'LITERARY', label: 'المسار الأدبي',   desc: 'مسار + تخصص (اختر واحداً من الاثنين)' },
         ].map(({ trackKey, label, desc }) => {
-          const trackSubjects = subjects.filter((s) => s.track === trackKey);
-          const required      = trackSubjects.filter((s) => !s.isMajor);
-          const majors        = trackSubjects.filter((s) => s.isMajor);
+          const trackSubjects = subjects.filter(s => s.track === trackKey);
+          const required      = trackSubjects.filter(s => !s.isMajor);
+          const majors        = trackSubjects.filter(s => s.isMajor);
           return (
             <div key={trackKey} className="mb-10 sm:mb-14">
               <div className="flex items-baseline gap-2 sm:gap-3 mb-4 sm:mb-5 flex-wrap">
-                <h3 className="text-base sm:text-lg font-bold" style={{ color: TRACK_CONFIG[trackKey].color }}>{label}</h3>
+                <h3
+                  className="text-base sm:text-lg font-bold"
+                  style={{ color: TRACK_CONFIG[trackKey].color }}
+                >{label}</h3>
                 <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{desc}</span>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
-                {required.map((s) => <SubjectCard key={s.id} subject={s} />)}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                {required.map(s => <SubjectCard key={s.id} subject={s} />)}
               </div>
               {majors.length > 0 && (
                 <div className="pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-                  <p className="text-xs font-mono mb-3" style={{ color: 'var(--text-muted)' }}>— تخصص، اختر واحداً</p>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {majors.map((s) => <SubjectCard key={s.id} subject={s} isMajor />)}
+                  <p
+                    className="text-xs font-mono mb-3"
+                    style={{ color: 'var(--text-muted)' }}
+                  >— تخصص، اختر واحداً</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                    {majors.map(s => <SubjectCard key={s.id} subject={s} isMajor />)}
                   </div>
                 </div>
               )}
@@ -134,16 +166,25 @@ export default function ProgressBoard() {
           );
         })}
 
-        <div className="mt-6 sm:mt-8 text-center">
+        {/* Bottom CTA */}
+        <div className="mt-8 sm:mt-10 text-center">
           <p className="mb-5 sm:mb-6 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
             كل المواد مفتوحة للمساهمة — لديك خلفية في أي مادة؟
           </p>
           <a
             href="/join"
-            className="inline-flex items-center gap-3 px-7 sm:px-8 py-3.5 sm:py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
+            className="inline-flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
             style={{ background: 'var(--accent)', color: '#0e0c09' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 40px var(--glow)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'var(--accent-hover)';
+              e.currentTarget.style.boxShadow = '0 0 40px var(--glow)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'var(--accent)';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
           >
             طلب انضمام للنفير
           </a>
@@ -162,39 +203,74 @@ function SubjectCard({ subject, isMajor = false }) {
     <div
       className="subject-card relative p-3 sm:p-5 rounded-xl overflow-hidden transition-all duration-300"
       style={{
-        background: 'var(--bg-card)',
-        backdropFilter: 'blur(12px)',
-        border: `1px solid var(--border-subtle)`,
-        borderStyle: isMajor ? 'dashed' : 'solid',
-        opacity: isAvailable ? 1 : 0.7,
+        background:    'var(--bg-card)',
+        backdropFilter:'blur(12px)',
+        border:        `1px solid ${isAvailable ? 'var(--border-subtle)' : c.badge.border + '80'}`,
+        borderStyle:   isMajor ? 'dashed' : 'solid',
       }}
-      onMouseEnter={e => { if (!isAvailable) return; e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = c.bar + '60'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform   = 'translateY(-3px)';
+        e.currentTarget.style.borderColor = c.bar + '60';
+        e.currentTarget.style.boxShadow   = '0 8px 30px rgba(0,0,0,0.2)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform   = 'translateY(0)';
+        e.currentTarget.style.borderColor = isAvailable ? 'var(--border-subtle)' : c.badge.border + '80';
+        e.currentTarget.style.boxShadow   = 'none';
+      }}
     >
       <div className="relative z-10">
         <div className="flex items-center gap-1.5 sm:gap-2 mb-3 flex-wrap">
-          <span className="inline-block text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-mono"
-            style={{ background: c.badge.bg, border: `1px solid ${c.badge.border}`, color: c.badge.color }}>
+          <span
+            className="inline-block text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-mono"
+            style={{ background: c.badge.bg, border: `1px solid ${c.badge.border}`, color: c.badge.color }}
+          >
             {trackCfg.label}
           </span>
           {isMajor && (
-            <span className="inline-block text-xs px-1.5 py-0.5 rounded-full font-mono"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+            <span
+              className="inline-block text-xs px-1.5 py-0.5 rounded-full font-mono"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}
+            >
               تخصص
             </span>
           )}
         </div>
-        <h3 className="text-sm sm:text-base font-bold mb-0.5 sm:mb-1" style={{ color: 'var(--text-primary)' }}>{subject.nameAr}</h3>
+
+        <h3
+          className="text-sm sm:text-base font-bold mb-0.5 sm:mb-1"
+          style={{ color: 'var(--text-primary)' }}
+        >{subject.nameAr}</h3>
+
         <p className="text-xs mb-3 sm:mb-4" style={{ color: 'var(--text-muted)' }}>
           {subject.units.length} وحدات · {subject.totalLessons} درس
         </p>
+
+        {/* Progress bar */}
         <div className="w-full h-1 rounded-full mb-2 sm:mb-3" style={{ background: 'var(--border-mid)' }}>
-          <div className="h-1 rounded-full transition-all duration-1000" style={{ width: `${subject.progress}%`, background: c.bar }} />
+          <div
+            className="h-1 rounded-full"
+            style={{
+              width: `${subject.progress}%`,
+              background: c.bar,
+              transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          />
         </div>
+
         <div className="flex items-center justify-between">
           <span className="text-xs font-mono" style={{ color: c.text }}>{subject.progress}%</span>
           {isAvailable ? (
-            <a href="/join" className="text-xs transition-opacity hover:opacity-70" style={{ color: 'var(--accent)' }} onClick={e => e.stopPropagation()}>
+            <a
+              href="/join"
+              className="text-xs px-2 py-0.5 rounded-full font-mono transition-all duration-200"
+              style={{
+                color: 'var(--accent)',
+                background: 'var(--accent-dim)',
+                border: '1px solid rgba(212,137,30,0.2)',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
               + انضم
             </a>
           ) : (
