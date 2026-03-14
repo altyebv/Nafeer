@@ -1,21 +1,31 @@
-import { useState } from 'react';
+'use client';
+import { useState, useRef, useEffect } from 'react';
 import { useDataStore }    from '@/store/dataStore';
 import { computeProgress } from '@/lib/LessonStatus';
 import LessonItem          from '@/components/editor/LessonItem';
 import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
-import Modal               from '@/components/editor/Modal';
 
-const inputClass =
-  'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600 text-sm';
+const ARABIC_ORDINALS = ['الأولى','الثانية','الثالثة','الرابعة','الخامسة',
+                         'السادسة','السابعة','الثامنة','التاسعة','العاشرة'];
 
-export default function UnitCard({ unit, onEditLesson, coverageMap, unitCoverage }) {
+export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitCoverage }) {
   const { lessons, sections, blocks, updateUnit, addLesson } = useDataStore();
 
-  const [isExpanded,     setIsExpanded]     = useState(true);
-  const [isEditing,      setIsEditing]      = useState(false);
-  const [editTitle,      setEditTitle]      = useState(unit.title);
-  const [showAddLesson,  setShowAddLesson]  = useState(false);
-  const [newLessonTitle, setNewLessonTitle] = useState('');
+  const [expanded,      setExpanded]      = useState(true);
+  const [editingTitle,  setEditingTitle]  = useState(false);
+  const [titleDraft,    setTitleDraft]    = useState(unit.title);
+  const [addingLesson,  setAddingLesson]  = useState(false);
+  const [newTitle,      setNewTitle]      = useState('');
+  const addInputRef = useRef(null);
+  const titleInputRef = useRef(null);
+
+  useEffect(() => {
+    if (addingLesson) addInputRef.current?.focus();
+  }, [addingLesson]);
+
+  useEffect(() => {
+    if (editingTitle) titleInputRef.current?.focus();
+  }, [editingTitle]);
 
   const unitLessons = lessons
     .filter((l) => l.unitId === unit.id)
@@ -23,161 +33,196 @@ export default function UnitCard({ unit, onEditLesson, coverageMap, unitCoverage
 
   const lessonsMap = Object.fromEntries(lessons.map((l) => [l.id, l]));
   const { done, total, pct } = computeProgress(
-    unitLessons.map((l) => l.id),
-    sections,
-    blocks,
-    lessonsMap,
+    unitLessons.map((l) => l.id), sections, blocks, lessonsMap,
   );
 
-  const handleSaveTitle = () => {
-    if (editTitle.trim()) updateUnit(unit.id, { title: editTitle });
-    setIsEditing(false);
+  const saveTitle = () => {
+    if (titleDraft.trim()) updateUnit(unit.id, { title: titleDraft.trim() });
+    else setTitleDraft(unit.title);
+    setEditingTitle(false);
   };
 
-  const handleAddLesson = () => {
-    if (!newLessonTitle.trim()) return;
-    addLesson({ unitId: unit.id, title: newLessonTitle });
-    setNewLessonTitle('');
-    setShowAddLesson(false);
+  const confirmAddLesson = () => {
+    if (!newTitle.trim()) { setAddingLesson(false); return; }
+    addLesson({ unitId: unit.id, title: newTitle.trim() });
+    setNewTitle('');
+    setAddingLesson(false);
   };
+
+  // Coverage avg for display
+  const avgCov = unitCoverage?.avgCoverage ?? null;
+  const covLevel = avgCov != null
+    ? (avgCov >= 80 ? 'high' : avgCov >= 40 ? 'medium' : avgCov > 0 ? 'low' : 'none')
+    : null;
+  const covCfg = covLevel ? COVERAGE_LEVEL_CONFIG[covLevel] : null;
+
+  const ordinal = ARABIC_ORDINALS[index] || `${index + 1}`;
 
   return (
-    <div className="bg-ink-900 rounded-xl border border-ink-800 overflow-hidden">
-
-      {/* Unit Header */}
+    <section>
+      {/* ── Unit header ──────────────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-3 px-4 py-3 bg-ink-800/40 cursor-pointer hover:bg-ink-800/70 transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-baseline gap-4 mb-3 cursor-pointer group select-none"
+        onClick={() => !editingTitle && setExpanded((v) => !v)}
       >
-        <span className={`text-ink-600 text-xs transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
-          ▶
-        </span>
-
-        {isEditing ? (
-          <input
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onBlur={handleSaveTitle}
-            onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-            onClick={(e) => e.stopPropagation()}
-            className="flex-1 px-2 py-1 bg-ink-900 border border-sand-600 rounded text-sand-200 focus:outline-none focus:ring-1 focus:ring-sand-500 font-arabic text-sm"
-            autoFocus
-          />
-        ) : (
-          <h3 className="flex-1 font-semibold text-ink-100 font-arabic text-sm">{unit.title}</h3>
-        )}
-
-        {/* Progress pill */}
-        <span className={`text-xs font-mono px-2 py-0.5 rounded border
-          ${pct === 100
-            ? 'bg-emerald-900/40 text-emerald-400 border-emerald-700/40'
-            : pct > 0
-              ? 'bg-amber-900/30 text-amber-400 border-amber-700/30'
-              : 'bg-ink-800 text-ink-500 border-ink-700'
-          }`}
+        {/* Chapter number — large faint mono */}
+        <span
+          className="text-4xl font-mono font-bold leading-none shrink-0 transition-colors"
+          style={{ color: 'rgba(255,255,255,0.04)' }}
+          aria-hidden
         >
-          {done}/{total}
+          {String(index + 1).padStart(2, '0')}
         </span>
 
-        {/* Atlas coverage badge */}
-        {unitCoverage != null && (() => {
-          const avg = unitCoverage.avgCoverage ?? 0;
-          const level = avg >= 80 ? 'high' : avg >= 40 ? 'medium' : avg > 0 ? 'low' : 'none';
-          const cvCfg = COVERAGE_LEVEL_CONFIG[level];
-          return (
-            <span
-              className="text-[10px] font-mono px-1.5 py-0.5 rounded border hidden sm:inline-flex items-center gap-1"
-              style={{ background: cvCfg.bg, border: `1px solid ${cvCfg.border}`, color: cvCfg.color }}
-              title={`متوسط تغطية الوحدة: ${avg}%`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${cvCfg.dot}`} />
-              {avg}%
-            </span>
-          );
-        })()}
+        {/* Title */}
+        <div className="flex-1 min-w-0 flex items-baseline gap-3">
+          {editingTitle ? (
+            <input
+              ref={titleInputRef}
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={saveTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter')  { e.preventDefault(); saveTitle(); }
+                if (e.key === 'Escape') { setTitleDraft(unit.title); setEditingTitle(false); }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="text-lg font-semibold bg-transparent border-b border-sand-600 text-sand-200
+                focus:outline-none font-arabic w-full pb-0.5"
+            />
+          ) : (
+            <h2 className="text-lg font-semibold text-ink-100 font-arabic truncate group-hover:text-sand-200 transition-colors">
+              {unit.title}
+            </h2>
+          )}
 
-        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => { setEditTitle(unit.title); setIsEditing(true); }}
-            className="p-1.5 text-ink-600 hover:text-sand-400 hover:bg-ink-700 rounded transition-colors"
-            title="تعديل عنوان الوحدة"
+          {/* Inline ordinal label */}
+          <span className="text-xs text-ink-700 font-arabic shrink-0">
+            الوحدة {ordinal}
+          </span>
+        </div>
+
+        {/* Meta cluster — stops propagation so clicking doesn't toggle */}
+        <div
+          className="flex items-center gap-2 shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Coverage badge */}
+          {covCfg && avgCov != null && (
+            <span
+              className="text-[10px] font-mono px-1.5 py-0.5 rounded border"
+              style={{ background: covCfg.bg, borderColor: covCfg.border, color: covCfg.color }}
+              title={`تغطية الوحدة: ${avgCov}%`}
+            >
+              {avgCov}%
+            </span>
+          )}
+
+          {/* Progress fraction */}
+          <span className={`text-xs font-mono px-2 py-0.5 rounded border
+            ${pct === 100
+              ? 'bg-emerald-900/30 text-emerald-500 border-emerald-800/40'
+              : pct > 0
+                ? 'bg-amber-900/20 text-amber-500 border-amber-800/30'
+                : 'text-ink-700 border-ink-800'
+            }`}
           >
-            ✏
+            {done}/{total}
+          </span>
+
+          {/* Edit title */}
+          <button
+            onClick={() => { setTitleDraft(unit.title); setEditingTitle(true); }}
+            className="p-1 text-ink-800 hover:text-ink-400 transition-colors rounded"
+            title="تعديل العنوان"
+          >
+            <PencilIcon />
           </button>
+
+          {/* Collapse chevron */}
+          <span className={`text-ink-700 text-xs transition-transform duration-200 ${expanded ? '' : '-rotate-90'}`}>
+            ▾
+          </span>
         </div>
       </div>
 
-      {/* Unit progress bar */}
-      {pct > 0 && (
-        <div className="h-0.5 bg-ink-800">
-          <div
-            className={`h-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      )}
+      {/* Thin rule */}
+      <div className="h-px bg-ink-800/60 mb-4" />
 
-      {/* Lessons List */}
-      {isExpanded && (
-        <div className="p-4 space-y-2">
-          {unitLessons.length === 0 ? (
-            <p className="text-center text-ink-600 py-4 text-sm font-arabic">
-              لا توجد دروس في هذه الوحدة
+      {/* ── Lesson list ──────────────────────────────────────────────────────── */}
+      {expanded && (
+        <div className="space-y-1 mb-4">
+          {unitLessons.length === 0 && !addingLesson && (
+            <p className="text-xs text-ink-700 font-arabic py-3 text-center">
+              لا توجد دروس — ابدأ بإضافة درس
             </p>
-          ) : (
-            unitLessons.map((lesson) => (
-              <LessonItem
-                key={lesson.id}
-                lesson={lesson}
-                onEdit={() => onEditLesson(lesson.id, unit.id)}
-                coverageLevel={coverageMap?.[lesson.contentId]?.coverageLevel}
-              />
-            ))
           )}
 
-          <button
-            onClick={() => setShowAddLesson(true)}
-            className="w-full py-2.5 border border-dashed border-ink-700 rounded-lg text-ink-500 hover:border-sand-700 hover:text-sand-400 hover:bg-sand-900/10 transition-colors text-sm font-arabic mt-1"
-          >
-            + إضافة درس
-          </button>
+          {unitLessons.map((lesson, li) => (
+            <LessonItem
+              key={lesson.id}
+              lesson={lesson}
+              index={li}
+              onEdit={() => onEditLesson(lesson.id, unit.id)}
+              coverageLevel={coverageMap?.[lesson.contentId]?.coverageLevel}
+            />
+          ))}
+
+          {/* Inline add-lesson input */}
+          {addingLesson ? (
+            <div className="flex items-center gap-2 pl-4 pr-2 py-2 border border-sand-800/60 rounded-lg bg-ink-900/40 mt-2">
+              <span className="text-xs text-ink-700 font-mono shrink-0">
+                {String(unitLessons.length + 1).padStart(2, '0')}
+              </span>
+              <input
+                ref={addInputRef}
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter')  confirmAddLesson();
+                  if (e.key === 'Escape') { setNewTitle(''); setAddingLesson(false); }
+                }}
+                placeholder="عنوان الدرس الجديد…"
+                className="flex-1 bg-transparent text-sand-200 text-sm font-arabic
+                  placeholder-ink-700 focus:outline-none"
+              />
+              <button
+                onClick={confirmAddLesson}
+                disabled={!newTitle.trim()}
+                className="text-xs px-2.5 py-1 bg-sand-800 text-ink-950 rounded-md font-arabic
+                  disabled:opacity-30 disabled:cursor-not-allowed hover:bg-sand-700 transition-colors"
+              >
+                إضافة
+              </button>
+              <button
+                onClick={() => { setNewTitle(''); setAddingLesson(false); }}
+                className="text-xs text-ink-600 hover:text-ink-400 font-arabic transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAddingLesson(true)}
+              className="w-full mt-1 py-2 text-xs text-ink-700 hover:text-sand-500
+                border border-dashed border-ink-800 hover:border-sand-900
+                rounded-lg font-arabic transition-colors hover:bg-sand-900/5"
+            >
+              + درس جديد
+            </button>
+          )}
         </div>
       )}
+    </section>
+  );
+}
 
-      {/* Add Lesson Modal */}
-      <Modal isOpen={showAddLesson} onClose={() => { setShowAddLesson(false); setNewLessonTitle(''); }} title="إضافة درس جديد">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs text-ink-500 mb-1.5 font-arabic">عنوان الدرس</label>
-            <input
-              type="text"
-              value={newLessonTitle}
-              onChange={(e) => setNewLessonTitle(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddLesson()}
-              className={inputClass}
-              placeholder="مثال: الإحداثيات الجغرافية"
-              autoFocus
-            />
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={handleAddLesson}
-              disabled={!newLessonTitle.trim()}
-              className="flex-1 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-semibold text-sm font-arabic"
-            >
-              إضافة
-            </button>
-            <button
-              onClick={() => { setShowAddLesson(false); setNewLessonTitle(''); }}
-              className="px-4 py-2 text-ink-400 hover:bg-ink-800 rounded-lg transition-colors text-sm font-arabic"
-            >
-              إلغاء
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-    </div>
+// ─── Micro icons ──────────────────────────────────────────────────────────────
+function PencilIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z"
+        stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
   );
 }
