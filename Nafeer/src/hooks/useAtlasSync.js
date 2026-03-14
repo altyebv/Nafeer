@@ -154,6 +154,7 @@ export function useAtlasSync() {
               order:        s.order,
               learningType: s.learningType || 'UNDERSTANDING',
               conceptIds:   s.conceptIds  || [],
+              partIndex:    s.partIndex   ?? 0,
             })),
           }),
         });
@@ -196,7 +197,8 @@ export function useAtlasSync() {
         body:   JSON.stringify({
           title:            lesson.title,
           estimatedMinutes: lesson.estimatedMinutes,
-          summary:          lesson.summary || null,
+          summary:          lesson.summary  || null,
+          metadata:         lesson.metadata || null,
         }),
       });
       if (data?.status) updateLesson(lessonId, { atlasStatus: data.status });
@@ -226,6 +228,7 @@ export function useAtlasSync() {
               order:        s.order,
               learningType: s.learningType || 'UNDERSTANDING',
               conceptIds:   s.conceptIds  || [],
+              partIndex:    s.partIndex   ?? 0,
             })),
           }),
         });
@@ -380,6 +383,8 @@ export function useAtlasSync() {
         feedEligible:        question.feedEligible        || false,
         unitContentId:       question.unitId              || null,
         lessonContentId:     question.lessonId            || null,
+        sectionContentId:    question.sectionId           || null,
+        isCheckpoint:        question.isCheckpoint        || false,
         conceptIds:          question.conceptIds          || [],
       };
 
