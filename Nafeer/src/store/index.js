@@ -164,10 +164,12 @@ function assembleExportData(s) {
         .map((lesson) => ({
           id: lesson.id, title: lesson.title, order: lesson.order,
           estimatedMinutes: lesson.estimatedMinutes || 15, summary: lesson.summary || null,
+          metadata: lesson.metadata || null,
           sections: s.sections.filter((sec) => sec.lessonId === lesson.id).sort((a, b) => a.order - b.order)
             .map((section) => ({
               id: section.id, title: section.title, order: section.order,
               learningType: section.learningType || 'UNDERSTANDING', conceptIds: section.conceptIds || [],
+              partIndex: section.partIndex ?? 0,
               blocks: s.blocks.filter((b) => b.sectionId === section.id).sort((a, b) => a.order - b.order)
                 .map((block) => ({
                   id: block.id, type: block.type, content: block.content || '',
@@ -186,6 +188,7 @@ function assembleExportData(s) {
       sourceExamId: q.sourceExamId || null, sourceDetails: q.sourceDetails || null,
       sourceYear: q.sourceYear || null, feedEligible: q.feedEligible || false,
       unitId: q.unitId || null, lessonId: q.lessonId || null, conceptIds: q.conceptIds || [],
+      sectionId: q.sectionId || null, isCheckpoint: q.isCheckpoint || false,
     })),
     exams: s.exams.map((e) => ({
       id: e.id, titleAr: e.titleAr, titleEn: e.titleEn || null, source: e.source,

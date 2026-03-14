@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { BLOCK_TYPE_CONFIG } from '@/shared/constants';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -26,6 +27,7 @@ export const useContentStore = create(
                 order:        lessonSections.length + 1,
                 conceptIds:   section.conceptIds   || [],
                 learningType: section.learningType || 'UNDERSTANDING',
+                partIndex:    section.partIndex    ?? 0,
               },
             ],
           };
@@ -65,10 +67,16 @@ export const useContentStore = create(
       addBlock: (block) =>
         set((state) => {
           const sectionBlocks = state.blocks.filter((b) => b.sectionId === block.sectionId);
+          const defaultMeta   = BLOCK_TYPE_CONFIG[block.type]?.defaultMeta ?? null;
           return {
             blocks: [
               ...state.blocks,
-              { ...block, id: block.id || generateId('block'), order: sectionBlocks.length + 1 },
+              {
+                ...block,
+                id:       block.id || generateId('block'),
+                order:    sectionBlocks.length + 1,
+                metadata: block.metadata ?? defaultMeta,
+              },
             ],
           };
         }),

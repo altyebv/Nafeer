@@ -39,6 +39,8 @@ export const useQuizStore = create(
               feedEligible:     false,
               unitId:           null,
               lessonId:         null,
+              sectionId:        null,
+              isCheckpoint:     false,
               conceptIds:       [],
               ...question,
             },
