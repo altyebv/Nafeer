@@ -74,7 +74,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const item = await updateFeedItem(params.id, safeUpdates, user.id, note || '');
+    const item = await updateFeedItem((await params).id, safeUpdates, user.id, note || '');
     if (!item) return err('عنصر التغذية غير موجود', 404);
 
     return ok(item);
@@ -94,7 +94,7 @@ export async function PATCH(request, { params }) {
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
 
-    const item = await updateFeedItemStatus(params.id, status, user.id, note || '');
+    const item = await updateFeedItemStatus((await params).id, status, user.id, note || '');
     if (!item) return err('عنصر التغذية غير موجود', 404);
 
     return ok(item);
@@ -109,8 +109,8 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await requireContributor();
-    await deleteFeedItem(params.id);
-    return ok({ deleted: params.id });
+    await deleteFeedItem((await params).id);
+    return ok({ deleted: (await params).id });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/feed-items/[id]]', e);

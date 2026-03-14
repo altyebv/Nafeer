@@ -11,7 +11,7 @@ export async function GET(request, { params }) {
   try {
     await requireContributor();
 
-    const lesson = await getLessonWithContent(params.id);
+    const lesson = await getLessonWithContent((await params).id);
     if (!lesson) return err('الدرس غير موجود', 404);
 
     return ok(lesson);
@@ -37,7 +37,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const lesson = await updateLesson(params.id, safeUpdates, user.id, note || '');
+    const lesson = await updateLesson((await params).id, safeUpdates, user.id, note || '');
     if (!lesson) return err('الدرس غير موجود', 404);
 
     return ok(lesson);
@@ -64,7 +64,7 @@ export async function PATCH(request, { params }) {
       return err('الاعتماد متاح للمشرفين فقط', 403);
     }
 
-    const lesson = await updateLessonStatus(params.id, status, user.id, note || '');
+    const lesson = await updateLessonStatus((await params).id, status, user.id, note || '');
     if (!lesson) return err('الدرس غير موجود', 404);
 
     return ok(lesson);
@@ -82,7 +82,7 @@ export async function DELETE(request, { params }) {
     const user = await requireContributor();
 
     await connectDB();
-    const lesson = await Lesson.findOne({ contentId: params.id });
+    const lesson = await Lesson.findOne({ contentId: (await params).id });
     if (!lesson) return err('الدرس غير موجود', 404);
 
     if (lesson.status === 'approved') {
@@ -90,16 +90,16 @@ export async function DELETE(request, { params }) {
     }
 
     // Cascade: delete sections + blocks
-    const sections = await Section.find({ lessonContentId: params.id }).select('contentId').lean();
+    const sections = await Section.find({ lessonContentId: (await params).id }).select('contentId').lean();
     const sectionIds = sections.map((s) => s.contentId);
 
     await Promise.all([
-      Lesson.deleteOne({ contentId: params.id }),
-      Section.deleteMany({ lessonContentId: params.id }),
+      Lesson.deleteOne({ contentId: (await params).id }),
+      Section.deleteMany({ lessonContentId: (await params).id }),
       sectionIds.length ? Block.deleteMany({ sectionContentId: { $in: sectionIds } }) : null,
     ]);
 
-    return ok({ deleted: params.id });
+    return ok({ deleted: (await params).id });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/lessons/[id]]', e);

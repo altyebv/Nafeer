@@ -18,7 +18,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const question = await updateQuestion(params.id, safeUpdates, user.id, note || '');
+    const question = await updateQuestion((await params).id, safeUpdates, user.id, note || '');
     if (!question) return err('السؤال غير موجود', 404);
 
     return ok(question);
@@ -38,7 +38,7 @@ export async function PATCH(request, { params }) {
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
 
-    const question = await updateQuestionStatus(params.id, status, user.id, note || '');
+    const question = await updateQuestionStatus((await params).id, status, user.id, note || '');
     if (!question) return err('السؤال غير موجود', 404);
 
     return ok(question);
@@ -53,8 +53,8 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await requireContributor();
-    await deleteQuestion(params.id);
-    return ok({ deleted: params.id });
+    await deleteQuestion((await params).id);
+    return ok({ deleted: (await params).id });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/questions/[id]]', e);

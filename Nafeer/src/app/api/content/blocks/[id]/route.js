@@ -5,8 +5,8 @@ import { deleteBlock } from '@/lib/api/content';
 export async function DELETE(request, { params }) {
   try {
     await requireContributor();
-    await deleteBlock(params.id);
-    return ok({ deleted: params.id });
+    await deleteBlock((await params).id);
+    return ok({ deleted: (await params).id });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/blocks/[id]]', e);

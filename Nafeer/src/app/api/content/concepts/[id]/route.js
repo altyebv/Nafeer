@@ -16,7 +16,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const concept = await updateConcept(params.id, safeUpdates, user.id, note || '');
+    const concept = await updateConcept((await params).id, safeUpdates, user.id, note || '');
     if (!concept) return err('المفهوم غير موجود', 404);
 
     return ok(concept);
@@ -40,7 +40,7 @@ export async function PATCH(request, { params }) {
       return err('الاعتماد متاح للمشرفين فقط', 403);
     }
 
-    const concept = await updateConceptStatus(params.id, status, user.id, note || '');
+    const concept = await updateConceptStatus((await params).id, status, user.id, note || '');
     if (!concept) return err('المفهوم غير موجود', 404);
 
     return ok(concept);
@@ -55,8 +55,8 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await requireContributor();
-    await deleteConcept(params.id);
-    return ok({ deleted: params.id });
+    await deleteConcept((await params).id);
+    return ok({ deleted: (await params).id });
   } catch (e) {
     if (e instanceof Response) return e;
     if (e.message?.includes('معتمد')) return err(e.message, 400);

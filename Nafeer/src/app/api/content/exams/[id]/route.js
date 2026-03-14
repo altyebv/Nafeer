@@ -17,7 +17,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const exam = await updateExam(params.id, safeUpdates, user.id);
+    const exam = await updateExam((await params).id, safeUpdates, user.id);
     if (!exam) return err('الامتحان غير موجود', 404);
 
     return ok(exam);
@@ -32,8 +32,8 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await requireContributor();
-    await deleteExam(params.id);
-    return ok({ deleted: params.id });
+    await deleteExam((await params).id);
+    return ok({ deleted: (await params).id });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/exams/[id]]', e);

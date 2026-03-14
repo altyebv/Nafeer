@@ -10,10 +10,10 @@ export async function DELETE(request, { params }) {
     await connectDB();
 
     // Cascade: delete blocks in this section
-    await Block.deleteMany({ sectionContentId: params.id });
-    await deleteSection(params.id);
+    await Block.deleteMany({ sectionContentId: (await params).id });
+    await deleteSection((await params).id);
 
-    return ok({ deleted: params.id });
+    return ok({ deleted: (await params).id });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/sections/[id]]', e);
