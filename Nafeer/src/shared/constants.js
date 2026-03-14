@@ -16,17 +16,35 @@ export const BLOCK_TYPES = {
 
 export const BLOCK_TYPE_CONFIG = {
   TEXT:          { label: 'نص',           icon: '¶',  color: 'gray' },
-  HEADING:       { label: 'عنوان',         icon: 'H',  color: 'blue' },
+  HEADING:       { label: 'عنوان',         icon: 'H',  color: 'blue',
+                   defaultMeta: { level: 2 } },
   IMAGE:         { label: 'صورة',          icon: '⬜', color: 'green' },
   GIF:           { label: 'صورة متحركة',   icon: '▷',  color: 'purple' },
   FORMULA:       { label: 'معادلة',        icon: '∑',  color: 'orange' },
-  HIGHLIGHT_BOX: { label: 'مربع مهم',      icon: '!',  color: 'yellow' },
-  EXAMPLE:       { label: 'مثال',          icon: '✎',  color: 'teal' },
+  HIGHLIGHT_BOX: { label: 'مربع مهم',      icon: '!',  color: 'yellow',
+                   defaultMeta: { style: 'NOTE' } },
+  EXAMPLE:       { label: 'مثال',          icon: '✎',  color: 'teal',
+                   defaultMeta: { interactive: false, steps: [] } },
   TIP:           { label: 'نصيحة',         icon: '◈',  color: 'pink' },
-  LIST:          { label: 'قائمة',         icon: '≡',  color: 'indigo' },
+  LIST:          { label: 'قائمة',         icon: '≡',  color: 'indigo',
+                   defaultMeta: { style: 'BULLET' } },
   TABLE:         { label: 'جدول',          icon: '⊞',  color: 'cyan' },
   QUOTE:         { label: 'اقتباس',        icon: '❝',  color: 'slate' },
   DIVIDER:       { label: 'فاصل',          icon: '—',  color: 'stone' },
+};
+
+// Highlight box styles (matches Android HighlightStyle enum)
+export const HIGHLIGHT_STYLES = {
+  DEFINITION: { label: 'تعريف',   icon: '📖', color: 'blue'   },
+  WARNING:    { label: 'تحذير',   icon: '⚠️',  color: 'red'    },
+  NOTE:       { label: 'ملاحظة', icon: 'ℹ️',  color: 'amber'  },
+  TIP:        { label: 'نصيحة',  icon: '💡', color: 'green'  },
+};
+
+// Heading levels
+export const HEADING_LEVELS = {
+  2: { label: 'H2 — رئيسي',   size: 'text-xl' },
+  3: { label: 'H3 — فرعي',    size: 'text-lg' },
 };
 
 // Concept types (matches Android ConceptType enum)
