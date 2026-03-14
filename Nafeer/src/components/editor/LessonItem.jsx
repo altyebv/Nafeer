@@ -1,77 +1,143 @@
-import { useState } from 'react';
+'use client';
+import { useState, useRef, useEffect } from 'react';
 import { useDataStore }  from '@/store/dataStore';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
-import StatusBadge from '@/components/editor/StatusBadge';
+import StatusBadge       from '@/components/editor/StatusBadge';
 import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
 
-export default function LessonItem({ lesson, onEdit, coverageLevel }) {
+// Left-border accent colors per lesson status
+const STATUS_BORDER = {
+  empty:   '#1f1e1b',   // near-invisible — ink-800
+  started: '#d97706',   // amber
+  partial: '#3b82f6',   // blue
+  done:    '#10b981',   // emerald
+};
+
+const STATUS_BG_HOVER = {
+  empty:   'hover:bg-ink-900/60',
+  started: 'hover:bg-amber-900/10',
+  partial: 'hover:bg-blue-900/10',
+  done:    'hover:bg-emerald-900/10',
+};
+
+export default function LessonItem({ lesson, index, onEdit, coverageLevel }) {
   const { sections, blocks, updateLesson } = useDataStore();
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(lesson.title);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft,   setTitleDraft]   = useState(lesson.title);
+  const inputRef = useRef(null);
 
-  const lessonSections = sections.filter((s) => s.lessonId === lesson.id);
-  const lessonBlocks   = blocks.filter((b) =>
-    lessonSections.some((s) => s.id === b.sectionId)
-  );
+  useEffect(() => {
+    if (editingTitle) inputRef.current?.focus();
+  }, [editingTitle]);
 
-  const status    = getLessonStatus(lesson.id, sections, blocks, lesson);
-  const statusCfg = STATUS_CONFIG[status];
+  const ls       = sections.filter((s) => s.lessonId === lesson.id);
+  const lb       = blocks.filter((b) => ls.some((s) => s.id === b.sectionId));
+  const status   = getLessonStatus(lesson.id, sections, blocks, lesson);
+  const stCfg    = STATUS_CONFIG[status];
+  const cvCfg    = coverageLevel ? (COVERAGE_LEVEL_CONFIG[coverageLevel] ?? COVERAGE_LEVEL_CONFIG.none) : null;
 
-  const handleSaveTitle = () => {
-    if (editTitle.trim()) updateLesson(lesson.id, { title: editTitle });
-    setIsEditing(false);
+  const saveTitle = () => {
+    if (titleDraft.trim()) updateLesson(lesson.id, { title: titleDraft.trim() });
+    else setTitleDraft(lesson.title);
+    setEditingTitle(false);
   };
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 bg-ink-800/60 rounded-lg hover:bg-ink-800 transition-colors group border border-transparent hover:border-ink-700">
-
-      {/* Status dot + coverage dot */}
-      <div className="flex flex-col gap-1 shrink-0 items-center">
-        <div className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
-        {coverageLevel && (() => {
-          const cvCfg = COVERAGE_LEVEL_CONFIG[coverageLevel] ?? COVERAGE_LEVEL_CONFIG.none;
-          return <div className={`w-2 h-2 rounded-full ${cvCfg.dot}`} title={cvCfg.label} />;
-        })()}
-      </div>
-
-      {isEditing ? (
-        <input
-          type="text"
-          value={editTitle}
-          onChange={(e) => setEditTitle(e.target.value)}
-          onBlur={handleSaveTitle}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') setIsEditing(false); }}
-          onClick={(e) => e.stopPropagation()}
-          className="flex-1 px-2 py-1 bg-ink-900 border border-sand-600 rounded text-sand-200 text-sm focus:outline-none focus:ring-1 focus:ring-sand-500 font-arabic"
-          autoFocus
-        />
-      ) : (
-        <span className="flex-1 text-ink-200 text-sm font-arabic">{lesson.title}</span>
-      )}
-
-      {lesson.atlasStatus && <StatusBadge status={lesson.atlasStatus} />}
-
-      <span className="text-xs text-ink-600 font-mono whitespace-nowrap shrink-0">
-        {lessonSections.length}ق · {lessonBlocks.length}ع · {lesson.estimatedMinutes}د
+    <div
+      className={`
+        relative flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg
+        transition-all duration-150 group cursor-default
+        ${STATUS_BG_HOVER[status]}
+      `}
+      style={{
+        borderRight: `3px solid ${STATUS_BORDER[status]}`,
+        background: 'rgba(26,23,19,0.4)',
+      }}
+    >
+      {/* Lesson number */}
+      <span className="text-[11px] font-mono text-ink-700 shrink-0 w-5 text-center select-none">
+        {String(index + 1).padStart(2, '0')}
       </span>
 
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Title */}
+      {editingTitle ? (
+        <input
+          ref={inputRef}
+          value={titleDraft}
+          onChange={(e) => setTitleDraft(e.target.value)}
+          onBlur={saveTitle}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter')  saveTitle();
+            if (e.key === 'Escape') { setTitleDraft(lesson.title); setEditingTitle(false); }
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="flex-1 bg-transparent border-b border-sand-600 text-sand-200 text-sm
+            focus:outline-none font-arabic pb-0.5"
+        />
+      ) : (
+        <span className="flex-1 text-sm text-ink-100 font-arabic leading-snug min-w-0 truncate
+          group-hover:text-sand-100 transition-colors">
+          {lesson.title}
+        </span>
+      )}
+
+      {/* Atlas status badge */}
+      {lesson.atlasStatus && (
+        <StatusBadge status={lesson.atlasStatus} />
+      )}
+
+      {/* Stats */}
+      <span className="text-[11px] text-ink-700 font-mono whitespace-nowrap shrink-0 hidden sm:block">
+        {ls.length}<span className="text-ink-800">ق</span>
+        &thinsp;·&thinsp;
+        {lb.length}<span className="text-ink-800">ع</span>
+        &thinsp;·&thinsp;
+        {lesson.estimatedMinutes || 15}<span className="text-ink-800">د</span>
+      </span>
+
+      {/* Coverage pip */}
+      {cvCfg && (
+        <div
+          className="w-1.5 h-1.5 rounded-full shrink-0"
+          style={{ background: cvCfg.color, opacity: 0.8 }}
+          title={`تغطية: ${cvCfg.label}`}
+        />
+      )}
+
+      {/* Action buttons — always visible but styled as subtle ghost */}
+      <div className="flex items-center gap-1 shrink-0">
         <button
-          onClick={onEdit}
-          className="px-3 py-1 text-xs bg-sand-900/60 text-sand-400 border border-sand-800/60 rounded hover:bg-sand-800/60 transition-colors font-arabic"
-        >
-          تحرير
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); setEditTitle(lesson.title); setIsEditing(true); }}
-          className="p-1 text-ink-600 hover:text-sand-400 transition-colors"
+          onClick={(e) => { e.stopPropagation(); setTitleDraft(lesson.title); setEditingTitle(true); }}
+          className="p-1 text-ink-800 hover:text-ink-400 rounded transition-colors opacity-0 group-hover:opacity-100"
           title="تعديل العنوان"
         >
-          ✏
+          <PencilIcon />
+        </button>
+
+        <button
+          onClick={onEdit}
+          className="
+            flex items-center gap-1 px-2.5 py-1 text-xs rounded-md font-arabic
+            border border-transparent
+            text-ink-600 hover:text-sand-300 hover:border-sand-900/60 hover:bg-sand-900/20
+            transition-all
+            opacity-40 group-hover:opacity-100
+          "
+        >
+          تحرير
+          <span className="text-[10px] opacity-60">←</span>
         </button>
       </div>
-
     </div>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+      <path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z"
+        stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
   );
 }
