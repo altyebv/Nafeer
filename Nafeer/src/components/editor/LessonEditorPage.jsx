@@ -527,7 +527,7 @@ function StepBody({ lesson, lessonSections, lessonBlocks, onAddSection, onAddNew
           )}
 
           {partsMap[partIdx].map((section) => (
-            <SectionEditor key={section.id} section={section} maxPart={maxPart} />
+            <SectionEditor key={section.id} section={section} maxPart={maxPart} subjectId={subjectId} />
           ))}
 
           {/* Add section to this part */}
