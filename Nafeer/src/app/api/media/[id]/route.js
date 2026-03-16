@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { connectDB }      from '@/lib/db';
 import { Media }          from '@/lib/models/Media';
 import { getCurrentUser } from '@/lib/auth';
+import { getAdminAsUser } from '@/lib/adminAuth';
+
+async function getUser() {
+  return (await getCurrentUser()) ?? (await getAdminAsUser());
+}
 import { deleteMedia }    from '@/lib/supabase';
 
 // ─── DELETE /api/media/[id] ───────────────────────────────────────────────────
@@ -9,7 +14,7 @@ import { deleteMedia }    from '@/lib/supabase';
 // MongoDB record. Uses the media's `contentId` (not _id) as the URL param
 // so the client never needs to know the Mongo _id.
 export async function DELETE(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
   }
