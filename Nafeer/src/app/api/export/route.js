@@ -170,6 +170,7 @@ export async function GET(request) {
         unitId:           q.unitContentId    || null,
         lessonId:         q.lessonContentId  || null,
         conceptIds:       q.conceptIds       || [],
+        markers:          q.markers          || [],
       })),
 
       exams: exams.map((e) => ({
