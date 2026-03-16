@@ -75,6 +75,22 @@ const QuestionSchema = new mongoose.Schema(
     lessonContentId: { type: String, default: null, index: true },
     conceptIds:      [{ type: String }],
 
+    // ── Interactive media markers ──────────────────────────────────────────
+    // Populated only on FIGURE questions that have an imageUrl.
+    // Coordinates are normalised 0–1 from the top-left of the image.
+    markers: {
+      type: [
+        {
+          id:          { type: String, required: true },
+          x:           { type: Number, required: true, min: 0, max: 1 },
+          y:           { type: Number, required: true, min: 0, max: 1 },
+          label:       { type: String, default: '' },
+          description: { type: String, default: '' },
+        },
+      ],
+      default: [],
+    },
+
     ...versioningFields,
   },
   { timestamps: true }
