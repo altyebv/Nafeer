@@ -5,6 +5,7 @@ import { useAtlasSync }     from '@/hooks/useAtlasSync';
 import { BLOCK_TYPE_CONFIG, HIGHLIGHT_STYLES, HEADING_LEVELS } from '@/shared/constants';
 import { LessonTableEditor } from '@/components/editor/TableEditor';
 import DeleteButton          from '@/components/editor/DeleteButton';
+import MediaPicker           from '@/components/editor/MediaPicker';
 
 // ─── Shared input style ───────────────────────────────────────────────────────
 const ta =
@@ -21,7 +22,7 @@ const HL_COLORS = {
 };
 
 // ─── BlockEditor ─────────────────────────────────────────────────────────────
-export default function BlockEditor({ block }) {
+export default function BlockEditor({ block, subjectId }) {
   const { concepts, updateBlock, deleteBlock } = useDataStore();
   const { deleteBlock: atlasDeleteBlock }      = useAtlasSync();
 
@@ -71,14 +72,14 @@ export default function BlockEditor({ block }) {
 
       {/* ── Block content ─────────────────────────────────────────────────── */}
       <div className="p-3 bg-ink-950/20">
-        <BlockBodyEditor block={block} update={update} patchMeta={patchMeta} ta={ta} concepts={concepts} />
+        <BlockBodyEditor block={block} update={update} patchMeta={patchMeta} ta={ta} concepts={concepts} subjectId={subjectId} />
       </div>
     </div>
   );
 }
 
 // ─── BlockBodyEditor — renders the right editor per type ─────────────────────
-function BlockBodyEditor({ block, update, patchMeta, ta }) {
+function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
   switch (block.type) {
 
     // ── TEXT ────────────────────────────────────────────────────────────────
@@ -132,24 +133,12 @@ function BlockBodyEditor({ block, update, patchMeta, ta }) {
     case 'IMAGE':
     case 'GIF':
       return (
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={block.content}
-            onChange={(e) => update({ content: e.target.value })}
-            className="w-full px-3 py-2.5 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-mono placeholder-ink-800 hover:border-ink-700 transition-colors"
-            placeholder="images/diagram.png"
-            dir="ltr"
-          />
-          <input
-            type="text"
-            value={block.caption || ''}
-            onChange={(e) => update({ caption: e.target.value })}
-            className="w-full px-3 py-2.5 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-800 hover:border-ink-700 transition-colors"
-            placeholder="وصف الصورة (اختياري)"
-          />
-          <p className="text-[11px] text-ink-700 font-arabic">مسار نسبي من مجلد assets في التطبيق</p>
-        </div>
+        <MediaBlockEditor
+          block={block}
+          update={update}
+          subjectId={subjectId}
+          ta={ta}
+        />
       );
 
     // ── FORMULA ─────────────────────────────────────────────────────────────
@@ -382,4 +371,114 @@ function BlockBodyEditor({ block, update, patchMeta, ta }) {
         />
       );
   }
+}
+
+// ─── MediaBlockEditor ─────────────────────────────────────────────────────────
+// Handles IMAGE and GIF blocks. Shows:
+//   • A thumbnail preview if a URL is already set
+//   • A "اختر صورة" button that opens the MediaPicker modal
+//   • A manual URL/path fallback input (for Android local assets)
+//   • A caption field
+function MediaBlockEditor({ block, update, subjectId, ta }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const hasUrl = Boolean(block.content?.trim());
+  const isGif  = block.type === 'GIF';
+
+  const handleSelect = (item) => {
+    update({
+      content:  item.url,
+      metadata: { ...(block.metadata || {}), mediaId: item.contentId, alt: item.alt || '' },
+    });
+    setPickerOpen(false);
+  };
+
+  const handleClear = () => {
+    update({
+      content:  '',
+      metadata: { ...(block.metadata || {}), mediaId: null, alt: '' },
+    });
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+
+        {/* ── Thumbnail preview ────────────────────────────────────────────── */}
+        {hasUrl && (
+          <div className="relative group/thumb rounded-lg overflow-hidden border border-ink-800 bg-ink-950">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={block.content}
+              alt={block.metadata?.alt || block.caption || ''}
+              className="max-h-48 w-auto mx-auto object-contain py-2"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+            {/* Clear button overlay */}
+            <button
+              onClick={handleClear}
+              title="إزالة الصورة"
+              className="absolute top-2 left-2 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-red-400 hover:bg-black/80 transition-all opacity-0 group-hover/thumb:opacity-100 text-xs"
+            >
+              ✕
+            </button>
+            {/* GIF badge */}
+            {isGif && (
+              <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-900/80 text-purple-300 text-[10px] font-bold rounded">
+                GIF
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* ── Picker button ────────────────────────────────────────────────── */}
+        <button
+          onClick={() => setPickerOpen(true)}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-ink-700 hover:border-sand-600 text-ink-500 hover:text-sand-400 text-sm font-arabic transition-all"
+        >
+          <span className="font-mono text-base">⬜</span>
+          <span>{hasUrl ? 'تغيير الصورة من المكتبة' : 'اختر صورة من المكتبة'}</span>
+        </button>
+
+        {/* ── Caption ──────────────────────────────────────────────────────── */}
+        <input
+          type="text"
+          value={block.caption || ''}
+          onChange={(e) => update({ caption: e.target.value })}
+          className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-800 hover:border-ink-700 transition-colors"
+          placeholder="وصف الصورة (اختياري)…"
+        />
+
+        {/* ── Manual URL fallback ───────────────────────────────────────────── */}
+        <details className="group/det">
+          <summary className="text-[11px] text-ink-700 hover:text-ink-500 cursor-pointer select-none font-arabic transition-colors list-none flex items-center gap-1">
+            <span className="font-mono text-[10px] transition-transform group-open/det:rotate-90">▶</span>
+            أو أدخل رابطاً / مساراً يدوياً
+          </summary>
+          <div className="mt-1.5">
+            <input
+              type="text"
+              value={block.content}
+              onChange={(e) => update({ content: e.target.value })}
+              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-mono placeholder-ink-800 hover:border-ink-700 transition-colors"
+              placeholder="https://… أو images/diagram.png"
+              dir="ltr"
+            />
+            <p className="text-[10px] text-ink-800 mt-1 font-arabic">
+              رابط Supabase أو مسار نسبي من مجلد assets في التطبيق
+            </p>
+          </div>
+        </details>
+      </div>
+
+      {/* ── Picker modal ─────────────────────────────────────────────────────── */}
+      {pickerOpen && (
+        <MediaPicker
+          type={block.type}
+          subjectId={subjectId}
+          onSelect={handleSelect}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </>
+  );
 }
