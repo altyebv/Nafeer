@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { connectDB }       from '@/lib/db';
 import { Media }           from '@/lib/models/Media';
 import { getCurrentUser }  from '@/lib/auth';
+import { getAdminAsUser }  from '@/lib/adminAuth';
+
+async function getUser() {
+  return (await getCurrentUser()) ?? (await getAdminAsUser());
+}
 import { uploadMedia }     from '@/lib/supabase';
 import { randomUUID }      from 'crypto';
 import { SUBJECT_IDS }     from '@/shared/curriculum';
@@ -33,7 +38,7 @@ function ext(mimeType) {
 // Contributors see media for their own subject + 'common'.
 // Admins (role === 'admin') can see all, optionally filtered by ?subjectId=X.
 export async function GET(request) {
-  const user = await getCurrentUser();
+  const user = await getUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
   }
@@ -69,7 +74,7 @@ export async function GET(request) {
 // Admin-only. Accepts multipart/form-data.
 // Fields: file (required), subjectId (required), alt (optional)
 export async function POST(request) {
-  const user = await getCurrentUser();
+  const user = await getUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
   }
