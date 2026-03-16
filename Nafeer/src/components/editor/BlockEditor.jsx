@@ -6,6 +6,8 @@ import { BLOCK_TYPE_CONFIG, HIGHLIGHT_STYLES, HEADING_LEVELS } from '@/shared/co
 import { LessonTableEditor } from '@/components/editor/TableEditor';
 import DeleteButton          from '@/components/editor/DeleteButton';
 import MediaPicker           from '@/components/editor/MediaPicker';
+import ImageMarkerEditor     from '@/components/editor/ImageMarkerEditor';
+import { sanitiseMarkers }   from '@/lib/markerUtils';
 
 // ─── Shared input style ───────────────────────────────────────────────────────
 const ta =
@@ -377,12 +379,15 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
 // Handles IMAGE and GIF blocks. Shows:
 //   • A thumbnail preview if a URL is already set
 //   • A "اختر صورة" button that opens the MediaPicker modal
+//   • Interactive marker editor (IMAGE blocks only — not GIF)
 //   • A manual URL/path fallback input (for Android local assets)
 //   • A caption field
 function MediaBlockEditor({ block, update, subjectId, ta }) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const hasUrl = Boolean(block.content?.trim());
-  const isGif  = block.type === 'GIF';
+  const [pickerOpen,   setPickerOpen]   = useState(false);
+  const [markersOpen,  setMarkersOpen]  = useState(false);
+  const hasUrl  = Boolean(block.content?.trim());
+  const isGif   = block.type === 'GIF';
+  const markers = sanitiseMarkers(block.metadata?.markers);
 
   const handleSelect = (item) => {
     update({
@@ -395,8 +400,13 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
   const handleClear = () => {
     update({
       content:  '',
-      metadata: { ...(block.metadata || {}), mediaId: null, alt: '' },
+      metadata: { ...(block.metadata || {}), mediaId: null, alt: '', markers: [] },
     });
+    setMarkersOpen(false);
+  };
+
+  const handleMarkersChange = (next) => {
+    update({ metadata: { ...(block.metadata || {}), markers: next } });
   };
 
   return (
@@ -427,6 +437,12 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
                 GIF
               </span>
             )}
+            {/* Marker count badge */}
+            {!isGif && markers.length > 0 && (
+              <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-sand-900/80 text-sand-300 text-[10px] font-bold rounded border border-sand-700/60">
+                ✦ {markers.length}
+              </span>
+            )}
           </div>
         )}
 
@@ -447,6 +463,44 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
           className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-800 hover:border-ink-700 transition-colors"
           placeholder="وصف الصورة (اختياري)…"
         />
+
+        {/* ── Interactive markers section (IMAGE only) ─────────────────────── */}
+        {!isGif && (
+          <div className="rounded-lg border border-ink-800 overflow-hidden">
+            <button
+              onClick={() => setMarkersOpen((o) => !o)}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-arabic transition-colors ${
+                markersOpen
+                  ? 'bg-sand-900/20 text-sand-400 border-b border-sand-800/40'
+                  : 'bg-ink-900/40 text-ink-500 hover:text-ink-300 hover:bg-ink-900/60'
+              }`}
+            >
+              <span className="font-mono text-sand-600">✦</span>
+              <span className="font-semibold">العلامات التفاعلية</span>
+              {markers.length > 0 && (
+                <span className="px-1.5 py-0.5 bg-sand-900/60 text-sand-400 text-[10px] rounded-full border border-sand-800/40">
+                  {markers.length}
+                </span>
+              )}
+              {!hasUrl && (
+                <span className="text-ink-700 text-[10px] mr-auto">اختر صورة أولاً</span>
+              )}
+              <span className={`mr-auto font-mono text-[10px] transition-transform ${markersOpen ? 'rotate-90' : ''}`}>
+                ▶
+              </span>
+            </button>
+
+            {markersOpen && (
+              <div className="p-3 bg-ink-950/30">
+                <ImageMarkerEditor
+                  imageUrl={block.content}
+                  markers={markers}
+                  onChange={handleMarkersChange}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Manual URL fallback ───────────────────────────────────────────── */}
         <details className="group/det">
