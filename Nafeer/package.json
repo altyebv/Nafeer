@@ -15,7 +15,8 @@
     "zustand": "^5.0.10",
     "mongoose": "^8.9.0",
     "bcryptjs": "^2.4.3",
-    "jose": "^5.9.6"
+    "jose": "^5.9.6",
+    "@supabase/supabase-js": "^2.49.4"
   },
   "devDependencies": {
     "@types/node": "^20",
