@@ -9,10 +9,12 @@ import {
   EXAM_SOURCES, EXAM_SOURCE_CONFIG,
   EXAM_TYPES, EXAM_TYPE_CONFIG,
 } from '@/shared/constants';
-import Modal            from '@/components/editor/Modal';
-import { QuizTableEditor } from '@/components/editor/TableEditor';
-import DeleteButton     from '@/components/editor/DeleteButton';
-import StatusBadge      from '@/components/editor/StatusBadge';
+import Modal                from '@/components/editor/Modal';
+import { QuizTableEditor }  from '@/components/editor/TableEditor';
+import DeleteButton         from '@/components/editor/DeleteButton';
+import StatusBadge          from '@/components/editor/StatusBadge';
+import ImageMarkerEditor    from '@/components/editor/ImageMarkerEditor';
+import { sanitiseMarkers }  from '@/lib/markerUtils';
 
 const inputClass =
   'w-full px-3 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
@@ -325,16 +327,54 @@ function QuestionForm({ form, setForm, concepts, units, lessons }) {
       )}
         <div className="space-y-3">
           <div>
-            <label className={labelClass}>مسار الصورة *</label>
+            <label className={labelClass}>رابط / مسار الصورة</label>
             <input
               type="text"
               value={form.imageUrl || ''}
               onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
               className={`${inputClass} font-mono`}
-              placeholder="images/figure_1.png"
+              placeholder="https://… أو images/figure_1.png"
               dir="ltr"
             />
           </div>
+
+          {/* Interactive markers on the question image */}
+          <div className="rounded-lg border border-ink-800 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, _markersOpen: !f._markersOpen }))}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-arabic transition-colors ${
+                form._markersOpen
+                  ? 'bg-sand-900/20 text-sand-400 border-b border-sand-800/40'
+                  : 'bg-ink-900/40 text-ink-500 hover:text-ink-300 hover:bg-ink-900/60'
+              }`}
+            >
+              <span className="font-mono text-sand-600">✦</span>
+              <span className="font-semibold">علامات تفاعلية على الشكل</span>
+              {sanitiseMarkers(form.markers).length > 0 && (
+                <span className="px-1.5 py-0.5 bg-sand-900/60 text-sand-400 text-[10px] rounded-full border border-sand-800/40">
+                  {sanitiseMarkers(form.markers).length}
+                </span>
+              )}
+              {!form.imageUrl && (
+                <span className="text-ink-700 text-[10px] mr-auto">أدخل رابط الصورة أولاً</span>
+              )}
+              <span className={`mr-auto font-mono text-[10px] transition-transform ${form._markersOpen ? 'rotate-90' : ''}`}>
+                ▶
+              </span>
+            </button>
+
+            {form._markersOpen && (
+              <div className="p-3 bg-ink-950/30">
+                <ImageMarkerEditor
+                  imageUrl={form.imageUrl}
+                  markers={sanitiseMarkers(form.markers)}
+                  onChange={(next) => setForm((f) => ({ ...f, markers: next }))}
+                />
+              </div>
+            )}
+          </div>
+
           <div>
             <label className={labelClass}>الإجابة المطلوبة</label>
             <textarea
@@ -496,6 +536,7 @@ export default function QuizBankPage({ subjectId }) {
     cognitiveLevel: 'RECALL', source: 'ORIGINAL',
     sourceExamId: null, sourceDetails: null, sourceYear: null,
     feedEligible: false, unitId: null, lessonId: null, conceptIds: [],
+    markers: [], _markersOpen: false,
   };
 
   const emptyExam = {
@@ -530,6 +571,8 @@ export default function QuizBankPage({ subjectId }) {
       unitId:           q.unitId           || null,
       lessonId:         q.lessonId         || null,
       conceptIds:       q.conceptIds       || [],
+      markers:          sanitiseMarkers(q.markers),
+      _markersOpen:     false,
     });
     setEditingQId(q.id);
     setShowQModal(true);
@@ -537,12 +580,14 @@ export default function QuizBankPage({ subjectId }) {
 
   const handleSaveQuestion = () => {
     if (!qForm.textAr.trim() || !qForm.lessonId) return;
+    // Strip UI-only fields before persisting
+    const { _markersOpen, ...saveForm } = qForm;
     if (editingQId) {
-      updateQuestion(editingQId, qForm);
+      updateQuestion(editingQId, saveForm);
       if (subjectId) syncQuestion(editingQId, subjectId).catch(() => {});
     } else {
       const newId = `q_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-      addQuestion({ ...qForm, id: newId });
+      addQuestion({ ...saveForm, id: newId });
       if (subjectId) syncQuestion(newId, subjectId).catch(() => {});
     }
     setShowQModal(false);
