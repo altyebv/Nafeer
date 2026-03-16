@@ -9,6 +9,7 @@ import ConceptsPage     from '@/components/editor/ConceptsPage';
 import FeedItemsPage    from '@/components/editor/FeedItemsPage';
 import QuizBankPage     from '@/components/editor/QuizBankPage';
 import ExportPage       from '@/components/editor/ExportPage';
+import MediaPage        from '@/components/editor/MediaPage';
 
 export default function EditorShell({ contributor }) {
   const bootstrapFromSubject = useDataStore((s) => s.bootstrapFromSubject);
@@ -53,6 +54,7 @@ export default function EditorShell({ contributor }) {
       case 'concepts':  return <ConceptsPage  subjectId={contributor?.subject} />;
       case 'feeds':     return <FeedItemsPage subjectId={contributor?.subject} />;
       case 'quizbank':  return <QuizBankPage  subjectId={contributor?.subject} />;
+      case 'media':     return <MediaPage     subjectId={contributor?.subject} contributor={contributor} />;
       case 'export':    return <ExportPage    subjectId={contributor?.subject} />;
       default:          return <LessonsPage   onEditLesson={(lessonId, unitId) => navigateTo('editor', { lessonId, unitId })} />;
     }
