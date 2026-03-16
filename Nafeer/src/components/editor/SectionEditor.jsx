@@ -8,7 +8,7 @@ import AddBlockMenu   from '@/components/editor/AddBlockMenu';
 import ConceptLinker  from '@/components/editor/ConceptLinker';
 import DeleteButton   from '@/components/editor/DeleteButton';
 
-export default function SectionEditor({ section, maxPart = 0 }) {
+export default function SectionEditor({ section, maxPart = 0, subjectId }) {
   const { blocks, concepts, updateSection, deleteSection, addBlock } = useDataStore();
   const { deleteSection: atlasDeleteSection } = useAtlasSync();
 
@@ -153,7 +153,7 @@ export default function SectionEditor({ section, maxPart = 0 }) {
           )}
 
           {sectionBlocks.map((block) => (
-            <BlockEditor key={block.id} block={block} />
+            <BlockEditor key={block.id} block={block} subjectId={subjectId} />
           ))}
 
           {/* Add block */}
