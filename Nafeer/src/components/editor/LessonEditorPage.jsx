@@ -228,6 +228,15 @@ export default function LessonEditorPage({
           </button>
         </div>
 
+        {/* Sync error banner — only visible when there's an active error */}
+        {syncError && (
+          <div className="flex items-center gap-2 px-5 py-1.5 bg-red-950/60 border-t border-red-900/40 text-red-400 text-xs font-arabic">
+            <span className="shrink-0 text-red-500">⚠</span>
+            <span className="flex-1 truncate">فشل الحفظ التلقائي — {typeof syncError === 'string' ? syncError : 'تحقق من اتصالك'}</span>
+            <span className="font-mono text-red-700 shrink-0">يُعاد المحاولة عند الحفظ</span>
+          </div>
+        )}
+
         {/* Row 2: step tabs */}
         <div className="flex border-t border-ink-800/60">
           {STEPS.map((step, i) => {
