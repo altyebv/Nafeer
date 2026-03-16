@@ -16,3 +16,17 @@ export async function verifyAdminToken() {
     return null;
   }
 }
+
+// Returns a normalised user-shaped object for admin sessions,
+// compatible with the shape getCurrentUser() returns for contributors.
+// Use this in API routes that accept both contributor and admin callers.
+export async function getAdminAsUser() {
+  const admin = await verifyAdminToken();
+  if (!admin) return null;
+  return {
+    id:      'admin',
+    role:    'admin',
+    subject: null,
+    email:   admin.username || 'admin',
+  };
+}
