@@ -11,6 +11,7 @@ export { useContentStore } from './contentStore';
 export { useConceptStore } from './conceptStore';
 export { useFeedStore }    from './feedStore';
 export { useQuizStore }    from './quizStore';
+export { useMediaStore }   from './mediaStore';
 
 import { useSubjectStore } from './subjectStore';
 import { useContentStore } from './contentStore';
@@ -188,7 +189,7 @@ function assembleExportData(s) {
       sourceExamId: q.sourceExamId || null, sourceDetails: q.sourceDetails || null,
       sourceYear: q.sourceYear || null, feedEligible: q.feedEligible || false,
       unitId: q.unitId || null, lessonId: q.lessonId || null, conceptIds: q.conceptIds || [],
-      sectionId: q.sectionId || null, isCheckpoint: q.isCheckpoint || false,
+      markers: q.markers || [],
     })),
     exams: s.exams.map((e) => ({
       id: e.id, titleAr: e.titleAr, titleEn: e.titleEn || null, source: e.source,
