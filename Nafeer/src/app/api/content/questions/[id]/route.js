@@ -13,6 +13,7 @@ export async function PUT(request, { params }) {
       'imageUrl', 'tableData', 'difficulty', 'points', 'estimatedSeconds',
       'cognitiveLevel', 'source', 'sourceExamContentId', 'sourceDetails',
       'sourceYear', 'feedEligible', 'unitContentId', 'lessonContentId', 'conceptIds',
+      'markers',
     ];
     const safeUpdates = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
