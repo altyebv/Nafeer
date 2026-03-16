@@ -1,17 +1,20 @@
 'use client';
-import { useDataStore } from '@/store/dataStore';
-import { useRouter }    from 'next/navigation';
+import { useDataStore }  from '@/store/dataStore';
+import { useMediaStore } from '@/store/mediaStore';
+import { useRouter }     from 'next/navigation';
 
 const NAV = [
   { id: 'lessons',  icon: '◈', label: 'الدروس'      },
   { id: 'feeds',    icon: '▣', label: 'التغذية'      },
   { id: 'quizbank', icon: '◎', label: 'الأسئلة'      },
   { id: 'concepts', icon: '✦', label: 'المفاهيم'     },
+  { id: 'media',    icon: '⬜', label: 'الوسائط'     },
   { id: 'export',   icon: '↑', label: 'تصدير'        },
 ];
 
 export default function EditorSidebar({ currentPage, onNavigate, contributor }) {
   const { subject, lessons, concepts, feedItems, questions } = useDataStore();
+  const { media } = useMediaStore();
   const router = useRouter();
 
   const counts = {
@@ -19,6 +22,7 @@ export default function EditorSidebar({ currentPage, onNavigate, contributor }) 
     feeds:    feedItems.length,
     quizbank: questions.length,
     concepts: concepts.length,
+    media:    media.length,
     export:   null,
   };
 
