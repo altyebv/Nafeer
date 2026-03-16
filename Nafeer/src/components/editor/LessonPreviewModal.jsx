@@ -194,18 +194,64 @@ function BlockPreview({ block }) {
     }
 
     case 'IMAGE':
-    case 'GIF':
+    case 'GIF': {
+      const markers = Array.isArray(block.metadata?.markers) ? block.metadata.markers : [];
       return (
-        <div className="rounded-xl overflow-hidden" style={{ background: '#1a1713' }}>
-          <div className="flex flex-col items-center justify-center py-6 gap-2">
-            <span className="text-2xl">{block.type === 'GIF' ? '▷' : '⬜'}</span>
-            <span className="text-white/30 text-xs font-mono">{block.content || 'مسار الصورة'}</span>
-          </div>
+        <div className="rounded-xl overflow-hidden" style={{ background: '#0e0c09' }}>
+          {block.content ? (
+            <div className="relative select-none">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={block.content}
+                alt={block.metadata?.alt || ''}
+                className="w-full h-auto block"
+                draggable={false}
+              />
+              {/* Marker pin overlay — read-only */}
+              {markers.map((marker, idx) => {
+                const hasLabel = Boolean(marker.label?.trim());
+                return (
+                  <div
+                    key={marker.id}
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${marker.x * 100}%`,
+                      top:  `${marker.y * 100}%`,
+                      transform: 'translate(-50%, -100%)',
+                      zIndex: 10,
+                    }}
+                  >
+                    <div className="flex flex-col items-center">
+                      <div className="px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-lg mb-0.5 bg-sand-500/90 text-ink-950 border border-sand-400 backdrop-blur-sm">
+                        {hasLabel ? marker.label : (idx + 1)}
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="w-0.5 h-3 bg-sand-400" />
+                        <div className="w-2.5 h-2.5 rounded-full border-2 bg-sand-400 border-sand-300 shadow" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <span className="text-2xl">{block.type === 'GIF' ? '▷' : '⬜'}</span>
+              <span className="text-white/30 text-xs font-mono">لم يتم اختيار صورة</span>
+            </div>
+          )}
+          {/* Marker count hint */}
+          {markers.length > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+              <span className="text-[10px]" style={{ color: '#d4891e' }}>✦ {markers.length} علامة تفاعلية</span>
+            </div>
+          )}
           {block.caption && (
             <p className="text-white/50 text-xs font-arabic text-center px-3 py-2">{block.caption}</p>
           )}
         </div>
       );
+    }
 
     case 'FORMULA':
       return (
