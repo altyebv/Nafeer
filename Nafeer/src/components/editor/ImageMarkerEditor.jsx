@@ -38,10 +38,12 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
   const update  = (id, patch) => onChange(markers.map((m) => m.id === id ? { ...m, ...patch } : m));
   const remove  = (id)        => { onChange(markers.filter((m) => m.id !== id)); if (activeId === id) setActiveId(null); };
 
-  // ── click to place ─────────────────────────────────────────────────────────
+  // ── click / tap to place ────────────────────────────────────────────────────
   const handleImageClick = (e) => {
     if (!placingMode || readOnly) return;
-    const pos = toNorm(e.clientX, e.clientY);
+    const clientX = e.touches ? e.changedTouches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.changedTouches[0].clientY : e.clientY;
+    const pos = toNorm(clientX, clientY);
     if (!pos) return;
     const newMarker = { id: randomId('mk'), x: pos.x, y: pos.y, label: '', description: '' };
     const next = [...markers, newMarker];
@@ -51,12 +53,15 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
   };
 
   // ── drag to reposition ─────────────────────────────────────────────────────
-  const handlePinMouseDown = (e, id) => {
+  const handlePinPointerDown = (e, id) => {
     if (readOnly) return;
     e.stopPropagation();
     e.preventDefault();
+    // Support both mouse and touch
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     setDraggingId(id);
-    setDragStart({ x: e.clientX, y: e.clientY });
+    setDragStart({ x: clientX, y: clientY });
     setActiveId(id);
   };
 
@@ -64,7 +69,9 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
     if (!draggingId) return;
 
     const onMove = (e) => {
-      const pos = toNorm(e.clientX, e.clientY);
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const pos = toNorm(clientX, clientY);
       if (!pos) return;
       update(draggingId, { x: pos.x, y: pos.y });
     };
@@ -72,8 +79,15 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
     const onUp = () => { setDraggingId(null); setDragStart(null); };
 
     window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mouseup',   onUp);
+    window.addEventListener('touchmove', onMove, { passive: true });
+    window.addEventListener('touchend',  onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup',   onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend',  onUp);
+    };
   }, [draggingId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── active marker form ────────────────────────────────────────────────────
@@ -130,6 +144,7 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
           placingMode ? 'cursor-crosshair' : ''
         } ${draggingId ? 'cursor-grabbing' : ''}`}
         onClick={handleImageClick}
+        onTouchEnd={handleImageClick}
       >
         {/* The image itself */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -183,7 +198,7 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
             >
               {/* Pin body */}
               <div
-                onMouseDown={(e) => handlePinMouseDown(e, marker.id)}
+                onPointerDown={(e) => handlePinPointerDown(e, marker.id)}
                 onClick={(e) => { e.stopPropagation(); setActiveId(marker.id === activeId ? null : marker.id); }}
                 className={`
                   flex flex-col items-center cursor-grab
