@@ -303,6 +303,7 @@ export default function LessonEditorPage({
             lesson={lesson}
             lessonSections={lessonSections}
             lessonBlocks={lessonBlocks}
+            subjectId={subjectId}
             onAddSection={handleAddSection}
             onAddNewPart={handleAddNewPart}
             onPrev={() => setActiveStep(0)}
@@ -479,7 +480,7 @@ function StepMeta({
 }
 
 // ─── Step 2: Body ─────────────────────────────────────────────────────────────
-function StepBody({ lesson, lessonSections, lessonBlocks, onAddSection, onAddNewPart, onPrev, onNext }) {
+function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSection, onAddNewPart, onPrev, onNext }) {
   // Group sections by partIndex
   const partsMap = lessonSections.reduce((acc, s) => {
     const p = s.partIndex ?? 0;
