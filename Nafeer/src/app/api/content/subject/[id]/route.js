@@ -1,5 +1,6 @@
-import { requireSubjectAccess, ok, err } from '@/lib/api/guard';
+import { verifyAdminToken } from '@/lib/adminAuth';
 import { connectDB } from '@/lib/db';
+import { Subject } from '@/lib/models/Subject';
 import { Unit } from '@/lib/models/Unit';
 import { Lesson } from '@/lib/models/Lesson';
 import { Section } from '@/lib/models/Section';
@@ -7,179 +8,92 @@ import { Block } from '@/lib/models/Block';
 import { Concept } from '@/lib/models/Concept';
 import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
+import { applyVersionBump } from '@/lib/models/versioning';
 
-// GET /api/coverage/[subjectId]
+const ok  = (data)          => Response.json({ ok: true, data });
+const err = (msg, status=400) => Response.json({ ok: false, error: msg }, { status });
+
+// ─── PATCH /api/content/subject/[id] ─────────────────────────────────────────
+// Admin-only. Updates cosmetic / metadata fields on the Subject document.
+// Immutable fields (subjectId, path, isMajor, order) are intentionally excluded.
 //
-// Returns a coverage map for every lesson in the subject:
-// - How many sections, blocks, concepts, feed items, questions it has
-// - A coverage score (0–100)
-//
-// Used by: SubjectOverview badges, LessonEditorPage sidebar, Admin dashboard,
-//          ProgressBoard on the landing page.
-//
-export async function GET(request, { params }) {
-  try {
-    const { subjectId } = await params;
+// Body: { nameAr?, nameEn?, colorHex?, note? }
+export async function PATCH(request, { params }) {
+  const admin = await verifyAdminToken();
+  if (!admin) return err('غير مصرح', 401);
 
-    // Coverage data is public for the landing page ProgressBoard,
-    // but detailed per-lesson data requires auth.
-    // We allow unauthenticated access to aggregate totals only.
-    let isAuthenticated = false;
-    try {
-      await requireSubjectAccess(subjectId);
-      isAuthenticated = true;
-    } catch {
-      // unauthenticated — will return summary only
-    }
+  const { id } = await params;
+  const body = await request.json();
+  const { note, ...updates } = body;
 
-    await connectDB();
+  const allowed = ['nameAr', 'nameEn', 'colorHex'];
+  const safeUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([k]) => allowed.includes(k))
+  );
 
-    // ── Aggregate counts using Atlas $group pipelines ─────────────────────
-
-    const [
-      units,
-      lessons,
-      sectionCounts,
-      blockCounts,
-      conceptCountsPerLesson,  // via section.conceptIds
-      feedItemCounts,
-      questionCounts,
-    ] = await Promise.all([
-      Unit.find({ subjectId }).sort({ order: 1 }).select('contentId title order').lean(),
-
-      Lesson.find({ subjectId }).sort({ order: 1 }).lean(),
-
-      // Sections per lesson
-      Section.aggregate([
-        { $match: { subjectId } },
-        { $group: { _id: '$lessonContentId', count: { $sum: 1 } } },
-      ]),
-
-      // Blocks per lesson (via section → lesson mapping is expensive; use subjectId filter)
-      Block.aggregate([
-        { $match: { subjectId } },
-        {
-          $lookup: {
-            from:         'sections',
-            localField:   'sectionContentId',
-            foreignField: 'contentId',
-            as:           'section',
-          },
-        },
-        { $unwind: '$section' },
-        { $group: { _id: '$section.lessonContentId', count: { $sum: 1 } } },
-      ]),
-
-      // Concepts per lesson — via sections.conceptIds
-      Section.aggregate([
-        { $match: { subjectId } },
-        { $unwind: '$conceptIds' },
-        { $group: { _id: '$lessonContentId', uniqueConcepts: { $addToSet: '$conceptIds' } } },
-        { $project: { count: { $size: '$uniqueConcepts' } } },
-      ]),
-
-      // Feed items per lesson
-      FeedItem.aggregate([
-        { $match: { subjectId } },
-        { $group: { _id: '$lessonContentId', count: { $sum: 1 } } },
-      ]),
-
-      // Questions per lesson
-      Question.aggregate([
-        { $match: { subjectId } },
-        { $group: { _id: '$lessonContentId', count: { $sum: 1 } } },
-      ]),
-    ]);
-
-    // Build lookup maps
-    const toMap = (arr) => Object.fromEntries(arr.map((x) => [x._id, x.count]));
-
-    const sectionMap    = toMap(sectionCounts);
-    const blockMap      = toMap(blockCounts);
-    const conceptMap    = toMap(conceptCountsPerLesson);
-    const feedMap       = toMap(feedItemCounts);
-    const questionMap   = toMap(questionCounts);
-
-    // ── Compute coverage per lesson ───────────────────────────────────────
-
-    const lessonsWithCoverage = lessons.map((lesson) => {
-      const id        = lesson.contentId;
-      const sections  = sectionMap[id]  || 0;
-      const blocks    = blockMap[id]    || 0;
-      const concepts  = conceptMap[id]  || 0;
-      const feedItems = feedMap[id]     || 0;
-      const questions = questionMap[id] || 0;
-
-      // Coverage score: weighted formula
-      // 40%: has sections + blocks (basic content written)
-      // 30%: feed items >= concepts (at least 1 card per concept)
-      // 30%: questions >= concepts * 2 (at least 2 questions per concept)
-      const contentScore  = sections > 0 && blocks > 0 ? 40 : sections > 0 ? 20 : 0;
-      const feedScore     = concepts === 0 ? 0 : Math.min(30, Math.round((feedItems / concepts) * 30));
-      const questionScore = concepts === 0 ? 0 : Math.min(30, Math.round((questions / (concepts * 2)) * 30));
-      const coverageScore = contentScore + feedScore + questionScore;
-
-      return {
-        lessonId:      id,
-        unitContentId: lesson.unitContentId,
-        title:         lesson.title,
-        order:         lesson.order,
-        status:        lesson.status,
-        sections,
-        blocks,
-        concepts,
-        feedItems,
-        questions,
-        coverageScore,
-        // Traffic light for UI
-        coverageLevel: coverageScore >= 80 ? 'high'
-                     : coverageScore >= 40 ? 'medium'
-                     : coverageScore > 0   ? 'low'
-                     : 'none',
-      };
-    });
-
-    // ── Nest under units ──────────────────────────────────────────────────
-
-    const lessonsByUnit = lessonsWithCoverage.reduce((acc, l) => {
-      if (!acc[l.unitContentId]) acc[l.unitContentId] = [];
-      acc[l.unitContentId].push(l);
-      return acc;
-    }, {});
-
-    const result = units.map((unit) => {
-      const unitLessons = lessonsByUnit[unit.contentId] || [];
-      const avgCoverage = unitLessons.length
-        ? Math.round(unitLessons.reduce((s, l) => s + l.coverageScore, 0) / unitLessons.length)
-        : 0;
-
-      return {
-        unitId:      unit.contentId,
-        title:       unit.title,
-        order:       unit.order,
-        avgCoverage,
-        lessons:     isAuthenticated ? unitLessons : undefined,
-        // For unauthenticated landing page: just totals
-        totalLessons:    unitLessons.length,
-        approvedLessons: unitLessons.filter((l) => l.status === 'approved').length,
-      };
-    });
-
-    // Subject-level summary (always returned, even unauthenticated)
-    const allLessons = lessonsWithCoverage;
-    const summary = {
-      subjectId,
-      totalLessons:    allLessons.length,
-      approvedLessons: allLessons.filter((l) => l.status === 'approved').length,
-      avgCoverage:     allLessons.length
-        ? Math.round(allLessons.reduce((s, l) => s + l.coverageScore, 0) / allLessons.length)
-        : 0,
-    };
-
-    return ok({ summary, units: result });
-  } catch (e) {
-    if (e instanceof Response) return e;
-    console.error('[GET /api/coverage/[subjectId]]', e);
-    return err('خطأ في الخادم', 500);
+  if (Object.keys(safeUpdates).length === 0) {
+    return err('لا توجد حقول قابلة للتعديل في الطلب');
   }
+
+  await connectDB();
+
+  const subject = await Subject.findOne({ subjectId: id });
+  if (!subject) return err('المادة غير موجودة', 404);
+
+  const versionedUpdates = applyVersionBump(safeUpdates, subject, 'admin', note || 'تعديل بيانات المادة');
+
+  const updated = await Subject.findOneAndUpdate(
+    { subjectId: id },
+    { $set: versionedUpdates },
+    { new: true }
+  ).lean();
+
+  return ok(updated);
+}
+
+// ─── DELETE /api/content/subject/[id] ────────────────────────────────────────
+// Admin-only. Hard-deletes the subject and ALL its content (cascade).
+// This is destructive and irreversible — use with extreme caution.
+// The subject must have zero approved lessons to proceed (safety guard).
+//
+// Override the safety guard by passing ?force=true in the query string.
+export async function DELETE(request, { params }) {
+  const admin = await verifyAdminToken();
+  if (!admin) return err('غير مصرح', 401);
+
+  const { id } = await params;
+  const force = new URL(request.url).searchParams.get('force') === 'true';
+
+  await connectDB();
+
+  const subject = await Subject.findOne({ subjectId: id });
+  if (!subject) return err('المادة غير موجودة', 404);
+
+  // Safety guard: block deletion if there are approved lessons (unless forced)
+  if (!force) {
+    const approvedCount = await Lesson.countDocuments({ subjectId: id, status: 'approved' });
+    if (approvedCount > 0) {
+      return err(
+        `لا يمكن حذف المادة: تحتوي على ${approvedCount} درس معتمد. أرسل ?force=true للمتابعة.`,
+        409
+      );
+    }
+  }
+
+  // Cascade delete — order matters: blocks first, then sections, then up the tree
+  const sections = await Section.find({ subjectId: id }).select('contentId').lean();
+  const sectionIds = sections.map((s) => s.contentId);
+
+  await Promise.all([
+    sectionIds.length ? Block.deleteMany({ sectionContentId: { $in: sectionIds } }) : null,
+    Section.deleteMany({ subjectId: id }),
+    Lesson.deleteMany({ subjectId: id }),
+    Unit.deleteMany({ subjectId: id }),
+    Concept.deleteMany({ subjectId: id }),
+    FeedItem.deleteMany({ subjectId: id }),
+    Question.deleteMany({ subjectId: id }),
+    Subject.deleteOne({ subjectId: id }),
+  ]);
+
+  return ok({ deleted: id });
 }
