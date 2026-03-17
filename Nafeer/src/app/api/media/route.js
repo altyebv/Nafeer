@@ -129,6 +129,8 @@ export async function POST(request) {
 
   let url;
   try {
+     console.log('[media] supabaseAdmin initialised:', !!supabaseAdmin);
+  console.log('[media] bucket:', MEDIA_BUCKET);
     const buffer = Buffer.from(await file.arrayBuffer());
     url = await uploadMedia(path, buffer, mimeType);
   } catch (e) {
