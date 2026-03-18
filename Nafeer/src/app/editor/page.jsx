@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/auth';
-import EditorShell from '@/components/editor/EditorShell';
+import EditorShell from '@/components/editor/layout/EditorShell';
 
 export const metadata = {
   title: 'أداة التحرير — نفير',
