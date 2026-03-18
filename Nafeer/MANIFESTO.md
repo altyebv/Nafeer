@@ -1,5 +1,5 @@
 # NAFEER × BASHEER — Project Manifesto
-**v5.2 — March 2026 — Landing Polish + Missing Implementations Wired**
+**v5.3 — March 2026 — Media Pipeline + Codebase Refactor**
 
 ---
 
@@ -68,15 +68,13 @@ src/
   components/
     landing/  Navbar, Hero, Features, ProgressBoard, NafeerSection, Footer
     editor/
-      EditorShell, EditorSidebar
-      LessonsPage, UnitCard, LessonItem
-      LessonEditorPage, SectionEditor, BlockEditor
-      ConceptsPage, FeedItemsPage, QuizBankPage, ExportPage
-      MediaPage                     ← media library (admin: upload+manage, contributor: browse)
-      MediaPicker                   ← modal picker for IMAGE/GIF blocks
-      CoveragePanel (DONE v5.2), StatusBadge, DeleteButton, Modal
-      AddBlockMenu, ConceptLinker, TableEditor
-      LessonFeedPanel, LessonQuestionsPanel, SubjectOverview, UnitView
+      layout/   EditorShell, EditorSidebar
+      pages/    LessonsPage, ConceptsPage, FeedItemsPage, QuizBankPage, ExportPage, MediaPage
+      lesson/   LessonEditorPage, SectionEditor, LessonItem, LessonFeedPanel, LessonQuestionsPanel, LessonPreviewModal
+      blocks/   BlockEditor, AddBlockMenu, TableEditor
+      media/    MediaPicker, ImageMarkerEditor
+      units/    UnitCard, UnitView, SubjectOverview
+      shared/   Modal, DeleteButton, StatusBadge, CoveragePanel, ConceptLinker
   hooks/
     useAtlasSync.js                 ← all Atlas persistence logic
     useCoverageData.js              ← coverage fetch + cache (DONE v5.2)
@@ -381,6 +379,8 @@ Dark-first. CSS custom properties on `:root` and `:root[data-theme="light"]`.
 | Phase 5 | Redesign — landing page + editor UX polish | 🔄 IN PROGRESS |
 | Phase 6 | Media — Supabase Storage, MediaPage, MediaPicker in blocks | ✅ DONE |
 | Phase 7 | Interactive Media — image markers for lessons and questions | ✅ DONE |
+
+**v5.3 changes:** `components/editor/` refactored into 7 subdirectories (`layout/`, `pages/`, `lesson/`, `blocks/`, `media/`, `units/`, `shared/`). All import paths updated across codebase. No logic changes.
 
 ---
 
