@@ -260,6 +260,7 @@ function BlockPreview({ block }) {
           <FormulaPreview
             latex={block.content || ''}
             displayMode={block.metadata?.displayMode !== true}
+            rtlMath={true}
           />
           {!block.content && (
             <p className="font-mono text-xs mt-1" style={{ color: '#5c5648' }}>معادلة</p>
