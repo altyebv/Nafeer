@@ -148,9 +148,10 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
     case 'FORMULA':
       return (
         <FormulaEditor
-          value={block.content}
+          value={block.content ?? ''}
           displayMode={block.metadata?.displayMode ?? false}
-          onChange={({ content, metadata }) => update({ content, metadata: { ...block.metadata, ...metadata } })}
+          onContentChange={(latex)      => update({ content: latex })}
+          onDisplayModeChange={(inline) => patchMeta({ displayMode: inline })}
         />
       );
 
