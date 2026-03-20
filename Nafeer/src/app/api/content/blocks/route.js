@@ -1,5 +1,6 @@
 import { requireContributor, ok, err } from '@/lib/api/guard';
 import { batchUpsertBlocks, deleteBlock } from '@/lib/api/content';
+import { trackStat } from '@/lib/trackStat';
 
 // POST /api/content/blocks
 // Body: { blocks: [...] }  — batch upsert
@@ -9,10 +10,16 @@ export async function POST(request) {
     const { blocks } = await request.json();
 
     if (!Array.isArray(blocks) || blocks.length === 0) {
-      return ok([], { total: 0 }); // empty section is fine
+      return ok([], { total: 0 });
     }
 
     const results = await batchUpsertBlocks(blocks, user.id);
+
+    // Track stat — count new blocks only (approximate via batch size)
+    if (results.length > 0) {
+      trackStat(user.id, 'blocksAdded');
+    }
+
     return ok(results, { total: results.length });
   } catch (e) {
     if (e instanceof Response) return e;

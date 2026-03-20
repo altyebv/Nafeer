@@ -3,8 +3,8 @@ import { getLessonsForSubject } from '@/lib/api/lessons';
 import { connectDB } from '@/lib/db';
 import { Lesson } from '@/lib/models/Lesson';
 import { initialChangelog } from '@/lib/models/versioning';
+import { trackStat } from '@/lib/trackStat';
 
-// GET /api/content/lessons?subjectId=PHYSICS[&unitContentId=PHYSICS_U1][&status=approved]
 export async function GET(request) {
   try {
     const params    = new URL(request.url).searchParams;
@@ -26,8 +26,6 @@ export async function GET(request) {
   }
 }
 
-// POST /api/content/lessons
-// Body: { contentId, subjectId, unitContentId, title, order, estimatedMinutes?, summary? }
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -52,6 +50,9 @@ export async function POST(request) {
       createdBy:        user.id,
       changelog:        initialChangelog(user.id),
     });
+
+    // Track stat — fire-and-forget
+    trackStat(user.id, 'lessonsCreated');
 
     return ok(lesson, { status: 201 });
   } catch (e) {

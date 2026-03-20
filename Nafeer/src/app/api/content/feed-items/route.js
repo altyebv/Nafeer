@@ -3,6 +3,7 @@ import {
   getFeedItemsForSubject, createFeedItem, updateFeedItem,
   updateFeedItemStatus, deleteFeedItem,
 } from '@/lib/api/feedItems';
+import { trackStat } from '@/lib/trackStat';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -46,6 +47,9 @@ export async function POST(request) {
       { ...body, contentId: body.contentId || generateId('feed') },
       user.id
     );
+
+    // Track stat — fire-and-forget
+    trackStat(user.id, 'feedItemsCreated');
 
     return ok(item);
   } catch (e) {

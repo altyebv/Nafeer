@@ -1,16 +1,12 @@
-import { requireSubjectAccess, requireContributor, ok, err } from '@/lib/api/guard';
+import { requireSubjectAccess, ok, err } from '@/lib/api/guard';
 import {
-  getQuestionsForSubject, createQuestion, updateQuestion,
-  updateQuestionStatus, deleteQuestion,
-  getExamsForSubject, createExam, updateExam, deleteExam,
+  getQuestionsForSubject, createQuestion,
 } from '@/lib/api/questions';
+import { trackStat } from '@/lib/trackStat';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-// ─── Questions Collection ─────────────────────────────────────────────────────
-
-// GET /api/content/questions?subjectId=PHYSICS[&lessonContentId=...][&status=...]
 export async function GET(request) {
   try {
     const params    = new URL(request.url).searchParams;
@@ -34,7 +30,6 @@ export async function GET(request) {
   }
 }
 
-// POST /api/content/questions
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -49,6 +44,9 @@ export async function POST(request) {
       { ...body, contentId: body.contentId || generateId('q') },
       user.id
     );
+
+    // Track stat — fire-and-forget
+    trackStat(user.id, 'questionsAdded');
 
     return ok(question);
   } catch (e) {
