@@ -3,8 +3,21 @@ import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { verifyAdminToken } from '@/lib/adminAuth';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 
-// GET /api/admin/contributors — list all
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+function generateOnboardingToken() {
+  return randomBytes(32).toString('hex');
+}
+
+function getOnboardingLink(token) {
+  const base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return `${base}/onboard?token=${token}`;
+}
+
+// ─── GET /api/admin/contributors ─────────────────────────────────────────────
+
 export async function GET(request) {
   const admin = await verifyAdminToken();
   if (!admin) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -12,81 +25,102 @@ export async function GET(request) {
   await connectDB();
 
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get('status'); // pending | approved | rejected | all
-
+  const status = searchParams.get('status');
   const filter = status && status !== 'all' ? { status } : {};
-  const contributors = await Contributor.find(filter).sort({ createdAt: -1 });
 
+  const contributors = await Contributor.find(filter).sort({ createdAt: -1 });
   return NextResponse.json({ contributors });
 }
 
-// POST /api/admin/contributors — create contributor manually
+// ─── POST /api/admin/contributors — create manually ───────────────────────────
+
 export async function POST(request) {
   const admin = await verifyAdminToken();
   if (!admin) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-  const { name, email, subject, background, password } = await request.json();
+  const { name, gender, email, username, subject, password } = await request.json();
 
-  if (!name || !email || !subject || !password) {
+  if (!name || !gender || !email || !username || !subject || !password) {
     return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
   }
 
   await connectDB();
 
-  const existing = await Contributor.findOne({ email: email.toLowerCase() });
-  if (existing) {
-    return NextResponse.json({ message: 'Email already exists' }, { status: 409 });
-  }
+  const existing = await Contributor.findOne({
+    $or: [{ email: email.toLowerCase() }, { username }],
+  });
+  if (existing) return NextResponse.json({ message: 'Email or username already exists' }, { status: 409 });
 
   const passwordHash = await bcrypt.hash(password, 12);
 
   const contributor = await Contributor.create({
     name,
-    email: email.toLowerCase(),
+    gender,
+    email:     email.toLowerCase(),
+    username,
     subject,
-    background: background || 'Created by admin',
+    background: 'Created by admin',
     passwordHash,
-    status: 'approved',
+    status:    'approved',
+    onboarded: true,
   });
 
   return NextResponse.json({ success: true, contributor }, { status: 201 });
 }
 
-// PATCH /api/admin/contributors — update status or set password
+// ─── PATCH /api/admin/contributors ───────────────────────────────────────────
+// Actions: approve | reject | set_password | reset_to_pending | generate_onboard_link
+
 export async function PATCH(request) {
   const admin = await verifyAdminToken();
   if (!admin) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   const { id, action, password } = await request.json();
-
-  if (!id || !action) {
-    return NextResponse.json({ message: 'Missing id or action' }, { status: 400 });
-  }
+  if (!id || !action) return NextResponse.json({ message: 'Missing id or action' }, { status: 400 });
 
   await connectDB();
 
   const contributor = await Contributor.findById(id);
-  if (!contributor) {
-    return NextResponse.json({ message: 'Contributor not found' }, { status: 404 });
-  }
+  if (!contributor) return NextResponse.json({ message: 'Contributor not found' }, { status: 404 });
+
+  let onboardingLink = null;
 
   if (action === 'approve') {
     contributor.status = 'approved';
+    // Auto-generate an onboarding token if not yet onboarded
+    if (!contributor.onboarded) {
+      const token = generateOnboardingToken();
+      contributor.onboardingToken     = token;
+      contributor.onboardingExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      onboardingLink = getOnboardingLink(token);
+    }
   } else if (action === 'reject') {
     contributor.status = 'rejected';
   } else if (action === 'set_password') {
     if (!password) return NextResponse.json({ message: 'Password required' }, { status: 400 });
     contributor.passwordHash = await bcrypt.hash(password, 12);
-    contributor.status = 'approved';
+    contributor.status       = 'approved';
+    contributor.onboarded    = true; // admin-set password skips onboarding
   } else if (action === 'reset_to_pending') {
     contributor.status = 'pending';
+  } else if (action === 'generate_onboard_link') {
+    // Re-generate a fresh link for an already-approved contributor
+    if (contributor.status !== 'approved') {
+      return NextResponse.json({ message: 'Contributor must be approved first' }, { status: 400 });
+    }
+    const token = generateOnboardingToken();
+    contributor.onboardingToken     = token;
+    contributor.onboardingExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    contributor.onboarded           = false;
+    onboardingLink = getOnboardingLink(token);
   }
 
   await contributor.save();
-  return NextResponse.json({ success: true, contributor });
+  return NextResponse.json({ success: true, contributor, onboardingLink });
 }
 
-// DELETE /api/admin/contributors
+// ─── DELETE /api/admin/contributors ──────────────────────────────────────────
+
 export async function DELETE(request) {
   const admin = await verifyAdminToken();
   if (!admin) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });

@@ -1,30 +1,28 @@
 'use client';
 import { useState } from 'react';
-import { SUBJECTS_CATALOG, TRACK_CONFIG } from '@/shared/curriculum';
+import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
-// Group subjects by track for a cleaner <select> with <optgroup>
 const SUBJECT_GROUPS = [
   { trackKey: 'COMMON',   label: 'مشترك' },
   { trackKey: 'SCIENCE',  label: 'علمي'  },
   { trackKey: 'LITERARY', label: 'أدبي'  },
 ];
 
-const STAGES = {
-  FORM: 'form',
-  SUCCESS: 'success',
-};
+const STAGES = { FORM: 'form', SUCCESS: 'success' };
 
 export default function JoinPage() {
-  const [stage, setStage] = useState(STAGES.FORM);
+  const [stage, setStage]   = useState(STAGES.FORM);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    background: '',
-    motivation: '',
+  const [error, setError]   = useState('');
+  const [form, setForm]     = useState({
+    name:     '',
+    gender:   '',
+    email:    '',
+    username: '',
+    subject:  '',
   });
+
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,9 +31,9 @@ export default function JoinPage() {
 
     try {
       const res = await fetch('/api/contributors/request', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body:    JSON.stringify(form),
       });
 
       const data = await res.json();
@@ -59,9 +57,7 @@ export default function JoinPage() {
         <div className="absolute inset-0 mesh-bg pointer-events-none" />
         <div className="relative z-10 text-center max-w-md">
           <div className="text-7xl mb-6 animate-float">🌟</div>
-          <h1 className="text-3xl font-arabic font-bold text-sand-400 mb-4">
-            شكراً لك!
-          </h1>
+          <h1 className="text-3xl font-arabic font-bold text-sand-400 mb-4">شكراً لك!</h1>
           <p className="text-ink-300 leading-loose mb-8">
             وصل طلبك بنجاح. سنراجعه ونتواصل معك على بريدك الإلكتروني قريباً.
             نحن نقدّر كل من يريد المساهمة في هذا المشروع.
@@ -103,38 +99,77 @@ export default function JoinPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Row: Name + Gender */}
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm text-ink-400 mb-2">الاسم *</label>
                 <input
-                  type="text"
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  type="text" required value={form.name}
+                  onChange={(e) => set('name', e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 placeholder-ink-600 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all"
                   placeholder="اسمك الكريم"
                 />
               </div>
               <div>
-                <label className="block text-sm text-ink-400 mb-2">البريد الإلكتروني *</label>
-                <input
-                  type="email"
-                  required
-                  dir="ltr"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 placeholder-ink-600 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all"
-                  placeholder="you@example.com"
-                />
+                <label className="block text-sm text-ink-400 mb-2">الجنس *</label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  {[
+                    { value: 'male',   label: 'ذكر' },
+                    { value: 'female', label: 'أنثى' },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => set('gender', value)}
+                      className={`py-3 rounded-xl border text-sm font-arabic transition-all ${
+                        form.gender === value
+                          ? 'border-sand-500 bg-sand-500/10 text-sand-300'
+                          : 'border-ink-700/60 bg-ink-900/60 text-ink-400 hover:border-ink-600'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {/* Hidden required input for form validation */}
+                <input type="text" required value={form.gender} onChange={() => {}} className="sr-only" tabIndex={-1} />
               </div>
             </div>
 
+            {/* Email */}
+            <div>
+              <label className="block text-sm text-ink-400 mb-2">البريد الإلكتروني *</label>
+              <input
+                type="email" required dir="ltr" value={form.email}
+                onChange={(e) => set('email', e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 placeholder-ink-600 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            {/* Username */}
+            <div>
+              <label className="block text-sm text-ink-400 mb-2">
+                اسم المستخدم *
+                <span className="text-ink-600 mr-2 text-xs">(3-20 حرفاً — ستستخدمه لتسجيل الدخول)</span>
+              </label>
+              <input
+                type="text" required value={form.username}
+                onChange={(e) => set('username', e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 placeholder-ink-600 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all"
+                placeholder="مثلاً: basheer_tutor أو محمد_أستاذ"
+                minLength={3}
+                maxLength={20}
+              />
+            </div>
+
+            {/* Subject */}
             <div>
               <label className="block text-sm text-ink-400 mb-2">المادة التي تريد المساهمة فيها *</label>
               <select
-                required
-                value={form.subject}
-                onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                required value={form.subject}
+                onChange={(e) => set('subject', e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all"
               >
                 <option value="" disabled>اختر المادة</option>
@@ -152,35 +187,9 @@ export default function JoinPage() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm text-ink-400 mb-2">
-                خلفيتك في المادة *
-                <span className="text-ink-600 mr-1">(معلم، طالب جامعي، متخصص...)</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={form.background}
-                onChange={(e) => setForm({ ...form, background: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 placeholder-ink-600 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all"
-                placeholder="مثال: معلم رياضيات بـ 5 سنوات خبرة"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-ink-400 mb-2">لماذا تريد المساهمة؟</label>
-              <textarea
-                rows={3}
-                value={form.motivation}
-                onChange={(e) => setForm({ ...form, motivation: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 placeholder-ink-600 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all resize-none"
-                placeholder="بكل حرية..."
-              />
-            </div>
-
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !form.gender}
               className="w-full py-3.5 bg-sand-500 hover:bg-sand-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-500 font-bold rounded-xl transition-all duration-200 hover:shadow-[0_0_30px_rgba(212,137,30,0.25)]"
             >
               {loading ? 'جاري الإرسال...' : 'إرسال الطلب'}

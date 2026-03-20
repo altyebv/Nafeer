@@ -32,6 +32,11 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL('/editor', request.url));
   }
 
+  // Allow onboard page — no auth required (token in URL is the credential)
+  if (pathname.startsWith('/onboard')) {
+    return NextResponse.next();
+  }
+
   // ── Admin routes ────────────────────────────────────
   const adminToken = request.cookies.get('nafeer_admin')?.value;
   const adminUser = adminToken ? await verify(adminToken) : null;
@@ -56,5 +61,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/editor/:path*', '/signin', '/join', '/admin', '/admin/:path*'],
+  matcher: ['/editor/:path*', '/signin', '/join', '/onboard', '/onboard/:path*', '/admin', '/admin/:path*'],
 };

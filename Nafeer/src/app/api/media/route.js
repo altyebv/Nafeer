@@ -3,15 +3,14 @@ import { connectDB }       from '@/lib/db';
 import { Media }           from '@/lib/models/Media';
 import { getCurrentUser }  from '@/lib/auth';
 import { getAdminAsUser }  from '@/lib/adminAuth';
+import { uploadMedia }     from '@/lib/supabase';
+import { optimizeImage, getOptimizedExtension } from '@/lib/imageOptimizer';
+import { randomUUID }      from 'crypto';
+import { SUBJECT_IDS }     from '@/shared/curriculum';
 
 async function getUser() {
   return (await getCurrentUser()) ?? (await getAdminAsUser());
 }
-import { uploadMedia }     from '@/lib/supabase';
-import { randomUUID }      from 'crypto';
-import { SUBJECT_IDS }     from '@/shared/curriculum';
-
-// ─── helpers ─────────────────────────────────────────────────────────────────
 
 function inferMediaType(mimeType) {
   if (mimeType === 'image/gif') return 'GIF';
@@ -23,25 +22,11 @@ function sanitiseFilename(name) {
   return name.replace(/[^a-zA-Z0-9.\-_\u0600-\u06FF ]/g, '_').trim().slice(0, 120);
 }
 
-function ext(mimeType) {
-  const map = {
-    'image/jpeg': 'jpg', 'image/jpg': 'jpg',
-    'image/png':  'png',
-    'image/gif':  'gif',
-    'image/webp': 'webp',
-    'image/svg+xml': 'svg',
-  };
-  return map[mimeType] || 'bin';
-}
-
 // ─── GET /api/media ───────────────────────────────────────────────────────────
-// Contributors see media for their own subject + 'common'.
-// Admins (role === 'admin') can see all, optionally filtered by ?subjectId=X.
+
 export async function GET(request) {
   const user = await getUser();
-  if (!user) {
-    return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const isAdmin = user.role === 'admin';
@@ -51,21 +36,16 @@ export async function GET(request) {
   let filter = {};
 
   if (isAdmin) {
-    // Admin: optional subject filter from query param
     const subjectParam = searchParams.get('subjectId');
     if (subjectParam && (SUBJECT_IDS.includes(subjectParam) || subjectParam === 'common')) {
       filter.subjectId = subjectParam;
     }
-    // else: no filter → return all media
   } else {
-    // Contributor: only their subject + shared 'common' pool
     filter.subjectId = { $in: [user.subject, 'common'] };
   }
 
   const media = await Media.find(filter).sort({ createdAt: -1 }).lean();
-
-  // Normalise _id → id
-  const data = media.map(({ _id, ...m }) => ({ id: _id.toString(), ...m }));
+  const data  = media.map(({ _id, ...m }) => ({ id: _id.toString(), ...m }));
 
   return NextResponse.json({ ok: true, data });
 }
@@ -73,16 +53,12 @@ export async function GET(request) {
 // ─── POST /api/media ──────────────────────────────────────────────────────────
 // Admin-only. Accepts multipart/form-data.
 // Fields: file (required), subjectId (required), alt (optional)
+
 export async function POST(request) {
   const user = await getUser();
-  if (!user) {
-    return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
   if (user.role !== 'admin') {
-    return NextResponse.json(
-      { ok: false, error: 'رفع الوسائط متاح للمشرفين فقط' },
-      { status: 403 }
-    );
+    return NextResponse.json({ ok: false, error: 'رفع الوسائط متاح للمشرفين فقط' }, { status: 403 });
   }
 
   let formData;
@@ -103,8 +79,8 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: 'معرّف المادة غير صالح' }, { status: 400 });
   }
 
-  const mimeType  = file.type;
-  const mediaType = inferMediaType(mimeType);
+  const originalMimeType = file.type;
+  const mediaType        = inferMediaType(originalMimeType);
 
   if (!mediaType) {
     return NextResponse.json(
@@ -113,31 +89,40 @@ export async function POST(request) {
     );
   }
 
-  // 10 MB cap
+  // 10 MB cap on original upload
   const MAX_BYTES = 10 * 1024 * 1024;
   if (file.size > MAX_BYTES) {
-    return NextResponse.json(
-      { ok: false, error: 'حجم الملف يتجاوز 10 ميغابايت' },
-      { status: 400 }
+    return NextResponse.json({ ok: false, error: 'حجم الملف يتجاوز 10 ميغابايت' }, { status: 400 });
+  }
+
+  const rawBuffer = Buffer.from(await file.arrayBuffer());
+
+  // ── Optimize ────────────────────────────────────────────────────────────────
+  const {
+    buffer:        optimizedBuffer,
+    mimeType:      optimizedMimeType,
+    originalSize,
+    optimizedSize,
+    skipped,
+  } = await optimizeImage(rawBuffer, originalMimeType, 'content');
+
+  if (!skipped) {
+    console.log(
+      `[media upload] optimized ${file.name}: ${(originalSize / 1024).toFixed(1)}KB → ${(optimizedSize / 1024).toFixed(1)}KB`
     );
   }
 
   const contentId = randomUUID();
-  const extension = ext(mimeType);
+  const extension = getOptimizedExtension(originalMimeType, optimizedMimeType);
   const path      = `${subjectId}/${contentId}.${extension}`;
   const filename  = sanitiseFilename(file.name || `media.${extension}`);
 
   let url;
   try {
-  
-    const buffer = Buffer.from(await file.arrayBuffer());
-    url = await uploadMedia(path, buffer, mimeType);
+    url = await uploadMedia(path, optimizedBuffer, optimizedMimeType);
   } catch (e) {
     console.error('[POST /api/media] Supabase upload error:', e);
-    return NextResponse.json(
-      { ok: false, error: 'فشل رفع الملف إلى التخزين السحابي' },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: 'فشل رفع الملف إلى التخزين السحابي' }, { status: 500 });
   }
 
   await connectDB();
@@ -148,11 +133,12 @@ export async function POST(request) {
     filename,
     path,
     url,
-    mimeType,
-    size: file.size,
-    type: mediaType,
+    mimeType:     optimizedMimeType,
+    size:         optimizedSize,
+    originalSize,
+    type:         mediaType,
     alt,
-    uploadedBy: user.id,
+    uploadedBy:   user.id,
   });
 
   const { _id, ...rest } = media.toObject();

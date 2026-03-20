@@ -158,6 +158,7 @@ function ContributorsSection({ allContributors, onRefresh }) {
   const [actionLoading, setActLoading] = useState(null);
   const [passwordModal, setPwModal]   = useState(null);
   const [deleteConfirm, setDelConfirm] = useState(null);
+  const [onboardLink, setOnboardLink] = useState(null); // { name, link }
 
   const displayed = filter === 'all'
     ? allContributors
@@ -172,12 +173,20 @@ function ContributorsSection({ allContributors, onRefresh }) {
 
   const act = async (id, action, extra = {}) => {
     setActLoading(id + action);
-    await fetch('/api/admin/contributors', {
+    const res  = await fetch('/api/admin/contributors', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, action, ...extra }),
     });
+    const data = await res.json();
     setActLoading(null);
+
+    // Show magic link modal when a link is returned
+    if (data.onboardingLink) {
+      const contributor = allContributors.find((c) => c._id === id);
+      setOnboardLink({ name: contributor?.name || '', link: data.onboardingLink });
+    }
+
     onRefresh();
   };
 
@@ -271,6 +280,9 @@ function ContributorsSection({ allContributors, onRefresh }) {
                         )}
                       </div>
                       <p className="text-xs font-mono text-ink-500 mb-2.5" dir="ltr">{c.email}</p>
+                        {c.username && (
+                          <p className="text-xs font-mono text-sand-600/80 mb-2" dir="ltr">@{c.username}</p>
+                        )}
                       <div className="flex items-center gap-3 flex-wrap">
                         {subj ? (
                           <span className={`text-[11px] px-2.5 py-1 rounded-lg border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
@@ -292,6 +304,15 @@ function ContributorsSection({ allContributors, onRefresh }) {
                       )}
                       <p className="text-[10px] font-mono text-ink-800 mt-2">
                         {new Date(c.createdAt).toLocaleDateString('en-GB')}
+                        {c.status === 'approved' && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-arabic ${
+                            c.onboarded
+                              ? 'bg-green-900/30 text-green-500'
+                              : 'bg-amber-900/30 text-amber-500'
+                          }`}>
+                            {c.onboarded ? 'مكتمل' : 'ينتظر التأهيل'}
+                          </span>
+                        )}
                       </p>
                     </div>
 
@@ -311,9 +332,20 @@ function ContributorsSection({ allContributors, onRefresh }) {
                         </>
                       )}
                       {c.status === 'approved' && (
-                        <Btn variant="sand" onClick={() => setPwModal({ id: c._id, name: c.name })}>
-                          {c.passwordHash ? 'تغيير المرور' : 'تعيين مرور'}
-                        </Btn>
+                        <>
+                          <Btn variant="sand" onClick={() => setPwModal({ id: c._id, name: c.name })}>
+                            {c.passwordHash ? 'تغيير المرور' : 'تعيين مرور'}
+                          </Btn>
+                          {!c.onboarded && (
+                            <Btn
+                              variant="ghost"
+                              loading={actionLoading === c._id + 'generate_onboard_link'}
+                              onClick={() => act(c._id, 'generate_onboard_link')}
+                            >
+                              رابط التأهيل
+                            </Btn>
+                          )}
+                        </>
                       )}
                       {c.status === 'rejected' && (
                         <Btn variant="ghost" loading={actionLoading === c._id + 'reset_to_pending'} onClick={() => act(c._id, 'reset_to_pending')}>
@@ -355,6 +387,14 @@ function ContributorsSection({ allContributors, onRefresh }) {
             await act(passwordModal.id, 'set_password', { password: pw });
             setPwModal(null);
           }}
+        />
+      )}
+
+      {onboardLink && (
+        <OnboardLinkModal
+          name={onboardLink.name}
+          link={onboardLink.link}
+          onClose={() => setOnboardLink(null)}
         />
       )}
     </div>
@@ -802,6 +842,57 @@ function SetPasswordModal({ name, onClose, onSave }) {
         </button>
         <button onClick={onClose} className="px-5 py-2.5 text-ink-500 hover:text-ink-300 text-sm transition-colors">
           إلغاء
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── OnboardLinkModal ────────────────────────────────────────────────────────
+
+function OnboardLinkModal({ name, link, onClose }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
+
+  return (
+    <Modal title="رابط التأهيل" onClose={onClose}>
+      <p className="text-xs text-ink-500 font-arabic mb-1">
+        أرسل هذا الرابط إلى <span className="text-sand-400">{name}</span> عبر البريد الإلكتروني
+      </p>
+      <p className="text-xs text-ink-600 mb-4">الرابط صالح لمدة 7 أيام</p>
+
+      {/* Link display */}
+      <div className="flex items-center gap-2 p-3 rounded-xl bg-ink-800 border border-ink-700/60 mb-4">
+        <p
+          dir="ltr"
+          className="flex-1 text-xs font-mono text-sand-300 break-all leading-relaxed select-all"
+        >
+          {link}
+        </p>
+      </div>
+
+      <div className="flex gap-3">
+        <button
+          onClick={copy}
+          className={`flex-1 py-2.5 font-bold rounded-xl text-sm transition-all font-arabic ${
+            copied
+              ? 'bg-green-800 text-green-200'
+              : 'bg-sand-600 hover:bg-sand-500 text-ink-950'
+          }`}
+        >
+          {copied ? '✓ تم النسخ' : 'نسخ الرابط'}
+        </button>
+        <button
+          onClick={onClose}
+          className="px-5 py-2.5 text-ink-500 hover:text-ink-300 text-sm transition-colors"
+        >
+          إغلاق
         </button>
       </div>
     </Modal>

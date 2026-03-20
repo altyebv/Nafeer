@@ -6,7 +6,7 @@ const SECRET = new TextEncoder().encode(
 );
 
 const COOKIE_NAME = 'nafeer_token';
-const EXPIRES_IN = '7d';
+const EXPIRES_IN  = '7d';
 
 export async function signToken(payload) {
   return new SignJWT(payload)
@@ -29,10 +29,10 @@ export async function setAuthCookie(token) {
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure:   process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/',
+    maxAge:   60 * 60 * 24 * 7, // 7 days
+    path:     '/',
   });
 }
 
@@ -50,4 +50,20 @@ export async function getCurrentUser() {
   const token = await getAuthCookie();
   if (!token) return null;
   return verifyToken(token);
+}
+
+// ─── buildTokenPayload ────────────────────────────────────────────────────────
+// Canonical JWT payload shape — used by signin + onboard routes.
+
+export function buildTokenPayload(contributor) {
+  return {
+    id:             contributor._id.toString(),
+    email:          contributor.email,
+    username:       contributor.username || null,
+    name:           contributor.name,
+    subject:        contributor.subject,
+    role:           contributor.role,
+    avatarUrl:      contributor.avatarUrl || null,
+    lastSignedInAt: new Date().toISOString(),
+  };
 }
