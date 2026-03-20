@@ -1,5 +1,8 @@
 'use client';
 import { useEffect, useRef } from 'react';
+// KaTeX stylesheet must be imported alongside the JS — without it all
+// rendered math spans have no styles and appear invisible.
+import 'katex/dist/katex.min.css';
 
 // ─── FormulaPreview ────────────────────────────────────────────────────────────
 // Lightweight KaTeX renderer. Handles its own dynamic import so the heavy
@@ -8,14 +11,17 @@ import { useEffect, useRef } from 'react';
 // Props:
 //   latex       {string}  — LaTeX source (block.content)
 //   displayMode {boolean} — true = block/centered, false = inline (default: true)
+//   rtlMath     {boolean} — wraps output in dir=rtl so Arabic expressions read
+//                           right-to-left (correct term order). Note: KaTeX has
+//                           no native RTL mode; this fixes inline flow direction.
+//                           For left-side superscripts use {}^{n} before the var.
 //   className   {string}  — extra wrapper classes
-//   errorClass  {string}  — classes applied when rendering fails
 
 export default function FormulaPreview({
   latex        = '',
   displayMode  = true,
+  rtlMath      = false,
   className    = '',
-  errorClass   = '',
 }) {
   const ref = useRef(null);
 
@@ -39,22 +45,18 @@ export default function FormulaPreview({
           output       : 'html',
           trust        : false,
           strict       : false,
-          // Allow common TeX extensions used in high-school curriculum
           macros       : {
             '\\R' : '\\mathbb{R}',
             '\\N' : '\\mathbb{N}',
             '\\Z' : '\\mathbb{Z}',
           },
         });
-        // Clear any previous error state
         el.dataset.error = '';
       } catch (err) {
         el.dataset.error = 'true';
-        // Show a readable error rather than raw LaTeX string
         el.textContent = err.message?.split('\n')[0] ?? 'خطأ في الصياغة';
       }
     }).catch(() => {
-      // KaTeX failed to load — show raw latex as fallback
       if (!cancelled && ref.current) {
         ref.current.textContent = latex;
       }
@@ -66,12 +68,15 @@ export default function FormulaPreview({
   return (
     <span
       ref={ref}
-      dir="ltr"
+      // dir is intentionally NOT set here — the rtlMath wrapper below controls
+      // direction so that KaTeX's internal LTR absolute-positioning is unaffected
+      // while the inline flow of terms reads RTL.
       className={[
         'formula-preview',
         displayMode ? 'block text-center' : 'inline',
+        // When rtlMath: flip inline flow so term order matches Arabic reading direction
+        rtlMath ? '[direction:rtl]' : '',
         className,
-        // errorClass applied via data attr so the caller can style it
       ].filter(Boolean).join(' ')}
       data-display={displayMode ? 'block' : 'inline'}
     />
