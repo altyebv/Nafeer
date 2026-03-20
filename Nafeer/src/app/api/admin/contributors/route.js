@@ -12,7 +12,7 @@ function generateOnboardingToken() {
 }
 
 function getOnboardingLink(token) {
-  const base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const base = process.env.NEXT_PUBLIC_APP_URL || 'https://nafeer-edu.vercel.app';
   return `${base}/onboard?token=${token}`;
 }
 
