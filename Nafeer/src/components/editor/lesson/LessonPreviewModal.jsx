@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { HIGHLIGHT_STYLES } from '@/shared/constants';
+import FormulaPreview from '@/components/editor/shared/FormulaPreview';
 
 // ─── Phone frame preview — Android Basheer mocker ────────────────────────────
 export default function LessonPreviewModal({ lesson, sections, blocks, questions, onClose }) {
@@ -255,10 +256,14 @@ function BlockPreview({ block }) {
 
     case 'FORMULA':
       return (
-        <div className="rounded-xl px-4 py-3 text-center" style={{ background: '#1a1713' }}>
-          <p className="font-mono text-sm" style={{ color: '#e4a83a' }} dir="ltr">
-            {block.content || 'معادلة'}
-          </p>
+        <div className="rounded-xl px-4 py-4 text-center" style={{ background: '#1a1713' }}>
+          <FormulaPreview
+            latex={block.content || ''}
+            displayMode={block.metadata?.displayMode !== true}
+          />
+          {!block.content && (
+            <p className="font-mono text-xs mt-1" style={{ color: '#5c5648' }}>معادلة</p>
+          )}
         </div>
       );
 
