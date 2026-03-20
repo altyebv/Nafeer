@@ -8,6 +8,7 @@ import DeleteButton          from '@/components/editor/shared/DeleteButton';
 import MediaPicker           from '@/components/editor/media/MediaPicker';
 import ImageMarkerEditor     from '@/components/editor/media/ImageMarkerEditor';
 import { sanitiseMarkers }   from '@/lib/markerUtils';
+import FormulaEditor        from '@/components/editor/blocks/FormulaEditor';
 
 // ─── Shared input style ───────────────────────────────────────────────────────
 const ta =
@@ -146,16 +147,11 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
     // ── FORMULA ─────────────────────────────────────────────────────────────
     case 'FORMULA':
       return (
-        <div className="space-y-2">
-          <textarea
-            value={block.content}
-            onChange={(e) => update({ content: e.target.value })}
-            className="w-full px-3 py-2.5 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm font-mono focus:ring-1 focus:ring-sand-600 focus:outline-none resize-y min-h-[64px] placeholder-ink-800 hover:border-ink-700 transition-colors"
-            placeholder="E = mc^2  أو  \frac{d}{dx}f(x)"
-            dir="ltr"
-          />
-          <p className="text-[11px] text-ink-700 font-arabic">يدعم LaTeX والنص العادي</p>
-        </div>
+        <FormulaEditor
+          value={block.content}
+          displayMode={block.metadata?.displayMode ?? false}
+          onChange={({ content, metadata }) => update({ content, metadata: { ...block.metadata, ...metadata } })}
+        />
       );
 
     // ── HIGHLIGHT_BOX ────────────────────────────────────────────────────────
