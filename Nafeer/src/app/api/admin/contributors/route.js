@@ -16,6 +16,11 @@ function getOnboardingLink(token) {
   return `${base}/onboard?token=${token}`;
 }
 
+function getInterviewLink(token) {
+  const base = process.env.NEXT_PUBLIC_APP_URL || 'https://nafeer-edu.vercel.app';
+  return `${base}/interview?token=${token}`;
+}
+
 // ─── GET /api/admin/contributors ─────────────────────────────────────────────
 
 export async function GET(request) {
@@ -83,9 +88,22 @@ export async function PATCH(request) {
   const contributor = await Contributor.findById(id);
   if (!contributor) return NextResponse.json({ message: 'Contributor not found' }, { status: 404 });
 
-  let onboardingLink = null;
+  let onboardingLink  = null;
+  let interviewLink   = null;
 
-  if (action === 'approve') {
+  if (action === 'send_interview') {
+    // Generate a fresh interview token for pending applicants
+    if (contributor.status !== 'pending') {
+      return NextResponse.json(
+        { message: 'يمكن إرسال رابط المقابلة فقط للطلبات في الانتظار' },
+        { status: 400 }
+      );
+    }
+    const token = generateOnboardingToken();
+    contributor.interviewToken     = token;
+    contributor.interviewExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+    interviewLink = getInterviewLink(token);
+  } else if (action === 'approve') {
     contributor.status = 'approved';
     // Auto-generate an onboarding token if not yet onboarded
     if (!contributor.onboarded) {
@@ -116,7 +134,7 @@ export async function PATCH(request) {
   }
 
   await contributor.save();
-  return NextResponse.json({ success: true, contributor, onboardingLink });
+  return NextResponse.json({ success: true, contributor, onboardingLink, interviewLink });
 }
 
 // ─── DELETE /api/admin/contributors ──────────────────────────────────────────
