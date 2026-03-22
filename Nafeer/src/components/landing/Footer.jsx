@@ -46,7 +46,9 @@ export default function Footer() {
 
           {/* Made in Sudan */}
           <div className="flex items-center gap-2 text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
-            <span className="text-base">🇸🇩</span>
+            <span
+                className="text-xl font-bold"
+                style={{ color: 'var(--accent)' }}>🇸🇩</span>
             <span>made in sudan</span>
           </div>
 
