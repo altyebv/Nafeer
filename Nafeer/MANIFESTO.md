@@ -466,7 +466,7 @@ Dark-first. CSS custom properties on `:root` and `:root[data-theme="light"]`.
 
 ---
 
-## v6.0 Changes (This Session)
+## v6.0 Changes 
 
 **New routes/pages:**
 - `src/app/prejoin/page.jsx` — atmospheric mission brief, 5-section layout, no API calls
