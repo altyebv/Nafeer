@@ -24,7 +24,8 @@ export function ContributorCard({ c, actionLoading, onAct, onDelete, onSetPasswo
   const st      = CONTRIBUTOR_STATUS[c.status] || CONTRIBUTOR_STATUS.pending;
   const subj    = SUBJECT_MAP[c.subject];
   const stage   = getPipelineStage(c);
-  const hasAnswers = !!c.interviewAnswers?.submittedAt;
+  const hasAnswers        = !!c.interviewAnswers?.submittedAt;
+  const hasDynamicAnswers = !!c.dynamicAnswersSubmittedAt;
 
   return (
     <div className="bg-ink-900/60 rounded-xl border border-ink-800/50 hover:border-ink-700/50 transition-all">
@@ -72,6 +73,18 @@ export function ContributorCard({ c, actionLoading, onAct, onDelete, onSetPasswo
             <p className="text-xs font-mono text-sand-600/70 mb-2" dir="ltr">@{c.username}</p>
           )}
 
+          {/* Role badge */}
+          {c.roleId?.name && (
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] px-2 py-0.5 rounded-full border border-sand-800/40 bg-sand-900/20 text-sand-500 font-arabic">
+                ◆ {c.roleId.name}
+              </span>
+              {c.roleId.subcategory && (
+                <span className="text-[10px] text-ink-700 font-arabic">{c.roleId.subcategory}</span>
+              )}
+            </div>
+          )}
+
           {/* Subject + background */}
           <div className="flex items-center gap-2 flex-wrap mb-2">
             {subj ? (
@@ -109,7 +122,41 @@ export function ContributorCard({ c, actionLoading, onAct, onDelete, onSetPasswo
             </div>
           )}
 
-          {/* Interview answers toggle */}
+          {/* Dynamic interview answers (role-based) */}
+          {hasDynamicAnswers && (
+            <div className="mt-2">
+              <button
+                onClick={() => setInterviewOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-[11px] font-mono transition-colors"
+                style={{ color: 'var(--accent)' }}
+              >
+                <span>{interviewOpen ? '▾' : '▸'}</span>
+                <span>إجابات المقابلة</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: 'rgba(212,137,30,0.12)', color: 'var(--accent)' }}>
+                  {new Date(c.dynamicAnswersSubmittedAt).toLocaleDateString('en-GB')}
+                </span>
+              </button>
+
+              {interviewOpen && (
+                <div className="mt-3 space-y-3 pr-3 border-r-2 border-ink-800">
+                  {(c.dynamicAnswers || []).map((a, i) => (
+                    <div key={i}>
+                      <p className="text-[10px] font-arabic text-ink-600 mb-1">{a.question}</p>
+                      <p className="text-[11px] text-ink-400 leading-relaxed font-arabic whitespace-pre-wrap">{a.answer}</p>
+                    </div>
+                  ))}
+                  {c.dynamicMicroTask && (
+                    <div>
+                      <p className="text-[10px] font-mono text-ink-600 mb-1">المهمة التطبيقية</p>
+                      <p className="text-[11px] text-ink-400 leading-relaxed font-arabic whitespace-pre-wrap">{c.dynamicMicroTask}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Legacy interview answers */}
           {hasAnswers && (
             <div className="mt-2">
               <button
