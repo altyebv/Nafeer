@@ -10,6 +10,7 @@ export async function POST(request) {
       background,
       fieldOfStudy,
       subjectsOfInterest,
+      roleId,
     } = await request.json();
 
     // Required field validation
@@ -20,9 +21,9 @@ export async function POST(request) {
       );
     }
 
-    if (!subjectsOfInterest?.length) {
+    if (!subjectsOfInterest?.length && !roleId) {
       return NextResponse.json(
-        { message: 'يرجى اختيار مادة واحدة على الأقل' },
+        { message: 'يرجى اختيار مجال المساهمة' },
         { status: 400 }
       );
     }
@@ -47,6 +48,7 @@ export async function POST(request) {
       background:         background?.trim() || '',
       fieldOfStudy:       fieldOfStudy?.trim() || '',
       subjectsOfInterest: subjectsOfInterest || [],
+      roleId:             roleId || null,
       status:             'pending',
     });
 
