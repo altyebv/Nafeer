@@ -2,11 +2,14 @@
   "name": "nafeer",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "node --experimental-vm-modules scripts/seed.js"
+    "seed": "node --env-file=.env.local scripts/seed.js",
+    "seed:roles": "node --env-file=.env.local scripts/seed.js --roles-only",
+    "seed:admin": "node --env-file=.env.local scripts/seed.js --admin-only"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
