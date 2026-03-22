@@ -279,7 +279,7 @@ export default function NafeerSection() {
               مستعد لترك أثر حقيقي؟
             </p>
             <a
-              href="/join"
+              href="/prejoin"
               className="inline-flex items-center gap-3 px-10 sm:px-12 py-4 font-bold rounded-xl transition-all duration-300 text-base"
               style={{ background: 'var(--accent)', color: '#0e0c09' }}
               onMouseEnter={e => {
