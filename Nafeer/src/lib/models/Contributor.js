@@ -53,9 +53,14 @@ const ContributorSchema = new mongoose.Schema(
     avatarPath:   { type: String, select: false, default: null },
     bio:          { type: String, default: '', trim: true, maxlength: 280 },
 
+    // ── Role assignment (dynamic onboarding system) ───────────────────────
+    roleId: { type: mongoose.Schema.Types.ObjectId, ref: 'ContributorRole', default: null },
+
     // ── Interview (Step 2 of intake pipeline) ─────────────────────────────
     interviewToken:     { type: String, select: false, default: null },
     interviewExpiresAt: { type: Date,   default: null },
+
+    // Legacy fixed answers — kept for backward compatibility with existing applicants
     interviewAnswers: {
       motivation:        { type: String, default: '' },
       educationCritique: { type: String, default: '' },
@@ -64,6 +69,24 @@ const ContributorSchema = new mongoose.Schema(
       microTask:         { type: String, default: '' },
       submittedAt:       { type: Date,   default: null },
     },
+
+    // Dynamic answers — used when contributor has a roleId with configured questions
+    // [{questionId: ObjectId, question: String (snapshot), answer: String}]
+    dynamicAnswers: {
+      type: [
+        new mongoose.Schema(
+          {
+            questionId: { type: mongoose.Schema.Types.ObjectId, default: null },
+            question:   { type: String, default: '' }, // snapshot of question text at submit time
+            answer:     { type: String, default: '' },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
+    dynamicAnswersSubmittedAt: { type: Date, default: null },
+    dynamicMicroTask:          { type: String, default: '' }, // micro task answer for dynamic flow
 
     // ── Onboarding (post-approval) ─────────────────────────────────────────
     onboarded:           { type: Boolean, default: false },
