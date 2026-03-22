@@ -28,7 +28,7 @@ export async function middleware(request) {
     return NextResponse.redirect(url);
   }
 
-  if ((pathname === '/signin' || pathname === '/join') && contributorUser) {
+  if ((pathname === '/signin' || pathname === '/join' || pathname === '/prejoin') && contributorUser) {
     return NextResponse.redirect(new URL('/editor', request.url));
   }
 
@@ -61,5 +61,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/editor/:path*', '/signin', '/join', '/onboard', '/onboard/:path*', '/admin', '/admin/:path*'],
+  matcher: ['/editor/:path*', '/signin', '/join', '/prejoin', '/interview', '/onboard', '/onboard/:path*', '/admin', '/admin/:path*'],
 };
