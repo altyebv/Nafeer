@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { SUBJECTS_CATALOG_REF } from '../../constants';
-import { Modal } from '../ui/Modal';
+import { Modal } from '../ui/modal';
 
 const FIELDS = [
   { key: 'name',       label: 'الاسم الكامل',      placeholder: 'أحمد محمد',        required: true  },

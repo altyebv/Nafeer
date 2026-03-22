@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Modal } from '../ui/Modal';
+import { Modal } from '../ui/modal';
 
 export function SetPasswordModal({ name, onClose, onSave }) {
   const [pw, setPw]           = useState('');

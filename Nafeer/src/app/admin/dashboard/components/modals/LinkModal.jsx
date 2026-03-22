@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Modal } from '../ui/Modal';
+import { Modal } from '../ui/modal';
 
 export function LinkModal({ name, link, label = 'رابط التأهيل', onClose }) {
   const [copied, setCopied] = useState(false);
