@@ -21,6 +21,7 @@ export const SUBJECTS_CATALOG_REF = SUBJECTS_CATALOG;
 
 export const NAV = [
   { id: 'contributors', icon: '◉', label: 'المساهمون',     badgeKey: 'pending'     },
+  { id: 'roles',        icon: '◆', label: 'الأدوار',        badgeKey: null          },
   { id: 'review',       icon: '◎', label: 'طابور المراجعة', badgeKey: 'reviewTotal' },
   { id: 'coverage',     icon: '▦', label: 'خريطة التغطية',  badgeKey: null          },
   { id: 'media',        icon: '⬜', label: 'الوسائط',        badgeKey: null          },
@@ -29,7 +30,8 @@ export const NAV = [
 // Pipeline stage for a pending applicant — drives the status chip in ContributorCard
 export function getPipelineStage(c) {
   if (c.status !== 'pending') return null;
-  if (c.interviewAnswers?.submittedAt) return { label: 'أكمل المقابلة', color: 'bg-green-900/30 border-green-800/40 text-green-400' };
-  if (c.interviewToken)                return { label: 'ينتظر المقابلة', color: 'bg-blue-900/30 border-blue-800/40 text-blue-400'   };
-  return                                      { label: 'طلب جديد',       color: 'bg-amber-900/30 border-amber-800/40 text-amber-500' };
+  const hasAnswers = c.interviewAnswers?.submittedAt || c.dynamicAnswersSubmittedAt;
+  if (hasAnswers)       return { label: 'أكمل المقابلة', color: 'bg-green-900/30 border-green-800/40 text-green-400' };
+  if (c.interviewToken) return { label: 'ينتظر المقابلة', color: 'bg-blue-900/30 border-blue-800/40 text-blue-400'   };
+  return                       { label: 'طلب جديد',       color: 'bg-amber-900/30 border-amber-800/40 text-amber-500' };
 }
