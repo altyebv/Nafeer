@@ -176,7 +176,7 @@ export default function Hero() {
         {/* CTA buttons */}
         <div className="flex flex-wrap gap-3 sm:gap-4 mb-10 sm:mb-12">
           <a
-            href="/join"
+            href="/prejoin"
             className="gsap-hero-cta group inline-flex items-center gap-2 sm:gap-3 px-7 sm:px-9 py-3.5 sm:py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
             style={{ background: 'var(--accent)', color: '#0e0c09' }}
             onMouseEnter={e => {
