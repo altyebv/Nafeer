@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { SUBJECTS_CATALOG_REF } from '../../_constants';
+import { SUBJECTS_CATALOG_REF } from '../../constants';
 import { Modal } from '../ui/Modal';
 
 const FIELDS = [

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { SUBJECTS_CATALOG_REF } from '../_constants';
+import { SUBJECTS_CATALOG_REF } from '../constants';
 import { SectionHeader, StatusChip, EmptyState, Spinner } from './ui/shared';
 
 const LVL = {

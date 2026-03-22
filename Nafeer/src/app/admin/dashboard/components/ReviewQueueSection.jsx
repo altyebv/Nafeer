@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { REVIEW_TYPE, SUBJECT_MAP, SUBJECTS_CATALOG_REF, TRACK_CONFIG } from '../_constants';
+import { REVIEW_TYPE, SUBJECT_MAP, SUBJECTS_CATALOG_REF, TRACK_CONFIG } from '../constants';
 import { SectionHeader, StatusChip, EmptyState, Spinner } from './ui/shared';
 import { Btn } from './ui/Btn';
 

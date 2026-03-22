@@ -1,5 +1,5 @@
 'use client';
-import { NAV } from '../_constants';
+import { NAV } from '../constants';
 
 export function AdminSidebar({ section, badges, onSelect, onCreateContributor, onSignOut }) {
   return (

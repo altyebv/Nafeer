@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { CONTRIBUTOR_STATUS, SUBJECT_MAP, TRACK_CONFIG, SUBJECTS_CATALOG_REF, getPipelineStage } from '../_constants';
+import { CONTRIBUTOR_STATUS, SUBJECT_MAP, TRACK_CONFIG, SUBJECTS_CATALOG_REF, getPipelineStage } from '../constants';
 import { Btn } from './ui/Btn';
 
 const INTERVIEW_FIELDS = [

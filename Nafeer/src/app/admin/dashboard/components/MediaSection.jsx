@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SUBJECTS_CATALOG_REF } from '../_constants';
+import { SUBJECTS_CATALOG_REF } from '../constants';
 import { SectionHeader, EmptyState, Spinner, StatChips } from './ui/shared';
 import { Btn } from './ui/Btn';
 

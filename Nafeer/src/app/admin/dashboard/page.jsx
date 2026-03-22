@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { AdminSidebar }         from './_components/AdminSidebar';
-import { ContributorsSection }  from './_components/ContributorsSection';
-import { ReviewQueueSection }   from './_components/ReviewQueueSection';
-import { CoverageSection }      from './_components/CoverageSection';
-import { MediaSection }         from './_components/MediaSection';
-import { RolesSection }         from './_components/RolesSection';
-import { CreateContributorModal } from './_components/modals/CreateContributorModal';
+import { AdminSidebar }         from './components/AdminSidebar';
+import { ContributorsSection }  from './components/ContributorsSection';
+import { ReviewQueueSection }   from './components/ReviewQueueSection';
+import { CoverageSection }      from './components/CoverageSection';
+import { MediaSection }         from './components/MediaSection';
+import { RolesSection }         from './components/RolesSection';
+import { AdminsSection }        from './components/AdminsSection';
+import { CreateContributorModal } from './components/modals/CreateContributorModal';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -61,6 +62,7 @@ export default function AdminDashboard() {
         )}
         {section === 'coverage' && <CoverageSection />}
         {section === 'media'    && <MediaSection />}
+        {section === 'admins'   && <AdminsSection />}
       </main>
 
       {showCreate && (
