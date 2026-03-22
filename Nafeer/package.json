@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "seed": "node --experimental-vm-modules scripts/seed.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
