@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Modal }         from './ui/modal';
+import { Modal }         from './ui/Modal';
 import { Btn }           from './ui/Btn';
 import { EmptyState }    from './ui/EmptyState';
 import { SectionHeader } from './ui/SectionHeader';

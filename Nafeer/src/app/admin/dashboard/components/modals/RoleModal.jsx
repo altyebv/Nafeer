@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Modal }    from '../ui/modal';
+import { Modal }    from '../ui/Modal';
 import { Btn }      from '../ui/Btn';
 
 const CATEGORIES = [
