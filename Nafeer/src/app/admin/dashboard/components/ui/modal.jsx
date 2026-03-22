@@ -1,6 +1,6 @@
 'use client';
 import { useRef } from 'react';
-
+// was modal (lowercase)
 export function Modal({ title, onClose, children }) {
   const ref = useRef(null);
   return (
