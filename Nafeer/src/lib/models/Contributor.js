@@ -53,6 +53,19 @@ const ContributorSchema = new mongoose.Schema(
     avatarPath:   { type: String, select: false, default: null },
     bio:          { type: String, default: '', trim: true, maxlength: 280 },
 
+    // ── Interview (Step 2 of intake pipeline) ─────────────────────────────
+    interviewToken:     { type: String, select: false, default: null },
+    interviewExpiresAt: { type: Date,   default: null },
+    interviewAnswers: {
+      motivation:        { type: String, default: '' },
+      educationCritique: { type: String, default: '' },
+      teachingMoment:    { type: String, default: '' },
+      weeklyCommitment:  { type: String, default: '' },
+      microTask:         { type: String, default: '' },
+      submittedAt:       { type: Date,   default: null },
+    },
+
+    // ── Onboarding (post-approval) ─────────────────────────────────────────
     onboarded:           { type: Boolean, default: false },
     onboardingToken:     { type: String,  select: false, default: null },
     onboardingExpiresAt: { type: Date,    default: null },
