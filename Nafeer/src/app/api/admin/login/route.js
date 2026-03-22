@@ -1,51 +1,51 @@
-import { NextResponse } from 'next/server';
-import { SignJWT } from 'jose';
-import { cookies } from 'next/headers';
-
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dev-secret-change-this-in-production'
-);
+import { NextResponse }                        from 'next/server';
+import { connectDB }                           from '@/lib/db';
+import { Admin }                               from '@/lib/models/Admin';
+import { issueAdminToken, setAdminCookie }     from '@/lib/adminAuth';
 
 export async function POST(request) {
   try {
     const { username, password } = await request.json();
 
-    const adminUsername = process.env.ADMIN_USERNAME;
-    const adminPassword = process.env.ADMIN_PASSWORD;
-
-    if (!adminUsername || !adminPassword) {
-      return NextResponse.json(
-        { message: 'Admin credentials not configured' },
-        { status: 500 }
-      );
+    if (!username?.trim() || !password) {
+      return NextResponse.json({ message: 'يرجى تعبئة جميع الحقول' }, { status: 400 });
     }
 
-    if (username !== adminUsername || password !== adminPassword) {
-      return NextResponse.json(
-        { message: 'بيانات غير صحيحة' },
-        { status: 401 }
-      );
+    await connectDB();
+
+    // Find by username OR email
+    const admin = await Admin
+      .findOne({
+        $or: [
+          { username: username.toLowerCase().trim() },
+          { email:    username.toLowerCase().trim() },
+        ],
+        isActive: true,
+      })
+      .select('+passwordHash');
+
+    if (!admin) {
+      return NextResponse.json({ message: 'بيانات غير صحيحة' }, { status: 401 });
     }
 
-    // Issue admin JWT
-    const token = await new SignJWT({ role: 'admin', username })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('12h')
-      .sign(SECRET);
+    const valid = await admin.comparePassword(password);
+    if (!valid) {
+      return NextResponse.json({ message: 'بيانات غير صحيحة' }, { status: 401 });
+    }
 
-    const cookieStore = await cookies();
-    cookieStore.set('nafeer_admin', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 12, // 12 hours
-      path: '/',
+    // Stamp last sign-in
+    admin.lastSignedInAt = new Date();
+    await admin.save();
+
+    const token = await issueAdminToken(admin);
+    await setAdminCookie(token);
+
+    return NextResponse.json({
+      success:     true,
+      displayName: admin.displayName || admin.username,
     });
-
-    return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Admin login error:', err);
+    console.error('[POST /api/admin/login]', err);
     return NextResponse.json({ message: 'Server error' }, { status: 500 });
   }
 }
