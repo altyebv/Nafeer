@@ -6,6 +6,7 @@ import { ContributorsSection }  from './_components/ContributorsSection';
 import { ReviewQueueSection }   from './_components/ReviewQueueSection';
 import { CoverageSection }      from './_components/CoverageSection';
 import { MediaSection }         from './_components/MediaSection';
+import { RolesSection }         from './_components/RolesSection';
 import { CreateContributorModal } from './_components/modals/CreateContributorModal';
 
 export default function AdminDashboard() {
@@ -51,6 +52,7 @@ export default function AdminDashboard() {
             onRefresh={loadAll}
           />
         )}
+        {section === 'roles'   && <RolesSection />}
         {section === 'review' && (
           <ReviewQueueSection
             onTotalChange={setReviewTotal}
