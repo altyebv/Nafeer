@@ -2,19 +2,10 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { gsap } from 'gsap';
-import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
-// ─── Constants ──────────────────────────────────────────────────────────────
+const MIN = 80; // fallback minimum
 
-const COMMITMENT_OPTIONS = [
-  { value: 'occasional', label: 'بشكل متقطع',      sub: 'ساعة أو أقل أسبوعياً'   },
-  { value: '2-3h',       label: '٢–٣ ساعات',        sub: 'أسبوعياً'                },
-  { value: '5h+',        label: '٥ ساعات أو أكثر',  sub: 'أسبوعياً'                },
-];
-
-const MIN = 80;   // minimum answer length in chars to enable submit
-
-// ─── Small components ───────────────────────────────────────────────────────
+// ─── Progress bar ────────────────────────────────────────────────────────────
 
 function ProgressLine({ current, total }) {
   const pct = Math.round((current / total) * 100);
@@ -38,215 +29,99 @@ function ProgressLine({ current, total }) {
   );
 }
 
-function CategoryTag({ text }) {
-  return (
-    <span
-      className="inline-block text-xs font-mono mb-3 tracking-widest uppercase"
-      style={{ color: 'var(--accent)', opacity: 0.7 }}
-    >
-      {text}
-    </span>
-  );
-}
+// ─── Character counter ───────────────────────────────────────────────────────
 
 function CharCount({ value, min }) {
-  const len     = (value || '').trim().length;
-  const enough  = len >= min;
+  const len    = (value || '').trim().length;
+  const enough = len >= min;
   return (
     <div className="flex items-center justify-between mt-2">
       <span className="text-xs" style={{ color: enough ? 'var(--accent)' : 'var(--text-muted)', opacity: 0.6 }}>
         {enough ? 'ممتاز' : `${min - len} حرفاً على الأقل`}
       </span>
-      <span className="text-xs font-mono" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
-        {len}
-      </span>
+      <span className="text-xs font-mono" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>{len}</span>
     </div>
   );
 }
 
-const inputStyle = {
-  background:  'rgba(255,255,255,0.04)',
-  border:      '1px solid var(--border-mid)',
-  color:       'var(--text-primary)',
-  outline:     'none',
-  width:       '100%',
+// ─── Textarea input style ────────────────────────────────────────────────────
+
+const textareaStyle = {
+  background:   'rgba(255,255,255,0.04)',
+  border:       '1px solid var(--border-mid)',
+  color:        'var(--text-primary)',
+  outline:      'none',
+  width:        '100%',
   borderRadius: '12px',
-  padding:     '12px 16px',
-  fontSize:    '14px',
-  lineHeight:  '1.8',
-  resize:      'vertical',
-  fontFamily:  'var(--font-arabic, inherit)',
+  padding:      '12px 16px',
+  fontSize:     '14px',
+  lineHeight:   '1.8',
+  resize:       'vertical',
+  fontFamily:   'var(--font-arabic, inherit)',
 };
 
-const focusStyle = { borderColor: 'rgba(212,137,30,0.5)' };
+// ─── A single open-text question step ───────────────────────────────────────
 
-// ─── Question steps ─────────────────────────────────────────────────────────
-
-function Q1({ value, onChange }) {
+function QuestionStep({ question, value, onChange }) {
+  const minChars = question.minChars ?? MIN;
   return (
     <div>
-      <CategoryTag text="الدوافع" />
+      <span
+        className="inline-block text-xs font-mono mb-3 tracking-widest uppercase"
+        style={{ color: 'var(--accent)', opacity: 0.7 }}
+      >
+        سؤال
+      </span>
       <h2 className="text-lg sm:text-xl font-arabic font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-        لماذا تريد المساهمة في بشير؟
+        {question.text}
       </h2>
-      <p className="text-sm leading-loose mb-5" style={{ color: 'var(--text-muted)' }}>
-        لا توجد إجابة صحيحة. نريد أن نفهم ما الذي يجذبك لهذا المشروع تحديداً.
-      </p>
       <textarea
         rows={5}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="بصدق، ما الذي دفعك للتقديم؟"
-        style={inputStyle}
-        onFocus={e => Object.assign(e.target.style, focusStyle)}
-        onBlur={e => e.target.style.borderColor = 'var(--border-mid)'}
+        placeholder={question.placeholder || 'اكتب إجابتك هنا...'}
+        style={textareaStyle}
+        onFocus={(e)  => { e.target.style.borderColor = 'rgba(212,137,30,0.5)'; }}
+        onBlur={(e)   => { e.target.style.borderColor = 'var(--border-mid)';    }}
       />
-      <CharCount value={value} min={MIN} />
+      <CharCount value={value} min={minChars} />
     </div>
   );
 }
 
-function Q2({ value, onChange }) {
-  return (
-    <div>
-      <CategoryTag text="التعليم" />
-      <h2 className="text-lg sm:text-xl font-arabic font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-        ما الذي يُعلَّم بشكل سيئ في المدارس؟
-      </h2>
-      <p className="text-sm leading-loose mb-5" style={{ color: 'var(--text-muted)' }}>
-        اختر أي مادة أو موضوع تعتقد أنه يحتاج إلى طريقة مختلفة. قل لنا لماذا.
-      </p>
-      <textarea
-        rows={5}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="موضوع أو مادة يمكن تعليمها بشكل أفضل..."
-        style={inputStyle}
-        onFocus={e => Object.assign(e.target.style, focusStyle)}
-        onBlur={e => e.target.style.borderColor = 'var(--border-mid)'}
-      />
-      <CharCount value={value} min={MIN} />
-    </div>
-  );
-}
+// ─── Micro task step ─────────────────────────────────────────────────────────
 
-function Q3({ value, onChange }) {
+function MicroTaskStep({ microTask, value, onChange }) {
+  const minChars = microTask.minChars ?? MIN;
   return (
     <div>
-      <CategoryTag text="قدرة التعليم" />
+      <span
+        className="inline-block text-xs font-mono mb-3 tracking-widest uppercase"
+        style={{ color: 'var(--accent)', opacity: 0.7 }}
+      >
+        مهمة تطبيقية
+      </span>
       <h2 className="text-lg sm:text-xl font-arabic font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-        كيف تشرح فكرة صعبة لطالب يسمعها لأول مرة؟
+        {microTask.prompt}
       </h2>
-      <p className="text-sm leading-loose mb-5" style={{ color: 'var(--text-muted)' }}>
-        لا تصف الطريقة فقط — أعطنا مثالاً فعلياً من مادتك. ماذا ستقول؟
+      <p className="text-sm mb-5 leading-loose" style={{ color: 'var(--text-muted)' }}>
+        لا توجد إجابة مثالية — نريد أن نرى أسلوبك في التفكير والتعبير.
       </p>
       <textarea
         rows={6}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="مثلاً: لشرح مفهوم المشتقة، أبدأ بـ..."
-        style={inputStyle}
-        onFocus={e => Object.assign(e.target.style, focusStyle)}
-        onBlur={e => e.target.style.borderColor = 'var(--border-mid)'}
+        placeholder="اكتب هنا..."
+        style={textareaStyle}
+        onFocus={(e)  => { e.target.style.borderColor = 'rgba(212,137,30,0.5)'; }}
+        onBlur={(e)   => { e.target.style.borderColor = 'var(--border-mid)';    }}
       />
-      <CharCount value={value} min={MIN} />
+      <CharCount value={value} min={minChars} />
     </div>
   );
 }
 
-function Q4({ value, onChange }) {
-  return (
-    <div>
-      <CategoryTag text="الالتزام" />
-      <h2 className="text-lg sm:text-xl font-arabic font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-        كم وقتاً يمكنك إعطاءه أسبوعياً؟
-      </h2>
-      <p className="text-sm leading-loose mb-5" style={{ color: 'var(--text-muted)' }}>
-        كن صادقاً — نفضّل شخصاً يعمل بانتظام على شخص يعد بالكثير ثم يختفي.
-      </p>
-      <div className="space-y-2.5">
-        {COMMITMENT_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 text-right"
-            style={{
-              background: value === opt.value ? 'rgba(212,137,30,0.1)' : 'rgba(255,255,255,0.03)',
-              border: value === opt.value
-                ? '1px solid rgba(212,137,30,0.45)'
-                : '1px solid var(--border-mid)',
-            }}
-          >
-            <div
-              className="w-4 h-4 rounded-full shrink-0 transition-all duration-200 flex items-center justify-center"
-              style={{
-                border: value === opt.value
-                  ? '2px solid var(--accent)'
-                  : '2px solid var(--border-mid)',
-              }}
-            >
-              {value === opt.value && (
-                <div className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} />
-              )}
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold font-arabic" style={{ color: 'var(--text-primary)' }}>
-                {opt.label}
-              </p>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{opt.sub}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Q5({ value, onChange, subjectsOfInterest }) {
-  const subjectNames = subjectsOfInterest
-    .map((id) => SUBJECTS_CATALOG.find((s) => s.id === id)?.nameAr)
-    .filter(Boolean)
-    .join(' أو ');
-
-  return (
-    <div>
-      <CategoryTag text="المهمة الصغيرة" />
-      <h2 className="text-lg sm:text-xl font-arabic font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-        اشرح مفهوماً واحداً بأسلوبك
-      </h2>
-      <p className="text-sm leading-loose mb-2" style={{ color: 'var(--text-muted)' }}>
-        اختر أي مفهوم من{subjectNames ? ` ${subjectNames}` : ' مادتك'} واشرحه كما لو كنت تشرحه لطالب
-        يسمعه لأول مرة. لا تنقل من الكتاب — استخدم كلماتك الخاصة.
-      </p>
-      <div
-        className="p-4 rounded-xl mb-4 text-sm leading-loose"
-        style={{
-          background: 'rgba(212,137,30,0.06)',
-          border: '1px solid rgba(212,137,30,0.15)',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        <span className="font-mono text-xs block mb-1" style={{ color: 'var(--accent)', opacity: 0.7 }}>
-          مثال على ما نبحث عنه
-        </span>
-        «التفاضل هو قياس كيف تتغير الأشياء. تخيل سيارة تتسارع — التفاضل يخبرنا بالسرعة في كل لحظة بالضبط، لا المتوسط.»
-      </div>
-      <textarea
-        rows={7}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="اختر مفهوماً وابدأ شرحك..."
-        style={inputStyle}
-        onFocus={e => Object.assign(e.target.style, focusStyle)}
-        onBlur={e => e.target.style.borderColor = 'var(--border-mid)'}
-      />
-      <CharCount value={value} min={MIN} />
-    </div>
-  );
-}
-
-// ─── Success screen ─────────────────────────────────────────────────────────
+// ─── Done screen ─────────────────────────────────────────────────────────────
 
 function SuccessScreen({ name }) {
   return (
@@ -258,40 +133,12 @@ function SuccessScreen({ name }) {
         <span style={{ color: 'var(--accent)', fontSize: '22px' }}>✓</span>
       </div>
       <h2 className="text-xl font-arabic font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-        شكراً، {name?.split(' ')[0]}
+        شكراً {name?.split(' ')[0]}
       </h2>
-      <p className="text-sm leading-loose mb-8 max-w-sm mx-auto" style={{ color: 'var(--text-secondary)' }}>
-        وصلت إجاباتك. سنقرأها بعناية ونتواصل معك قريباً — إما للترحيب بك رسمياً أو لإخبارك بالخطوة التالية.
+      <p className="text-sm leading-loose mb-6" style={{ color: 'var(--text-secondary)' }}>
+        وصلت إجاباتك. سنراجعها ونتواصل معك قريباً.
       </p>
-      <div
-        className="p-4 rounded-xl text-sm text-right mb-8"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-      >
-        <p className="text-xs font-mono mb-3" style={{ color: 'var(--text-muted)' }}>
-          ماذا سيحدث الآن؟
-        </p>
-        {[
-          'سنراجع إجاباتك خلال يومين إلى سبعة أيام',
-          'إن اعتُمد طلبك، ستصلك رسالة تفعيل على بريدك الإلكتروني',
-          'إن احتجنا لأي توضيح، سنتواصل معك مباشرة',
-        ].map((text, i) => (
-          <div key={i} className="flex items-start gap-3 mb-2 last:mb-0">
-            <span className="text-xs font-mono mt-0.5 shrink-0" style={{ color: 'var(--accent)', opacity: 0.6 }}>
-              {['٠١', '٠٢', '٠٣'][i]}
-            </span>
-            <p className="text-xs leading-loose" style={{ color: 'var(--text-muted)' }}>{text}</p>
-          </div>
-        ))}
-      </div>
-      <a
-        href="/"
-        className="text-sm transition-colors"
-        style={{ color: 'var(--text-muted)' }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-      >
-        العودة للرئيسية
-      </a>
+      <a href="/" className="text-sm" style={{ color: 'var(--text-muted)' }}>العودة للرئيسية</a>
     </div>
   );
 }
@@ -320,45 +167,69 @@ function ErrorScreen({ message }) {
 
 // ─── Main interview content ──────────────────────────────────────────────────
 
-const TOTAL = 5;
-
 function InterviewContent() {
   const searchParams = useSearchParams();
   const token        = searchParams.get('token');
 
-  const [phase, setPhase]       = useState('loading'); // loading | error | interview | done
-  const [errorMsg, setErrorMsg] = useState('');
-  const [applicant, setApplicant] = useState({ name: '', subjectsOfInterest: [] });
-  const [step, setStep]         = useState(1);
-  const [submitting, setSubmitting] = useState(false);
+  const [phase,       setPhase]      = useState('loading'); // loading | error | interview | done
+  const [errorMsg,    setErrorMsg]   = useState('');
+  const [config,      setConfig]     = useState(null);      // { name, roleName, questions, microTask, isDynamic }
+  const [step,        setStep]       = useState(0);         // 0-based index into steps[]
+  const [answers,     setAnswers]    = useState({});        // questionId → string
+  const [microAnswer, setMicroAnswer] = useState('');
+  const [submitting,  setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   const cardRef = useRef(null);
 
-  const [answers, setAnswers] = useState({
-    motivation:        '',
-    educationCritique: '',
-    teachingMoment:    '',
-    weeklyCommitment:  '',
-    microTask:         '',
-  });
-
-  const setAnswer = (key) => (val) => setAnswers((a) => ({ ...a, [key]: val }));
-
-  // Validate token on mount
   useEffect(() => {
     if (!token) { setErrorMsg('لا يوجد رابط صالح في هذا العنوان.'); setPhase('error'); return; }
     fetch(`/api/interview?token=${token}`)
       .then((r) => r.json())
       .then((data) => {
         if (!data.ok) { setErrorMsg(data.error); setPhase('error'); return; }
-        setApplicant(data.data);
+        setConfig(data.data);
+        // Init answers keyed by question _id
+        const init = {};
+        (data.data.questions || []).forEach((q) => { init[String(q._id)] = ''; });
+        setAnswers(init);
         setPhase('interview');
       })
       .catch(() => { setErrorMsg('تعذّر الاتصال بالخادم.'); setPhase('error'); });
   }, [token]);
 
-  // Animate card on step change
+  if (!config && phase === 'interview') return null;
+
+  // Build step list: questions + optional micro task as last step
+  const steps = config
+    ? [
+        ...(config.questions || []).map((q) => ({ type: 'question', data: q })),
+        ...(config.microTask?.prompt ? [{ type: 'microtask', data: config.microTask }] : []),
+      ]
+    : [];
+
+  const total       = steps.length;
+  const currentStep = steps[step];
+
+  const currentValue = () => {
+    if (!currentStep) return '';
+    if (currentStep.type === 'microtask') return microAnswer;
+    return answers[String(currentStep.data._id)] || '';
+  };
+
+  const currentMin = () => currentStep?.data?.minChars ?? MIN;
+
+  const isCurrentValid = () => {
+    const val = currentValue();
+    return val.trim().length >= currentMin();
+  };
+
+  const setCurrentValue = (val) => {
+    if (!currentStep) return;
+    if (currentStep.type === 'microtask') { setMicroAnswer(val); return; }
+    setAnswers((a) => ({ ...a, [String(currentStep.data._id)]: val }));
+  };
+
   const animateStep = (direction = 1) => {
     if (!cardRef.current) return;
     gsap.fromTo(cardRef.current,
@@ -368,30 +239,34 @@ function InterviewContent() {
   };
 
   const goNext = () => {
-    setStep((s) => { const next = s + 1; setTimeout(() => animateStep(-1), 0); return next; });
+    setStep((s) => { const n = s + 1; setTimeout(() => animateStep(-1), 0); return n; });
   };
 
   const goBack = () => {
-    setStep((s) => { const prev = s - 1; setTimeout(() => animateStep(1), 0); return prev; });
-  };
-
-  // Validate current step before advancing
-  const currentAnswerValid = () => {
-    const keys = ['motivation', 'educationCritique', 'teachingMoment', 'weeklyCommitment', 'microTask'];
-    const key  = keys[step - 1];
-    const val  = answers[key];
-    if (key === 'weeklyCommitment') return !!val;
-    return (val || '').trim().length >= MIN;
+    setStep((s) => { const n = s - 1; setTimeout(() => animateStep(1), 0); return n; });
   };
 
   const handleSubmit = async () => {
     setSubmitting(true);
     setSubmitError('');
+
+    const questionList = (config.questions || []);
+
+    // Build payload for dynamic flow
+    const answersArray = questionList.map((q) => ({
+      questionId: q._id,
+      answer:     answers[String(q._id)] || '',
+    }));
+
     try {
       const res = await fetch('/api/interview', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ token, ...answers }),
+        body:    JSON.stringify({
+          token,
+          answers:   answersArray,
+          microTask: microAnswer,
+        }),
       });
       const data = await res.json();
       if (!data.ok) { setSubmitError(data.error || 'حدث خطأ ما'); setSubmitting(false); return; }
@@ -401,8 +276,6 @@ function InterviewContent() {
       setSubmitting(false);
     }
   };
-
-  // ── Render shells ───────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-16 relative" dir="rtl">
@@ -436,8 +309,6 @@ function InterviewContent() {
             backdropFilter: 'blur(12px)',
           }}
         >
-
-          {/* Loading */}
           {phase === 'loading' && (
             <div className="text-center py-12">
               <p className="text-sm font-arabic animate-pulse" style={{ color: 'var(--text-muted)' }}>
@@ -446,42 +317,41 @@ function InterviewContent() {
             </div>
           )}
 
-          {/* Error */}
           {phase === 'error' && <ErrorScreen message={errorMsg} />}
+          {phase === 'done'  && <SuccessScreen name={config?.name} />}
 
-          {/* Done */}
-          {phase === 'done' && <SuccessScreen name={applicant.name} />}
-
-          {/* Interview */}
-          {phase === 'interview' && (
+          {phase === 'interview' && total > 0 && (
             <>
               {/* Greeting header */}
               <div className="mb-6 pb-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <p className="text-xs font-mono mb-1" style={{ color: 'var(--text-muted)' }}>
-                  المقابلة — بشير × نفير
+                  المقابلة — بشير × نفير{config.roleName ? ` — ${config.roleName}` : ''}
                 </p>
                 <h1 className="text-base font-arabic font-bold" style={{ color: 'var(--text-primary)' }}>
-                  أهلاً {applicant.name?.split(' ')[0]} —{' '}
+                  أهلاً {config.name?.split(' ')[0]} —{' '}
                   <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>
-                    خمسة أسئلة، لا توجد إجابات خاطئة
+                    {total} {total === 1 ? 'سؤال' : total <= 10 ? 'أسئلة' : 'سؤالاً'}، لا توجد إجابات خاطئة
                   </span>
                 </h1>
               </div>
 
               {/* Progress */}
-              <ProgressLine current={step} total={TOTAL} />
+              <ProgressLine current={step + 1} total={total} />
 
-              {/* Question card — animated */}
+              {/* Animated step */}
               <div ref={cardRef}>
-                {step === 1 && <Q1 value={answers.motivation}        onChange={setAnswer('motivation')} />}
-                {step === 2 && <Q2 value={answers.educationCritique} onChange={setAnswer('educationCritique')} />}
-                {step === 3 && <Q3 value={answers.teachingMoment}    onChange={setAnswer('teachingMoment')} />}
-                {step === 4 && <Q4 value={answers.weeklyCommitment}  onChange={setAnswer('weeklyCommitment')} />}
-                {step === 5 && (
-                  <Q5
-                    value={answers.microTask}
-                    onChange={setAnswer('microTask')}
-                    subjectsOfInterest={applicant.subjectsOfInterest}
+                {currentStep?.type === 'question' && (
+                  <QuestionStep
+                    question={currentStep.data}
+                    value={currentValue()}
+                    onChange={setCurrentValue}
+                  />
+                )}
+                {currentStep?.type === 'microtask' && (
+                  <MicroTaskStep
+                    microTask={currentStep.data}
+                    value={currentValue()}
+                    onChange={setCurrentValue}
                   />
                 )}
               </div>
@@ -502,14 +372,11 @@ function InterviewContent() {
 
               {/* Navigation */}
               <div className="flex items-center justify-between mt-8">
-                {step > 1 ? (
+                {step > 0 ? (
                   <button
                     onClick={goBack}
                     className="text-sm px-4 py-2 rounded-lg transition-all"
-                    style={{
-                      color: 'var(--text-muted)',
-                      border: '1px solid var(--border-subtle)',
-                    }}
+                    style={{ color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}
                     onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
                     onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                   >
@@ -519,45 +386,35 @@ function InterviewContent() {
                   <div />
                 )}
 
-                {step < TOTAL ? (
+                {step < total - 1 ? (
                   <button
                     onClick={goNext}
-                    disabled={!currentAnswerValid()}
+                    disabled={!isCurrentValid()}
                     className="text-sm px-6 py-2.5 rounded-lg font-bold transition-all duration-200"
                     style={{
-                      background: currentAnswerValid() ? 'var(--accent)' : 'var(--bg-card)',
-                      color: currentAnswerValid() ? '#0e0c09' : 'var(--text-muted)',
-                      border: currentAnswerValid() ? 'none' : '1px solid var(--border-subtle)',
-                      cursor: currentAnswerValid() ? 'pointer' : 'not-allowed',
+                      background: isCurrentValid() ? 'var(--accent)' : 'var(--bg-card)',
+                      color:      isCurrentValid() ? '#0e0c09'        : 'var(--text-muted)',
+                      border:     isCurrentValid() ? 'none'            : '1px solid var(--border-subtle)',
+                      cursor:     isCurrentValid() ? 'pointer'         : 'not-allowed',
                     }}
-                    onMouseEnter={e => {
-                      if (currentAnswerValid()) e.currentTarget.style.background = 'var(--accent-hover)';
-                    }}
-                    onMouseLeave={e => {
-                      if (currentAnswerValid()) e.currentTarget.style.background = 'var(--accent)';
-                    }}
+                    onMouseEnter={e => { if (isCurrentValid()) e.currentTarget.style.background = 'var(--accent-hover)'; }}
+                    onMouseLeave={e => { if (isCurrentValid()) e.currentTarget.style.background = 'var(--accent)'; }}
                   >
                     التالي →
                   </button>
                 ) : (
                   <button
                     onClick={handleSubmit}
-                    disabled={submitting || !currentAnswerValid()}
+                    disabled={submitting || !isCurrentValid()}
                     className="text-sm px-6 py-2.5 rounded-lg font-bold transition-all duration-200"
                     style={{
-                      background: (submitting || !currentAnswerValid()) ? 'var(--bg-card)' : 'var(--accent)',
-                      color: (submitting || !currentAnswerValid()) ? 'var(--text-muted)' : '#0e0c09',
-                      border: (submitting || !currentAnswerValid()) ? '1px solid var(--border-subtle)' : 'none',
-                      cursor: submitting ? 'wait' : 'pointer',
+                      background: (submitting || !isCurrentValid()) ? 'var(--bg-card)' : 'var(--accent)',
+                      color:      (submitting || !isCurrentValid()) ? 'var(--text-muted)' : '#0e0c09',
+                      border:     (submitting || !isCurrentValid()) ? '1px solid var(--border-subtle)' : 'none',
+                      cursor:     submitting ? 'wait' : 'pointer',
                     }}
-                    onMouseEnter={e => {
-                      if (!submitting && currentAnswerValid())
-                        e.currentTarget.style.background = 'var(--accent-hover)';
-                    }}
-                    onMouseLeave={e => {
-                      if (!submitting && currentAnswerValid())
-                        e.currentTarget.style.background = 'var(--accent)';
-                    }}
+                    onMouseEnter={e => { if (!submitting && isCurrentValid()) e.currentTarget.style.background = 'var(--accent-hover)'; }}
+                    onMouseLeave={e => { if (!submitting && isCurrentValid()) e.currentTarget.style.background = 'var(--accent)'; }}
                   >
                     {submitting ? 'جاري الإرسال...' : 'إرسال الإجابات ✓'}
                   </button>
@@ -567,19 +424,15 @@ function InterviewContent() {
           )}
         </div>
 
-        {/* Reassurance note */}
         {phase === 'interview' && (
           <p className="text-center text-xs mt-5" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
             يمكنك التنقل بين الأسئلة بحرية قبل الإرسال
           </p>
         )}
-
       </div>
     </div>
   );
 }
-
-// ─── Page export (Suspense wrapper required for useSearchParams) ─────────────
 
 export default function InterviewPage() {
   return (
