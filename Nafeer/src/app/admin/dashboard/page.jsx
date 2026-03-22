@@ -7,7 +7,7 @@ import { ReviewQueueSection }   from './components/ReviewQueueSection';
 import { CoverageSection }      from './components/CoverageSection';
 import { MediaSection }         from './components/MediaSection';
 import { RolesSection }         from './components/RolesSection';
-import { AdminsSection }        from './components/AdminsSection';
+import { AdminsSection }        from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
 
 export default function AdminDashboard() {
