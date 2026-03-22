@@ -136,7 +136,7 @@ export default function Navbar() {
               تسجيل الدخول
             </a>
             <a
-              href="/join"
+              href="/prejoin"
               className="text-sm px-3 sm:px-4 py-2 font-bold rounded-lg transition-all duration-200"
               style={{
                 background: 'var(--accent)',

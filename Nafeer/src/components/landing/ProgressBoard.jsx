@@ -172,7 +172,7 @@ export default function ProgressBoard() {
             كل المواد مفتوحة للمساهمة — لديك خلفية في أي مادة؟
           </p>
           <a
-            href="/join"
+            href="/prejoin"
             className="inline-flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
             style={{ background: 'var(--accent)', color: '#0e0c09' }}
             onMouseEnter={e => {
@@ -262,7 +262,7 @@ function SubjectCard({ subject, isMajor = false }) {
           <span className="text-xs font-mono" style={{ color: c.text }}>{subject.progress}%</span>
           {isAvailable ? (
             <a
-              href="/join"
+              href="/prejoin"
               className="text-xs px-2 py-0.5 rounded-full font-mono transition-all duration-200"
               style={{
                 color: 'var(--accent)',
