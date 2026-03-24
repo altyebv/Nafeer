@@ -13,7 +13,6 @@
  * Safe to re-run — skips anything that already exists.
  */
 
-import 'dotenv/config';
 import mongoose from 'mongoose';
 import bcrypt   from 'bcryptjs';
 
