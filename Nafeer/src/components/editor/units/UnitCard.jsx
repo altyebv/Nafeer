@@ -158,15 +158,39 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
             </p>
           )}
 
-          {unitLessons.map((lesson, li) => (
-            <LessonItem
-              key={lesson.id}
-              lesson={lesson}
-              index={li}
-              onEdit={() => onEditLesson(lesson.id, unit.id)}
-              coverageLevel={coverageMap?.[lesson.contentId]?.coverageLevel}
-            />
-          ))}
+          {/* Build tree: root lessons first, then their variations indented */}
+          {(() => {
+            const roots      = unitLessons.filter((l) => !l.parentLesson);
+            const variations = unitLessons.filter((l) => !!l.parentLesson);
+            const varsByParent = variations.reduce((acc, v) => {
+              if (!acc[v.parentLesson]) acc[v.parentLesson] = [];
+              acc[v.parentLesson].push(v);
+              return acc;
+            }, {});
+
+            return roots.map((lesson, li) => (
+              <div key={lesson.id}>
+                <LessonItem
+                  lesson={lesson}
+                  index={li}
+                  onEdit={() => onEditLesson(lesson.id, unit.id)}
+                  coverageLevel={coverageMap?.[lesson.contentId]?.coverageLevel}
+                />
+                {/* Variations indented beneath parent */}
+                {(varsByParent[lesson.id] || []).map((vLesson) => (
+                  <div key={vLesson.id} className="pr-6 mt-0.5">
+                    <LessonItem
+                      lesson={vLesson}
+                      index={null}
+                      onEdit={() => onEditLesson(vLesson.id, unit.id)}
+                      coverageLevel={coverageMap?.[vLesson.contentId]?.coverageLevel}
+                      isVariation
+                    />
+                  </div>
+                ))}
+              </div>
+            ));
+          })()}
 
           {/* Inline add-lesson input */}
           {addingLesson ? (
