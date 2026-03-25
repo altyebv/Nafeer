@@ -10,6 +10,7 @@ import StatusBadge          from '@/components/editor/shared/StatusBadge';
 import LessonPreviewModal   from '@/components/editor/lesson/LessonPreviewModal';
 import AttributionBar       from '@/components/editor/lesson/AttributionBar';
 import LessonNotesDrawer    from '@/components/editor/lesson/LessonNotesDrawer';
+import LessonHistoryDrawer  from '@/components/editor/lesson/LessonHistoryDrawer';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 
@@ -46,7 +47,9 @@ export default function LessonEditorPage({
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [showPreview,   setShowPreview]   = useState(false);
   const [showNotes,     setShowNotes]     = useState(false);
+  const [showHistory,   setShowHistory]   = useState(false);
   const [notesCount,    setNotesCount]    = useState(0);
+  const [versionLabel,  setVersionLabel]  = useState('');
   // Attribution data fetched from the lesson GET response (populated server-side)
   const [attribution,   setAttribution]   = useState(null);
 
@@ -207,6 +210,15 @@ export default function LessonEditorPage({
           )}
 
           <button
+            onClick={() => setShowHistory(true)}
+            className="flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
+            title="سجل الإصدارات"
+          >
+            <span className="text-xs leading-none">🕒</span>
+            <span className="hidden sm:inline">السجل</span>
+          </button>
+
+          <button
             onClick={() => setShowNotes(true)}
             className="relative flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
           >
@@ -302,6 +314,7 @@ export default function LessonEditorPage({
             checklist={checklist} completedChecks={completedChecks} statusCfg={statusCfg}
             lessonSections={lessonSections} lessonBlocks={lessonBlocks}
             updateLesson={updateLesson} patchMeta={patchMeta}
+            versionLabel={versionLabel} onVersionLabelChange={setVersionLabel}
             onNext={() => setActiveTab(1)}
           />
         )}
@@ -344,12 +357,19 @@ export default function LessonEditorPage({
           onCountChange={(n) => setNotesCount(n)}
         />
       )}
+
+      {showHistory && (
+        <LessonHistoryDrawer
+          lessonId={lessonId}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
     </div>
   );
 }
 
 // ─── Step 1: Meta ─────────────────────────────────────────────────────────────
-function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completedChecks, statusCfg, lessonSections, lessonBlocks, updateLesson, patchMeta, onNext }) {
+function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completedChecks, statusCfg, lessonSections, lessonBlocks, updateLesson, patchMeta, versionLabel, onVersionLabelChange, onNext }) {
   return (
     <div className="space-y-5 max-w-2xl">
       <div className="flex items-center gap-3 pb-1">
@@ -439,6 +459,24 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
                 <span>{item.label}</span>
               </div>
             ))}
+          </div>
+
+          {/* Version label — attaches a short note to the next save/submit */}
+          <div className="mt-4 pt-4 border-t border-ink-800/50">
+            <label className="text-[11px] text-ink-600 font-arabic block mb-1.5">
+              وسم الإصدار
+              <span className="text-ink-700 mr-1">(اختياري — يظهر في سجل التعديلات)</span>
+            </label>
+            <input
+              type="text"
+              value={versionLabel}
+              onChange={(e) => onVersionLabelChange(e.target.value.slice(0, 80))}
+              placeholder="مثال: مراجعة بعد الفيدباك، تصحيح أمثلة…"
+              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-xs font-arabic placeholder-ink-700 focus:outline-none focus:border-sand-700 transition-colors"
+            />
+            {versionLabel && (
+              <p className="text-[10px] text-ink-700 font-mono mt-1 text-left">{versionLabel.length}/80</p>
+            )}
           </div>
         </div>
       </Card>
