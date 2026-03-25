@@ -23,13 +23,13 @@ export async function GET(request, { params }) {
 }
 
 // PUT /api/content/lessons/[id]
-// Body: { title?, estimatedMinutes?, summary?, note? }
+// Body: { title?, estimatedMinutes?, summary?, note?, versionLabel? }
 // Bumps version, resets to draft if was approved.
 export async function PUT(request, { params }) {
   try {
     const user = await requireContributor();
     const body = await request.json();
-    const { note, ...updates } = body;
+    const { note, versionLabel, ...updates } = body;
 
     // Whitelist updatable fields
     const allowed = ['title', 'estimatedMinutes', 'summary'];
@@ -37,7 +37,14 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const lesson = await updateLesson((await params).id, safeUpdates, user.id, note || '');
+    const lesson = await updateLesson(
+      (await params).id,
+      safeUpdates,
+      user.id,
+      note || '',
+      versionLabel || '',
+      user.name || ''
+    );
     if (!lesson) return err('الدرس غير موجود', 404);
 
     return ok(lesson);
@@ -48,12 +55,12 @@ export async function PUT(request, { params }) {
   }
 }
 
-// PATCH /api/content/lessons/[id]/status
-// Body: { status: 'draft'|'review'|'approved'|'archived', note? }
+// PATCH /api/content/lessons/[id]
+// Body: { status: 'draft'|'review'|'approved'|'archived', note?, versionLabel? }
 export async function PATCH(request, { params }) {
   try {
     const user = await requireContributor();
-    const { status, note } = await request.json();
+    const { status, note, versionLabel } = await request.json();
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) {
       return err('حالة غير صالحة');
@@ -64,7 +71,9 @@ export async function PATCH(request, { params }) {
       return err('الاعتماد متاح للمشرفين فقط', 403);
     }
 
-    const lesson = await updateLessonStatus((await params).id, status, user.id, note || '');
+    const lesson = await updateLessonStatus(
+      (await params).id, status, user.id, note || '', versionLabel || '', user.name || ''
+    );
     if (!lesson) return err('الدرس غير موجود', 404);
 
     return ok(lesson);
