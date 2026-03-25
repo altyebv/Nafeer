@@ -33,6 +33,27 @@ const LessonSchema = new mongoose.Schema(
     estimatedMinutes: { type: Number, default: 15 },
     summary:          { type: String, default: null },
 
+    // ── Contributor notes / review feedback ───────────────────────────────
+    // Stored as subdocuments so they travel with the lesson.
+    // notesCount is a denormalized total for fast list-view indicators.
+    notesCount: { type: Number, default: 0 },
+    notes: [
+      {
+        // text of the note
+        text:       { type: String, required: true, trim: true },
+        // author fields are denormalized so display never needs a lookup
+        authorId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Contributor', default: null },
+        authorName: { type: String, default: '' },
+        authorRole: { type: String, enum: ['contributor', 'admin'], default: 'contributor' },
+        // 'comment'        — general note from any contributor
+        // 'review_feedback'— written by admin when approving/rejecting
+        // 'flag'           — marks something that needs attention
+        noteType:   { type: String, enum: ['comment', 'review_feedback', 'flag'], default: 'comment' },
+        resolved:   { type: Boolean, default: false },
+        createdAt:  { type: Date, default: Date.now },
+      },
+    ],
+
     ...versioningFields,
   },
   { timestamps: true }
