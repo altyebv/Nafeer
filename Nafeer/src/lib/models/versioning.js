@@ -33,6 +33,12 @@ export const versioningFields = {
     ref: 'Contributor',
   },
 
+  // Timestamp of the last admin approval/rejection action
+  reviewedAt: {
+    type: Date,
+    default: null,
+  },
+
   // Rolling audit trail — capped at 10 entries to respect Atlas free tier
   changelog: [
     {
