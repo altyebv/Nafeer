@@ -66,6 +66,9 @@ export const useSubjectStore = create(
                 id:               lesson.id || `${lesson.unitId}_L${nextOrder}`,
                 order:            nextOrder,
                 estimatedMinutes: lesson.estimatedMinutes || 15,
+                parentLesson:     lesson.parentLesson  || null,
+                variationType:    lesson.variationType || null,
+                variationNote:    lesson.variationNote || null,
               },
             ],
           };
