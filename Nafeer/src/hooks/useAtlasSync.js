@@ -197,8 +197,11 @@ export function useAtlasSync() {
         body:   JSON.stringify({
           title:            lesson.title,
           estimatedMinutes: lesson.estimatedMinutes,
-          summary:          lesson.summary  || null,
-          metadata:         lesson.metadata || null,
+          summary:          lesson.summary       || null,
+          metadata:         lesson.metadata      || null,
+          parentLesson:     lesson.parentLesson  || null,
+          variationType:    lesson.variationType || null,
+          variationNote:    lesson.variationNote || null,
         }),
       });
       if (data?.status) updateLesson(lessonId, { atlasStatus: data.status });
