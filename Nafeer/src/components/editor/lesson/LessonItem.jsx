@@ -96,6 +96,17 @@ export default function LessonItem({ lesson, index, onEdit, coverageLevel }) {
         {lesson.estimatedMinutes || 15}<span className="text-ink-800">د</span>
       </span>
 
+      {/* Notes count pip */}
+      {lesson.notesCount > 0 && (
+        <div
+          className="flex items-center gap-0.5 shrink-0"
+          title={`${lesson.notesCount} ملاحظة`}
+        >
+          <span className="text-[9px] text-ink-700">📝</span>
+          <span className="text-[10px] font-mono text-ink-700">{lesson.notesCount}</span>
+        </div>
+      )}
+
       {/* Coverage pip */}
       {cvCfg && (
         <div
