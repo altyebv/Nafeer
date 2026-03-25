@@ -39,7 +39,9 @@ export const versioningFields = {
     default: null,
   },
 
-  // Rolling audit trail — capped at 10 entries to respect Atlas free tier
+  // Embedded changelog — intentionally shallow (cap 5).
+  // Full history lives in the LessonHistory collection.
+  // This serves "what happened recently" in the header, not deep archaeology.
   changelog: [
     {
       version: Number,
@@ -47,60 +49,120 @@ export const versioningFields = {
         type: String,
         enum: ['created', 'edited', 'reviewed', 'approved', 'archived'],
       },
-      by: { type: mongoose.Schema.Types.ObjectId, ref: 'Contributor' },
-      note: { type: String, default: '' },
-      timestamp: { type: Date, default: Date.now },
+      by:           { type: mongoose.Schema.Types.ObjectId, ref: 'Contributor' },
+      note:         { type: String, default: '' },
+      versionLabel: { type: String, default: '' },
+      timestamp:    { type: Date, default: Date.now },
     },
   ],
 };
 
+// ─── DIFF_FIELDS ──────────────────────────────────────────────────────────────
+// The scalar lesson fields we track diffs for.
+const DIFF_FIELDS = [
+  'title',
+  'summary',
+  'estimatedMinutes',
+  'status',
+  'metadata.hook',
+  'metadata.forwardPull',
+  'metadata.orientation',
+];
+
+// ─── computeDiff ──────────────────────────────────────────────────────────────
+// Compares currentDoc against updates ($set payload).
+// Returns sparse { field: { from, to } } — null when nothing changed.
+//
+export function computeDiff(currentDoc, updates) {
+  const diff = {};
+
+  for (const field of DIFF_FIELDS) {
+    const parts    = field.split('.');
+    const isNested = parts.length > 1;
+
+    let currentVal;
+    if (isNested) {
+      currentVal = currentDoc[parts[0]]?.[parts[1]] ?? null;
+    } else {
+      currentVal = currentDoc[field] ?? null;
+    }
+
+    let updatedVal;
+    if (isNested) {
+      if (field in updates) {
+        updatedVal = updates[field];
+      } else if (parts[0] in updates && typeof updates[parts[0]] === 'object') {
+        updatedVal = updates[parts[0]][parts[1]] ?? null;
+      } else {
+        continue;
+      }
+    } else {
+      if (!(field in updates)) continue;
+      updatedVal = updates[field] ?? null;
+    }
+
+    const cur = Array.isArray(currentVal) ? JSON.stringify(currentVal) : currentVal;
+    const upd = Array.isArray(updatedVal) ? JSON.stringify(updatedVal) : updatedVal;
+
+    if (cur !== upd) {
+      diff[field] = {
+        from: Array.isArray(currentVal) ? [...currentVal] : currentVal,
+        to:   Array.isArray(updatedVal) ? [...updatedVal] : updatedVal,
+      };
+    }
+  }
+
+  return Object.keys(diff).length > 0 ? diff : null;
+}
+
 // ─── applyVersionBump ─────────────────────────────────────────────────────────
-// Call this inside update helpers whenever a document is being mutated.
-// Mutates the updates object in place and returns it.
+// Returns { updates, diff }.
+// Caller writes diff to LessonHistory collection.
 //
-// @param updates      - the $set payload being sent to Mongoose
-// @param currentDoc   - the current document (to read version + status)
-// @param contributorId - ObjectId of the editor
-// @param action       - changelog action string
-// @param note         - optional human note for the changelog entry
-//
-export function applyVersionBump(updates, currentDoc, contributorId, action = 'edited', note = '') {
+export function applyVersionBump(
+  updates,
+  currentDoc,
+  contributorId,
+  action = 'edited',
+  note = '',
+  versionLabel = ''
+) {
   const newVersion = (currentDoc.version || 1) + 1;
 
   updates.version   = newVersion;
   updates.updatedBy = contributorId;
 
-  // If approved content is edited, it goes back to draft (requires re-review)
   if (currentDoc.status === 'approved') {
     updates.status = 'draft';
   }
 
   const entry = {
-    version:   newVersion,
+    version:      newVersion,
     action,
-    by:        contributorId,
+    by:           contributorId,
     note,
-    timestamp: new Date(),
+    versionLabel: versionLabel || '',
+    timestamp:    new Date(),
   };
 
-  // $push with $slice keeps the array capped at 10 — use in MongoDB update, not here
-  // For pre-save hooks: keep last 9 + new entry
-  const existing = currentDoc.changelog || [];
-  updates.changelog = [...existing.slice(-9), entry];
+  const existing    = currentDoc.changelog || [];
+  updates.changelog = [...existing.slice(-4), entry];
 
-  return updates;
+  const diff = action === 'edited' ? computeDiff(currentDoc, updates) : null;
+
+  return { updates, diff };
 }
 
 // ─── initialChangelog ─────────────────────────────────────────────────────────
-// Use when creating a new document.
 export function initialChangelog(contributorId, note = '') {
   return [
     {
-      version:   1,
-      action:    'created',
-      by:        contributorId,
+      version:      1,
+      action:       'created',
+      by:           contributorId,
       note,
-      timestamp: new Date(),
+      versionLabel: '',
+      timestamp:    new Date(),
     },
   ];
 }
