@@ -32,7 +32,7 @@ export async function PUT(request, { params }) {
     const { note, versionLabel, ...updates } = body;
 
     // Whitelist updatable fields
-    const allowed = ['title', 'estimatedMinutes', 'summary'];
+    const allowed = ['title', 'estimatedMinutes', 'summary', 'parentLesson', 'variationType', 'variationNote'];
     const safeUpdates = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
