@@ -4,6 +4,7 @@ import { useDataStore }  from '@/store/dataStore';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import StatusBadge       from '@/components/editor/shared/StatusBadge';
 import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
+import { VARIATION_CONFIG } from '@/components/editor/lesson/LinkVariationModal';
 
 // Left-border accent colors per lesson status
 const STATUS_BORDER = {
@@ -20,7 +21,7 @@ const STATUS_BG_HOVER = {
   done:    'hover:bg-emerald-900/10',
 };
 
-export default function LessonItem({ lesson, index, onEdit, coverageLevel }) {
+export default function LessonItem({ lesson, index, onEdit, coverageLevel, isVariation }) {
   const { sections, blocks, updateLesson } = useDataStore();
 
   const [editingTitle, setEditingTitle] = useState(false);
@@ -36,6 +37,7 @@ export default function LessonItem({ lesson, index, onEdit, coverageLevel }) {
   const status   = getLessonStatus(lesson.id, sections, blocks, lesson);
   const stCfg    = STATUS_CONFIG[status];
   const cvCfg    = coverageLevel ? (COVERAGE_LEVEL_CONFIG[coverageLevel] ?? COVERAGE_LEVEL_CONFIG.none) : null;
+  const varCfg   = lesson.variationType ? VARIATION_CONFIG[lesson.variationType] : null;
 
   const saveTitle = () => {
     if (titleDraft.trim()) updateLesson(lesson.id, { title: titleDraft.trim() });
@@ -44,17 +46,27 @@ export default function LessonItem({ lesson, index, onEdit, coverageLevel }) {
   };
 
   return (
-    <div
-      className={`
-        relative flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg
-        transition-all duration-150 group cursor-default
-        ${STATUS_BG_HOVER[status]}
-      `}
-      style={{
-        borderRight: `3px solid ${STATUS_BORDER[status]}`,
-        background: 'rgba(26,23,19,0.4)',
-      }}
-    >
+    <div className={isVariation ? 'flex gap-0' : ''}>
+      {/* Variation connector line */}
+      {isVariation && (
+        <div className="flex flex-col items-center shrink-0 w-6 pt-2 pb-1">
+          <div className="w-px flex-1" style={{ background: varCfg?.border || 'var(--border-subtle)' }} />
+          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: varCfg?.color || 'var(--border-subtle)' }} />
+        </div>
+      )}
+
+      <div
+        className={`
+          relative flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg
+          transition-all duration-150 group cursor-default
+          ${isVariation ? 'flex-1' : 'w-full'}
+          ${STATUS_BG_HOVER[status]}
+        `}
+        style={{
+          borderRight: `3px solid ${isVariation ? (varCfg?.color || STATUS_BORDER[status]) : STATUS_BORDER[status]}`,
+          background: 'rgba(26,23,19,0.4)',
+        }}
+      >
       {/* Lesson number */}
       <span className="text-[11px] font-mono text-ink-700 shrink-0 w-5 text-center select-none">
         {String(index + 1).padStart(2, '0')}
@@ -79,6 +91,17 @@ export default function LessonItem({ lesson, index, onEdit, coverageLevel }) {
         <span className="flex-1 text-sm text-ink-100 font-arabic leading-snug min-w-0 truncate
           group-hover:text-sand-100 transition-colors">
           {lesson.title}
+        </span>
+      )}
+
+      {/* Variation type chip */}
+      {varCfg && (
+        <span
+          className="shrink-0 text-[10px] font-arabic px-1.5 py-0.5 rounded border"
+          style={{ background: varCfg.bg, borderColor: varCfg.border, color: varCfg.color }}
+          title={lesson.variationNote || varCfg.label}
+        >
+          {varCfg.icon} {varCfg.label}
         </span>
       )}
 
@@ -140,6 +163,7 @@ export default function LessonItem({ lesson, index, onEdit, coverageLevel }) {
           <span className="text-[10px] opacity-60">←</span>
         </button>
       </div>
+    </div>
     </div>
   );
 }
