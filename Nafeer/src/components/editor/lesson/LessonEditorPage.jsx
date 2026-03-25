@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDataStore }    from '@/store/dataStore';
 import { useAtlasSync }    from '@/hooks/useAtlasSync';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
@@ -8,6 +8,8 @@ import LessonQuestionsPanel from '@/components/editor/lesson/LessonQuestionsPane
 import LessonFeedPanel      from '@/components/editor/lesson/LessonFeedPanel';
 import StatusBadge          from '@/components/editor/shared/StatusBadge';
 import LessonPreviewModal   from '@/components/editor/lesson/LessonPreviewModal';
+import AttributionBar       from '@/components/editor/lesson/AttributionBar';
+import LessonNotesDrawer    from '@/components/editor/lesson/LessonNotesDrawer';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 
@@ -31,6 +33,7 @@ export default function LessonEditorPage({
   lessonId, unitId, subjectId,
   onBack, onBackToOverview, onNavigateLesson, onOpenGlobal,
   isSyncing, syncError, lastSynced,
+  currentUser,
 }) {
   const {
     units, lessons, sections, blocks, questions, feedItems,
@@ -42,9 +45,27 @@ export default function LessonEditorPage({
   const [saveSuccess,   setSaveSuccess]   = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [showPreview,   setShowPreview]   = useState(false);
+  const [showNotes,     setShowNotes]     = useState(false);
+  const [notesCount,    setNotesCount]    = useState(0);
+  // Attribution data fetched from the lesson GET response (populated server-side)
+  const [attribution,   setAttribution]   = useState(null);
 
   const lesson         = lessons.find((l) => l.id === lessonId);
   const unit           = units.find((u) => u.id === unitId);
+
+  // Fetch attribution + notesCount once when the lesson changes
+  useEffect(() => {
+    if (!lessonId) return;
+    fetch(`/api/content/lessons/${lessonId}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.ok) {
+          setAttribution(res.data.attribution || null);
+          setNotesCount(res.data.notesCount ?? 0);
+        }
+      })
+      .catch(() => {/* non-blocking */});
+  }, [lessonId]);
   const lessonSections = sections.filter((s) => s.lessonId === lessonId).sort((a, b) => a.order - b.order);
   const sectionIds     = lessonSections.map((s) => s.id);
   const lessonBlocks   = blocks.filter((b) => sectionIds.includes(b.sectionId));
@@ -186,6 +207,19 @@ export default function LessonEditorPage({
           )}
 
           <button
+            onClick={() => setShowNotes(true)}
+            className="relative flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
+          >
+            <span className="text-xs leading-none">📝</span>
+            <span className="hidden sm:inline">ملاحظات</span>
+            {notesCount > 0 && (
+              <span className="absolute -top-1.5 -left-1 w-4 h-4 bg-sand-700 text-ink-950 text-[9px] font-bold rounded-full flex items-center justify-center font-mono leading-none">
+                {notesCount > 9 ? '9+' : notesCount}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setShowPreview(true)}
             className="flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
           >
@@ -203,6 +237,11 @@ export default function LessonEditorPage({
               : saveSuccess ? '✓ تم' : '↑ حفظ'}
           </button>
         </div>
+
+        {/* Attribution bar */}
+        {(attribution || lesson.version > 1) && (
+          <AttributionBar lesson={lesson} attribution={attribution} />
+        )}
 
         {/* Sync error */}
         {syncError && (
@@ -294,6 +333,15 @@ export default function LessonEditorPage({
         <LessonPreviewModal
           lesson={lesson} sections={lessonSections} blocks={lessonBlocks}
           questions={lessonQuestions} onClose={() => setShowPreview(false)}
+        />
+      )}
+
+      {showNotes && (
+        <LessonNotesDrawer
+          lessonId={lessonId}
+          currentUser={currentUser}
+          onClose={() => setShowNotes(false)}
+          onCountChange={(n) => setNotesCount(n)}
         />
       )}
     </div>
