@@ -1,5 +1,6 @@
 import { verifyAdminToken } from '@/lib/adminAuth';
 import { getReviewQueue, approveOrReject } from '@/lib/api/reviewQueue';
+import { addLessonNote } from '@/lib/api/lessons';
 
 const ok  = (data, extra = {}) => Response.json({ ok: true,  ...extra, data });
 const err = (msg, status = 400) => Response.json({ ok: false, error: msg }, { status });
@@ -24,6 +25,8 @@ export async function GET(request) {
 // PATCH /api/admin/review-queue
 // Body: { contentId, type, status: 'approved'|'draft', note? }
 // Approve or reject a content item. Admin only.
+// When the type is 'lesson' and a note is provided, the note is also saved
+// as a review_feedback note on the lesson so the contributor can see it.
 export async function PATCH(request) {
   try {
     const admin = await verifyAdminToken();
@@ -34,8 +37,20 @@ export async function PATCH(request) {
     if (!contentId || !type) return err('contentId و type مطلوبان');
     if (!['approved', 'draft'].includes(status)) return err('حالة غير صالحة. استخدم approved أو draft');
 
-    // adminObjId: pass the admin id from the JWT. May be a string or ObjectId.
     const result = await approveOrReject(contentId, type, status, admin.id, note || '');
+
+    // For lessons: attach admin's note as a visible review_feedback note
+    // so the contributor sees the feedback in the notes drawer.
+    if (type === 'lesson' && note?.trim()) {
+      await addLessonNote(contentId, {
+        text:       note.trim(),
+        authorId:   null,        // admin has no Contributor ObjectId
+        authorName: 'الإدارة',
+        authorRole: 'admin',
+        noteType:   'review_feedback',
+      }).catch(() => {/* non-blocking */});
+    }
+
     return ok(result);
   } catch (e) {
     console.error('[PATCH /api/admin/review-queue]', e);
