@@ -129,6 +129,9 @@ export async function GET(request) {
           order:            lesson.order,
           estimatedMinutes: lesson.estimatedMinutes || 15,
           summary:          lesson.summary          || null,
+          parentLesson:     lesson.parentLesson     || null,
+          variationType:    lesson.variationType    || null,
+          variationNote:    lesson.variationNote    || null,
           sections: (sectionsByLesson[lesson.contentId] || []).map((section) => ({
             id:           section.contentId,
             title:        section.title,
