@@ -38,6 +38,11 @@ const SectionSchema = new mongoose.Schema(
       default: 'UNDERSTANDING',
     },
 
+    // dividing lessons into parts (optioinal) — Sections with the same partIndex 
+    // to the same part , Default 0 means single-part lesson.
+    // Must match app SectionEntity.partIndex.
+    partIndex: { type: Number, default: 0 },
+
     // Concept IDs linked to this section
     conceptIds: [{ type: String }],
 
