@@ -118,7 +118,7 @@ export function computeDiff(currentDoc, updates) {
 // ─── applyVersionBump ─────────────────────────────────────────────────────────
 // Returns { updates, diff }.
 // Caller writes diff to LessonHistory collection.
-//
+// baxkward copmatible : can be used for other content types with same versioning fields + rules.
 export function applyVersionBump(
   updates,
   currentDoc,
