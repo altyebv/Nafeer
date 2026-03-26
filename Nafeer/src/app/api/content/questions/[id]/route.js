@@ -12,7 +12,8 @@ export async function PUT(request, { params }) {
       'type', 'textAr', 'textEn', 'correctAnswer', 'options', 'explanation',
       'imageUrl', 'tableData', 'difficulty', 'points', 'estimatedSeconds',
       'cognitiveLevel', 'source', 'sourceExamContentId', 'sourceDetails',
-      'sourceYear', 'feedEligible', 'unitContentId', 'lessonContentId', 'conceptIds',
+      'sourceYear', 'feedEligible', 'unitContentId', 'lessonContentId',
+      'sectionContentId', 'isCheckpoint', 'conceptIds',
       'markers',
     ];
     const safeUpdates = Object.fromEntries(
