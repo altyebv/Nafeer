@@ -505,6 +505,34 @@ function QuestionForm({ form, setForm, concepts, units, lessons }) {
           مؤهل للتغذية (feedEligible) — {QUESTION_TYPE_CONFIG[form.type]?.feedEligible ? 'متاح لهذا النوع' : 'غير متاح لهذا النوع'}
         </span>
       </div>
+
+      {/* Checkpoint */}
+      <div className="flex items-start gap-3">
+        <button
+          onClick={() => setForm({ ...form, isCheckpoint: !form.isCheckpoint })}
+          className={`mt-0.5 w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${
+            form.isCheckpoint ? 'bg-amber-600' : 'bg-ink-700'
+          }`}
+        >
+          <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow
+            ${form.isCheckpoint ? 'translate-x-4 right-0.5' : 'right-0.5'}`}
+          />
+        </button>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-ink-500 font-arabic">
+            نقطة تحقق (isCheckpoint) — تُعرض كبوابة داخل قارئ الدرس
+          </span>
+          {form.isCheckpoint && (
+            <input
+              type="text"
+              placeholder="sectionId (اختياري)"
+              value={form.sectionId || ''}
+              onChange={(e) => setForm({ ...form, sectionId: e.target.value || null })}
+              className="mt-1 px-3 py-1.5 bg-ink-900 border border-ink-700 rounded text-xs text-ink-200 font-mono placeholder-ink-600 w-full"
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -535,7 +563,8 @@ export default function QuizBankPage({ subjectId }) {
     difficulty: 1, points: 1, estimatedSeconds: 60,
     cognitiveLevel: 'RECALL', source: 'ORIGINAL',
     sourceExamId: null, sourceDetails: null, sourceYear: null,
-    feedEligible: false, unitId: null, lessonId: null, conceptIds: [],
+    feedEligible: false, unitId: null, lessonId: null, sectionId: null, conceptIds: [],
+    isCheckpoint: false,
     markers: [], _markersOpen: false,
   };
 
@@ -570,6 +599,8 @@ export default function QuizBankPage({ subjectId }) {
       feedEligible:     q.feedEligible     || false,
       unitId:           q.unitId           || null,
       lessonId:         q.lessonId         || null,
+      sectionId:        q.sectionId        || null,
+      isCheckpoint:     q.isCheckpoint     || false,
       conceptIds:       q.conceptIds       || [],
       markers:          sanitiseMarkers(q.markers),
       _markersOpen:     false,
