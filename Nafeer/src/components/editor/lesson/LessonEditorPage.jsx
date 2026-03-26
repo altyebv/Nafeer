@@ -11,6 +11,7 @@ import LessonPreviewModal   from '@/components/editor/lesson/LessonPreviewModal'
 import AttributionBar       from '@/components/editor/lesson/AttributionBar';
 import LessonNotesDrawer    from '@/components/editor/lesson/LessonNotesDrawer';
 import LessonHistoryDrawer  from '@/components/editor/lesson/LessonHistoryDrawer';
+import LinkVariationModal, { VARIATION_CONFIG } from '@/components/editor/lesson/LinkVariationModal';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 
@@ -21,10 +22,11 @@ const FIELD =
   'hover:border-ink-700';
 
 const TABS = [
-  { id: 'meta',      ar: '١', label: 'البيانات'  },
-  { id: 'body',      ar: '٢', label: 'المحتوى'   },
-  { id: 'questions', ar: '٣', label: 'الأسئلة'   },
-  { id: 'feed',      ar: '٤', label: 'التغذية'   },
+  { id: 'meta',       ar: '١', label: 'البيانات'  },
+  { id: 'body',       ar: '٢', label: 'المحتوى'   },
+  { id: 'questions',  ar: '٣', label: 'الأسئلة'   },
+  { id: 'feed',       ar: '٤', label: 'التغذية'   },
+  { id: 'variations', ar: '٥', label: 'التنويعات' },
 ];
 
 const PART_NAMES_AR = ['الأوَّل', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
@@ -46,12 +48,14 @@ export default function LessonEditorPage({
   const [saveSuccess,   setSaveSuccess]   = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [showPreview,   setShowPreview]   = useState(false);
-  const [showNotes,     setShowNotes]     = useState(false);
-  const [showHistory,   setShowHistory]   = useState(false);
-  const [notesCount,    setNotesCount]    = useState(0);
-  const [versionLabel,  setVersionLabel]  = useState('');
+  const [showNotes,        setShowNotes]        = useState(false);
+  const [showHistory,      setShowHistory]      = useState(false);
+  const [showLinkVariation, setShowLinkVariation] = useState(false);
+  const [notesCount,       setNotesCount]       = useState(0);
+  const [versionLabel,     setVersionLabel]     = useState('');
+  const [variations,       setVariations]       = useState([]);
   // Attribution data fetched from the lesson GET response (populated server-side)
-  const [attribution,   setAttribution]   = useState(null);
+  const [attribution,      setAttribution]      = useState(null);
 
   const lesson         = lessons.find((l) => l.id === lessonId);
   const unit           = units.find((u) => u.id === unitId);
@@ -65,6 +69,7 @@ export default function LessonEditorPage({
         if (res.ok) {
           setAttribution(res.data.attribution || null);
           setNotesCount(res.data.notesCount ?? 0);
+          setVariations(res.data.variations  || []);
         }
       })
       .catch(() => {/* non-blocking */});
@@ -99,10 +104,11 @@ export default function LessonEditorPage({
   const completedChecks = checklist.filter((c) => c.done).length;
 
   const tabDone = (tab) => {
-    if (tab.id === 'meta')      return checklist.slice(0,2).every(c => c.done);
-    if (tab.id === 'body')      return checklist.slice(2,4).every(c => c.done);
-    if (tab.id === 'questions') return checklist[4]?.done;
-    if (tab.id === 'feed')      return checklist[5]?.done;
+    if (tab.id === 'meta')       return checklist.slice(0,2).every(c => c.done);
+    if (tab.id === 'body')       return checklist.slice(2,4).every(c => c.done);
+    if (tab.id === 'questions')  return checklist[4]?.done;
+    if (tab.id === 'feed')       return checklist[5]?.done;
+    if (tab.id === 'variations') return variations.length > 0;
     return false;
   };
 
@@ -127,6 +133,31 @@ export default function LessonEditorPage({
 
   const patchMeta = (patch) =>
     updateLesson(lesson.id, { metadata: { ...(lesson.metadata || {}), ...patch } });
+
+  // ── Variation handlers ───────────────────────────────────────────────────
+  const handleLinkVariation = async (targetLessonId, variationType, variationNote) => {
+    await fetch(`/api/content/lessons/${targetLessonId}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ parentLesson: lessonId, variationType, variationNote }),
+    });
+    // Optimistic local update
+    updateLesson(targetLessonId, { parentLesson: lessonId, variationType, variationNote });
+    // Re-fetch variations list for this lesson
+    const res  = await fetch(`/api/content/lessons/${lessonId}`);
+    const json = await res.json();
+    if (json.ok) setVariations(json.data.variations || []);
+  };
+
+  const handleUnlinkVariation = async (targetLessonId) => {
+    await fetch(`/api/content/lessons/${targetLessonId}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ parentLesson: null, variationType: null, variationNote: null }),
+    });
+    updateLesson(targetLessonId, { parentLesson: null, variationType: null, variationNote: null });
+    setVariations((v) => v.filter((x) => x.contentId !== targetLessonId));
+  };
 
   const handleAddSection = (targetPartIndex) => {
     const maxOrder = lessonSections.reduce((m, s) => Math.max(m, s.order), 0);
@@ -340,6 +371,15 @@ export default function LessonEditorPage({
             onNavigateLesson={onNavigateLesson} onBack={onBack}
           />
         )}
+        {activeTab === 4 && (
+          <StepVariations
+            lesson={lesson}
+            variations={variations}
+            onOpenLinkModal={() => setShowLinkVariation(true)}
+            onUnlink={handleUnlinkVariation}
+            onPrev={() => setActiveTab(3)}
+          />
+        )}
       </div>
 
       {showPreview && (
@@ -362,6 +402,14 @@ export default function LessonEditorPage({
         <LessonHistoryDrawer
           lessonId={lessonId}
           onClose={() => setShowHistory(false)}
+        />
+      )}
+
+      {showLinkVariation && (
+        <LinkVariationModal
+          currentLessonId={lessonId}
+          onLink={handleLinkVariation}
+          onClose={() => setShowLinkVariation(false)}
         />
       )}
     </div>
@@ -646,6 +694,152 @@ function StepFeed({ lessonId, unitId, lessonConceptIds, lessonFeedItems, prevLes
         <div className="flex-1" />
         <LessonNav prevLesson={prevLesson} nextLesson={nextLesson} units={units} onNavigateLesson={onNavigateLesson} onBack={onBack} />
       </div>
+    </div>
+  );
+}
+
+// ─── Step 5: Variations ───────────────────────────────────────────────────────
+function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev }) {
+  return (
+    <div className="space-y-5 max-w-2xl">
+      <div className="flex items-center gap-3 pb-1">
+        <div>
+          <h2 className="text-base font-semibold text-sand-200 font-arabic">التنويعات</h2>
+          <p className="text-xs text-ink-600 font-arabic mt-0.5">
+            دروس مرتبطة بهذا الدرس كبديل أو متطلب أو توسع أو نسخة مبسطة
+          </p>
+        </div>
+        <div className="flex-1" />
+        <button
+          onClick={onOpenLinkModal}
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-arabic rounded-lg
+            bg-sand-900/40 border border-sand-800/60 text-sand-400
+            hover:bg-sand-800/40 hover:text-sand-200 transition-all"
+        >
+          <span className="text-sm leading-none">＋</span>
+          ربط درس
+        </button>
+      </div>
+
+      {/* This lesson is itself a variation — show parent info */}
+      {lesson.parentLesson && (
+        <div className="px-4 py-3 rounded-xl border border-ink-700/60 bg-ink-800/30 flex items-center gap-3">
+          <span className="text-ink-600 text-lg">↑</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] text-ink-600 font-arabic">هذا الدرس تنويع من:</p>
+            <p className="text-sm text-ink-300 font-arabic truncate font-mono">{lesson.parentLesson}</p>
+          </div>
+          {lesson.variationType && VARIATION_CONFIG[lesson.variationType] && (() => {
+            const cfg = VARIATION_CONFIG[lesson.variationType];
+            return (
+              <span
+                className="text-xs font-arabic px-2 py-0.5 rounded border shrink-0"
+                style={{ background: cfg.bg, borderColor: cfg.border, color: cfg.color }}
+              >
+                {cfg.icon} {cfg.label}
+              </span>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Variations list */}
+      {variations.length === 0 ? (
+        <div
+          className="py-16 text-center border-2 border-dashed border-ink-800/60 rounded-2xl
+            cursor-pointer group hover:border-sand-800/40 hover:bg-sand-900/5 transition-all"
+          onClick={onOpenLinkModal}
+        >
+          <p className="text-3xl mb-3 opacity-30">🔗</p>
+          <p className="text-sm text-ink-500 font-arabic mb-1">لا توجد دروس متنوعة مرتبطة</p>
+          <p className="text-xs text-ink-700 font-arabic group-hover:text-sand-700 transition-colors">
+            اضغط لربط درس بديل أو متطلب أو توسع…
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {variations.map((v) => {
+            const cfg = v.variationType ? VARIATION_CONFIG[v.variationType] : null;
+            return (
+              <div
+                key={v.contentId}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border group"
+                style={{
+                  borderColor: cfg?.border || 'var(--border-subtle)',
+                  background:  cfg ? cfg.bg : 'rgba(26,23,19,0.4)',
+                }}
+              >
+                {/* Type chip */}
+                {cfg && (
+                  <span
+                    className="text-base leading-none shrink-0"
+                    style={{ color: cfg.color }}
+                    title={cfg.label}
+                  >
+                    {cfg.icon}
+                  </span>
+                )}
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-arabic text-ink-100 truncate">{v.title}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {cfg && (
+                      <span className="text-[10px] font-arabic" style={{ color: cfg.color }}>
+                        {cfg.label}
+                      </span>
+                    )}
+                    {v.variationNote && (
+                      <span className="text-[10px] text-ink-600 font-arabic truncate">
+                        · {v.variationNote}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status */}
+                <span className="text-[10px] text-ink-600 font-mono shrink-0 hidden sm:block">
+                  {v.status || 'draft'}
+                </span>
+
+                {/* Unlink */}
+                <button
+                  onClick={() => onUnlink(v.contentId)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity
+                    text-ink-700 hover:text-red-500 text-xs px-2 py-1 rounded
+                    hover:bg-red-900/20 font-arabic"
+                  title="إلغاء الربط"
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Type legend */}
+      <div className="grid grid-cols-2 gap-2 pt-2">
+        {Object.entries(VARIATION_CONFIG).map(([type, cfg]) => (
+          <div
+            key={type}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs"
+            style={{ borderColor: cfg.border, background: cfg.bg }}
+          >
+            <span style={{ color: cfg.color }}>{cfg.icon}</span>
+            <div>
+              <span className="font-arabic font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
+              <span className="text-ink-600 font-arabic block text-[10px]">
+                {type === 'alternative'  && 'نهج أو مؤلف مختلف'}
+                {type === 'prerequisite' && 'يُدرس قبل هذا الدرس'}
+                {type === 'extension'    && 'محتوى متقدم للراغبين'}
+                {type === 'simplified'   && 'نسخة أسهل للمبتدئين'}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <StepFooter onPrev={onPrev} prevLabel="→ التغذية" />
     </div>
   );
 }
