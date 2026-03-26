@@ -54,6 +54,32 @@ const LessonSchema = new mongoose.Schema(
       },
     ],
 
+    // ── Lesson Variations ─────────────────────────────────────────────────
+    // A variation is a lesson that is linked to another lesson (its parent).
+    // The parent field is a contentId string (not an ObjectId ref) so it stays
+    // stable and never needs populate — same pattern as unitContentId / sectionContentId.
+    //
+    // variation types:
+    //   'alternative'  — different author or pedagogical approach
+    //   'prerequisite' — foundation content to study before the parent
+    //   'extension'    — deeper / more advanced content after the parent
+    //   'simplified'   — easier version for struggling students
+    parentLesson: {
+      type:    String,       // contentId of parent lesson, null = root lesson
+      default: null,
+      index:   true,
+    },
+    variationType: {
+      type:    String,
+      enum:    ['alternative', 'prerequisite', 'extension', 'simplified', null],
+      default: null,
+    },
+    variationNote: {
+      type:    String,
+      default: null,
+      maxlength: 200,
+    },
+
     ...versioningFields,
   },
   { timestamps: true }
