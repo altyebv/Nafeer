@@ -71,9 +71,16 @@ const QuestionSchema = new mongoose.Schema(
     feedEligible:        { type: Boolean, default: false },
 
     // Location links (contentIds)
-    unitContentId:   { type: String, default: null, index: true },
-    lessonContentId: { type: String, default: null, index: true },
-    conceptIds:      [{ type: String }],
+    unitContentId:    { type: String, default: null, index: true },
+    lessonContentId:  { type: String, default: null, index: true },
+    conceptIds:       [{ type: String }],
+
+    // ── Checkpoint fields ──────────────────────────────────────────────────
+    // When isCheckpoint is true, this question guards a specific section gate
+    // inside the lesson reader. sectionContentId is the section it belongs to.
+    // Must mirror app QuestionEntity.sectionId / QuestionEntity.isCheckpoint.
+    sectionContentId: { type: String, default: null, index: true },
+    isCheckpoint:     { type: Boolean, default: false },
 
     // ── Interactive media markers ──────────────────────────────────────────
     // Populated only on FIGURE questions that have an imageUrl.
