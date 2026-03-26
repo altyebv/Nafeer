@@ -136,6 +136,7 @@ export async function GET(request) {
             id:           section.contentId,
             title:        section.title,
             order:        section.order,
+            partIndex:    section.partIndex    ?? 0,
             learningType: section.learningType || 'UNDERSTANDING',
             conceptIds:   section.conceptIds   || [],
             blocks: (blocksBySection[section.contentId] || []).map((block) => ({
@@ -172,6 +173,8 @@ export async function GET(request) {
         feedEligible:     q.feedEligible     || false,
         unitId:           q.unitContentId    || null,
         lessonId:         q.lessonContentId  || null,
+        sectionId:        q.sectionContentId || null,
+        isCheckpoint:     q.isCheckpoint     || false,
         conceptIds:       q.conceptIds       || [],
         markers:          q.markers          || [],
       })),
