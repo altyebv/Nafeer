@@ -3,25 +3,29 @@ import { useEffect, useRef } from 'react';
 // KaTeX stylesheet must be imported alongside the JS — without it all
 // rendered math spans have no styles and appear invisible.
 import 'katex/dist/katex.min.css';
+import { renderMath } from '@/lib/math/RenderMath.js';
 
 // ─── FormulaPreview ────────────────────────────────────────────────────────────
-// Lightweight KaTeX renderer. Handles its own dynamic import so the heavy
-// KaTeX bundle only loads when a FORMULA block is actually on screen.
+// Lightweight KaTeX renderer using the shared Arabic math pipeline:
+//   normalizeMathInput → katex.render (with Arabic macros) → postProcessMath
 //
 // Props:
-//   latex       {string}  — LaTeX source (block.content)
-//   displayMode {boolean} — true = block/centered, false = inline (default: true)
-//   rtlMath     {boolean} — wraps output in dir=rtl so Arabic expressions read
-//                           right-to-left (correct term order). Note: KaTeX has
-//                           no native RTL mode; this fixes inline flow direction.
-//                           For left-side superscripts use {}^{n} before the var.
-//   className   {string}  — extra wrapper classes
+//   latex       {string}  — LaTeX source (block.content). May contain raw
+//                           Arabic operators like 'نها' — normalization handles
+//                           the conversion automatically.
+//   displayMode {boolean} — true = block/centred equation (default)
+//                           false = inline, fits within surrounding text
+//   rtlMath     {boolean} — sets direction:rtl on the wrapper so Arabic term
+//                           order reads right-to-left. KaTeX's internal LTR
+//                           absolute-positioning is unaffected because
+//                           postProcessMath isolates .msupsub from bidi.
+//   className   {string}  — extra Tailwind/CSS classes on the wrapper span
 
 export default function FormulaPreview({
-  latex        = '',
-  displayMode  = true,
-  rtlMath      = false,
-  className    = '',
+  latex       = '',
+  displayMode = true,
+  rtlMath     = false,
+  className   = '',
 }) {
   const ref = useRef(null);
 
@@ -36,31 +40,14 @@ export default function FormulaPreview({
 
     let cancelled = false;
 
-    import('katex').then(({ default: katex }) => {
-      if (cancelled || !ref.current) return;
-      try {
-        katex.render(latex, el, {
-          displayMode,
-          throwOnError : true,
-          output       : 'html',
-          trust        : false,
-          strict       : false,
-          macros       : {
-            '\\R' : '\\mathbb{R}',
-            '\\N' : '\\mathbb{N}',
-            '\\Z' : '\\mathbb{Z}',
-          },
-        });
-        el.dataset.error = '';
-      } catch (err) {
-        el.dataset.error = 'true';
-        el.textContent = err.message?.split('\n')[0] ?? 'خطأ في الصياغة';
-      }
-    }).catch(() => {
-      if (!cancelled && ref.current) {
-        ref.current.textContent = latex;
-      }
-    });
+    renderMath(latex, el, { displayMode })
+      .catch(() => {
+        // renderMath handles KaTeX errors internally (sets data-error + textContent).
+        // This catch only fires on an unexpected module-load failure.
+        if (!cancelled && ref.current) {
+          ref.current.textContent = latex;
+        }
+      });
 
     return () => { cancelled = true; };
   }, [latex, displayMode]);
@@ -68,14 +55,13 @@ export default function FormulaPreview({
   return (
     <span
       ref={ref}
-      // dir is intentionally NOT set here — the rtlMath wrapper below controls
-      // direction so that KaTeX's internal LTR absolute-positioning is unaffected
-      // while the inline flow of terms reads RTL.
+      // dir is NOT set here — the rtlMath class below controls direction
+      // so that KaTeX's internal LTR absolute-positioning is unaffected
+      // while the inline flow of Arabic terms reads RTL.
       className={[
         'formula-preview',
         displayMode ? 'block text-center' : 'inline',
-        // When rtlMath: flip inline flow so term order matches Arabic reading direction
-        rtlMath ? '[direction:rtl]' : '',
+        rtlMath     ? '[direction:rtl]'   : '',
         className,
       ].filter(Boolean).join(' ')}
       data-display={displayMode ? 'block' : 'inline'}
