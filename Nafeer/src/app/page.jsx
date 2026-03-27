@@ -4,6 +4,7 @@ import Features from '@/components/landing/Features';
 import ProgressBoard from '@/components/landing/ProgressBoard';
 import NafeerSection from '@/components/landing/NafeerSection';
 import Footer from '@/components/landing/Footer';
+import  ContributorSection  from '@/components/landing/ContributorsHallSection'
 
 export default function HomePage() {
   return (
@@ -17,6 +18,7 @@ export default function HomePage() {
       <div id="nafeer">
         <NafeerSection />
       </div>
+      <ContributorSection />
       <Footer />
     </div>
   );
