@@ -12,7 +12,7 @@
  * needs to import. The three underlying modules are implementation details.
  */
 import { getKatexConfig }    from './KatexConfig.js';
-import { normalizeMathInput } from './normalizeMathInput.js';
+import { normalizeMathInput } from './NormallizeInput.js';
 import { postProcessMath }    from './PostProcessMath.js';
 
 /**
