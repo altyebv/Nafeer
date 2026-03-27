@@ -9,6 +9,7 @@ import { MediaSection }         from './components/MediaSection';
 import { RolesSection }         from './components/RolesSection';
 import { AdminsSection }        from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
+import { SiteSettingsSection } from './components/SiteSettingSection';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -63,6 +64,7 @@ export default function AdminDashboard() {
         {section === 'coverage' && <CoverageSection />}
         {section === 'media'    && <MediaSection />}
         {section === 'admins'   && <AdminsSection />}
+        {section === 'settings' && <SiteSettingsSection />}
       </main>
 
       {showCreate && (
