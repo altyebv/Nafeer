@@ -26,6 +26,7 @@ export const NAV = [
   { id: 'coverage',     icon: '▦', label: 'خريطة التغطية',  badgeKey: null          },
   { id: 'media',        icon: '⬜', label: 'الوسائط',        badgeKey: null          },
   { id: 'admins',       icon: '⬡', label: 'المشرفون',       badgeKey: null          },
+  { id: 'settings',     icon: '⚙', label: 'الإعدادات',      badgeKey: null          },
 ];
 
 // Pipeline stage for a pending applicant — drives the status chip in ContributorCard
