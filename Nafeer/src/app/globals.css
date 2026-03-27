@@ -1,3 +1,11 @@
+/* ── Arabic math fonts ─────────────────────────────────────────────────────────
+   Amiri: primary academic Arabic serif used by postProcessMath on .mop operators.
+   Cairo: sans-serif fallback (already common on Arabic-locale Android devices).
+   Loaded here so FormulaPreview benefits from the font on first render rather
+   than waiting for the browser to resolve the system fallback.
+────────────────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital@0;1&family=Cairo:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
