@@ -13,7 +13,7 @@
  */
 import { getKatexConfig }    from './KatexConfig.js';
 import { normalizeMathInput } from './normalizeMathInput.js';
-import { postProcessMath }    from './postProcessMath.js';
+import { postProcessMath }    from './PostProcessMath.js';
 
 /**
  * renderMath(expression, element, overrides?)
