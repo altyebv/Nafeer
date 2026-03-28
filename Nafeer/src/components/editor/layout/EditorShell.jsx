@@ -71,7 +71,15 @@ export default function EditorShell({ contributor }) {
 
   return (
     <div className="flex min-h-screen bg-ink-950" dir="rtl">
-      <EditorSidebar currentPage={currentPage} onNavigate={navigateTo} contributor={contributor} />
+      <EditorSidebar
+        currentPage={currentPage}
+        onNavigate={navigateTo}
+        contributor={contributor}
+        isSyncing={isSyncing}
+        syncError={syncError}
+        lastSynced={lastSynced}
+      />
+      {/* mr-12 = 48px collapsed sidebar width */}
       <main className="flex-1 mr-12 flex flex-col">
         <SyncBar isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} atlasReady={atlasReady} />
         <div className="flex-1 p-8">
