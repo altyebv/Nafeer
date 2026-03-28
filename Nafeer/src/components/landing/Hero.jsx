@@ -152,7 +152,7 @@ export default function Hero() {
             className="gsap-hero-title text-6xl sm:text-7xl md:text-[9rem] font-arabic font-bold leading-none"
             style={{ color: 'var(--text-primary)' }}
           >
-            بشير
+            بَشير
           </h1>
           <div className="gsap-hero-line ember-line w-24 sm:w-36 my-4 sm:my-5" />
           <h2
