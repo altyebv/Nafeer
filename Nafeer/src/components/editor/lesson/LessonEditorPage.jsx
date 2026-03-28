@@ -199,13 +199,13 @@ export default function LessonEditorPage({
         <div className="flex items-center gap-3 px-5 h-12">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-xs text-ink-600 hover:text-sand-400 transition-colors font-arabic shrink-0 group"
+            className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-sand-400 transition-colors font-arabic shrink-0 group"
           >
             <span className="group-hover:translate-x-0.5 transition-transform inline-block">→</span>
             <span className="hidden sm:inline">{unit?.title ?? 'الدروس'}</span>
           </button>
 
-          <span className="text-ink-800 text-xs">›</span>
+          <span className="text-ink-400 text-xs">›</span>
 
           <h1 className="flex-1 text-sm font-semibold text-sand-200 font-arabic truncate min-w-0">
             {lesson.title}
@@ -217,7 +217,7 @@ export default function LessonEditorPage({
           {/* Progress ring */}
           <div className="relative w-6 h-6 shrink-0">
             <svg className="w-6 h-6 -rotate-90" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-800" />
+              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-400" />
               <circle
                 cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5"
                 className="text-emerald-600 transition-all duration-500"
@@ -256,7 +256,7 @@ export default function LessonEditorPage({
             <span className="text-xs leading-none">📝</span>
             <span className="hidden sm:inline">ملاحظات</span>
             {notesCount > 0 && (
-              <span className="absolute -top-1.5 -left-1 w-4 h-4 bg-sand-700 text-ink-950 text-[9px] font-bold rounded-full flex items-center justify-center font-mono leading-none">
+              <span className="absolute -top-1.5 -left-1 w-4 h-4 bg-sand-700 text-ink-950 text-xs font-bold rounded-full flex items-center justify-center font-mono leading-none">
                 {notesCount > 9 ? '9+' : notesCount}
               </span>
             )}
@@ -288,7 +288,7 @@ export default function LessonEditorPage({
 
         {/* Sync error */}
         {syncError && (
-          <div className="flex items-center gap-2 px-5 py-1.5 bg-red-950/50 border-t border-red-900/30 text-red-400 text-xs font-arabic">
+          <div className="flex items-center gap-2 px-5 py-1.5 bg-red-950/50 border-t border-red-900/30 text-red-400 text-sm font-arabic">
             <span>⚠</span>
             <span className="flex-1 truncate">فشل الحفظ — {typeof syncError === 'string' ? syncError : 'تحقق من الاتصال'}</span>
           </div>
@@ -303,14 +303,14 @@ export default function LessonEditorPage({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(i)}
-                className={`relative flex items-center gap-2 px-4 py-2.5 text-xs transition-all font-arabic whitespace-nowrap
-                  ${isActive ? 'text-sand-300' : isDone ? 'text-emerald-600 hover:text-emerald-500' : 'text-ink-600 hover:text-ink-400'}`}
+                className={`relative flex items-center gap-2 px-4 py-2.5 text-sm transition-all font-arabic whitespace-nowrap
+                  ${isActive ? 'text-sand-300' : isDone ? 'text-emerald-600 hover:text-emerald-500' : 'text-ink-400 hover:text-ink-400'}`}
               >
                 {isActive && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-sand-500 rounded-t" />}
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] border transition-colors
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs border transition-colors
                   ${isActive ? 'border-sand-700 bg-sand-900/60 text-sand-400'
                     : isDone  ? 'border-emerald-700 bg-emerald-900/20 text-emerald-500'
-                    :           'border-ink-700 text-ink-600'}`}
+                    :           'border-ink-700 text-ink-400'}`}
                 >
                   {isDone && !isActive ? '✓' : tab.ar}
                 </span>
@@ -319,7 +319,7 @@ export default function LessonEditorPage({
             );
           })}
           <div className="flex-1" />
-          <span className="text-[10px] text-ink-700 font-mono pb-2.5 pr-1">
+          <span className="text-xs text-ink-500 font-mono pb-2.5 pr-1">
             {lessonIndex + 1}/{unitLessons.length}
           </span>
         </div>
@@ -330,7 +330,7 @@ export default function LessonEditorPage({
         <div className="max-w-4xl mx-auto w-full px-5 pt-4">
           <div className="px-4 py-3 bg-amber-900/10 border border-amber-800/30 rounded-xl flex items-start gap-3">
             <span className="text-amber-500 text-sm mt-0.5 shrink-0">⚠</span>
-            <p className="text-xs text-amber-400/90 font-arabic leading-relaxed">
+            <p className="text-sm text-amber-400/90 font-arabic leading-relaxed">
               هذا الدرس <strong>معتمد</strong>. أي تعديل سيُعيده إلى حالة المسودة.
             </p>
           </div>
@@ -423,12 +423,12 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
       <div className="flex items-center gap-3 pb-1">
         <div>
           <h2 className="text-base font-semibold text-sand-200 font-arabic">بيانات الدرس</h2>
-          <p className="text-xs text-ink-600 font-arabic mt-0.5">
+          <p className="text-sm text-ink-400 font-arabic mt-0.5">
             {unit?.title} · درس {lessonIndex + 1} من {unitLessons.length}
           </p>
         </div>
         <div className="flex-1" />
-        <span className={`text-[11px] font-arabic px-2.5 py-1 rounded-full border ${statusCfg.badge}`}>
+        <span className={`text-xs font-arabic px-2.5 py-1 rounded-full border ${statusCfg.badge}`}>
           {statusCfg.label}
         </span>
       </div>
@@ -441,7 +441,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
               onChange={(e) => updateLesson(lesson.id, { title: e.target.value })}
               className={FIELD} placeholder="أدخل عنوان الدرس…" />
             {lesson.title && SCAFFOLD_TITLE_RE.test(lesson.title.trim()) && (
-              <p className="text-[11px] text-amber-600 font-arabic mt-1.5">⚠ هذا عنوان تلقائي — أدخل عنواناً حقيقياً</p>
+              <p className="text-sm text-amber-600 font-arabic mt-1.5">⚠ هذا عنوان تلقائي — أدخل عنواناً حقيقياً</p>
             )}
           </Field>
           <Field label="ملخص الدرس">
@@ -457,7 +457,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
                   onChange={(e) => updateLesson(lesson.id, { estimatedMinutes: parseInt(e.target.value) || 15 })}
                   className="w-20 px-3 py-2.5 bg-ink-950 border border-ink-800 rounded-xl text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none text-center font-mono"
                   min="1" />
-                <span className="text-xs text-ink-600 font-arabic">دقيقة</span>
+                <span className="text-sm text-ink-400 font-arabic">دقيقة</span>
               </div>
             </Field>
             <Field label="الإحصائيات">
@@ -497,13 +497,13 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
             <div className="flex-1 h-1 bg-ink-800 rounded-full overflow-hidden">
               <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${(completedChecks / 6) * 100}%` }} />
             </div>
-            <span className="text-xs font-mono text-ink-500">{completedChecks}/6</span>
+            <span className="text-sm font-mono text-ink-500">{completedChecks}/6</span>
           </div>
           <div className="grid grid-cols-3 gap-2">
             {checklist.map((item) => (
-              <div key={item.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-arabic
-                ${item.done ? 'bg-emerald-900/15 border-emerald-800/30 text-emerald-500' : 'bg-ink-800/15 border-ink-800/60 text-ink-600'}`}>
-                <span className={item.done ? 'text-emerald-500' : 'text-ink-700'}>{item.done ? '✓' : '○'}</span>
+              <div key={item.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-arabic
+                ${item.done ? 'bg-emerald-900/15 border-emerald-800/30 text-emerald-500' : 'bg-ink-800/15 border-ink-800/60 text-ink-400'}`}>
+                <span className={item.done ? 'text-emerald-500' : 'text-ink-500'}>{item.done ? '✓' : '○'}</span>
                 <span>{item.label}</span>
               </div>
             ))}
@@ -511,19 +511,19 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
 
           {/* Version label — attaches a short note to the next save/submit */}
           <div className="mt-4 pt-4 border-t border-ink-800/50">
-            <label className="text-[11px] text-ink-600 font-arabic block mb-1.5">
+            <label className="text-sm text-ink-400 font-arabic block mb-1.5">
               وسم الإصدار
-              <span className="text-ink-700 mr-1">(اختياري — يظهر في سجل التعديلات)</span>
+              <span className="text-ink-500 mr-1">(اختياري — يظهر في سجل التعديلات)</span>
             </label>
             <input
               type="text"
               value={versionLabel}
               onChange={(e) => onVersionLabelChange(e.target.value.slice(0, 80))}
               placeholder="مثال: مراجعة بعد الفيدباك، تصحيح أمثلة…"
-              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-xs font-arabic placeholder-ink-700 focus:outline-none focus:border-sand-700 transition-colors"
+              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-700 focus:outline-none focus:border-sand-700 transition-colors"
             />
             {versionLabel && (
-              <p className="text-[10px] text-ink-700 font-mono mt-1 text-left">{versionLabel.length}/80</p>
+              <p className="text-xs text-ink-500 font-mono mt-1 text-left">{versionLabel.length}/80</p>
             )}
           </div>
         </div>
@@ -550,12 +550,12 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSectio
     <div className="space-y-3">
       <div className="flex items-baseline gap-3 mb-6">
         <h2 className="text-base font-semibold text-sand-200 font-arabic">محتوى الدرس</h2>
-        <span className="text-xs text-ink-600 font-arabic">
+        <span className="text-sm text-ink-400 font-arabic">
           {lessonSections.length} {lessonSections.length === 1 ? 'قسم' : 'أقسام'}
           {lessonBlocks.length > 0 && ` · ${lessonBlocks.length} عنصر`}
         </span>
         {isMultiPart && (
-          <span className="mr-auto text-xs text-ink-700 font-arabic px-2 py-0.5 bg-ink-800/40 rounded-full border border-ink-800">
+          <span className="mr-auto text-sm text-ink-500 font-arabic px-2 py-0.5 bg-ink-800/40 rounded-full border border-ink-800">
             {partKeys.length} أجزاء
           </span>
         )}
@@ -568,7 +568,7 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSectio
         >
           <p className="text-3xl mb-3 opacity-40">📄</p>
           <p className="text-sm text-ink-500 font-arabic mb-1">لا يوجد محتوى بعد</p>
-          <p className="text-xs text-ink-700 font-arabic group-hover:text-sand-700 transition-colors">اضغط لإضافة أول قسم</p>
+          <p className="text-sm text-ink-500 font-arabic group-hover:text-sand-700 transition-colors">اضغط لإضافة أول قسم</p>
         </div>
       )}
 
@@ -584,11 +584,11 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSectio
               </div>
               <div className="flex items-end justify-between">
                 <div className="flex items-baseline gap-3">
-                  <span className="text-[9px] font-mono text-ink-700 tracking-[0.2em] uppercase">part</span>
+                  <span className="text-sm font-mono text-ink-500 tracking-[0.2em] uppercase">part</span>
                   <span className="text-sm font-semibold text-sand-600 font-arabic">
                     الجزء {PART_NAMES_AR[pi] || (pi + 1)}
                   </span>
-                  <span className="text-[10px] text-ink-700 font-arabic">
+                  <span className="text-sm text-ink-500 font-arabic">
                     {partsMap[partIdx].length} {partsMap[partIdx].length === 1 ? 'قسم' : 'أقسام'}
                   </span>
                 </div>
@@ -608,9 +608,9 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSectio
 
           <button
             onClick={() => onAddSection(partIdx)}
-            className="w-full py-3 border border-dashed border-ink-800/60 rounded-xl text-ink-700 hover:border-sand-800/50 hover:text-sand-600 hover:bg-sand-900/5 transition-all font-arabic text-xs flex items-center justify-center gap-2 group"
+            className="w-full py-3 border border-dashed border-ink-800/60 rounded-xl text-ink-500 hover:border-sand-800/50 hover:text-sand-600 hover:bg-sand-900/5 transition-all font-arabic text-sm flex items-center justify-center gap-2 group"
           >
-            <span className="w-4 h-4 rounded-full border border-current flex items-center justify-center text-[10px] group-hover:bg-sand-900/20 transition-colors">+</span>
+            <span className="w-4 h-4 rounded-full border border-current flex items-center justify-center text-xs group-hover:bg-sand-900/20 transition-colors">+</span>
             <span>إضافة قسم{isMultiPart ? ` في الجزء ${PART_NAMES_AR[pi] || (pi + 1)}` : ''}</span>
           </button>
         </div>
@@ -619,7 +619,7 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSectio
       {lessonSections.length > 0 && (
         <button
           onClick={onAddNewPart}
-          className="w-full mt-4 py-5 border-2 border-dashed border-ink-800/40 rounded-2xl text-ink-600 hover:border-sand-800/30 hover:text-sand-600 hover:bg-sand-900/5 transition-all font-arabic flex items-center justify-center gap-3 group"
+          className="w-full mt-4 py-5 border-2 border-dashed border-ink-800/40 rounded-2xl text-ink-400 hover:border-sand-800/30 hover:text-sand-600 hover:bg-sand-900/5 transition-all font-arabic flex items-center justify-center gap-3 group"
         >
           <span className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-sm group-hover:bg-sand-900/20 transition-colors">+</span>
           <span className="text-sm">إضافة جزء جديد</span>
@@ -639,7 +639,7 @@ function StepQuestions({ lessonId, unitId, lessonSections, lessonQuestions, onOp
     <div className="space-y-4 max-w-2xl">
       <div className="pb-1">
         <h2 className="text-base font-semibold text-sand-200 font-arabic">الأسئلة</h2>
-        <p className="text-xs text-ink-600 font-arabic mt-0.5">نقاط تحقق وأسئلة تدريب مرتبطة بهذا الدرس</p>
+        <p className="text-sm text-ink-400 font-arabic mt-0.5">نقاط تحقق وأسئلة تدريب مرتبطة بهذا الدرس</p>
       </div>
       <Card>
         <CardHeader icon="◎" title="نظرة عامة" />
@@ -651,7 +651,7 @@ function StepQuestions({ lessonId, unitId, lessonSections, lessonQuestions, onOp
           {lessonQuestions.length === 0 && (
             <div className="mt-4 py-6 text-center border border-dashed border-ink-800/50 rounded-xl">
               <p className="text-2xl mb-2">🎯</p>
-              <p className="text-sm text-ink-600 font-arabic">لا توجد أسئلة مرتبطة بهذا الدرس</p>
+              <p className="text-sm text-ink-400 font-arabic">لا توجد أسئلة مرتبطة بهذا الدرس</p>
             </div>
           )}
         </div>
@@ -668,7 +668,7 @@ function StepFeed({ lessonId, unitId, lessonConceptIds, lessonFeedItems, prevLes
     <div className="space-y-4 max-w-2xl">
       <div className="pb-1">
         <h2 className="text-base font-semibold text-sand-200 font-arabic">بطاقات التغذية</h2>
-        <p className="text-xs text-ink-600 font-arabic mt-0.5">بطاقات المراجعة السريعة في تطبيق بشير</p>
+        <p className="text-sm text-ink-400 font-arabic mt-0.5">بطاقات المراجعة السريعة في تطبيق بشير</p>
       </div>
       <Card>
         <CardHeader icon="▣" title="نظرة عامة" />
@@ -676,12 +676,12 @@ function StepFeed({ lessonId, unitId, lessonConceptIds, lessonFeedItems, prevLes
           {lessonFeedItems.length === 0 ? (
             <div className="py-6 text-center border border-dashed border-ink-800/50 rounded-xl">
               <p className="text-2xl mb-2">📱</p>
-              <p className="text-sm text-ink-600 font-arabic">لا توجد بطاقات تغذية لهذا الدرس</p>
+              <p className="text-sm text-ink-400 font-arabic">لا توجد بطاقات تغذية لهذا الدرس</p>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <span className="text-2xl font-mono text-sand-400">{lessonFeedItems.length}</span>
-              <span className="text-xs text-ink-600 font-arabic">بطاقة</span>
+              <span className="text-sm text-ink-400 font-arabic">بطاقة</span>
             </div>
           )}
         </div>
@@ -705,14 +705,14 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
       <div className="flex items-center gap-3 pb-1">
         <div>
           <h2 className="text-base font-semibold text-sand-200 font-arabic">التنويعات</h2>
-          <p className="text-xs text-ink-600 font-arabic mt-0.5">
+          <p className="text-sm text-ink-400 font-arabic mt-0.5">
             دروس مرتبطة بهذا الدرس كبديل أو متطلب أو توسع أو نسخة مبسطة
           </p>
         </div>
         <div className="flex-1" />
         <button
           onClick={onOpenLinkModal}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-arabic rounded-lg
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-arabic rounded-lg
             bg-sand-900/40 border border-sand-800/60 text-sand-400
             hover:bg-sand-800/40 hover:text-sand-200 transition-all"
         >
@@ -724,9 +724,9 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
       {/* This lesson is itself a variation — show parent info */}
       {lesson.parentLesson && (
         <div className="px-4 py-3 rounded-xl border border-ink-700/60 bg-ink-800/30 flex items-center gap-3">
-          <span className="text-ink-600 text-lg">↑</span>
+          <span className="text-ink-400 text-lg">↑</span>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] text-ink-600 font-arabic">هذا الدرس تنويع من:</p>
+            <p className="text-sm text-ink-400 font-arabic">هذا الدرس تنويع من:</p>
             <p className="text-sm text-ink-300 font-arabic truncate font-mono">{lesson.parentLesson}</p>
           </div>
           {lesson.variationType && VARIATION_CONFIG[lesson.variationType] && (() => {
@@ -752,7 +752,7 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
         >
           <p className="text-3xl mb-3 opacity-30">🔗</p>
           <p className="text-sm text-ink-500 font-arabic mb-1">لا توجد دروس متنوعة مرتبطة</p>
-          <p className="text-xs text-ink-700 font-arabic group-hover:text-sand-700 transition-colors">
+          <p className="text-sm text-ink-500 font-arabic group-hover:text-sand-700 transition-colors">
             اضغط لربط درس بديل أو متطلب أو توسع…
           </p>
         </div>
@@ -784,12 +784,12 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
                   <p className="text-sm font-arabic text-ink-100 truncate">{v.title}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {cfg && (
-                      <span className="text-[10px] font-arabic" style={{ color: cfg.color }}>
+                      <span className="text-sm font-arabic" style={{ color: cfg.color }}>
                         {cfg.label}
                       </span>
                     )}
                     {v.variationNote && (
-                      <span className="text-[10px] text-ink-600 font-arabic truncate">
+                      <span className="text-sm text-ink-400 font-arabic truncate">
                         · {v.variationNote}
                       </span>
                     )}
@@ -797,7 +797,7 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
                 </div>
 
                 {/* Status */}
-                <span className="text-[10px] text-ink-600 font-mono shrink-0 hidden sm:block">
+                <span className="text-sm text-ink-400 font-mono shrink-0 hidden sm:block">
                   {v.status || 'draft'}
                 </span>
 
@@ -805,7 +805,7 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
                 <button
                   onClick={() => onUnlink(v.contentId)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity
-                    text-ink-700 hover:text-red-500 text-xs px-2 py-1 rounded
+                    text-ink-500 hover:text-red-500 text-sm px-2 py-1 rounded
                     hover:bg-red-900/20 font-arabic"
                   title="إلغاء الربط"
                 >
@@ -822,13 +822,13 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
         {Object.entries(VARIATION_CONFIG).map(([type, cfg]) => (
           <div
             key={type}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm"
             style={{ borderColor: cfg.border, background: cfg.bg }}
           >
             <span style={{ color: cfg.color }}>{cfg.icon}</span>
             <div>
               <span className="font-arabic font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
-              <span className="text-ink-600 font-arabic block text-[10px]">
+              <span className="text-ink-400 font-arabic block text-sm">
                 {type === 'alternative'  && 'نهج أو مؤلف مختلف'}
                 {type === 'prerequisite' && 'يُدرس قبل هذا الدرس'}
                 {type === 'extension'    && 'محتوى متقدم للراغبين'}
@@ -854,7 +854,7 @@ function CardHeader({ icon, title, hint }) {
     <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-ink-800/60 bg-ink-800/15">
       <span className="text-sand-700 text-xs">{icon}</span>
       <h3 className="text-sm font-semibold text-sand-300 font-arabic">{title}</h3>
-      {hint && <span className="text-[11px] text-ink-700 font-arabic mr-auto">{hint}</span>}
+      {hint && <span className="text-sm text-ink-500 font-arabic mr-auto">{hint}</span>}
     </div>
   );
 }
@@ -863,10 +863,10 @@ function Field({ label, required, hint, children }) {
   return (
     <div>
       <div className="flex items-baseline gap-2 mb-1.5">
-        <label className="text-xs font-medium text-ink-500 font-arabic">
+        <label className="text-sm font-medium text-ink-500 font-arabic">
           {label}{required && <span className="text-red-600 mr-0.5">*</span>}
         </label>
-        {hint && <span className="text-[10px] text-ink-700 font-arabic">{hint}</span>}
+        {hint && <span className="text-sm text-ink-500 font-arabic">{hint}</span>}
       </div>
       {children}
     </div>
@@ -877,7 +877,7 @@ function Stat({ label, val }) {
   return (
     <div className="text-center">
       <p className="text-lg font-mono text-ink-400">{val}</p>
-      <p className="text-[10px] text-ink-700 font-arabic">{label}</p>
+      <p className="text-sm text-ink-500 font-arabic">{label}</p>
     </div>
   );
 }
@@ -886,8 +886,8 @@ function StatCard({ label, sublabel, value }) {
   return (
     <div className="bg-ink-800/30 rounded-xl border border-ink-800/70 p-4 text-center">
       <p className="text-2xl font-mono text-sand-400 leading-none">{value}</p>
-      <p className="text-xs text-ink-400 font-arabic mt-1.5">{label}</p>
-      <p className="text-[10px] text-ink-700 font-arabic mt-0.5">{sublabel}</p>
+      <p className="text-sm text-ink-400 font-arabic mt-1.5">{label}</p>
+      <p className="text-sm text-ink-500 font-arabic mt-0.5">{sublabel}</p>
     </div>
   );
 }
@@ -913,19 +913,19 @@ function StepFooter({ onPrev, onNext, prevLabel, nextLabel }) {
 function LessonNav({ prevLesson, nextLesson, units, onNavigateLesson, onBack }) {
   return (
     <div className="flex items-center gap-1">
-      <button onClick={onBack} className="text-xs text-ink-600 hover:text-ink-400 transition-colors py-1.5 px-3 rounded-lg hover:bg-ink-800 font-arabic">
+      <button onClick={onBack} className="text-sm text-ink-400 hover:text-ink-400 transition-colors py-1.5 px-3 rounded-lg hover:bg-ink-800 font-arabic">
         قائمة الدروس
       </button>
       {prevLesson && (
         <button onClick={() => onNavigateLesson?.(prevLesson.id, prevLesson._unitId)}
-          className="flex items-center gap-1.5 text-ink-600 hover:text-sand-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-ink-900 text-xs font-arabic">
+          className="flex items-center gap-1.5 text-ink-400 hover:text-sand-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-ink-900 text-sm font-arabic">
           <span className="truncate max-w-[100px]">{prevLesson.title}</span>
           <span>→</span>
         </button>
       )}
       {nextLesson && (
         <button onClick={() => onNavigateLesson?.(nextLesson.id, nextLesson._unitId)}
-          className="flex items-center gap-1.5 text-ink-600 hover:text-sand-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-ink-900 text-xs font-arabic">
+          className="flex items-center gap-1.5 text-ink-400 hover:text-sand-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-ink-900 text-sm font-arabic">
           <span>←</span>
           <span className="truncate max-w-[100px]">{nextLesson.title}</span>
         </button>
@@ -942,9 +942,9 @@ function OrientationInput({ value = [], onChange }) {
     <div className="space-y-2">
       {value.map((item, i) => (
         <div key={i} className="flex items-start gap-2 group">
-          <span className="text-sand-700 text-xs mt-2.5 shrink-0">•</span>
+          <span className="text-sand-700 text-sm mt-2.5 shrink-0">•</span>
           <span className="flex-1 text-sm text-ink-200 font-arabic py-1.5 leading-relaxed">{item}</span>
-          <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-ink-700 hover:text-red-500 text-xs mt-2">✕</button>
+          <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-ink-500 hover:text-red-500 text-xs mt-2">✕</button>
         </div>
       ))}
       <div className="flex gap-2">
