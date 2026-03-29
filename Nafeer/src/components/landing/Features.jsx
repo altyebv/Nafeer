@@ -11,8 +11,8 @@ const features = [
     icon: '📖',
     title: 'دروس محسّنة',
     subtitle: 'Enhanced Lessons',
-    desc: 'المنهج كما لم تره من قبل — نصوص مُرقّمة، صور وصور متحركة، تتبع الوقت، وتسليط الضوء على المفاهيم الأساسية.',
-    insight: 'الفهم أولاً، الحفظ تالياً',
+    desc: 'المنهج نفسه، عُرض بشكل مختلف تماماً — نصوص مُهيكلة، صور توضيحية، ومفاهيم مرقّمة تُبنى فوق بعضها. كل درس يُصنع بعناية من مساهم متخصص في المادة.',
+    insight: 'الفهم لا يأتي من القراءة — يأتي من الوضوح',
     accent: 'rgba(212,137,30,0.14)',
     border: 'rgba(212,137,30,0.22)',
   },
@@ -21,8 +21,8 @@ const features = [
     icon: '📱',
     title: 'تغذية المعرفة',
     subtitle: 'Knowledge Feed',
-    desc: 'محتوى يومي قصير في شكل تمرير عمودي — مفاهيم، بطاقات تعليمية، وألعاب صغيرة لأسئلة صح/خطأ.',
-    insight: '٣ دقائق يومياً تُحدث فرقاً',
+    desc: 'محتوى يومي قصير في شكل تمرير عمودي — مفاهيم صغيرة، بطاقات تذكيرية، وأسئلة سريعة. معرفة تتراكم بدون أن تشعر.',
+    insight: '٣ دقائق يومياً تبني ما لا يبنيه يوم مذاكرة',
     accent: 'rgba(234,108,10,0.11)',
     border: 'rgba(234,108,10,0.22)',
   },
@@ -32,7 +32,7 @@ const features = [
     title: 'المختبر التفاعلي',
     subtitle: 'Interactive Lab',
     desc: 'محاكاة مرئية للمعادلات والأشكال الثلاثية الأبعاد — غيّر المتغير وشاهد النتيجة مباشرة.',
-    insight: 'تجربة ثم تذكر — ليس العكس',
+    insight: 'شاهد — ثم تذكر. ليس العكس',
     accent: 'rgba(59,130,246,0.11)',
     border: 'rgba(59,130,246,0.22)',
   },
@@ -41,8 +41,8 @@ const features = [
     icon: '📝',
     title: 'بنك الأسئلة',
     subtitle: 'Question Bank',
-    desc: 'آلاف الأسئلة من جميع المواد — امتحانات وتدريبات منظمة بمستويات صعوبة متدرجة.',
-    insight: 'كل الامتحانات السابقة، مُصنَّفة',
+    desc: 'آلاف الأسئلة مرتّبة حسب المادة، الوحدة، ومستوى الصعوبة — من الأسئلة الموضوعية إلى التحليلية. كل الامتحانات السابقة في مكان واحد.',
+    insight: 'تدرّب على ما سيسألك الامتحان فعلاً',
     accent: 'rgba(168,85,247,0.11)',
     border: 'rgba(168,85,247,0.22)',
   },
@@ -52,7 +52,7 @@ const features = [
     title: 'التقدم والإنجازات',
     subtitle: 'Progress & Streaks',
     desc: 'نظام نقاط، سلاسل يومية، وشارات تحفيزية تجعل الالتزام بالمنهج أمراً ممتعاً.',
-    insight: 'الانضباط يصبح عادة، لا جهداً',
+    insight: 'الانضباط لا يُجبر — يُبنى بالعادة',
     accent: 'rgba(34,197,94,0.11)',
     border: 'rgba(34,197,94,0.22)',
   },
@@ -61,7 +61,7 @@ const features = [
     icon: '📴',
     title: 'يعمل بدون إنترنت',
     subtitle: 'Offline First',
-    desc: 'كل المحتوى متاح بعد التحميل الأول — لا حاجة لاتصال، لا انقطاع في المذاكرة.',
+    desc: 'كل المحتوى متاح بعد التحميل الأول — لا اتصال، لا توقف، لا اعتذارات. مُصمَّم للواقع السوداني، ليس لمثاليته.',
     insight: 'انقطاع الكهرباء لا يوقف الطموح',
     accent: 'rgba(20,184,166,0.11)',
     border: 'rgba(20,184,166,0.22)',
@@ -73,14 +73,6 @@ export default function Features() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo('.features-problem',
-        { opacity: 0, y: 24 },
-        {
-          opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
-          scrollTrigger: { trigger: '.features-problem', start: 'top 90%', once: true },
-        }
-      );
-
       gsap.fromTo('.features-header',
         { opacity: 0, y: 32 },
         {
@@ -104,39 +96,32 @@ export default function Features() {
   }, []);
 
   return (
-    <section id="vision" ref={sectionRef} className="py-24 sm:py-36 px-4 sm:px-6 relative">
+    <section id="features" ref={sectionRef} className="py-24 sm:py-36 px-4 sm:px-6 relative">
       <div className="ember-line max-w-6xl mx-auto mb-20 opacity-40" />
 
       <div className="max-w-6xl mx-auto">
 
-        {/* Problem framing */}
-        <div className="features-problem mb-10 sm:mb-12 max-w-2xl">
-          <p
-            className="text-xs sm:text-sm font-mono tracking-widest uppercase mb-3"
-            style={{ color: 'var(--accent)' }}
-          >رؤيتنا</p>
-          <p
-            className="text-base sm:text-lg leading-loose"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-
-          المناهج السودانية غنية بالمحتوى والمعرفة，
-            لكن مع جيل اليوم نحتاج إلى طريقة عرض أكثر تفاعلاً ووضوحاً.
-
-          بشير يقدم المنهج نفسه — لكن بطريقة عصرية
-          تساعد الطالب على الفهم، والتطبيق， والاستمتاع بالتعلم.
-          </p>
-        </div>
-
         {/* Header */}
         <div className="features-header mb-14 sm:mb-20">
+          <p
+            className="text-xs sm:text-sm font-mono tracking-widest uppercase mb-4"
+            style={{ color: 'var(--accent)' }}
+          >
+            داخل التطبيق
+          </p>
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-arabic font-bold mb-5"
+            className="text-3xl sm:text-4xl md:text-5xl font-arabic font-bold mb-4"
             style={{ color: 'var(--text-primary)' }}
           >
-            بشير يغير المعادلة
+            ست أدوات. منهج واحد. فهم حقيقي.
           </h2>
-          <div className="ember-line w-20 sm:w-28" />
+          <div className="ember-line w-20 sm:w-28 mb-5" />
+          <p
+            className="text-base sm:text-lg leading-loose max-w-xl font-arabic"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            ليس تطبيقاً تعليمياً عاماً — بشير مصنوع للمنهج السوداني، خطوة خطوة.
+          </p>
         </div>
 
         {/* Feature cards grid */}
@@ -166,18 +151,15 @@ export default function Features() {
               />
 
               <div className="relative z-10 flex flex-col flex-1">
-                {/* Card number */}
                 <div
                   className="text-xs font-mono mb-4 opacity-35"
                   style={{ color: 'var(--text-primary)' }}
                 >{f.num}</div>
 
-                {/* Icon row */}
                 <div className="flex items-start justify-between mb-5">
                   <span className="text-3xl sm:text-4xl">{f.icon}</span>
                 </div>
 
-                {/* Text */}
                 <h3
                   className="text-lg sm:text-xl font-bold mb-1"
                   style={{ color: 'var(--text-primary)' }}
@@ -187,7 +169,7 @@ export default function Features() {
                   style={{ color: 'var(--text-muted)' }}
                 >{f.subtitle}</p>
                 <p
-                  className="text-sm leading-loose flex-1 mb-6"
+                  className="text-sm leading-loose flex-1 mb-6 font-arabic"
                   style={{ color: 'var(--text-secondary)' }}
                 >{f.desc}</p>
 

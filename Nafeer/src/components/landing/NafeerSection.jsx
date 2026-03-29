@@ -9,22 +9,22 @@ const steps = [
   {
     num: '١',
     title: 'تقدم بطلبك',
-    desc: 'أخبرنا عن خلفيتك ومادتك. نراجع الطلبات يدوياً ونرد خلال ٤٨ ساعة.',
+    desc: 'أخبرنا من أنت وأي مادة تريد بناءها. نقرأ كل طلب شخصياً ونرد خلال ٤٨ ساعة.',
   },
   {
     num: '٢',
     title: 'احصل على صلاحياتك',
-    desc: 'بعد الموافقة تحصل على حساب في منصة نفير مع المادة المخصصة لك مباشرة.',
+    desc: 'بعد الموافقة، حساب كامل في منصة نفير — والمادة التي اخترتها محجوزة لك.',
   },
   {
     num: '٣',
     title: 'ابدأ البناء',
-    desc: 'استخدم أداة التحرير لإضافة الوحدات، الدروس، المفاهيم، والأسئلة — بواجهة مبنية لهذا الهدف.',
+    desc: 'أداة تحرير مبنية لهذا الغرض تحديداً — وحدات، دروس، مفاهيم، وأسئلة. لا تقنية معقدة.',
   },
   {
     num: '٤',
-    title: 'يصل للطلاب',
-    desc: 'محتواك يُصدَّر مباشرة لتطبيق بشير ويصل لآلاف الطلاب في كل مكان — تلقائياً.',
+    title: 'شاهد أثرك',
+    desc: 'محتواك يُصدَّر تلقائياً لتطبيق بشير. اسمك يظهر على كل درس بنيته — أمام كل من يفتحه.',
   },
 ];
 
@@ -32,17 +32,17 @@ const perks = [
   {
     icon: '🏅',
     title: 'اسمك في التطبيق',
-    desc: 'كل درس تبنيه يحمل اسمك أمام كل من يقرأه. أثرك مرئي وحقيقي.',
+    desc: 'كل طالب يفتح درساً أنشأته يرى اسمك. ليس في الـ credits — في لحظة التعلم نفسها.',
   },
   {
     icon: '🎓',
     title: 'أثر يمتد عبر الزمن',
-    desc: 'طالب يفهم اليوم بسببك قد يُعلّم غيره غداً. المعرفة تتضاعف بلا حدود.',
+    desc: 'طالب يفهم اليوم بسببك قد يُعلّم غيره غداً. بعض الأفعال لا حدود لتضاعفها.',
   },
   {
     icon: '🛠️',
     title: 'أدوات احترافية',
-    desc: 'منصة نفير ليست نموذجاً عاماً — بيئة عمل حقيقية مبنية لهذا الهدف تحديداً.',
+    desc: 'منصة نفير بُنيت خصيصاً لإنشاء محتوى الشهادة السودانية. كل أداة فيها لها غرض واحد.',
   },
 ];
 
@@ -51,11 +51,11 @@ export default function NafeerSection() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo('.nafeer-header',
+      gsap.fromTo('.nafeer-story',
         { opacity: 0, y: 40 },
         {
           opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
-          scrollTrigger: { trigger: '.nafeer-header', start: 'top 88%', once: true },
+          scrollTrigger: { trigger: '.nafeer-story', start: 'top 88%', once: true },
         }
       );
       gsap.fromTo('.nafeer-impact',
@@ -63,6 +63,13 @@ export default function NafeerSection() {
         {
           opacity: 1, scale: 1, y: 0, duration: 0.75, ease: 'power3.out',
           scrollTrigger: { trigger: '.nafeer-impact', start: 'top 88%', once: true },
+        }
+      );
+      gsap.fromTo('.nafeer-who',
+        { opacity: 0, x: 20 },
+        {
+          opacity: 1, x: 0, duration: 0.6, stagger: 0.12, ease: 'power3.out',
+          scrollTrigger: { trigger: '.nafeer-who-list', start: 'top 90%', once: true },
         }
       );
       gsap.fromTo('.nafeer-step',
@@ -92,13 +99,13 @@ export default function NafeerSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
+    <section id="nafeer" ref={sectionRef} className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
       <div className="ember-line max-w-6xl mx-auto mb-16 sm:mb-24 opacity-40" />
 
       {/* Background watermark */}
       <div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none"
-        style={{ opacity: 0.02 }}
+        style={{ opacity: 0.018 }}
       >
         <span
           className="text-[28vw] font-arabic font-bold leading-none"
@@ -108,29 +115,80 @@ export default function NafeerSection() {
 
       <div className="max-w-6xl mx-auto relative z-10">
 
-        {/* Header */}
-        <div className="nafeer-header mb-12 sm:mb-16 max-w-2xl">
+        {/* ── BEAT 1: The Story ── */}
+        <div className="nafeer-story mb-14 sm:mb-20">
+
+          {/* Section label */}
           <span
-            className="inline-block text-xs sm:text-sm tracking-widest uppercase mb-4 font-mono"
+            className="inline-block text-xs sm:text-sm tracking-widest uppercase mb-5 font-mono"
             style={{ color: 'var(--accent)' }}
           >
-            النفير — المساهمون
+            النفير — مفهوم سوداني أصيل
           </span>
+
+          {/* Headline */}
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-arabic font-bold mb-5 leading-snug"
+            className="text-3xl sm:text-4xl md:text-5xl font-arabic font-bold mb-6 leading-snug"
             style={{ color: 'var(--text-primary)' }}
           >
-            أنت تعرف المادة —
+            ما لا يبنيه شخص واحد
             <br />
-            <span style={{ color: 'var(--accent)' }}>نحن نبني الأداة</span>
+            <span style={{ color: 'var(--accent)' }}>يبنيه النفير</span>
           </h2>
-          <p
-            className="text-base sm:text-lg leading-loose"
+
+          {/* Story text — two paragraphs */}
+          <div
+            className="max-w-2xl space-y-4 text-base sm:text-lg leading-loose font-arabic"
             style={{ color: 'var(--text-secondary)' }}
           >
-            النفير مفهوم سوداني أصيل للتعاون الجماعي — حين يجتمع الكل لبناء ما لا يقدر عليه الفرد وحده.
-            هكذا نبني بشير: خبير يرسم مادته، وطالب يفهمها، وأثر يمتد.
-          </p>
+            <p>
+              النفير في الثقافة السودانية يعني أن يجتمع الجيران لبناء ما لا يستطيع
+              أحدهم بناءه وحده. ليس تطوعاً وليس عملاً — بل شيء أعمق: إحساس بأن
+              هذا يخصني وأن غيابي سيُشعَر به.
+            </p>
+            <p style={{ color: 'var(--text-muted)' }}>
+              هكذا نبني بشير — خبير يرسم مادته، وطالب يفهمها، وأثر يمتد.
+            </p>
+          </div>
+
+          {/* Who belongs here */}
+          <div className="nafeer-who-list mt-8 sm:mt-10 space-y-2">
+            <p
+              className="text-xs font-mono mb-4 tracking-widest uppercase"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              النفير يبحث عن
+            </p>
+            {[
+              { icon: '🎓', who: 'معلمين', desc: 'يعرفون مادتهم ويريدون نقلها بطريقة تفاعلية' },
+              { icon: '🧑‍💻', who: 'طلاب جامعة', desc: 'يتذكرون ما صعب عليهم في الشهادة ويريدون تسهيله' },
+              { icon: '🌍', who: 'متحمسين للتعليم', desc: 'يرون في تحسين التعليم قضية تستحق وقتهم' },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="nafeer-who flex items-center gap-4 py-3 px-4 rounded-xl transition-all duration-200"
+                style={{ border: '1px solid var(--border-subtle)' }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = 'rgba(212,137,30,0.25)';
+                  e.currentTarget.style.background = 'var(--bg-card)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <span className="text-xl shrink-0">{item.icon}</span>
+                <div>
+                  <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                    {item.who}
+                  </span>
+                  <span className="text-sm mr-2" style={{ color: 'var(--text-muted)' }}>
+                    — {item.desc}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Impact callout */}
@@ -150,12 +208,12 @@ export default function NafeerSection() {
               <p
                 className="text-xs sm:text-sm font-mono mb-2"
                 style={{ color: 'var(--accent)' }}
-              >ماذا يعني مساهمتك؟</p>
+              >ماذا يعني وجودك؟</p>
               <p
                 className="text-xl sm:text-2xl font-arabic font-bold"
                 style={{ color: 'var(--text-primary)' }}
               >
-                مادة واحدة منك = مئات الدروس لآلاف الطلاب
+                مادة واحدة منك = مئات الدروس، تُعاد استخدامها آلاف المرات
               </p>
             </div>
             <div className="flex gap-8 sm:gap-10 shrink-0">
@@ -175,17 +233,20 @@ export default function NafeerSection() {
           </div>
         </div>
 
+        {/* ── BEAT 2: How to Join ── */}
+
         {/* Steps label */}
         <p
           className="text-xs font-mono mb-6 sm:mb-7 tracking-widest uppercase"
           style={{ color: 'var(--text-muted)' }}
-        >كيف تبدأ — ٤ خطوات</p>
+        >
+          الطريق أقصر مما تتخيل — ٤ خطوات
+        </p>
 
         {/* Steps grid */}
         <div className="nafeer-steps grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-14 sm:mb-18">
           {steps.map((step, i) => (
             <div key={i} className="nafeer-step relative">
-              {/* Connecting line between steps */}
               {i < steps.length - 1 && (
                 <div
                   className="hidden lg:block absolute top-10 left-0 w-full h-px pointer-events-none"
@@ -219,7 +280,7 @@ export default function NafeerSection() {
                   style={{ color: 'var(--text-primary)' }}
                 >{step.title}</h3>
                 <p
-                  className="text-xs sm:text-sm leading-loose"
+                  className="text-xs sm:text-sm leading-loose font-arabic"
                   style={{ color: 'var(--text-muted)' }}
                 >{step.desc}</p>
               </div>
@@ -250,7 +311,7 @@ export default function NafeerSection() {
                   style={{ color: 'var(--text-primary)' }}
                 >{item.title}</h4>
                 <p
-                  className="text-xs sm:text-sm leading-loose"
+                  className="text-xs sm:text-sm leading-loose font-arabic"
                   style={{ color: 'var(--text-muted)' }}
                 >{item.desc}</p>
               </div>
@@ -271,12 +332,14 @@ export default function NafeerSection() {
             <p
               className="text-xs sm:text-sm font-mono mb-3"
               style={{ color: 'var(--text-muted)' }}
-            >الوقت مهم — المنهج يبدأ بك</p>
+            >
+              كل يوم بدون مادة يعني يوماً أقل لطالب ينتظر
+            </p>
             <p
               className="text-2xl sm:text-3xl font-arabic font-bold mb-7"
               style={{ color: 'var(--text-primary)' }}
             >
-              مستعد لترك أثر حقيقي؟
+              مقعدك في النفير شاغر
             </p>
             <a
               href="/prejoin"

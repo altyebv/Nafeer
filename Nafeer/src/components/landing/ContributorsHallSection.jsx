@@ -6,7 +6,6 @@ import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Build a subject label map from SUBJECTS_CATALOG
 const SUBJECT_LABEL = Object.fromEntries(
   SUBJECTS_CATALOG.map((s) => [s.id, s.nameAr])
 );
@@ -19,7 +18,6 @@ function Avatar({ avatarUrl, name, size = 'md' }) {
     lg: 'w-24 h-24 text-3xl',
   };
 
-  // Build initials from first two words
   const initials = (name || '؟')
     .split(' ')
     .slice(0, 2)
@@ -107,7 +105,6 @@ function FeaturedCard({ contributor }) {
         e.currentTarget.style.boxShadow = 'none';
       }}
     >
-      {/* Ambient glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -116,7 +113,6 @@ function FeaturedCard({ contributor }) {
         }}
       />
 
-      {/* Top row: number + badges */}
       <div className="relative flex items-center justify-between mb-7">
         <span
           className="font-mono text-5xl font-bold select-none"
@@ -139,7 +135,6 @@ function FeaturedCard({ contributor }) {
         </div>
       </div>
 
-      {/* Profile */}
       <div className="relative flex items-start gap-6 mb-8">
         <Avatar avatarUrl={contributor.avatarUrl} name={contributor.name} size="lg" />
         <div className="flex-1 min-w-0">
@@ -159,7 +154,7 @@ function FeaturedCard({ contributor }) {
           )}
           {contributor.bio && (
             <p
-              className="text-base leading-relaxed"
+              className="text-base leading-relaxed font-arabic"
               style={{ color: 'var(--text-secondary)' }}
             >
               {contributor.bio}
@@ -168,7 +163,6 @@ function FeaturedCard({ contributor }) {
         </div>
       </div>
 
-      {/* Stats */}
       <div
         className="relative flex flex-wrap gap-6 pt-5"
         style={{ borderTop: '1px solid var(--border-subtle)' }}
@@ -206,7 +200,6 @@ function ContributorCard({ contributor, rank }) {
         e.currentTarget.style.boxShadow   = 'none';
       }}
     >
-      {/* Number + subject */}
       <div className="flex items-center justify-between mb-4">
         <span
           className="font-mono text-xs font-bold select-none"
@@ -217,7 +210,6 @@ function ContributorCard({ contributor, rank }) {
         <SubjectBadge subject={contributor.subject} />
       </div>
 
-      {/* Avatar + name */}
       <div className="flex items-center gap-3 mb-4">
         <Avatar avatarUrl={contributor.avatarUrl} name={contributor.name} size="sm" />
         <div className="min-w-0">
@@ -238,17 +230,15 @@ function ContributorCard({ contributor, rank }) {
         </div>
       </div>
 
-      {/* Bio */}
       {contributor.bio && (
         <p
-          className="text-sm leading-loose flex-1 mb-4 line-clamp-2"
+          className="text-sm leading-loose flex-1 mb-4 line-clamp-2 font-arabic"
           style={{ color: 'var(--text-secondary)' }}
         >
           {contributor.bio}
         </p>
       )}
 
-      {/* Stats */}
       <div
         className="flex gap-4 pt-3 mt-auto flex-wrap"
         style={{ borderTop: '1px solid var(--border-subtle)' }}
@@ -271,7 +261,6 @@ function EmptyHall() {
         border: '1px dashed var(--border-mid)',
       }}
     >
-      {/* Decorative pillar icons */}
       <div className="flex justify-center gap-3 mb-6 text-3xl opacity-20">
         <span>🏛️</span>
       </div>
@@ -282,7 +271,7 @@ function EmptyHall() {
         القاعة في انتظار أعمدتها
       </h3>
       <p
-        className="text-sm leading-loose mb-8 max-w-sm mx-auto"
+        className="text-sm leading-loose mb-8 max-w-sm mx-auto font-arabic"
         style={{ color: 'var(--text-muted)' }}
       >
         كن من أوائل المساهمين — اسمك الأول في قاعة شرف تصنع أثراً
@@ -310,11 +299,10 @@ function EmptyHall() {
 // ── Main section ──────────────────────────────────────────────────────────────
 export default function ContributorsHallSection() {
   const sectionRef = useRef(null);
-  const [contributors, setContributors] = useState(null); // null = loading
+  const [contributors, setContributors] = useState(null);
   const [visible, setVisible]           = useState(true);
 
   useEffect(() => {
-    // Fetch setting + contributors in parallel
     Promise.all([
       fetch('/api/site-settings').then((r) => r.json()).catch(() => ({ showContributorsOnLanding: true })),
       fetch('/api/contributors/public').then((r) => r.json()).catch(() => ({ contributors: [] })),
@@ -324,7 +312,6 @@ export default function ContributorsHallSection() {
     });
   }, []);
 
-  // GSAP animations — run only after data loads
   useEffect(() => {
     if (contributors === null || !visible) return;
 
@@ -368,12 +355,10 @@ export default function ContributorsHallSection() {
     return () => ctx.revert();
   }, [contributors, visible]);
 
-  // Still loading or toggled off — render nothing
   if (!visible || contributors === null) return null;
 
   const [featured, ...rest] = contributors;
 
-  // Aggregate stats for ticker
   const totalContributors = contributors.length;
   const totalLessons      = contributors.reduce((a, c) => a + (c.stats?.lessonsCreated   || 0), 0);
   const totalQuestions    = contributors.reduce((a, c) => a + (c.stats?.questionsAdded   || 0), 0);
@@ -387,7 +372,6 @@ export default function ContributorsHallSection() {
     >
       <div className="ember-line max-w-6xl mx-auto mb-16 sm:mb-24 opacity-40" />
 
-      {/* Background ambient orb */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70rem] h-[40rem] pointer-events-none"
         style={{
@@ -409,16 +393,18 @@ export default function ContributorsHallSection() {
             className="text-3xl sm:text-4xl md:text-5xl font-arabic font-bold mb-4"
             style={{ color: 'var(--text-primary)' }}
           >
-            أعمدة المشروع
+            وجوه خلف المحتوى
           </h2>
           <div className="ember-line w-20 sm:w-28 mb-5" />
           <p
-            className="text-base sm:text-lg leading-loose max-w-xl"
+            className="text-base sm:text-lg leading-loose max-w-xl font-arabic"
             style={{ color: 'var(--text-secondary)' }}
           >
-            هؤلاء هم من بنوا ما تراه في بشير —{' '}
-            <span style={{ color: 'var(--accent)' }}>درساً بعد درس، سؤالاً بعد سؤال.</span>
-            {' '}كل مساهم يترك أثراً حقيقياً يصل لآلاف الطلاب.
+            كل درس في بشير كتبه شخص اختار أن يمنح وقته وخبرته.
+            هؤلاء ليسوا موظفين —{' '}
+            <span style={{ color: 'var(--accent)' }}>
+              هم معلمون وطلاب ومتحمسون قرروا أن تحسين التعليم يستحق جهدهم.
+            </span>
           </p>
         </div>
 
@@ -432,10 +418,10 @@ export default function ContributorsHallSection() {
             }}
           >
             {[
-              { value: totalContributors, label: 'مساهم نشط' },
-              { value: totalLessons,      label: 'درس مُنجز'  },
+              { value: totalContributors, label: 'مساهم نشط'    },
+              { value: totalLessons,      label: 'درس مُنجز'     },
               { value: totalQuestions,    label: 'سؤال في البنك' },
-              { value: totalFeed,         label: 'عنصر تغذية' },
+              { value: totalFeed,         label: 'عنصر تغذية'   },
             ].map(({ value, label }) => value > 0 ? (
               <div key={label}>
                 <span
@@ -460,10 +446,8 @@ export default function ContributorsHallSection() {
           <EmptyHall />
         ) : (
           <div className="hall-grid space-y-6">
-            {/* Featured contributor */}
             {featured && <FeaturedCard contributor={featured} />}
 
-            {/* Grid of rest */}
             {rest.length > 0 && (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                 {rest.map((c, i) => (
@@ -476,13 +460,12 @@ export default function ContributorsHallSection() {
               </div>
             )}
 
-            {/* Bottom join nudge */}
             <div
               className="hall-cta text-center py-10 rounded-2xl"
               style={{ border: '1px dashed var(--border-mid)' }}
             >
               <p
-                className="text-sm mb-4"
+                className="text-sm mb-4 font-arabic"
                 style={{ color: 'var(--text-muted)' }}
               >
                 مقعدك في القاعة ينتظرك

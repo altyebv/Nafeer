@@ -26,7 +26,6 @@ export default function ProgressBoard() {
   const sectionRef = useRef(null);
   const [liveData, setLiveData] = useState({});
 
-  // ── Fetch live progress from Atlas ────────────────────────────────────────
   useEffect(() => {
     fetch('/api/coverage')
       .then(r => r.json())
@@ -41,7 +40,7 @@ export default function ProgressBoard() {
         });
         setLiveData(map);
       })
-      .catch(() => {}); // fail silently
+      .catch(() => {});
   }, []);
 
   const subjects = SUBJECTS_CATALOG.map(s => {
@@ -55,8 +54,8 @@ export default function ProgressBoard() {
   const totalSubjects     = subjects.length;
   const mappedSubjects    = subjects.filter(s => s.progress > 0).length;
   const totalContributors = subjects.filter(s => s.contributor).length;
+  const openSeats         = subjects.filter(s => !s.contributor).length;
 
-  // ── Scroll animations ─────────────────────────────────────────────────────
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo('.progress-header',
@@ -98,26 +97,30 @@ export default function ProgressBoard() {
               className="inline-block text-xs sm:text-sm tracking-widest uppercase mb-4 font-mono"
               style={{ color: 'var(--accent)' }}
             >
-              حالة المشروع — مباشر
+              مباشر — يتحدث عن نفسه
             </span>
             <h2
               className="text-3xl sm:text-4xl font-arabic font-bold mb-3"
               style={{ color: 'var(--text-primary)' }}
-            >خريطة المواد</h2>
+            >
+              هذا ما بُني حتى الآن
+            </h2>
             <p
-              className="max-w-md leading-loose text-sm sm:text-base"
+              className="max-w-md leading-loose text-sm sm:text-base font-arabic"
               style={{ color: 'var(--text-secondary)' }}
             >
-              كل مادة تحتاج مساهماً متخصصاً. هذه خريطة ما اكتمل وما ينتظرك.
+              كل شريط تقدم هنا بناه إنسان حقيقي — معلم، طالب جامعة، أو متطوع
+              خصّص وقته لمادة يعرفها.
+              <span style={{ color: 'var(--accent)' }}> الأشرطة الفارغة ليست نقصاً — هي مقاعد شاغرة.</span>
             </p>
           </div>
 
           {/* Stats */}
           <div className="progress-stats flex gap-5 sm:gap-8">
             {[
-              { value: totalSubjects,     label: 'مادة' },
-              { value: mappedSubjects,    label: 'مكتملة' },
-              { value: totalContributors, label: 'مساهم' },
+              { value: totalSubjects,     label: 'مادة'          },
+              { value: mappedSubjects,    label: 'بُدئت'         },
+              { value: openSeats,         label: 'مقعد شاغر'     },
             ].map((stat, i) => (
               <div key={i} className="progress-stat text-center">
                 <div
@@ -168,8 +171,11 @@ export default function ProgressBoard() {
 
         {/* Bottom CTA */}
         <div className="mt-8 sm:mt-10 text-center">
-          <p className="mb-5 sm:mb-6 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-            كل المواد مفتوحة للمساهمة — لديك خلفية في أي مادة؟
+          <p className="mb-2 text-sm sm:text-base font-arabic" style={{ color: 'var(--text-secondary)' }}>
+            مادتك في انتظارك — لديك معرفة فيها؟
+          </p>
+          <p className="mb-6" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            احجز مقعدك في النفير
           </p>
           <a
             href="/prejoin"
@@ -271,7 +277,7 @@ function SubjectCard({ subject, isMajor = false }) {
               }}
               onClick={e => e.stopPropagation()}
             >
-              + انضم
+              + احجز المقعد
             </a>
           ) : (
             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{subject.contributor}</span>

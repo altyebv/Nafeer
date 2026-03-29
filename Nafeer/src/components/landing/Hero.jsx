@@ -160,23 +160,25 @@ export default function Hero() {
             style={{ color: 'var(--text-secondary)' }}
           >
             من الحفظ إلى الفهم —{' '}
-            <span style={{ color: 'var(--accent)' }}>لأول مرة في السودان</span>
+            <span style={{ color: 'var(--accent)' }}>لأول مرة، المنهج كما يجب أن يكون</span>
           </h2>
         </div>
 
-        {/* Description */}
+        {/* Description — empathy first, features second */}
         <p
-          className="gsap-hero-desc text-base sm:text-lg max-w-lg leading-loose mb-9 sm:mb-11"
+          className="gsap-hero-desc text-base sm:text-lg max-w-lg leading-loose mb-9 sm:mb-11 font-arabic"
           style={{ color: 'var(--text-muted)' }}
         >
-          دروس محسّنة، محتوى يومي قصير، ومحاكاة تفاعلية — كل المنهج في جيبك،
-          حتى بدون إنترنت. الشهادة السودانية كما تستحق.
+          الشهادة السودانية ليست مشكلة — طريقة دراستها هي المشكلة.
+          بشير يأخذ المنهج نفسه ويجعله أوضح، أقرب، وأكثر معنىً.
+          في جيبك. بدون إنترنت. مجاناً.
         </p>
 
-        {/* CTA buttons */}
+        {/* CTA buttons — two audiences, two paths */}
         <div className="flex flex-wrap gap-3 sm:gap-4 mb-10 sm:mb-12">
+          {/* Student primary */}
           <a
-            href="/prejoin"
+            href="#features"
             className="gsap-hero-cta group inline-flex items-center gap-2 sm:gap-3 px-7 sm:px-9 py-3.5 sm:py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
             style={{ background: 'var(--accent)', color: '#0e0c09' }}
             onMouseEnter={e => {
@@ -190,26 +192,34 @@ export default function Hero() {
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
-            <span>انضم للنفير</span>
+            <span>اكتشف بشير</span>
             <span
               className="text-lg group-hover:-translate-x-1 transition-transform duration-300"
               style={{ display: 'inline-block', transform: 'scaleX(-1)' }}
             >←</span>
           </a>
+
+          {/* Contributor secondary */}
           <a
-            href="#vision"
-            className="gsap-hero-cta inline-flex items-center gap-2 sm:gap-3 px-7 sm:px-9 py-3.5 sm:py-4 rounded-xl transition-all duration-300 text-sm sm:text-base"
+            href="/prejoin"
+            className="gsap-hero-cta group inline-flex items-center gap-2 sm:gap-3 px-7 sm:px-9 py-3.5 sm:py-4 rounded-xl transition-all duration-300 text-sm sm:text-base font-bold"
             style={{ border: '1px solid var(--border-mid)', color: 'var(--text-secondary)' }}
             onMouseEnter={e => {
               e.currentTarget.style.borderColor = 'var(--accent)';
               e.currentTarget.style.color = 'var(--accent)';
+              e.currentTarget.style.background = 'var(--accent-dim)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.borderColor = 'var(--border-mid)';
               e.currentTarget.style.color = 'var(--text-secondary)';
+              e.currentTarget.style.background = 'transparent';
             }}
           >
-            اعرف أكثر
+            <span>ساهم في بنائه</span>
+            <span
+              className="text-sm group-hover:-translate-x-1 transition-transform duration-300"
+              style={{ display: 'inline-block', transform: 'scaleX(-1)', opacity: 0.7 }}
+            >←</span>
           </a>
         </div>
 
@@ -219,9 +229,9 @@ export default function Hero() {
           style={{ borderTop: '1px solid var(--border-subtle)' }}
         >
           {[
-            { value: '١٢', label: 'مادة دراسية' },
-            { value: '٠', label: 'إنترنت مطلوب' },
-            { value: '١٠٠٪', label: 'مجاني دائماً' },
+            { value: '١٢', label: 'مادة في متناولك' },
+            { value: '٠',  label: 'اتصال مطلوب' },
+            { value: '١٠٠٪', label: 'مجاني — للأبد' },
           ].map((s, i) => (
             <div key={i} className="gsap-hero-stat">
               <div
