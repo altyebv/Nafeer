@@ -304,7 +304,7 @@ export default function ContributorsHallSection() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/site-settings').then((r) => r.json()).catch(() => ({ showContributorsOnLanding: true })),
+      fetch('/api/site-setting').then((r) => r.json()).catch(() => ({ showContributorsOnLanding: true })),
       fetch('/api/contributors/public').then((r) => r.json()).catch(() => ({ contributors: [] })),
     ]).then(([settings, data]) => {
       setVisible(settings.showContributorsOnLanding !== false);
