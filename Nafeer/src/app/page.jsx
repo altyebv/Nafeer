@@ -9,6 +9,7 @@ import Problemsection from '@/components/landing/Problemsection';
 import Visionsection from '@/components/landing/Visionsection';
 import Futuresection from '@/components/landing/Futuresection';
 import FinalCTA from '@/components/landing/Finalcta';
+import DemoSection from '@/components/demo/DemoSection';
 
 export default function HomePage() {
   return (
@@ -18,6 +19,8 @@ export default function HomePage() {
       <Problemsection />
       <Visionsection />
       <Features />
+      {/* temporarly placed here so user can have contextt */}
+      <DemoSection />
       <div id="progress">
         <ProgressBoard />
       </div>
