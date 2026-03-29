@@ -65,7 +65,7 @@ export function SiteSettingsSection() {
   const [toast,    setToast]    = useState(null);
 
   useEffect(() => {
-    fetch('/api/admin/site-settings')
+    fetch('/api/admin/site-setting')
       .then((r) => r.json())
       .then((d) => {
         if (d.ok) setSettings(d.data);
@@ -78,7 +78,7 @@ export function SiteSettingsSection() {
     const prev = settings[key];
     setSettings((s) => ({ ...s, [key]: value })); // optimistic
 
-    const res  = await fetch('/api/admin/site-settings', {
+    const res  = await fetch('/api/admin/site-setting', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [key]: value }),
