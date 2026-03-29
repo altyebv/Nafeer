@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Link from 'next/link';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -61,7 +62,7 @@ export default function FinalCTA() {
         {/* Two-panel grid */}
         <div className="finalcta-grid grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 mb-10">
 
-          {/* ── Panel A: Students ── */}
+          {/* ── Panel A: Students → /demo ── */}
           <div
             className="finalcta-panel relative p-8 sm:p-10 rounded-3xl overflow-hidden flex flex-col"
             style={{
@@ -78,13 +79,12 @@ export default function FinalCTA() {
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
-            {/* Ambient — cool blue for student panel */}
+            {/* Ambient — cool blue */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(59,130,246,0.05) 0%, transparent 70%)' }}
             />
 
-            {/* Panel label */}
             <div className="relative z-10 flex items-center gap-2 mb-7">
               <span
                 className="text-xs font-mono px-2.5 py-1 rounded-full"
@@ -98,13 +98,7 @@ export default function FinalCTA() {
               </span>
             </div>
 
-            {/* Icon / Visual */}
-            <div
-              className="relative z-10 text-5xl sm:text-6xl mb-6"
-              style={{ lineHeight: 1 }}
-            >
-              📱
-            </div>
+            <div className="relative z-10 text-5xl sm:text-6xl mb-6" style={{ lineHeight: 1 }}>📱</div>
 
             <div className="relative z-10 flex-1">
               <h2
@@ -119,15 +113,15 @@ export default function FinalCTA() {
                 className="text-base leading-loose mb-8 font-arabic"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                جرّب بشير — مجاناً، بدون إنترنت، في متناول يدك.
-                المنهج كاملاً، بطريقة مختلفة.
+                جرّب بشير الآن — معاينة تفاعلية حقيقية قبل الإطلاق على Play Store.
               </p>
             </div>
 
-            <a
-              href="#features"
+            {/* ← Changed: href="/demo" instead of "#features" */}
+            <Link
+              href="/demo"
               className="relative z-10 inline-flex items-center justify-center gap-3 w-full py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
-              style={{ background: 'var(--accent)', color: '#0e0c09' }}
+              style={{ background: 'var(--accent)', color: '#0e0c09', textDecoration: 'none' }}
               onMouseEnter={e => {
                 e.currentTarget.style.background = 'var(--accent-hover)';
                 e.currentTarget.style.boxShadow = '0 0 40px var(--glow)';
@@ -139,9 +133,9 @@ export default function FinalCTA() {
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              <span>اكتشف بشير</span>
+              <span>جرّب بشير الآن</span>
               <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span>
-            </a>
+            </Link>
           </div>
 
           {/* ── Panel B: Contributors ── */}
@@ -161,13 +155,12 @@ export default function FinalCTA() {
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
-            {/* Ambient — warm amber for contributor panel */}
+            {/* Ambient — warm amber */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212,137,30,0.09) 0%, transparent 70%)' }}
             />
 
-            {/* Panel label */}
             <div className="relative z-10 flex items-center gap-2 mb-7">
               <span
                 className="text-xs font-mono px-2.5 py-1 rounded-full"
@@ -181,13 +174,7 @@ export default function FinalCTA() {
               </span>
             </div>
 
-            {/* Icon / Visual */}
-            <div
-              className="relative z-10 text-5xl sm:text-6xl mb-6"
-              style={{ lineHeight: 1 }}
-            >
-              🏗️
-            </div>
+            <div className="relative z-10 text-5xl sm:text-6xl mb-6" style={{ lineHeight: 1 }}>🏗️</div>
 
             <div className="relative z-10 flex-1">
               <h2
@@ -207,13 +194,14 @@ export default function FinalCTA() {
               </p>
             </div>
 
-            <a
+            <Link
               href="/prejoin"
               className="relative z-10 inline-flex items-center justify-center gap-3 w-full py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
               style={{
                 border: '1px solid var(--accent)',
                 color: 'var(--accent)',
                 background: 'transparent',
+                textDecoration: 'none',
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.background = 'var(--accent)';
@@ -230,7 +218,7 @@ export default function FinalCTA() {
             >
               <span>انضم للنفير</span>
               <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span>
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -239,10 +227,7 @@ export default function FinalCTA() {
           className="finalcta-footer text-center py-6"
           style={{ borderTop: '1px solid var(--border-subtle)' }}
         >
-          <p
-            className="text-sm font-mono"
-            style={{ color: 'var(--text-muted)' }}
-          >
+          <p className="text-sm font-mono" style={{ color: 'var(--text-muted)' }}>
             مشروع مفتوح من السودان، للسودان — مجاني الآن وللأبد
           </p>
         </div>
