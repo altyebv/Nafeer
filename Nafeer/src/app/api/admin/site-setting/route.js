@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAdminUser }  from '@/lib/adminAuth';
+import { verifyAdminToken } from '@/lib/adminAuth';
 import { connectDB }     from '@/lib/db';
 import { SiteSettings }  from '@/lib/models/SiteSettings';
 
@@ -9,7 +9,7 @@ function unauthorized() {
 
 // ─── GET /api/admin/site-settings ─────────────────────────────────────────────
 export async function GET() {
-  if (!(await getAdminUser())) return unauthorized();
+  if (!(await verifyAdminToken())) return unauthorized();
   await connectDB();
   const settings = await SiteSettings.getGlobal();
   return NextResponse.json({ ok: true, data: settings });
@@ -17,7 +17,7 @@ export async function GET() {
 
 // ─── PATCH /api/admin/site-settings ───────────────────────────────────────────
 export async function PATCH(request) {
-  if (!(await getAdminUser())) return unauthorized();
+  if (!(await verifyAdminToken())) return unauthorized();
 
   const body = await request.json();
   const update = {};
