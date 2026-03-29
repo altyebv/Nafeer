@@ -5,9 +5,9 @@ import ProgressBoard from '@/components/landing/ProgressBoard';
 import NafeerSection from '@/components/landing/NafeerSection';
 import Footer from '@/components/landing/Footer';
 import  ContributorSection  from '@/components/landing/ContributorsHallSection'
-import Problem from '@/components/landing/ProblemSection';
-import Vision from '@/components/landing/VisionSection';
-import Future from '@/components/landing/FutureSection';
+import Problemsection from '@/components/landing/Problemsection';
+import Visionsection from '@/components/landing/Visionsection';
+import Futuresection from '@/components/landing/Futuresection';
 import FinalCTA from '@/components/landing/Finalcta';
 
 export default function HomePage() {
@@ -15,8 +15,8 @@ export default function HomePage() {
     <div className="grain">
       <Navbar />
       <Hero />
-      <Problem />
-      <Vision />
+      <Problemsection />
+      <Visionsection />
       <Features />
       <div id="progress">
         <ProgressBoard />
@@ -25,7 +25,7 @@ export default function HomePage() {
         <NafeerSection />
       </div>
       <ContributorSection />
-      <Future />
+      <Futuresection />
       <FinalCTA />
       <Footer />
     </div>
