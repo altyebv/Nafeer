@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { DefinitionCard, FlashCard, TrueFalseCard } from '../feed/FeedCards';
+import { DefinitionCard, FlashCard, TrueFalseCard } from '../feed/Feedcards';
 import { DEMO_FEED_CARDS } from '../demoData';
 
 export default function FeedScreen() {
