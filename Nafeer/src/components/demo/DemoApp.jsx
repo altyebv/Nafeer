@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
-import HomeScreen     from './screens/HomeScreen';
-import LessonScreen   from './screens/LessonScreen';
-import FeedScreen     from './screens/FeedScreen';
-import QuizBankScreen from './screens/QuizBankScreen';
-import ProfileScreen  from './screens/ProfileScreen';
+import OnboardingScreen from './screens/OnboardingScreen';
+import HomeScreen       from './screens/HomeScreen';
+import LessonScreen     from './screens/LessonScreen';
+import FeedScreen       from './screens/FeedScreen';
+import QuizBankScreen   from './screens/QuizBankScreen';
+import ProfileScreen    from './screens/ProfileScreen';
 import GuidedTour, { TOUR_STEPS } from './GuidedTour';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,22 +20,44 @@ const TABS = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DemoApp — fixed-size phone shell + guided tour card below.
-// Exported for use in /demo page.
+// DemoApp — full phone-shell experience
+//
+// Phases:
+//   'onboarding' → user enters name, path, grade
+//   'app'        → full app with guided tour overlay
+//
+// Content area uses position: relative + overflow: hidden so that:
+//   - FeedScreen can do internal snap-scroll (absolute-fills its slot)
+//   - GuidedTour overlay can cover the content area precisely
+//   - Other screens scroll inside their own absolute wrapper
 // ─────────────────────────────────────────────────────────────────────────────
 export default function DemoApp() {
-  const [activeTab,  setActiveTab]  = useState('home');
-  const [tourStep,   setTourStep]   = useState(0);   // null = tour dismissed
-  const [tourActive, setTourActive] = useState(true);
+  const [phase,       setPhase]       = useState('onboarding');
+  const [userProfile, setUserProfile] = useState(null);
+  const [activeTab,   setActiveTab]   = useState('home');
+  const [tourStep,    setTourStep]    = useState(0);
+  const [tourActive,  setTourActive]  = useState(true);
 
+  // ── Onboarding completion ──
+  function handleOnboardingComplete(profile) {
+    setUserProfile(profile);
+    setPhase('app');
+    setActiveTab('home');
+    setTourStep(0);
+    setTourActive(true);
+  }
+
+  // ── Tab navigation ──
   function navigateTo(tabId) {
     setActiveTab(tabId);
+    // Sync tour step when user taps a tab that matches a tour step
     if (tourActive) {
       const idx = TOUR_STEPS.findIndex(s => s.tab === tabId);
       if (idx !== -1) setTourStep(idx);
     }
   }
 
+  // ── Tour controls ──
   function handleTourNext() {
     const next = tourStep + 1;
     if (next < TOUR_STEPS.length) {
@@ -42,7 +65,6 @@ export default function DemoApp() {
       setActiveTab(TOUR_STEPS[next].tab);
     }
   }
-
   function handleTourPrev() {
     const prev = tourStep - 1;
     if (prev >= 0) {
@@ -50,70 +72,143 @@ export default function DemoApp() {
       setActiveTab(TOUR_STEPS[prev].tab);
     }
   }
-
   function handleTourSkip() {
     setTourActive(false);
   }
 
   return (
-    <div className="flex flex-col items-center gap-5 w-full">
+    <div
+      style={{
+        width:         '375px',
+        maxWidth:      '100%',
+        height:        '680px',
+        borderRadius:  '32px',
+        overflow:      'hidden',
+        display:       'flex',
+        flexDirection: 'column',
+        background:    'var(--bg-primary)',
+        border:        '1px solid rgba(255,255,255,0.10)',
+        boxShadow:     '0 0 0 1px rgba(0,0,0,0.5), 0 40px 100px rgba(0,0,0,0.6)',
+        position:      'relative',
+        flexShrink:    0,
+      }}
+    >
+      {/* ── Fake status bar (hidden during onboarding) ── */}
+      {phase === 'app' && <StatusBar />}
 
-      {/* ── Phone shell (fixed size, content scrolls inside) ── */}
+      {/* ── App top bar (hidden during onboarding) ── */}
+      {phase === 'app' && <AppTopBar activeTab={activeTab} />}
+
+      {/* ── Content area ──
+           position: relative + overflow: hidden are critical:
+           - Allows FeedScreen to absolute-fill and snap-scroll internally
+           - Allows GuidedTour overlay to cover exactly this region
+           - Other screens scroll inside their own overflow-y wrapper
+      ── */}
       <div
         style={{
-          width:        '375px',
-          maxWidth:     '100%',
-          height:       '680px',
-          borderRadius: '32px',
-          overflow:     'hidden',
-          display:      'flex',
-          flexDirection:'column',
-          background:   'var(--bg-primary)',
-          border:       '1px solid rgba(255,255,255,0.10)',
-          boxShadow:    '0 0 0 1px rgba(0,0,0,0.5), 0 40px 100px rgba(0,0,0,0.6)',
-          position:     'relative',
-          flexShrink:   0,
+          flex:     1,
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        {/* Fake status bar */}
-        <StatusBar />
+        {/* ONBOARDING phase */}
+        {phase === 'onboarding' && (
+          <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', scrollbarWidth: 'none' }}>
+            <OnboardingScreen onComplete={handleOnboardingComplete} />
+          </div>
+        )}
 
-        {/* App navbar (top) */}
-        <AppTopBar activeTab={activeTab} />
+        {/* APP phase — screens */}
+        {phase === 'app' && (
+          <>
+            {activeTab === 'home' && (
+              <ScrollPane>
+                <HomeScreen onNavigate={navigateTo} userProfile={userProfile} />
+              </ScrollPane>
+            )}
+            {activeTab === 'lesson' && (
+              <ScrollPane>
+                <LessonScreen userPath={userProfile?.path} />
+              </ScrollPane>
+            )}
+            {/* FeedScreen manages its own absolute positioning + snap scroll */}
+            {activeTab === 'feed' && (
+              <FeedScreen userPath={userProfile?.path} />
+            )}
+            {activeTab === 'quiz' && (
+              <ScrollPane>
+                <QuizBankScreen />
+              </ScrollPane>
+            )}
+            {activeTab === 'profile' && (
+              <ScrollPane>
+                <ProfileScreen userProfile={userProfile} />
+              </ScrollPane>
+            )}
 
-        {/* Scrollable screen content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'none' }}>
-          {activeTab === 'home'    && <HomeScreen   onNavigate={navigateTo} />}
-          {activeTab === 'lesson'  && <LessonScreen />}
-          {activeTab === 'feed'    && <FeedScreen   />}
-          {activeTab === 'quiz'    && <QuizBankScreen />}
-          {activeTab === 'profile' && <ProfileScreen />}
-        </div>
-
-        {/* Bottom tab bar */}
-        <BottomBar tabs={TABS} activeTab={activeTab} onTabChange={navigateTo} />
+            {/* ── On-screen guided tour overlay ── */}
+            {tourActive && (
+              <GuidedTour
+                stepIndex={tourStep}
+                onNext={handleTourNext}
+                onPrev={handleTourPrev}
+                onSkip={handleTourSkip}
+              />
+            )}
+          </>
+        )}
       </div>
 
-      {/* ── Guided tour card ── */}
-      {tourActive ? (
-        <div style={{ width: '375px', maxWidth: '100%' }}>
-          <GuidedTour
-            stepIndex={tourStep}
-            onNext={handleTourNext}
-            onPrev={handleTourPrev}
-            onSkip={handleTourSkip}
-          />
-        </div>
-      ) : (
-        /* Restart tour link */
+      {/* ── Bottom tab bar (hidden during onboarding) ── */}
+      {phase === 'app' && (
+        <BottomBar tabs={TABS} activeTab={activeTab} onTabChange={navigateTo} />
+      )}
+
+      {/* ── Restart tour button — appears after tour is dismissed ── */}
+      {phase === 'app' && !tourActive && (
         <button
           onClick={() => { setTourActive(true); setTourStep(0); setActiveTab('home'); }}
-          className="text-xs font-arabic transition-opacity hover:opacity-70"
-          style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+          style={{
+            position:   'absolute',
+            bottom:     '70px',
+            left:       '50%',
+            transform:  'translateX(-50%)',
+            background: 'rgba(0,0,0,0.55)',
+            border:     '1px solid var(--border-subtle)',
+            borderRadius:'20px',
+            padding:    '5px 14px',
+            fontSize:   '11px',
+            fontFamily: 'var(--font-arabic, inherit)',
+            color:      'var(--text-muted)',
+            cursor:     'pointer',
+            zIndex:     99,
+            backdropFilter: 'blur(4px)',
+            whiteSpace: 'nowrap',
+          }}
         >
-          ← أعد الجولة التعريفية
+          🔄 إعادة الجولة
         </button>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ScrollPane — wraps normal screens that need overflow-y scroll
+// ─────────────────────────────────────────────────────────────────────────────
+function ScrollPane({ children }) {
+  return (
+    <div
+      style={{
+        position:   'absolute',
+        inset:      0,
+        overflowY:  'auto',
+        overflowX:  'hidden',
+        scrollbarWidth: 'none',
+      }}
+    >
+      {children}
     </div>
   );
 }
@@ -123,8 +218,10 @@ export default function DemoApp() {
 // ─────────────────────────────────────────────────────────────────────────────
 function StatusBar() {
   return (
-    <div className="flex items-center justify-between px-5 pt-2.5 pb-1 flex-shrink-0"
-      style={{ background: 'var(--bg-primary)' }}>
+    <div
+      className="flex items-center justify-between px-5 pt-2.5 pb-1 flex-shrink-0"
+      style={{ background: 'var(--bg-primary)' }}
+    >
       <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)' }}>
         9:41
       </span>
@@ -145,24 +242,26 @@ function StatusBar() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AppTopBar — shows app name and a notification icon
+// AppTopBar
 // ─────────────────────────────────────────────────────────────────────────────
+const SCREEN_TITLES = {
+  home:    'بشير',
+  lesson:  'الدروس',
+  feed:    'اللقطات',
+  quiz:    'بنك الأسئلة',
+  profile: 'ملفي',
+};
+
 function AppTopBar({ activeTab }) {
-  const SCREEN_TITLES = {
-    home:    'بشير',
-    lesson:  'الدروس',
-    feed:    'اللقطات',
-    quiz:    'بنك الأسئلة',
-    profile: 'ملفي',
-  };
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 flex-shrink-0"
+    <div
+      className="flex items-center justify-between px-4 py-2.5 flex-shrink-0"
       style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-primary)' }}
-      dir="rtl">
+      dir="rtl"
+    >
       <h1 className="font-arabic text-base font-bold" style={{ color: 'var(--text-primary)' }}>
         {SCREEN_TITLES[activeTab] || 'بشير'}
       </h1>
-      {/* Notification bell */}
       <button style={{ background: 'none', border: 'none', cursor: 'default' }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -174,29 +273,39 @@ function AppTopBar({ activeTab }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BottomBar — 5 tabs with icons
+// BottomBar
 // ─────────────────────────────────────────────────────────────────────────────
 function BottomBar({ tabs, activeTab, onTabChange }) {
   return (
-    <div className="flex-shrink-0 flex"
-      style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-subtle)' }}>
+    <div
+      className="flex-shrink-0 flex"
+      style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-subtle)' }}
+    >
       {tabs.map(tab => {
         const active = activeTab === tab.id;
         return (
-          <button key={tab.id} onClick={() => onTabChange(tab.id)}
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
             className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}
+          >
             <TabIcon id={tab.id} active={active} locked={tab.locked} />
-            <span className="font-arabic transition-colors" style={{
-              fontSize: '10px',
-              color: active ? 'var(--accent)' : tab.locked ? 'var(--text-muted)' : 'var(--text-muted)',
-              opacity: tab.locked ? 0.5 : 1,
-            }}>
+            <span
+              className="font-arabic transition-colors"
+              style={{
+                fontSize: '10px',
+                color: active ? 'var(--accent)' : 'var(--text-muted)',
+                opacity: tab.locked ? 0.5 : 1,
+              }}
+            >
               {tab.labelAr}
             </span>
             {active && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-b-full"
-                style={{ background: 'var(--accent)' }} />
+              <div
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-b-full"
+                style={{ background: 'var(--accent)' }}
+              />
             )}
           </button>
         );
@@ -227,7 +336,9 @@ function TabIcon({ id, active, locked }) {
     ),
     feed: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} opacity={op}>
-        <path d="M4 6h16M4 10h10M4 14h13M4 18h8"/>
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <line x1="12" y1="3" x2="12" y2="21"/>
+        <line x1="3" y1="12" x2="12" y2="12"/>
       </svg>
     ),
     quiz: (
