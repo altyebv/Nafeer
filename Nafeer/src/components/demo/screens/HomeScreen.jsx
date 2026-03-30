@@ -1,14 +1,25 @@
 'use client';
-import { DEMO_USER, DEMO_SUBJECTS, SUBJECT_COLORS } from '../demoData';
+import { DEMO_USER, SUBJECTS_BY_PATH, FOCUS_BY_PATH, SUBJECT_COLORS } from '../demoData';
 
 function toAr(n) {
   return n.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 }
 
-export default function HomeScreen({ onNavigate }) {
-  const { nameAr, streak, dailyGoalDone, dailyGoalTotal, xp, xpToNext } = DEMO_USER;
+// ─────────────────────────────────────────────────────────────────────────────
+// HomeScreen — accepts optional userProfile from onboarding
+// Falls back to DEMO_USER / SCIENCE defaults if not provided
+// ─────────────────────────────────────────────────────────────────────────────
+export default function HomeScreen({ onNavigate, userProfile }) {
+  const path       = userProfile?.path  || 'SCIENCE';
+  const nameAr     = userProfile?.name  || DEMO_USER.nameAr;
+  const grade      = userProfile?.grade;
+
+  const { streak, dailyGoalDone, dailyGoalTotal, xp, xpToNext } = DEMO_USER;
   const goalProgress = Math.round((dailyGoalDone / dailyGoalTotal) * 100);
   const xpProgress   = Math.round((xp / xpToNext) * 100);
+  const subjects     = SUBJECTS_BY_PATH[path] || SUBJECTS_BY_PATH.SCIENCE;
+  const focus        = FOCUS_BY_PATH[path]    || FOCUS_BY_PATH.SCIENCE;
+  const gradeLabel   = grade === '3' ? 'الثالث ثانوي' : 'الثاني ثانوي';
 
   return (
     <div className="pb-6" dir="rtl">
@@ -21,10 +32,17 @@ export default function HomeScreen({ onNavigate }) {
             <h2 className="font-arabic text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
               {nameAr} 👋
             </h2>
+            {grade && (
+              <p className="font-arabic text-xs mt-0.5" style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+                {gradeLabel} · {path === 'SCIENCE' ? 'علمي' : 'أدبي'}
+              </p>
+            )}
           </div>
           {/* Streak badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
-            style={{ background: 'rgba(212,137,30,0.12)', border: '1px solid rgba(212,137,30,0.28)' }}>
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
+            style={{ background: 'rgba(212,137,30,0.12)', border: '1px solid rgba(212,137,30,0.28)' }}
+          >
             <span style={{ fontSize: '16px' }}>🔥</span>
             <div>
               <p className="font-arabic text-sm font-bold leading-none" style={{ color: 'var(--accent)' }}>
@@ -37,8 +55,10 @@ export default function HomeScreen({ onNavigate }) {
       </div>
 
       {/* ── Daily Goal ── */}
-      <div className="mx-4 mb-4 rounded-2xl p-4"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+      <div
+        className="mx-4 mb-4 rounded-2xl p-4"
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
+      >
         <div className="flex justify-between items-center mb-2">
           <p className="font-arabic text-sm font-bold" style={{ color: 'var(--text-primary)' }}>هدف اليوم</p>
           <p className="font-arabic text-xs font-mono" style={{ color: 'var(--accent)' }}>
@@ -46,8 +66,10 @@ export default function HomeScreen({ onNavigate }) {
           </p>
         </div>
         <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
-          <div className="h-full rounded-full transition-all duration-700"
-            style={{ width: `${goalProgress}%`, background: 'var(--accent)' }} />
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${goalProgress}%`, background: 'var(--accent)' }}
+          />
         </div>
         <p className="font-arabic text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
           {toAr(dailyGoalTotal - dailyGoalDone)} عناصر متبقية لإتمام هدفك
@@ -55,8 +77,10 @@ export default function HomeScreen({ onNavigate }) {
       </div>
 
       {/* ── XP Bar ── */}
-      <div className="mx-4 mb-4 rounded-2xl p-3.5"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+      <div
+        className="mx-4 mb-4 rounded-2xl p-3.5"
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
+      >
         <div className="flex justify-between items-center mb-1.5">
           <div className="flex items-center gap-1.5">
             <span style={{ fontSize: '14px' }}>⭐</span>
@@ -67,8 +91,10 @@ export default function HomeScreen({ onNavigate }) {
           </p>
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
-          <div className="h-full rounded-full"
-            style={{ width: `${xpProgress}%`, background: 'linear-gradient(90deg, #9B59B6, #d4891e)' }} />
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${xpProgress}%`, background: 'linear-gradient(90deg, #9B59B6, #d4891e)' }}
+          />
         </div>
       </div>
 
@@ -78,32 +104,41 @@ export default function HomeScreen({ onNavigate }) {
         <button
           onClick={() => onNavigate('lesson')}
           className="w-full rounded-2xl p-4 text-right transition-all active:scale-99"
-          style={{ background: 'rgba(74,144,217,0.10)', border: '1px solid rgba(74,144,217,0.28)' }}
+          style={{
+            background: `rgba(${hexToRgb(focus.color)},0.10)`,
+            border: `1px solid ${focus.color}45`,
+          }}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-1.5 mb-1">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold"
-                  style={{ background: 'rgba(74,144,217,0.25)', color: '#4A90D9' }}>ف</div>
-                <span className="font-arabic text-xs" style={{ color: '#4A90D9' }}>الفيزياء</span>
+                <div
+                  className="w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold"
+                  style={{ background: `${focus.color}25`, color: focus.color }}
+                >
+                  {focus.initial}
+                </div>
+                <span className="font-arabic text-xs" style={{ color: focus.color }}>{focus.subjectAr}</span>
               </div>
               <p className="font-arabic text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                القانون الثاني لنيوتن
+                {focus.lessonTitle}
               </p>
               <p className="font-arabic text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                الوحدة الثانية · ٣ من ٨ أقسام
+                {focus.unitAr}
               </p>
             </div>
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'rgba(74,144,217,0.15)' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A90D9" strokeWidth="1.8">
+            <div
+              className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: `${focus.color}18` }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={focus.color} strokeWidth="1.8">
                 <path d="m15 18-6-6 6-6"/>
               </svg>
             </div>
           </div>
-          {/* mini progress */}
-          <div className="mt-3 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(74,144,217,0.15)' }}>
-            <div className="h-full rounded-full" style={{ width: '35%', background: '#4A90D9' }} />
+          {/* Mini progress */}
+          <div className="mt-3 h-1 rounded-full overflow-hidden" style={{ background: `${focus.color}18` }}>
+            <div className="h-full rounded-full" style={{ width: `${focus.progress}%`, background: focus.color }} />
           </div>
         </button>
       </div>
@@ -112,7 +147,7 @@ export default function HomeScreen({ onNavigate }) {
       <div className="px-4">
         <p className="font-arabic text-xs font-bold mb-2" style={{ color: 'var(--text-muted)' }}>موادك</p>
         <div className="grid grid-cols-2 gap-2">
-          {DEMO_SUBJECTS.map(s => (
+          {subjects.map(s => (
             <SubjectCard key={s.id} subject={s} />
           ))}
         </div>
@@ -124,11 +159,15 @@ export default function HomeScreen({ onNavigate }) {
 function SubjectCard({ subject }) {
   const color = SUBJECT_COLORS[subject.key] || '#4A90D9';
   return (
-    <div className="rounded-xl p-3"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+    <div
+      className="rounded-xl p-3"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
+    >
       <div className="flex items-center gap-2 mb-2">
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center font-arabic text-xs font-bold"
-          style={{ background: `${color}20`, color }}>
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center font-arabic text-xs font-bold"
+          style={{ background: `${color}20`, color }}
+        >
           {subject.initial}
         </div>
         <p className="font-arabic text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -143,4 +182,12 @@ function SubjectCard({ subject }) {
       </p>
     </div>
   );
+}
+
+// Convert hex color to "r,g,b" string for rgba()
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `${r},${g},${b}`;
 }
