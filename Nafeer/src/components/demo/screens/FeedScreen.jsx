@@ -1,49 +1,184 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { DefinitionCard, FlashCard, TrueFalseCard } from '../feed/Feedcards';
-import { DEMO_FEED_CARDS } from '../demoData';
+import { FEED_CARDS_BY_PATH } from '../demoData';
 
-export default function FeedScreen() {
-  const [index, setIndex] = useState(0);
-  const total = DEMO_FEED_CARDS.length;
-  const card  = DEMO_FEED_CARDS[index];
+// ─────────────────────────────────────────────────────────────────────────────
+// FeedScreen — full-height TikTok-style vertical snap scroll
+//
+// Layout in DemoApp: the parent content div has overflow: hidden and
+// position: relative. FeedScreen fills it completely via position: absolute.
+// Each card slot is 100% height → CSS scroll-snap-type: y mandatory.
+//
+// Card order: 4 lesson bites → 1 T/F (swipe left/right) → 1 flip card
+// ─────────────────────────────────────────────────────────────────────────────
+export default function FeedScreen({ userPath = 'SCIENCE' }) {
+  const cards       = FEED_CARDS_BY_PATH[userPath] || FEED_CARDS_BY_PATH.SCIENCE;
+  const total       = cards.length;
+  const containerRef = useRef(null);
+  const [currentIdx, setCurrentIdx] = useState(0);
 
-  // On TrueFalse we don't auto-advance — the card has its own next button
-  function next() {
-    setIndex(i => (i + 1) % total);
-  }
+  // Keep currentIdx in sync with scroll position (for the progress indicator)
+  const handleScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollTop / el.clientHeight);
+    setCurrentIdx(Math.min(idx, total - 1));
+  }, [total]);
 
   return (
-    <div className="w-full" dir="rtl">
-      {/* Header */}
-      <div className="px-4 pt-3 pb-2.5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <h2 className="font-arabic text-sm font-bold" style={{ color: 'var(--text-primary)' }}>لقطات المعرفة</h2>
-        <p className="font-arabic text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>اكتشف · تعلّم · تذكّر</p>
-      </div>
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      style={{
+        position:       'absolute',
+        inset:          0,
+        overflowY:      'scroll',
+        overflowX:      'hidden',
+        scrollSnapType: 'y mandatory',
+        scrollBehavior: 'smooth',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      }}
+      dir="rtl"
+    >
+      {/* Progress bar — sticky overlay at top */}
+      <ProgressBar current={currentIdx} total={total} />
 
-      {/* Progress dots */}
-      <div className="px-4 pt-3 pb-1">
-        <div className="flex gap-1 mb-1">
-          {DEMO_FEED_CARDS.map((_, i) => (
-            <div key={i} className="flex-1 h-0.5 rounded-full transition-all duration-300"
-              style={{ background: i <= index ? 'var(--accent)' : 'var(--border-subtle)' }} />
-          ))}
-        </div>
-        <p className="text-xs font-arabic" style={{ color: 'var(--text-muted)', direction: 'ltr' }}>
-          {index + 1} / {total}
-        </p>
-      </div>
+      {cards.map((card, i) => (
+        <CardSlot key={card.id} isActive={i === currentIdx}>
+          <CardRouter card={card} isActive={i === currentIdx} />
+        </CardSlot>
+      ))}
 
-      {/* Card */}
-      <div className="px-4 pt-2 pb-6">
-        <CardRouter card={card} onNext={next} key={`${card.id}-${index}`} />
-      </div>
+      {/* Scroll indicator on first card */}
+      {currentIdx === 0 && (
+        <ScrollHint />
+      )}
+
+      <style>{`
+        div::-webkit-scrollbar { display: none; }
+      `}</style>
     </div>
   );
 }
 
-function CardRouter({ card, onNext }) {
-  if (card.type === 'FLASH_CARD')  return <FlashCard   card={card} onNext={onNext} />;
-  if (card.type === 'TRUE_FALSE')  return <TrueFalseCard card={card} onNext={onNext} />;
-  return <DefinitionCard card={card} onNext={onNext} />;
+// ─────────────────────────────────────────────────────────────────────────────
+// CardSlot — one full-height snap target
+// ─────────────────────────────────────────────────────────────────────────────
+function CardSlot({ children, isActive }) {
+  return (
+    <div
+      style={{
+        height:          '100%',
+        flexShrink:      0,
+        scrollSnapAlign: 'start',
+        display:         'flex',
+        flexDirection:   'column',
+        padding:         '40px 14px 16px', // top padding leaves room for progress bar
+        boxSizing:       'border-box',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ProgressBar — sticky, rendered outside the snap slots so it doesn't scroll
+// ─────────────────────────────────────────────────────────────────────────────
+function ProgressBar({ current, total }) {
+  return (
+    <div
+      style={{
+        position:   'sticky',
+        top:        0,
+        left:       0,
+        right:      0,
+        zIndex:     20,
+        padding:    '8px 14px 6px',
+        background: 'linear-gradient(to bottom, var(--bg-primary) 60%, transparent)',
+        display:    'flex',
+        gap:        '4px',
+        alignItems: 'center',
+      }}
+    >
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            flex:         1,
+            height:       '3px',
+            borderRadius: '2px',
+            background:   i <= current ? 'var(--accent)' : 'var(--border-mid)',
+            transition:   'background 0.3s ease',
+          }}
+        />
+      ))}
+      <span
+        style={{
+          fontSize:   '10px',
+          color:      'var(--text-muted)',
+          marginRight: '4px',
+          direction:  'ltr',
+          flexShrink: 0,
+          fontFamily: 'monospace',
+        }}
+      >
+        {current + 1}/{total}
+      </span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ScrollHint — animated up-arrow shown on first card
+// ─────────────────────────────────────────────────────────────────────────────
+function ScrollHint() {
+  return (
+    <div
+      style={{
+        position:   'absolute',
+        bottom:     '20px',
+        left:       '50%',
+        transform:  'translateX(-50%)',
+        display:    'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap:        '4px',
+        animation:  'feedHintBounce 2s ease-in-out infinite',
+        pointerEvents: 'none',
+        zIndex:     10,
+      }}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="var(--accent)" strokeWidth="2" opacity="0.7">
+        <path d="m18 15-6-6-6 6"/>
+      </svg>
+      <span style={{
+        fontSize:   '10px',
+        color:      'var(--accent)',
+        opacity:    0.7,
+        fontFamily: 'var(--font-arabic, inherit)',
+      }}>
+        اسحب للأعلى
+      </span>
+      <style>{`
+        @keyframes feedHintBounce {
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          50%       { transform: translateX(-50%) translateY(-6px); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CardRouter
+// ─────────────────────────────────────────────────────────────────────────────
+function CardRouter({ card, isActive }) {
+  if (card.type === 'FLASH_CARD')  return <FlashCard    card={card} />;
+  if (card.type === 'TRUE_FALSE')  return <TrueFalseCard card={card} />;
+  return <DefinitionCard card={card} />;
 }
