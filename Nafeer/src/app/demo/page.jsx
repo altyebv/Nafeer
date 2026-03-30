@@ -6,99 +6,191 @@ export const metadata = {
   description: 'معاينة تفاعلية لتطبيق بشير قبل إطلاقه على متجر Google Play',
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DemoPage
+//
+// Mobile:  true fullscreen — the app occupies 100dvh with no scroll.
+//          The top bar is a thin overlay that doesn't push content.
+//          Heading and footer are hidden — they'd only create scroll.
+//
+// Desktop: page layout — top bar, heading, centered phone shell, footer.
+//          The shell is 375×680 with rounded corners and a visible glow.
+//
+// The key constraint: `height: 100dvh; overflow: hidden` on the root div
+// kills mobile scroll completely. The flex column fills exactly one screen.
+// ─────────────────────────────────────────────────────────────────────────────
 export default function DemoPage() {
   return (
     <div
-      className="min-h-screen flex flex-col"
-      style={{ background: 'var(--bg-primary)' }}
       dir="rtl"
+      style={{
+        height:          '100dvh',
+        overflow:        'hidden',
+        display:         'flex',
+        flexDirection:   'column',
+        background:      'var(--bg-primary)',
+        /* prevent rubber-band overscroll on iOS */
+        position:        'fixed',
+        inset:           0,
+      }}
     >
-      {/* ── Top bar ── */}
+
+      {/* ── Top bar ──────────────────────────────────────────────────────────
+          Always visible. On mobile it's the only chrome — kept minimal.
+          On desktop it spans the full width above the content area.
+      ── */}
       <div
-        className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3"
         style={{
-          background: 'rgba(14,12,9,0.90)',
+          flexShrink:     0,
+          zIndex:         50,
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'space-between',
+          padding:        '0 16px',
+          height:         '48px',
+          background:     'rgba(14,12,9,0.92)',
           backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid var(--border-subtle)',
+          borderBottom:   '1px solid var(--border-subtle)',
         }}
       >
         <Link
           href="/"
-          className="flex items-center gap-2 transition-opacity hover:opacity-70"
-          style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
+          style={{
+            display:    'flex',
+            alignItems: 'center',
+            gap:        '6px',
+            color:      'var(--text-muted)',
+            textDecoration: 'none',
+            opacity: 1,
+            transition: 'opacity 0.15s',
+          }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="1.8">
             <path d="m9 18 6-6-6-6"/>
           </svg>
-          <span className="font-arabic text-sm">العودة</span>
+          <span className="font-arabic" style={{ fontSize: '13px' }}>العودة</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ background: '#27AE60', boxShadow: '0 0 6px #27AE6088' }}
-          />
-          <span className="font-arabic text-xs" style={{ color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{
+            width:     '7px', height: '7px',
+            borderRadius: '50%',
+            background:  '#27AE60',
+            boxShadow:   '0 0 5px #27AE6088',
+          }} />
+          <span className="font-arabic" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
             معاينة تفاعلية
           </span>
         </div>
       </div>
 
-      {/* ── Page heading ── */}
-      <div className="text-center pt-8 sm:pt-12 pb-6 sm:pb-8 px-4">
+      {/* ── Desktop-only heading ──────────────────────────────────────────────
+          Hidden on mobile (< 640 px) via CSS. On desktop it sits between
+          the top bar and the phone shell, giving context to the experience.
+      ── */}
+      <div
+        className="hidden sm:block"
+        style={{ textAlign: 'center', padding: '28px 16px 20px', flexShrink: 0 }}
+      >
         <span
-          className="inline-block font-mono text-xs tracking-widest uppercase mb-4"
-          style={{ color: 'var(--accent)' }}
+          className="font-mono"
+          style={{
+            display:        'inline-block',
+            fontSize:       '11px',
+            letterSpacing:  '0.12em',
+            textTransform:  'uppercase',
+            color:          'var(--accent)',
+            marginBottom:   '10px',
+          }}
         >
           جرّب قبل الإطلاق
         </span>
         <h1
-          className="font-arabic text-2xl sm:text-3xl md:text-4xl font-bold mb-3"
-          style={{ color: 'var(--text-primary)' }}
+          className="font-arabic"
+          style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}
         >
           هذا ما سيبدو عليه بشير
         </h1>
         <p
-          className="font-arabic text-sm sm:text-base max-w-md mx-auto leading-loose"
-          style={{ color: 'var(--text-secondary)' }}
+          className="font-arabic"
+          style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.7 }}
         >
           معاينة حقيقية للتجربة — اتبع الجولة أو تصفّح بنفسك.
         </p>
       </div>
 
-      {/* ── Demo app — centered ── */}
-      <div className="flex-1 flex flex-col items-center px-4 pb-12">
-        {/* Ambient glow behind phone */}
+      {/* ── App area ─────────────────────────────────────────────────────────
+          flex-1 so it fills all remaining height after the top bar.
+          overflow: hidden prevents any internal scroll from leaking out.
+
+          Mobile:  items-stretch → DemoApp fills full width and height.
+          Desktop: items-center  → DemoApp sits as a centered pill.
+      ── */}
+      <div
+        style={{
+          flex:           1,
+          overflow:       'hidden',
+          display:        'flex',
+          justifyContent: 'center',
+          position:       'relative',
+        }}
+        /* On mobile: stretch children to fill. On desktop: center them. */
+        className="items-stretch sm:items-center sm:pb-4"
+      >
+        {/* Ambient glow — desktop only, doesn't affect layout */}
         <div
-          className="absolute pointer-events-none"
+          className="hidden sm:block"
           style={{
-            width: '500px',
-            height: '500px',
-            background: 'radial-gradient(ellipse at center, rgba(212,137,30,0.06) 0%, transparent 70%)',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -30%)',
+            position:     'absolute',
+            width:        '480px',
+            height:       '480px',
+            background:   'radial-gradient(ellipse, rgba(212,137,30,0.07) 0%, transparent 68%)',
+            top:          '50%',
+            left:         '50%',
+            transform:    'translate(-50%, -50%)',
+            pointerEvents:'none',
+            zIndex:       0,
           }}
         />
+
         <DemoApp />
       </div>
 
-      {/* ── Footer nudge ── */}
+      {/* ── Desktop-only footer ───────────────────────────────────────────────
+          Hidden on mobile. On desktop it anchors the CTA below the shell.
+      ── */}
       <div
-        className="text-center px-4 py-6"
-        style={{ borderTop: '1px solid var(--border-subtle)' }}
+        className="hidden sm:block"
+        style={{
+          flexShrink: 0,
+          textAlign:  'center',
+          padding:    '14px 16px',
+          borderTop:  '1px solid var(--border-subtle)',
+        }}
       >
-        <p className="font-arabic text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+        <p className="font-arabic" style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px' }}>
           أعجبك ما رأيت؟
         </p>
         <Link
           href="/prejoin"
-          className="inline-block font-arabic text-sm font-medium px-6 py-2.5 rounded-xl transition-all hover:opacity-90"
-          style={{ background: 'var(--accent)', color: '#fff', textDecoration: 'none' }}
+          className="font-arabic"
+          style={{
+            display:       'inline-block',
+            fontSize:      '13px',
+            fontWeight:    600,
+            padding:       '9px 22px',
+            borderRadius:  '12px',
+            background:    'var(--accent)',
+            color:         '#fff',
+            textDecoration:'none',
+            transition:    'opacity 0.15s',
+          }}
         >
           سجّل اهتمامك بالتطبيق
         </Link>
       </div>
+
     </div>
   );
 }

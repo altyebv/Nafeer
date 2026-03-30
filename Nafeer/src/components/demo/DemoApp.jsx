@@ -78,19 +78,27 @@ export default function DemoApp() {
 
   return (
     <div
+      // Mobile:  full bleed — width/height fill the parent flex cell, no rounded corners.
+      // Desktop: fixed 375×680 pill, centered, with shadow + border.
+      className={[
+        // sizing
+        'w-full h-full',
+        'sm:w-[375px] sm:h-[680px]',
+        // shape
+        'rounded-none',
+        'sm:rounded-[32px]',
+        // decoration (desktop only)
+        'sm:border sm:border-white/10',
+        'sm:shadow-[0_0_0_1px_rgba(0,0,0,0.5),0_40px_100px_rgba(0,0,0,0.6)]',
+      ].join(' ')}
       style={{
-        width:         '375px',
-        maxWidth:      '100%',
-        height:        '680px',
-        borderRadius:  '32px',
         overflow:      'hidden',
         display:       'flex',
         flexDirection: 'column',
         background:    'var(--bg-primary)',
-        border:        '1px solid rgba(255,255,255,0.10)',
-        boxShadow:     '0 0 0 1px rgba(0,0,0,0.5), 0 40px 100px rgba(0,0,0,0.6)',
         position:      'relative',
         flexShrink:    0,
+        zIndex:        1,
       }}
     >
       {/* ── Fake status bar (hidden during onboarding) ── */}
