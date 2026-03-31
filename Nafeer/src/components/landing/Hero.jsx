@@ -1,30 +1,48 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function Hero() {
-  const heroRef = useRef(null);
+  const heroRef      = useRef(null);
+  const watermarkRef = useRef(null);   // container — receives pointer events
+  const glowRef      = useRef(null);   // glow layer — mask updated directly
+
+  // ── Cursor-glow: direct DOM mutation, zero re-renders ─────────────────────
+  const handleWatermarkMove = useCallback((e) => {
+    if (!glowRef.current || !watermarkRef.current) return;
+    const rect = watermarkRef.current.getBoundingClientRect();
+    const x    = e.clientX - rect.left;
+    const y    = e.clientY - rect.top;
+    const mask = `radial-gradient(circle 260px at ${x}px ${y}px, black 0%, transparent 72%)`;
+    glowRef.current.style.webkitMaskImage = mask;
+    glowRef.current.style.maskImage       = mask;
+  }, []);
+
+  const handleWatermarkLeave = useCallback(() => {
+    if (!glowRef.current) return;
+    const offscreen = 'radial-gradient(circle 260px at -9999px -9999px, black 0%, transparent 72%)';
+    glowRef.current.style.webkitMaskImage = offscreen;
+    glowRef.current.style.maskImage       = offscreen;
+  }, []);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      // ── Orbs — continuous drift ───────────────────────────────────────────
-      gsap.to('.gsap-orb-1', {
-        x: 40, y: -30, duration: 9,
-        ease: 'sine.inOut', yoyo: true, repeat: -1,
-      });
-      gsap.to('.gsap-orb-2', {
-        x: -30, y: 40, duration: 12,
-        ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 3,
-      });
-      gsap.to('.gsap-orb-3', {
-        x: 25, y: 20, duration: 7,
-        ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 1.5,
-      });
+    // Initialise glow mask to offscreen so nothing shows until hover
+    if (glowRef.current) {
+      const offscreen = 'radial-gradient(circle 260px at -9999px -9999px, black 0%, transparent 72%)';
+      glowRef.current.style.webkitMaskImage = offscreen;
+      glowRef.current.style.maskImage       = offscreen;
+    }
 
-      // ── Entrance timeline ─────────────────────────────────────────────────
+    const ctx = gsap.context(() => {
+      // ── Orbs — continuous drift ─────────────────────────────────────────
+      gsap.to('.gsap-orb-1', { x: 40, y: -30, duration: 9,  ease: 'sine.inOut', yoyo: true, repeat: -1 });
+      gsap.to('.gsap-orb-2', { x: -30, y: 40, duration: 12, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 3 });
+      gsap.to('.gsap-orb-3', { x: 25, y: 20,  duration: 7,  ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 1.5 });
+
+      // ── Entrance timeline ───────────────────────────────────────────────
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
       tl
         .fromTo('.gsap-hero-badge',
@@ -55,11 +73,25 @@ export default function Hero() {
           { opacity: 0 },
           { opacity: 1, duration: 0.6 }, '-=0.1');
 
-      // ── Watermark parallax on scroll ──────────────────────────────────────
+      // ── Watermark scroll: y-parallax on outer wrapper ───────────────────
+      //    opacity fade on the base span only, so the glow layer can be
+      //    full-opacity and controlled purely by the mask.
       gsap.fromTo('.gsap-watermark',
-        { y: 0, opacity: 0.03 },
+        { y: 0 },
         {
-          y: 130, opacity: 0,
+          y: 130,
+          scrollTrigger: {
+            trigger: heroRef.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1.5,
+          },
+        }
+      );
+      gsap.fromTo('.gsap-watermark-base',
+        { opacity: 0.03 },
+        {
+          opacity: 0,
           scrollTrigger: {
             trigger: heroRef.current,
             start: 'top top',
@@ -69,7 +101,7 @@ export default function Hero() {
         }
       );
 
-      // ── Hero content gentle parallax ──────────────────────────────────────
+      // ── Hero content gentle parallax ────────────────────────────────────
       gsap.fromTo('.gsap-hero-content',
         { y: 0 },
         {
@@ -95,14 +127,45 @@ export default function Hero() {
     >
       <div className="absolute inset-0 mesh-bg" />
 
-      {/* Arabic calligraphy watermark */}
+      {/* ── Watermark ───────────────────────────────────────────────────────
+          Two stacked layers:
+          1. Base (dim) — GSAP fades from 0.03 → 0 on scroll
+          2. Glow (accent) — full opacity, revealed only under cursor via
+             a radial-gradient mask that moves with the mouse.
+          The outer wrapper is the GSAP scroll target for the y-parallax.
+      ── */}
       <div
-        className="gsap-watermark absolute left-0 top-1/2 -translate-y-1/2 select-none pointer-events-none"
-        style={{ opacity: 0.03 }}
+        ref={watermarkRef}
+        className="gsap-watermark absolute left-0 top-1/2 -translate-y-1/2 select-none"
+        style={{ position: 'absolute', cursor: 'default' }}
+        onMouseMove={handleWatermarkMove}
+        onMouseLeave={handleWatermarkLeave}
       >
+        {/* Base dim layer */}
         <span
-          className="text-[24vw] font-arabic font-bold leading-none"
-          style={{ color: 'var(--text-primary)' }}
+          className="gsap-watermark-base text-[24vw] font-arabic font-bold leading-none block"
+          style={{ color: 'var(--text-primary)', opacity: 0.03, pointerEvents: 'none' }}
+        >
+          بشير
+        </span>
+
+        {/* Glow layer — mask-controlled, full opacity, sits on top */}
+        <span
+          ref={glowRef}
+          aria-hidden="true"
+          className="text-[24vw] font-arabic font-bold leading-none block pointer-events-none"
+          style={{
+            position:   'absolute',
+            top:        0,
+            left:       0,
+            color:      'var(--accent)',
+            textShadow: [
+              '0 0 40px rgba(212,137,30,1)',
+              '0 0 80px rgba(212,137,30,0.7)',
+              '0 0 140px rgba(212,137,30,0.4)',
+              '0 0 220px rgba(212,137,30,0.2)',
+            ].join(', '),
+          }}
         >
           بشير
         </span>
@@ -129,16 +192,16 @@ export default function Hero() {
         <div
           className="gsap-hero-badge mb-5 sm:mb-6 inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs font-mono"
           style={{
-            border: '1px solid var(--border-mid)',
+            border:     '1px solid var(--border-mid)',
             background: 'var(--bg-card)',
-            color: 'var(--text-muted)',
+            color:      'var(--text-muted)',
           }}
         >
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
           قيد البناء — نبحث عن مساهمين
         </div>
 
-        {/* Eyebrow line */}
+        {/* Eyebrow */}
         <p
           className="gsap-hero-eyebrow text-xs sm:text-sm font-mono mb-3 sm:mb-4 tracking-widest uppercase"
           style={{ color: 'var(--accent)' }}
@@ -164,7 +227,7 @@ export default function Hero() {
           </h2>
         </div>
 
-        {/* Description — empathy first, features second */}
+        {/* Description */}
         <p
           className="gsap-hero-desc text-base sm:text-lg max-w-lg leading-loose mb-9 sm:mb-11 font-arabic"
           style={{ color: 'var(--text-muted)' }}
@@ -174,22 +237,21 @@ export default function Hero() {
           في جيبك. بدون إنترنت. مجاناً.
         </p>
 
-        {/* CTA buttons — two audiences, two paths */}
+        {/* CTAs */}
         <div className="flex flex-wrap gap-3 sm:gap-4 mb-10 sm:mb-12">
-          {/* Student primary */}
           <a
             href="#features"
             className="gsap-hero-cta group inline-flex items-center gap-2 sm:gap-3 px-7 sm:px-9 py-3.5 sm:py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
             style={{ background: 'var(--accent)', color: '#0e0c09' }}
             onMouseEnter={e => {
               e.currentTarget.style.background = 'var(--accent-hover)';
-              e.currentTarget.style.boxShadow = '0 0 50px var(--glow)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow  = '0 0 50px var(--glow)';
+              e.currentTarget.style.transform  = 'translateY(-2px)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.background = 'var(--accent)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow  = 'none';
+              e.currentTarget.style.transform  = 'translateY(0)';
             }}
           >
             <span>اكتشف بشير</span>
@@ -199,20 +261,19 @@ export default function Hero() {
             >←</span>
           </a>
 
-          {/* Contributor secondary */}
           <a
             href="/prejoin"
             className="gsap-hero-cta group inline-flex items-center gap-2 sm:gap-3 px-7 sm:px-9 py-3.5 sm:py-4 rounded-xl transition-all duration-300 text-sm sm:text-base font-bold"
             style={{ border: '1px solid var(--border-mid)', color: 'var(--text-secondary)' }}
             onMouseEnter={e => {
               e.currentTarget.style.borderColor = 'var(--accent)';
-              e.currentTarget.style.color = 'var(--accent)';
-              e.currentTarget.style.background = 'var(--accent-dim)';
+              e.currentTarget.style.color       = 'var(--accent)';
+              e.currentTarget.style.background  = 'var(--accent-dim)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.borderColor = 'var(--border-mid)';
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color       = 'var(--text-secondary)';
+              e.currentTarget.style.background  = 'transparent';
             }}
           >
             <span>ساهم في بنائه</span>
@@ -229,9 +290,9 @@ export default function Hero() {
           style={{ borderTop: '1px solid var(--border-subtle)' }}
         >
           {[
-            { value: '١٢', label: 'مادة في متناولك' },
-            { value: '٠',  label: 'اتصال مطلوب' },
-            { value: '١٠٠٪', label: 'مجاني — للأبد' },
+            { value: '١٢',   label: 'مادة في متناولك' },
+            { value: '٠',    label: 'اتصال مطلوب'     },
+            { value: '١٠٠٪', label: 'مجاني — للأبد'   },
           ].map((s, i) => (
             <div key={i} className="gsap-hero-stat">
               <div
