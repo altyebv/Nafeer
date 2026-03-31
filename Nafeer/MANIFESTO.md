@@ -1,5 +1,5 @@
 # NAFEER × BASHEER — Project Manifesto
-**v6.0 — March 2026 — Contributor Pipeline**
+**v9.0 — March 2026 — Full Audit + Landing Polish**
 
 ---
 
@@ -21,11 +21,13 @@
 |---|---|
 | Framework | Next.js 15 (App Router), React 19, no TypeScript |
 | Styling | Tailwind CSS 3, CSS custom properties (dark/light theme) |
-| State | Zustand — 7 domain slices |
-| Database | MongoDB Atlas 512 MB free tier, Mongoose ODM |
-| Media Storage | Supabase Storage (nafeer-media bucket) — images + GIFs |
+| State | Zustand 5 — 7 domain slices |
+| Database | MongoDB Atlas 512 MB free tier, Mongoose 8 ODM |
+| Media Storage | Supabase Storage — dual-bucket (`basheer-media` + `nafeer-users`) |
 | Auth | jose (JWT) + bcryptjs, two separate cookie systems |
 | Animation | GSAP 3.12 + ScrollTrigger (npm, not CDN) |
+| Math Rendering | KaTeX 0.16 — Arabic math pipeline in `src/lib/math/` |
+| Image Processing | sharp 0.33 — WebP optimization via `src/lib/imageOptimizer.js` |
 | Deployment | Vercel free tier — serverless functions only |
 | Fonts | Noto Naskh Arabic + Playfair Display + JetBrains Mono (Google Fonts) |
 
@@ -40,10 +42,12 @@ src/
   app/
     page.jsx                        ← public landing
     layout.jsx
+    globals.css
+    demo/page.jsx                   ← standalone Basheer interactive demo
     signin/                         ← contributor auth
-    prejoin/page.jsx                ← NEW: mission brief (Step 1 of pipeline)
+    prejoin/page.jsx                ← mission brief (Step 1 of pipeline)
     join/page.jsx                   ← expression of interest form (Step 2)
-    interview/page.jsx              ← NEW: token-gated mini interview (Step 3)
+    interview/page.jsx              ← token-gated mini interview (Step 3)
     editor/page.jsx                 ← editor shell (auth-gated)
     onboard/page.jsx                ← post-approval: set password + bio + avatar
     admin/
@@ -53,7 +57,7 @@ src/
         _constants.js               ← CONTRIBUTOR_STATUS, REVIEW_TYPE, NAV, SUBJECT_MAP, getPipelineStage
         _components/
           AdminSidebar.jsx
-          ContributorCard.jsx       ← single applicant row, all pipeline state
+          ContributorCard.jsx
           ContributorsSection.jsx
           ReviewQueueSection.jsx
           CoverageSection.jsx
@@ -61,59 +65,97 @@ src/
           ui/
             Btn.jsx
             Modal.jsx
-            shared.jsx              ← SectionHeader, StatusChip, EmptyState, Spinner, StatChips
+            shared.jsx
           modals/
             CreateContributorModal.jsx
             SetPasswordModal.jsx
-            LinkModal.jsx           ← handles both interview and onboarding links
-    api/
-      auth/signin, signout, onboard, heartbeat
-      contributors/request          ← Step 2: expression of interest
-      interview/                    ← NEW: GET (validate token) + POST (save answers)
-      admin/login, logout, contributors, review-queue
-      content/
-        subject/                    ← bootstrap + full load
-        lessons/[id]/
-        sections/[id]/              ← DELETE cascades blocks
-        blocks/[id]/
-        concepts/[id]/
-        feed-items/[id]/
-        questions/[id]/
-        exams/                      ← GET, POST
-        exams/[id]/                 ← PUT, DELETE
-      media/                        ← GET (scoped) + POST (admin upload)
-      media/[id]/                   ← DELETE (admin only)
-      coverage/[subjectId]/
-      export/
-      dev/autologin/                ← development only, gated by NODE_ENV
+            LinkModal.jsx
+    api/                            ← see full API route table below
   components/
-    landing/  Navbar, Hero, Features, ProgressBoard, NafeerSection, Footer
+    landing/
+      Navbar.jsx                    ← story-ordered nav, IntersectionObserver active state
+      Hero.jsx                      ← cursor-glow watermark effect on بشير
+      Problemsection.jsx            ← id="problem"
+      Visionsection.jsx             ← id="vision"
+      Features.jsx                  ← id="features"
+      ProgressBoard.jsx             ← id="progress" — compact row layout
+      NafeerSection.jsx             ← id="nafeer"
+      ContributorsHallSection.jsx   ← id="contributors" — live public contributor cards
+      Futuresection.jsx             ← id="future" — roadmap
+      Finalcta.jsx                  ← id="join" — closing CTA
+      Footer.jsx
     editor/
       layout/   EditorShell, EditorSidebar
       pages/    LessonsPage, ConceptsPage, FeedItemsPage, QuizBankPage, ExportPage, MediaPage
-      lesson/   LessonEditorPage, SectionEditor, LessonItem, LessonFeedPanel, LessonQuestionsPanel, LessonPreviewModal
+      lesson/
+        LessonEditorPage.jsx
+        SectionEditor.jsx
+        LessonItem.jsx
+        LessonFeedPanel.jsx
+        LessonQuestionsPanel.jsx
+        LessonPreviewModal.jsx
+        LessonNotesDrawer.jsx       ← slide-in notes/flag panel, comment/flag/review_feedback types
+        LessonHistoryDrawer.jsx     ← slide-in audit trail with diff blocks
+        LinkVariationModal.jsx      ← modal to link a lesson as variation of another
+        AttributionBar.jsx          ← compact created/updated/reviewed-by display
       blocks/   BlockEditor, AddBlockMenu, TableEditor
       media/    MediaPicker, ImageMarkerEditor
       units/    UnitCard, UnitView, SubjectOverview
-      shared/   Modal, DeleteButton, StatusBadge, CoveragePanel, ConceptLinker
+      shared/
+        Modal.jsx
+        DeleteButton.jsx
+        StatusBadge.jsx
+        CoveragePanel.jsx
+        ConceptLinker.jsx
+        FormulaPreview.jsx          ← KaTeX renderer via shared Arabic math pipeline
+    demo/
+      DemoApp.jsx                   ← top-level demo shell, handles screen routing
+      DemoSection.jsx
+      GuidedTour.jsx                ← on-screen spotlight overlay tour
+      blocks/                       ← block renderers for demo
+      feed/   Feedcards.jsx
+      screens/
+        HomeScreen.jsx
+        OnboardingScreen.jsx        ← name, academic path, grade selection
+        FeedScreen.jsx              ← TikTok-style vertical snap-scroll feed
+        LessonScreen.jsx
+        QuizBankScreen.jsx
+        ProfileScreen.jsx
   hooks/
     useAtlasSync.js                 ← all Atlas persistence logic
     useCoverageData.js              ← coverage fetch + cache
   lib/
     db.js, auth.js, adminAuth.js
-    supabase.js                     ← Supabase server-side client + uploadMedia/deleteMedia helpers
+    supabase.js                     ← lazy getClient(), uploadFile/uploadUserFile/deleteFile helpers
     LessonStatus.js
-    api/  guard.js, content.js, Lessons.js, Concepts.js, Questions.js,
-          feedItems.js, subject.js, reviewQueue.js
-    models/  Unit, Lesson, Section, Block, Concept, Tag, FeedItem,
-             Question, Exam, Subject, Contributor, Media, versioning.js
+    imageOptimizer.js               ← sharp WebP pipeline, presets: content/avatar/thumb
+    trackStat.js                    ← fire-and-forget contributor stat increment
+    markerUtils.js                  ← normalised coordinate helpers for image markers
+    math/
+      KatexConfig.js
+      NormallizeInput.js
+      PostProcessMath.js
+      RenderMath.js                 ← main entry: normalizeMathInput → katex.render → postProcessMath
+    api/
+      guard.js, content.js, Lessons.js, Concepts.js, Questions.js,
+      feedItems.js, subject.js, reviewQueue.js
+    models/
+      Unit, Lesson, Section, Block, Concept, Tag, FeedItem,
+      Question, Exam, Subject, Contributor, ContributorRole, Media,
+      Admin, SiteSettings, LessonHistory
+      versioning.js
   middleware.js
   shared/  curriculum.js, constants.js
   store/
-    index.js (re-exports + composite useDataStore)
-    editorStore.js, subjectStore.js, contentStore.js
-    conceptStore.js, feedStore.js, quizStore.js
-    mediaStore.js                   ← media[] slice, addMediaItem, removeMediaItem
+    index.js                        ← re-exports all slices + composite useDataStore shim
+    dataStore.js                    ← re-export facade for backward compatibility
+    editorStore.js
+    subjectStore.js
+    contentStore.js
+    conceptStore.js
+    feedStore.js
+    quizStore.js
+    mediaStore.js
 ```
 
 ### ⚠️ Import Casing Rules (Vercel / Linux FS is case-sensitive)
@@ -130,169 +172,350 @@ All route files must be named `route.js` (lowercase).
 
 ---
 
-## Contributor Pipeline (v6.0)
+## Landing Page — Section Order & IDs
 
-The intake system is a 4-stage funnel. Each stage is a separate page/route. Contributors advance only when the admin sends them a link.
+The landing is a narrative arc. Sections in render order:
 
-```
-Stage 1 — Discover      /prejoin         Public page. Mission brief before any form.
-Stage 2 — Express       /join            Light form: name, email, background, subjectsOfInterest[].
-Stage 3 — Interview     /interview       Token-gated. 5 questions + micro-task. Admin sends link manually.
-Stage 4 — Onboarding    /onboard         Post-approval. Set password + bio + avatar.
-```
-
-### Stage 1 — Pre-Join Page (`/prejoin`)
-
-Static page, no API calls. Three acts: what contributors do → what we expect → what you gain. Ends with a "تقدم الآن" CTA pointing to `/join`. Logged-in contributors redirected to `/editor` by middleware.
-
-### Stage 2 — Expression of Interest (`/join`)
-
-**Fields collected:** `name`, `email`, `background`, `fieldOfStudy`, `subjectsOfInterest[]`
-
-**Not collected at this stage:** username, password, gender (removed from intake — all admin-assigned later).
-
-Subject selector is a chip multi-select grouped by track. Submit button disabled until ≥1 subject is selected. Success screen previews steps 2 & 3 of the pipeline.
-
-**API:** `POST /api/contributors/request` — creates Contributor with `status: 'pending'`, no `subject` assigned yet.
-
-### Stage 3 — Mini Interview (`/interview?token=xxx`)
-
-Token-gated. Token generated by admin via `PATCH /api/admin/contributors { action: 'send_interview' }`. Token lives in `Contributor.interviewToken` (select: false). Validity: 14 days.
-
-**5 questions:**
-| # | Category | Question |
+| Component | Section ID | Story beat |
 |---|---|---|
-| 1 | Motivation | لماذا تريد المساهمة في بشير؟ |
-| 2 | Education critique | ما الذي يُعلَّم بشكل سيئ في المدارس؟ |
-| 3 | Teaching instinct | كيف تشرح فكرة صعبة لطالب يسمعها لأول مرة؟ |
-| 4 | Commitment | كم وقتاً يمكنك إعطاءه أسبوعياً؟ (radio: occasional / 2-3h / 5h+) |
-| 5 | Micro-task | Explain one concept in your own words (contextual — reads subjectsOfInterest) |
+| Hero | — | Hook — بشير watermark, two CTAs |
+| Problemsection | `problem` | The three problems with Sudanese education |
+| Visionsection | `vision` | Before/after contrast pairs |
+| Features | `features` | App feature showcase |
+| ProgressBoard | `progress` | Live subject completion board |
+| NafeerSection | `nafeer` | How to contribute |
+| ContributorsHallSection | `contributors` | Live public contributor cards (toggleable via SiteSettings) |
+| Futuresection | `future` | Roadmap chips |
+| Finalcta | `join` | Closing CTA |
+| Footer | — | — |
 
-Min 80 chars per free-text answer (enforced client + server). One-question-at-a-time with progress bar. Answers saved to `Contributor.interviewAnswers` subdocument on submit. Re-submission blocked via `submittedAt` timestamp.
+**Navbar links** (story-ordered, with IntersectionObserver active state):
+- `#problem` المشكلة ٠١
+- `#features` التطبيق ٠٢
+- `#progress` المواد ٠٣
+- `#nafeer` ساهم ٠٤
 
-**API:** `GET /api/interview?token=xxx` (validate) + `POST /api/interview` (save answers).
+---
 
-### Stage 4 — Onboarding (`/onboard?token=xxx`)
+## Basheer Demo (`/demo`)
 
-Unchanged from pre-v6. Token generated when admin approves a contributor. 3 steps: set password → bio → avatar. Issues JWT session cookie on completion.
+Standalone page at `src/app/demo/page.jsx`. No auth required. Fully self-contained — uses static `demoData.js`, no API calls.
 
-### Contributor Model — New Fields (v6.0)
+- **Mobile:** 100dvh fixed, overflow hidden, no scroll. Just the app shell.
+- **Desktop:** Centered phone shell (375×680px) with rounded corners + glow.
+- **Onboarding flow:** name → academic path (science/literary) → grade
+- **Path-aware content:** physics content for science track, Arabic history (الثورة المهدية) for literary track
+- **Feed:** TikTok-style vertical snap-scroll
+- **GuidedTour:** spotlight overlay with step-by-step callouts
+- **Screens:** Home, Onboarding, Feed, Lesson, QuizBank, Profile
+
+---
+
+## Contributor Pipeline
+
+Four-stage funnel. Each stage is a separate page/route. Contributors advance only when the admin sends them a link.
+
+```
+Stage 1 — Discover    /prejoin       Public page. Mission brief + role cards + expectations.
+Stage 2 — Express     /join          Light form: name, email, background, subjectsOfInterest[].
+Stage 3 — Interview   /interview     Token-gated. Questions driven by ContributorRole config.
+Stage 4 — Onboarding  /onboard       Post-approval. Set password + bio + avatar.
+```
+
+### Stage 3 — Dynamic Interview Questions (v7.0+)
+
+Questions are **no longer hardcoded**. They come from the `ContributorRole` model:
 
 ```js
-// Application stage
-background:          String           // university, role, etc.
-fieldOfStudy:        String           // subject area
-subjectsOfInterest:  [String]         // IDs from SUBJECTS_CATALOG
+// GET /api/admin/roles?active=true → used by /join to populate role selector
+// Each role has:
+interviewQuestions: [{ text, placeholder, minChars, order }]
+microTask:          { prompt, minChars }
+```
 
-// Interview stage (Step 3)
-interviewToken:      String (select: false)
-interviewExpiresAt:  Date
+The `/interview` page reads the contributor's assigned role and renders its questions dynamically. The static 5-question list from v6.0 is gone — admins configure questions per role via the admin dashboard Roles panel.
+
+### Contributor Model — Complete Fields
+
+```js
+// Identity
+name, username (sparse unique), email, gender (optional)
+bio (max 280 chars), avatarUrl, avatarPath (select: false)
+
+// Assignment
+subject      — subject ID assigned by admin (default '')
+roleId       — ObjectId ref to ContributorRole (optional)
+status       — 'pending' | 'interviewing' | 'approved' | 'rejected'
+onboarded    — Boolean
+
+// Application stage
+background, fieldOfStudy, subjectsOfInterest[]
+
+// Interview stage
+interviewToken (select: false), interviewExpiresAt
 interviewAnswers: {
-  motivation:        String
-  educationCritique: String
-  teachingMoment:    String
-  weeklyCommitment:  String           // 'occasional' | '2-3h' | '5h+'
-  microTask:         String
-  submittedAt:       Date
+  // dynamic: keyed by question._id string
+  answers: Map<String, String>
+  weeklyCommitment: 'occasional' | '2-3h' | '5h+'
+  submittedAt: Date
 }
 
-// Removed from intake (still exist in model for approved contributors)
-gender:   now optional (default '')
-subject:  no longer required at join — admin assigns after approval (default '')
+// Auth
+passwordHash (select: false)
+onboardingToken (select: false), onboardingExpiresAt
+
+// Stats (auto-incremented via trackStat.js)
+stats: {
+  lessonsCreated, questionsAdded, feedItemsCreated,
+  blocksAdded, reviewsSubmitted, publishedLessons,
+  lastActiveAt
+}
 ```
 
-### Admin Dashboard — Pipeline Workflow
+---
 
-Each pending contributor card now shows a contextual pipeline chip:
+## ContributorRole Model
 
-| Chip | Condition | Admin Action Available |
+Database-backed role definitions. Replaces any hardcoded role assumptions.
+
+```js
+{
+  name, slug (auto-generated, unique), category ('content'|'development'|'design'),
+  subcategory, description, isActive, order,
+  interviewQuestions: [{ text, placeholder, minChars, order }],
+  microTask: { prompt, minChars }
+}
+```
+
+**Routes:**
+- `GET /api/admin/roles` — full list (admin) or `?active=true` (public, for /join)
+- `POST /api/admin/roles` — create role
+- `PUT /api/admin/roles/[id]` — update role
+- `DELETE /api/admin/roles/[id]` — deactivate (soft) or hard delete if no contributors use it
+
+---
+
+## Admin System — Database-Backed (v7.0+)
+
+Admin credentials are no longer environment variables. The `Admin` model in MongoDB holds all admin accounts.
+
+```js
+{
+  username (unique lowercase), email (unique lowercase),
+  passwordHash (select: false), displayName,
+  isActive, lastSignedInAt
+}
+```
+
+**Routes:**
+- `GET /api/admin/admins` — list all admins
+- `POST /api/admin/admins` — create new admin (password min 8 chars)
+- `DELETE /api/admin/admins` — remove admin
+
+**Migration note:** `ADMIN_USERNAME` / `ADMIN_PASSWORD` env vars are no longer used by the auth flow. A seed script or first-run UI must create the initial admin document.
+
+---
+
+## SiteSettings Model
+
+Singleton document (`key: 'global'`). Controls landing page behaviour.
+
+```js
+{
+  key: 'global',
+  showContributorsOnLanding: Boolean  // default: true
+}
+```
+
+**Routes:**
+- `GET /api/site-setting` — public, returns `{ showContributorsOnLanding }`
+- `GET /api/admin/site-setting` — admin full read
+- `PATCH /api/admin/site-setting` — admin update
+
+`ContributorsHallSection` fetches both `/api/site-setting` and `/api/contributors/public` in parallel. If `showContributorsOnLanding` is false the whole section is hidden client-side.
+
+---
+
+## Lesson Notes System
+
+Embedded subdocuments on the `Lesson` model. `notesCount` is denormalized for fast list indicators without loading note content.
+
+```js
+notes: [{
+  authorId (ref: Contributor, nullable for admin notes),
+  authorName, authorRole ('contributor'|'admin'),
+  type: 'comment' | 'review_feedback' | 'flag',
+  text,
+  resolved: Boolean
+}]
+notesCount: Number  // denormalized total
+```
+
+**Routes:**
+- `GET /api/content/lessons/[id]/notes`
+- `POST /api/content/lessons/[id]/notes`
+- `PATCH /api/content/lessons/[id]/notes/[noteId]` — resolve/unresolve, edit text
+- `DELETE /api/content/lessons/[id]/notes/[noteId]`
+
+**UI:** `LessonNotesDrawer` — slides in from the right, supports add/resolve/delete.
+
+---
+
+## Lesson History System
+
+Separate `LessonHistory` collection (not embedded). One document per version bump. Lean by design — only changed fields stored.
+
+```js
+{
+  lessonContentId: String (indexed),
+  version: Number,
+  action: 'created'|'edited'|'reviewed'|'approved'|'archived',
+  authorId, authorName, authorRole,
+  label, note,
+  diff: Map<String, { from, to }>  // sparse, only changed fields
+}
+```
+
+**Routes:**
+- `GET /api/content/lessons/[id]/history?limit=N` — full audit trail, newest first, default limit 50
+
+**UI:** `LessonHistoryDrawer` — slides in from the right, expandable diff blocks per entry.
+
+---
+
+## Lesson Variations
+
+Flat parent-pointer model. Depth capped at one level — variations cannot have their own variations.
+
+```js
+// On Lesson model:
+parentLesson:  String | null  // contentId of parent, null = root lesson
+variationType: 'alternative' | 'prerequisite' | 'extension' | 'simplified' | null
+variationNote: String | null  // optional context note
+```
+
+**Variation types:**
+| Type | Arabic | Meaning |
 |---|---|---|
-| طلب جديد (amber) | no interviewToken yet | "إرسال رابط المقابلة" |
-| ينتظر المقابلة (blue) | interviewExpiresAt set, no answers | "إعادة إرسال الرابط" |
-| أكمل المقابلة (green) | interviewAnswers.submittedAt set | "اعتماد + مرور" / "اعتماد فقط" |
+| `alternative` | بديل | Different author/approach to same content |
+| `prerequisite` | متطلب | Foundation content to study before parent |
+| `extension` | توسع | Deeper/more advanced content after parent |
+| `simplified` | مبسط | Simplified version for struggling students |
 
-Interview answers visible via collapsible toggle (▸/▾) per card. `weeklyCommitment` values translated to Arabic labels on display. `subjectsOfInterest` shown as Arabic name chips (not raw IDs).
+**UI:** `LinkVariationModal` — searchable lesson picker with type selector and note field. `VARIATION_CONFIG` exported from the modal file.
 
-**New admin action:** `PATCH /api/admin/contributors { id, action: 'send_interview' }` — generates `interviewToken` + `interviewExpiresAt`, returns `interviewLink` for display in `LinkModal`.
+**Sync:** `useAtlasSync` includes `parentLesson`, `variationType`, `variationNote` in lesson sync payload.
 
-**`LinkModal`** replaces `OnboardLinkModal` — handles both interview (14-day validity) and onboarding (7-day validity) links, label-aware.
-
-### Middleware Updates (v6.0)
-
-- `/prejoin` added to redirect rule for logged-in contributors (→ `/editor`)
-- `/prejoin` and `/interview` added to matcher so middleware runs on those routes
-- `/interview` is public (token in URL is the credential) — no auth check, just pass-through like `/onboard`
-
-### Landing Page — CTA Links Updated
-
-All 5 `/join` occurrences on the landing page now point to `/prejoin`:
-- `Navbar.jsx` — "انضم" pill
-- `Hero.jsx` — primary CTA button
-- `NafeerSection.jsx` — closing CTA
-- `ProgressBoard.jsx` — section CTA + per-subject "+ انضم" chip
+**Known gaps:**
+- Variation coverage scoring not implemented
+- Cross-unit variation tree display not implemented
+- `ContentVariant` entity in Android Room DB has no corresponding CMS model or export support
 
 ---
 
-## Admin Dashboard — Modular Architecture (v6.0)
+## Contributor Profile & Avatar
 
-The monolithic 1,425-line `page.jsx` has been split into 14 files. The `_` prefix makes all sub-files private to Next.js (no routes created).
+Contributors can update their own profile and avatar after onboarding.
 
-```
-dashboard/
-  page.jsx              72 lines — orchestrator only
-  _constants.js         35 lines — all shared constants + getPipelineStage()
-  _components/
-    AdminSidebar.jsx    71 lines
-    ContributorCard.jsx 233 lines — fully self-contained (own expand/delete state)
-    ContributorsSection.jsx 134 lines
-    ReviewQueueSection.jsx  180 lines
-    CoverageSection.jsx     130 lines
-    MediaSection.jsx        373 lines (includes MediaLightbox)
-    ui/
-      Btn.jsx           18 lines
-      Modal.jsx         26 lines
-      shared.jsx        57 lines (SectionHeader, StatusChip, EmptyState, Spinner, StatChips)
-    modals/
-      CreateContributorModal.jsx  85 lines
-      SetPasswordModal.jsx        43 lines
-      LinkModal.jsx               49 lines
-```
+**Routes:**
+- `GET /api/contributors/me` — current contributor's full profile
+- `PATCH /api/contributors/me` — update bio, display name
+- `POST /api/contributors/me/avatar` — multipart upload, optimizes to WebP 400×400, stores in `nafeer-users/{id}.webp`, deletes previous avatar
 
-`getPipelineStage(contributor)` is a utility in `_constants.js` that computes the stage chip `{ label, color }` for any pending contributor. Add new pipeline stages here.
-
-**Known pre-existing issue (not introduced in v6.0):** `passwordHash` has `select: false` in the Contributor model, so `c.passwordHash` is always undefined in the admin GET response. The "تعيين مرور" / "تغيير المرور" button label distinction doesn't work — it always shows "تعيين مرور". Low priority fix: add a `hasPassword: Boolean` virtual or non-select field.
+**Public route:**
+- `GET /api/contributors/public` — approved + onboarded contributors only. Returns: name, username, avatarUrl, bio, subject, stats. Sorted by contribution score (`lessons×3 + questions + feedItems×2`).
 
 ---
 
-## Data Model
+## Image Optimization Pipeline
 
-**Atomic unit:** concept (مفهوم). Everything else references concepts.
+`src/lib/imageOptimizer.js` — Sharp-based, three presets:
 
-**Hierarchy:**
+| Preset | Max Size | Quality | Crop |
+|---|---|---|---|
+| `content` | 1200w | 85 | preserve ratio |
+| `avatar` | 400×400 | 90 | cover crop |
+| `thumb` | 320w | 80 | preserve ratio |
+
+GIFs and SVGs are returned unchanged. Returns `{ buffer, mimeType, originalSize, optimizedSize, skipped }`.
+
+Used by: `POST /api/contributors/me/avatar` (avatar preset) and `POST /api/media` (content preset).
+
+---
+
+## Stat Tracking
+
+`src/lib/trackStat.js` — fire-and-forget, never awaited, never blocks a content response.
+
+```js
+trackStat(contributorId, 'lessonsCreated');
+// Available keys: lessonsCreated | questionsAdded | feedItemsCreated
+//                 blocksAdded | reviewsSubmitted | publishedLessons
 ```
-Subject → Units → Lessons → Sections → Blocks   (lesson content)
-Concepts → FeedItems                             (Basheer feed cards)
-Questions → Exams                                (quiz bank + past papers)
-```
 
-**Subjects:** defined in `src/shared/curriculum.js` as `SUBJECTS_CATALOG`. Immutable IDs. Three tracks: `COMMON` (4 subjects), `SCIENCE` (فيزياء + كيمياء), `LITERARY` (تاريخ + جغرافيا). Major electives per track.
+Called from content creation API handlers. Always also sets `stats.lastActiveAt`.
 
-**Versioning:** every model uses `versioningFields` (version, changelog, createdBy, updatedBy). `applyVersionBump()` is called on every content PUT — increments version, appends changelog, resets `atlasStatus` from `approved` → `draft` automatically.
+---
+
+## KaTeX / Arabic Math Pipeline
+
+`src/lib/math/` — four-stage pipeline:
+
+1. **NormallizeInput** — converts Arabic operator names (e.g. `نها`) to LaTeX macros
+2. **KatexConfig** — macro registry, Arabic-aware settings
+3. **katex.render** — core rendering
+4. **PostProcessMath** — post-processing for Arabic text placement, `.mop` operator styling (Amiri font)
+
+**Critical conventions:**
+- Superscripts: `{}^{2}س` NOT `س^{2}` — KaTeX uses absolute internal positioning that CSS `direction` cannot affect
+- Textarea inputs need `unicodeBidi: 'plaintext'` to prevent Arabic characters from scrambling LaTeX syntax
+
+**UI:** `FormulaPreview` in `editor/shared/` — takes `latex`, `displayMode`, `rtlMath` props. Always imports `katex/dist/katex.min.css`.
+
+---
+
+## Supabase Media System
+
+Dual-bucket strategy:
+
+| Bucket | Env var | Used for |
+|---|---|---|
+| `basheer-media` | `SUPABASE_MEDIA_BUCKET` | Educational content images, GIFs |
+| `nafeer-users` | `SUPABASE_USERS_BUCKET` | Contributor avatars |
+
+**Pattern:** Lazy `getClient()` — module-level singleton is recreated via a getter to prevent reference loss when Next.js serverless bundler splits modules across chunks.
+
+**Helpers in `supabase.js`:**
+- `uploadFile(bucket, path, buffer, mimeType)` — core upload
+- `uploadUserFile(path, buffer, mimeType)` — shorthand for `nafeer-users`
+- `deleteFile(bucket, path)` — remove by path
+- `getPublicUrl(bucket, path)` — construct public URL
+
+Path convention for content: `{subjectId}/{contentId}.{ext}`. Path for avatars: `{contributorId}.webp`.
+
+---
+
+## Marker System
+
+`src/lib/markerUtils.js` — normalized coordinate helpers.
+
+Markers use 0–1 x/y coordinates (relative to image dimensions). Android multiplies by actual rendered dimensions at runtime. Stored on IMAGE blocks and FIGURE questions as `markers[]` arrays. `ImageMarkerEditor` handles click-to-place, drag-to-reposition.
 
 ---
 
 ## Environment Variables
 
 ```
-MONGODB_URI                   — MongoDB Atlas connection string
-JWT_SECRET                    — signs both contributor and admin JWTs
-NEXT_PUBLIC_APP_URL           — app base URL (used to construct interview/onboarding links)
-ADMIN_USERNAME                — admin login username
-ADMIN_PASSWORD                — admin login password
-NEXT_PUBLIC_SUPABASE_URL      — Supabase project URL (safe to expose)
-SUPABASE_SERVICE_ROLE_KEY     — Supabase service role key (server only)
-SUPABASE_MEDIA_BUCKET         — bucket name (default: nafeer-media)
+MONGODB_URI                    — MongoDB Atlas connection string
+JWT_SECRET                     — signs both contributor and admin JWTs
+NEXT_PUBLIC_APP_URL            — base URL (used to construct interview/onboarding links)
+NEXT_PUBLIC_SUPABASE_URL       — Supabase project URL (safe to expose)
+SUPABASE_SERVICE_ROLE_KEY      — Supabase service role key (server only)
+SUPABASE_MEDIA_BUCKET          — content media bucket (default: basheer-media)
+SUPABASE_USERS_BUCKET          — avatar bucket (default: nafeer-users)
 ```
+
+**Removed:** `ADMIN_USERNAME`, `ADMIN_PASSWORD` — no longer used. Admins are now DB records.
 
 ---
 
@@ -301,35 +524,36 @@ SUPABASE_MEDIA_BUCKET         — bucket name (default: nafeer-media)
 **Contributor auth:**
 - JWT in cookie `nafeer_token`, signed with jose
 - `middleware.js` protects `/editor/*` → redirect to `/signin`
-- `/prejoin`, `/join`, `/interview`, `/onboard` are all public (no auth required)
+- `/prejoin`, `/join`, `/interview`, `/onboard` are all public
 - Logged-in contributors hitting `/signin`, `/join`, or `/prejoin` are redirected to `/editor`
 
 **Admin auth:**
 - JWT in cookie `nafeer_admin`, role must be `"admin"`
 - `middleware.js` protects `/admin/dashboard`
 - Separate login at `/admin/login`
+- Credentials stored in `Admin` MongoDB collection (not env vars)
 
 ---
 
 ## State Management
 
-Six Zustand slices, re-exported via composite `useDataStore` in `src/store/index.js`.
+Seven Zustand slices. `useDataStore` composite hook in `src/store/dataStore.js` is a re-export facade — all editor components import from here, preserving backward compatibility.
 
-| Store | Contains |
-|---|---|
-| `useSubjectStore` | subject, units, lessons |
-| `useContentStore` | sections, blocks |
-| `useConceptStore` | concepts, tags |
-| `useFeedStore` | feedItems |
-| `useQuizStore` | questions, exams |
-| `useEditorStore` | UI state (active lesson, active page, sync status) |
-| `useMediaStore` | media[] — loaded once per session from `/api/media` |
+| Store | Contains | localStorage key |
+|---|---|---|
+| `useSubjectStore` | subject, units, lessons | `basheer-subject` |
+| `useContentStore` | sections, blocks | `basheer-content` |
+| `useConceptStore` | concepts, tags | `basheer-concepts` |
+| `useFeedStore` | feedItems | `basheer-feed` |
+| `useQuizStore` | questions, exams | `basheer-quiz` |
+| `useEditorStore` | UI state (active lesson, page, sync status) | — |
+| `useMediaStore` | media[] — loaded once per session | — |
 
 ---
 
 ## Atlas Sync — `useAtlasSync`
 
-**Pattern:** edits hit the store immediately (optimistic) → sync fires fire-and-forget → errors are `console.warn`'d, never block UI.
+**Pattern:** edits hit the store immediately (optimistic) → sync fires fire-and-forget → errors are `console.warn`'d, never block UI. IDs pre-generated client-side so sync fires immediately.
 
 **Full API:**
 ```js
@@ -355,56 +579,53 @@ const {
 
 ---
 
-## Content Status Lifecycle
-
-```
-null → draft       (first sync)
-draft → review     (contributor clicks "Submit for Review")
-review → approved  (admin approves)
-review → draft     (admin rejects)
-approved → draft   (any edit triggers applyVersionBump server-side)
-```
-
----
-
-## Coverage System
-
-**Score formula (0–100):** 40% sections+blocks · 30% feedItems≥concepts · 30% questions≥concepts×2
-
-**Levels:** `high` (≥80) `medium` (≥40) `low` (>0) `none` (0)
-
-**`useCoverageData(subjectId)`** — module-level cache, one fetch per session per subject.
-
-**Coverage UI locations:** CoveragePanel (lesson editor sidebar), LessonItem dots, UnitCard badge, LessonsPage header, admin Coverage Matrix.
-
----
-
 ## API Routes (Complete)
 
 ```
 POST   /api/auth/signin
 POST   /api/auth/signout
-GET    /api/auth/onboard?token=         ← validate onboarding token
-POST   /api/auth/onboard                ← complete onboarding (password + bio)
+GET    /api/auth/heartbeat
+GET    /api/auth/onboard?token=
+POST   /api/auth/onboard
+
 POST   /api/contributors/request        ← Step 2: expression of interest
-GET    /api/interview?token=            ← NEW: validate interview token
-POST   /api/interview                   ← NEW: save interview answers
+GET    /api/contributors/me
+PATCH  /api/contributors/me
+POST   /api/contributors/me/avatar
+GET    /api/contributors/public         ← public, approved+onboarded only
+
+GET    /api/interview?token=
+POST   /api/interview
 
 POST   /api/admin/login
 POST   /api/admin/logout
+GET    /api/admin/admins
+POST   /api/admin/admins
+DELETE /api/admin/admins
 GET    /api/admin/contributors
-POST   /api/admin/contributors          ← manual create
-PATCH  /api/admin/contributors          ← actions: approve | reject | set_password |
-                                           reset_to_pending | generate_onboard_link |
-                                           send_interview (NEW)
+POST   /api/admin/contributors
+PATCH  /api/admin/contributors          ← actions: approve|reject|set_password|
+                                           reset_to_pending|generate_onboard_link|send_interview
 DELETE /api/admin/contributors
 GET    /api/admin/review-queue
 PATCH  /api/admin/review-queue
+GET    /api/admin/roles                 ← full list, admin auth
+POST   /api/admin/roles
+PUT    /api/admin/roles/[id]
+DELETE /api/admin/roles/[id]
+GET    /api/admin/site-setting
+PATCH  /api/admin/site-setting
+
+GET    /api/site-setting                ← public, safe fields only
 
 POST   /api/content/subject
 GET    /api/content/subject
+DELETE /api/content/subject/[id]        ← admin only, cascades all child content
 GET/POST       /api/content/lessons
 PUT/DELETE     /api/content/lessons/[id]
+GET/POST       /api/content/lessons/[id]/notes
+PATCH/DELETE   /api/content/lessons/[id]/notes/[noteId]
+GET            /api/content/lessons/[id]/history
 GET/POST       /api/content/sections
 PUT/DELETE     /api/content/sections/[id]
 GET/POST       /api/content/blocks
@@ -422,23 +643,34 @@ GET    /api/media
 POST   /api/media
 DELETE /api/media/[id]
 
-GET    /api/coverage/[subjectId]
+GET    /api/coverage                    ← public, all subjects summary (for ProgressBoard)
+GET    /api/coverage/[subjectId]        ← per-lesson detail
+
 GET    /api/export
+
+GET    /api/admin/roles?active=true     ← public variant, active roles only (for /join)
+GET    /api/dev/autologin               ← development only, gated by NODE_ENV
 ```
 
 ---
 
 ## Design System
 
-Dark-first. CSS custom properties on `:root` and `:root[data-theme="light"]`.
+Dark-first. CSS custom properties on `:root` and `:root[data-theme="light"]`. Theme persisted in `localStorage` as `'nafeer-theme'`. Default `'dark'` set directly on `<html>` tag in `layout.jsx`.
 
 | Token | Dark | Light |
 |---|---|---|
+| `--bg-primary` | `#0e0c09` (near-black warm) | `#f2e6d0` (warm amber-cream) |
+| `--bg-secondary` | `#1a1713` | `#e9dbc0` |
+| `--bg-card` | `rgba(255,255,255,0.03)` | `rgba(251,243,228,0.88)` |
+| `--text-primary` | `#fdf8f0` | `#180f04` |
+| `--text-secondary` | `#b7b0a3` | `#3d250a` |
+| `--text-muted` | `#7d7366` | `#7a5220` |
 | `--accent` | `#d4891e` | `#b86c14` |
-| `--bg-primary` | near-black warm | off-white warm |
-| `--bg-card` | dark warm gray | light warm gray |
 
-**Palette names:** sand (amber/gold), ink (warm grays), ember (orange). Theme persisted in `localStorage` as `'nafeer-theme'`. Default `'dark'` set on `<html>` tag.
+**Body font scaling (globals.css):** `15px` base → `16px` at xl (1280px) → `17px` at 2xl (1536px).
+
+**Palette names:** sand (amber/gold), ink (warm grays), ember (orange).
 
 ---
 
@@ -448,6 +680,58 @@ Dark-first. CSS custom properties on `:root` and `:root[data-theme="light"]`.
 - Always `once: true` on ScrollTrigger instances
 - Register plugins at module level: `gsap.registerPlugin(ScrollTrigger)`
 - Wrap in `gsap.context(()=>{...}, ref)`, return `ctx.revert()` from cleanup
+- For scroll fade + y-parallax on same element: target separate child elements for opacity and y — don't apply both to the same GSAP target or they'll fight
+
+---
+
+## Key Learnings & Gotchas
+
+- **Next.js 15 `params`:** must be `await`-ed in dynamic route handlers — synchronous access causes `undefined` params
+- **Route file casing:** all route files must be lowercase `route.js` — capital-R `Route.js` is invisible to Vercel's Linux FS
+- **Import casing:** Vercel's Linux FS is case-sensitive; import paths must exactly match filenames
+- **Supabase client:** lazy `getClient()` pattern — module-level singleton loses reference when Next.js serverless bundling splits modules across chunks
+- **Atlas sync:** IDs pre-generated client-side before store updates so sync fires immediately. All sync functions fire-and-forget with `.catch(() => {})` — UI never blocks. Local Zustand state is authoritative.
+- **RTL layout:** right edge is the leading visual edge. `divide-x` places borders on wrong edge in RTL grids; use explicit `border-l`/`border-r`. Visual hierarchy anchors should start from right.
+- **KaTeX + Arabic:** superscript convention `{}^{2}س` (not `س^{2}`). Textarea inputs need `unicodeBidi: 'plaintext'`.
+- **Theme hydration:** default `data-theme="dark"` must be set on `<html>` tag in `layout.jsx`, not injected by script alone, to prevent hydration mismatch.
+- **GSAP + scroll opacity:** when GSAP applies both `y` parallax and `opacity` fade via scroll, split them across separate elements so they don't override each other. (Hero watermark: outer wrapper = y, base span = opacity)
+- **Cursor-glow pattern:** use `radial-gradient` CSS mask on a full-opacity overlay layer. Update `maskImage` directly on the DOM ref — never via state. Init mask to off-screen position so nothing shows before first hover.
+
+---
+
+## Data Model
+
+**Atomic unit:** concept (مفهوم). Everything else references concepts.
+
+**Hierarchy:**
+```
+Subject → Units → Lessons → Sections → Blocks   (lesson content)
+Concepts → FeedItems                             (Basheer feed cards)
+Questions → Exams                                (quiz bank + past papers)
+```
+
+**Versioning:** every model uses `versioningFields`. `applyVersionBump()` called on every content PUT — increments version, appends changelog, resets `atlasStatus` from `approved` → `draft`.
+
+**Content status lifecycle:**
+```
+null → draft       (first sync)
+draft → review     (contributor submits)
+review → approved  (admin approves)
+review → draft     (admin rejects)
+approved → draft   (any edit triggers applyVersionBump)
+```
+
+---
+
+## Coverage System
+
+**Score formula (0–100):** 40% sections+blocks · 30% feedItems≥concepts · 30% questions≥concepts×2
+
+**Levels:** `high` (≥80) `medium` (≥40) `low` (>0) `none` (0)
+
+`useCoverageData(subjectId)` — module-level cache, one fetch per session per subject.
+
+**Coverage UI locations:** CoveragePanel (lesson editor sidebar), LessonItem dots, UnitCard badge, LessonsPage header, admin Coverage Matrix, ProgressBoard (landing).
 
 ---
 
@@ -463,45 +747,34 @@ Dark-first. CSS custom properties on `:root` and `:root[data-theme="light"]`.
 | Phase 6 | Media — Supabase Storage, MediaPage, MediaPicker | ✅ DONE |
 | Phase 7 | Interactive Media — image markers | ✅ DONE |
 | Phase 8 | Contributor Pipeline — prejoin, interview, admin refactor | ✅ DONE |
+| Phase 9 | Role system, admin DB, notes, history, variations, demo | ✅ DONE |
 
 ---
 
-## v6.0 Changes 
+## v9.0 Changes (This Session)
 
-**New routes/pages:**
-- `src/app/prejoin/page.jsx` — atmospheric mission brief, 5-section layout, no API calls
-- `src/app/interview/page.jsx` — token-gated 5-question mini interview with micro-task
-- `src/app/api/interview/route.js` — GET (validate) + POST (save answers)
+**Landing page polish:**
+- `Navbar.jsx` — nav links rewritten to follow storytelling arc (٠١–٠٤). `IntersectionObserver`-based active section highlighting with dot indicator. Cleaner mobile drawer with step numbers and story prompt.
+- `ProgressBoard.jsx` — full redesign from tall cards to compact horizontal rows. Single color-accent bar, inline progress bar, two-column grid at md+. Dramatically less vertical space on mobile.
+- `Hero.jsx` — cursor-glow watermark effect on the بشير background text. Two-layer technique: base dim span (GSAP-controlled opacity) + glow accent span revealed via `radial-gradient` CSS mask updated directly on a DOM ref (zero re-renders). GSAP scroll parallax separated: outer wrapper handles y-translation, base span handles opacity fade.
+- `globals.css` — light mode overhauled: `--bg-primary` → warm amber-cream `#f2e6d0` (was near-white `#fdf8f0`). `--text-primary` → near-black `#180f04`, `--text-secondary` → rich dark brown `#3d250a` for higher contrast. Body font-size now scales responsively: 15px → 16px (xl) → 17px (2xl).
 
-**Modified files:**
-- `src/lib/models/Contributor.js` — new fields: `background`, `fieldOfStudy`, `subjectsOfInterest[]`, `interviewToken`, `interviewExpiresAt`, `interviewAnswers{}`. `gender` now optional. `subject` no longer required at join.
-- `src/app/api/contributors/request/route.js` — validates new fields, drops username/gender requirement
-- `src/app/api/admin/contributors/route.js` — added `send_interview` action, returns `interviewLink`
-- `src/middleware.js` — added `/prejoin` and `/interview` to matcher; `/prejoin` added to logged-in contributor redirect rule
-- `src/components/landing/Navbar.jsx` — CTA → `/prejoin`
-- `src/components/landing/Hero.jsx` — CTA → `/prejoin`
-- `src/components/landing/NafeerSection.jsx` — CTA → `/prejoin`
-- `src/components/landing/ProgressBoard.jsx` — both CTAs → `/prejoin`
-- `src/app/admin/dashboard/` — fully modularised (14 files, see architecture above)
-
-**Sanity check findings resolved:**
-- `interviewToken` has `select: false` — ContributorCard correctly uses `interviewExpiresAt` as proxy for "token sent" instead of `c.interviewToken`
-- All `'use client'` directives confirmed appropriate (pure constant/presentational files don't need it)
-- All import paths verified for depth correctness (modals use `../../_constants`, sections use `../_constants`)
-
----
-
-## Media System (Phase 6)
-
-All media in Supabase Storage bucket `nafeer-media`. MongoDB `Media` model tracks metadata only. Path convention: `{subjectId}/{contentId}.{ext}`. `common` is a virtual subject ID for shared assets.
-
-Supabase bucket: Public, RLS allows anon SELECT, service role INSERT/UPDATE/DELETE.
-
----
-
-## Interactive Media — Markers (Phase 7)
-
-Normalised coordinate markers (0–1 x/y) on IMAGE blocks and FIGURE questions. `ImageMarkerEditor` component: click-to-place, drag-to-reposition, inline edit panel. Coordinates are resolution-independent — Android multiplies by actual rendered dimensions at runtime.
+**Manifesto gaps filled (features that existed but were undocumented):**
+- `ContributorRole` model + dynamic interview questions
+- `Admin` model + database-backed admin auth (no more env-var credentials)
+- `SiteSettings` model + public/admin routes
+- `LessonHistory` model + audit trail system
+- Lesson notes subdocument + drawer UI + API routes
+- Lesson variations (parentLesson/variationType/variationNote) + LinkVariationModal + AttributionBar
+- Contributor profile/avatar API routes + stat tracking system
+- `imageOptimizer.js` sharp pipeline
+- `trackStat.js` fire-and-forget stat helper
+- `src/lib/math/` KaTeX pipeline
+- Supabase dual-bucket confirmed (basheer-media + nafeer-users)
+- `/demo` standalone page + full demo component tree
+- All new landing sections: Problemsection, Visionsection, ContributorsHallSection, Futuresection, Finalcta
+- Complete API route inventory (30+ routes, several previously unlisted)
+- `FormulaPreview` shared editor component
 
 ---
 
@@ -509,7 +782,10 @@ Normalised coordinate markers (0–1 x/y) on IMAGE blocks and FIGURE questions. 
 
 | Item | Priority |
 |---|---|
-| `passwordHash` is `select: false` — admin can't distinguish "set" vs "unset" password | LOW — add `hasPassword` virtual |
-| Tag sync — standalone PUT /api/content/tags/[id] | LOW |
-| Conflict detection — Atlas version > local version on load | LOW |
-| Changelog viewer — version history inline in editor | LOW |
+| `hasPassword` virtual — admin can't distinguish set vs unset password (passwordHash is select:false) | LOW |
+| `ContentVariant` Android Room entity has no CMS model, export, or UI | LOW |
+| Variation coverage scoring | LOW |
+| Cross-unit variation tree display | LOW |
+| Tag sync — standalone `PUT /api/content/tags/[id]` | LOW |
+| Conflict detection — Atlas version > local version on bootstrap | LOW |
+| Initial admin seed — `ADMIN_USERNAME`/`ADMIN_PASSWORD` env vars removed; first admin needs manual DB insert or seed script | MEDIUM |
