@@ -23,7 +23,7 @@
   :root {
     --grain-opacity: 0.035;
 
-    /* Dark theme (default) */
+    /* ── Dark theme (default) ─────────────────────────────────────────────── */
     --bg-primary:    #0e0c09;
     --bg-secondary:  #1a1713;
     --bg-card:       rgba(255,255,255,0.03);
@@ -44,33 +44,48 @@
     --glow:          rgba(212,137,30,0.3);
   }
 
+  /* ── Light theme ──────────────────────────────────────────────────────────
+     Goals:
+     • Not stark white — warm amber-cream that feels like aged paper
+     • High enough contrast for text at all breakpoints
+     • Card surfaces have visible depth without going grey
+  ────────────────────────────────────────────────────────────────────────── */
   :root[data-theme="light"] {
-    --grain-opacity: 0.018;
+    --grain-opacity: 0.025;
 
-    --bg-primary:    #fdf8f0;
-    --bg-secondary:  #f5efe0;
-    --bg-card:       rgba(255,255,255,0.75);
-    --border-subtle: rgba(146,79,18,0.12);
-    --border-mid:    rgba(146,79,18,0.20);
-    --text-primary:  #1a1208;
-    --text-secondary:#5a3e1b;
-    --text-muted:    #9a7848;
+    --bg-primary:    #f2e6d0;           /* warm amber-cream, not stark white  */
+    --bg-secondary:  #e9dbc0;           /* noticeably deeper warm layer       */
+    --bg-card:       rgba(251,243,228,0.88); /* amber-tinted card surface    */
+    --border-subtle: rgba(120,70,15,0.14);
+    --border-mid:    rgba(120,70,15,0.24);
+    --text-primary:  #180f04;           /* near-black warm — max contrast     */
+    --text-secondary:#3d250a;           /* rich dark brown — high contrast    */
+    --text-muted:    #7a5220;           /* warm mid-brown — still readable    */
     --accent:        #b86c14;
     --accent-hover:  #924f12;
-    --accent-dim:    rgba(184,108,20,0.08);
-    --mesh-1:        rgba(212,137,30,0.12);
-    --mesh-2:        rgba(146,79,18,0.08);
+    --accent-dim:    rgba(184,108,20,0.12);
+    --mesh-1:        rgba(212,137,30,0.14);
+    --mesh-2:        rgba(146,79,18,0.10);
     --watermark:     rgba(26,18,8,0.04);
-    --navbar-bg:     rgba(253,248,240,0.92);
-    --navbar-border: rgba(146,79,18,0.15);
-    --card-hover-shadow: 0 20px 60px rgba(100,60,10,0.15);
-    --glow:          rgba(184,108,20,0.25);
+    --navbar-bg:     rgba(242,230,208,0.94);
+    --navbar-border: rgba(120,70,15,0.18);
+    --card-hover-shadow: 0 20px 60px rgba(100,55,5,0.14);
+    --glow:          rgba(184,108,20,0.28);
   }
 
   body {
     background-color: var(--bg-primary);
-    color: var(--text-primary);
-    transition: background-color 0.4s ease, color 0.4s ease;
+    color:            var(--text-primary);
+    transition:       background-color 0.4s ease, color 0.4s ease;
+    /* Base readability — scale up on wide screens */
+    font-size: 15px;
+  }
+
+  @media (min-width: 1280px) {
+    body { font-size: 16px; }
+  }
+  @media (min-width: 1536px) {
+    body { font-size: 17px; }
   }
 }
 
@@ -167,7 +182,8 @@
 .feature-card,
 .nafeer-step,
 .nafeer-perk,
-.subject-card {
+.subject-card,
+.subject-row {
   will-change: transform, opacity;
 }
 
