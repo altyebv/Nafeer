@@ -1,17 +1,16 @@
 'use client';
-import { useState }        from 'react';
+import { useState, useEffect } from 'react';
 import { useDataStore }    from '@/store/dataStore';
 import { useMediaStore }   from '@/store/mediaStore';
 import { useRouter }       from 'next/navigation';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
-// ── Build subject label map ───────────────────────────────────────────────────
 const SUBJECT_LABEL = Object.fromEntries(
   SUBJECTS_CATALOG.map((s) => [s.id, { ar: s.nameAr, en: s.nameEn }])
 );
 
-const COLLAPSED_W = 48;   // px
-const EXPANDED_W  = 200;  // px
+const COLLAPSED_W = 52;
+const EXPANDED_W  = 240;
 
 const NAV = [
   { id: 'lessons',  icon: '◈', label: 'الدروس',   sub: 'Lessons'   },
@@ -22,10 +21,32 @@ const NAV = [
   { id: 'export',   icon: '↑', label: 'تصدير',     sub: 'Export'    },
 ];
 
+// ── Theme hook ────────────────────────────────────────────────────────────────
+function useTheme() {
+  const [theme, setTheme] = useState('dark');
+
+  useEffect(() => {
+    const stored = localStorage.getItem('nafeer-theme') || 'dark';
+    setTheme(stored);
+    document.documentElement.dataset.theme = stored === 'light' ? 'light' : '';
+  }, []);
+
+  const toggle = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('nafeer-theme', next);
+    document.documentElement.dataset.theme = next === 'light' ? 'light' : '';
+  };
+
+  return { theme, toggle };
+}
+
 // ── Avatar ────────────────────────────────────────────────────────────────────
 function Avatar({ contributor, size = 28, expanded = false }) {
   const initials = (contributor?.name || 'م')
     .split(' ').slice(0, 2).map((w) => w[0]).join('');
+
+  const avatarSize = expanded ? 34 : size;
 
   if (contributor?.avatarUrl) {
     return (
@@ -34,9 +55,9 @@ function Avatar({ contributor, size = 28, expanded = false }) {
         alt={contributor.name}
         className="rounded-full object-cover shrink-0 transition-all duration-300"
         style={{
-          width: expanded ? 36 : size,
-          height: expanded ? 36 : size,
-          border: '1.5px solid rgba(212,137,30,0.5)',
+          width: avatarSize,
+          height: avatarSize,
+          border: '1.5px solid rgba(212,137,30,0.45)',
         }}
       />
     );
@@ -46,12 +67,12 @@ function Avatar({ contributor, size = 28, expanded = false }) {
     <div
       className="rounded-full flex items-center justify-center font-bold shrink-0 transition-all duration-300"
       style={{
-        width:      expanded ? 36 : size,
-        height:     expanded ? 36 : size,
+        width:      avatarSize,
+        height:     avatarSize,
         fontSize:   expanded ? 13 : 11,
-        background: 'linear-gradient(135deg, rgba(212,137,30,0.85) 0%, rgba(146,79,18,0.6) 100%)',
+        background: 'linear-gradient(135deg, rgba(212,137,30,0.9) 0%, rgba(146,79,18,0.65) 100%)',
         color:      '#0e0c09',
-        border:     '1.5px solid rgba(212,137,30,0.35)',
+        border:     '1.5px solid rgba(212,137,30,0.3)',
       }}
     >
       {initials}
@@ -67,6 +88,52 @@ function SyncDot({ isSyncing, syncError, lastSynced }) {
   return null;
 }
 
+// ── ThemeToggle ───────────────────────────────────────────────────────────────
+function ThemeToggle({ theme, toggle, expanded }) {
+  const isDark = theme === 'dark';
+  return (
+    <button
+      onClick={toggle}
+      title={isDark ? 'تفعيل الوضع الفاتح' : 'تفعيل الوضع الداكن'}
+      className="shrink-0 rounded-lg flex items-center justify-center transition-all duration-150"
+      style={{
+        width:      28,
+        height:     28,
+        color:      isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)',
+        background: 'transparent',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.color      = isDark ? '#fcd34d' : '#92400e';
+        e.currentTarget.style.background = isDark ? 'rgba(252,211,77,0.08)' : 'rgba(146,64,14,0.08)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.color      = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)';
+        e.currentTarget.style.background = 'transparent';
+      }}
+    >
+      {isDark ? (
+        /* Moon icon */
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      ) : (
+        /* Sun icon */
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      )}
+    </button>
+  );
+}
+
 // ── Main sidebar ──────────────────────────────────────────────────────────────
 export default function EditorSidebar({
   currentPage,
@@ -75,14 +142,32 @@ export default function EditorSidebar({
   isSyncing,
   syncError,
   lastSynced,
+  isOpen,
+  onToggle,
 }) {
   const { subject, lessons, concepts, feedItems, questions } = useDataStore();
   const { media }  = useMediaStore();
   const router     = useRouter();
-  const [hovered, setHovered] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
-  const expanded = hovered;
+  const expanded = isOpen;
   const w        = expanded ? EXPANDED_W : COLLAPSED_W;
+
+  const isDark = theme === 'dark';
+
+  // Sidebar surface colors — theme-aware
+  const sidebarBg      = isDark ? '#0a0906'             : '#faf5eb';
+  const sidebarBorder  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(146,79,18,0.12)';
+  const sidebarShadow  = expanded
+    ? isDark
+      ? '-6px 0 32px rgba(0,0,0,0.55)'
+      : '-6px 0 32px rgba(0,0,0,0.12)'
+    : 'none';
+
+  const textDim     = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+  const textMid     = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  const textActive  = isDark ? '#e8d5a8'                : '#7c3c10';
+  const activeAccent = '#d4891e';
 
   const counts = {
     lessons:  lessons.length,
@@ -102,7 +187,6 @@ export default function EditorSidebar({
     ? SUBJECT_LABEL[contributor.subject]
     : null;
 
-  // Sync status text for expanded state
   const syncLabel = syncError
     ? 'خطأ في الحفظ'
     : isSyncing
@@ -118,67 +202,78 @@ export default function EditorSidebar({
         width:      w,
         minWidth:   w,
         transition: 'width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
-        background: '#0c0a07',
-        borderLeft: '1px solid rgba(255,255,255,0.05)',
-        boxShadow:  expanded
-          ? '-6px 0 32px rgba(0,0,0,0.5), -1px 0 0 rgba(255,255,255,0.03)'
-          : '-1px 0 0 rgba(255,255,255,0.03)',
+        background: sidebarBg,
+        borderLeft: `1px solid ${sidebarBorder}`,
+        boxShadow:  sidebarShadow,
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
 
-      {/* ── Header / Logo ─────────────────────────────────────────────────── */}
+      {/* ── Header / Logo + toggle ───────────────────────────────────────── */}
       <div
-        className="flex items-center overflow-hidden shrink-0"
+        className="flex items-center shrink-0"
         style={{
           height: 52,
-          padding: expanded ? '0 14px' : '0',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          padding: expanded ? '0 12px' : '0',
+          borderBottom: `1px solid ${sidebarBorder}`,
           justifyContent: expanded ? 'flex-start' : 'center',
-          gap: expanded ? 10 : 0,
+          gap: expanded ? 8 : 0,
         }}
       >
-        {/* Logo glyph */}
-        <div
-          className="shrink-0 flex items-center justify-center rounded-lg transition-all duration-300"
+        {/* Toggle button — acts as logo when collapsed */}
+        <button
+          onClick={onToggle}
+          title={expanded ? 'طي القائمة' : 'توسيع القائمة'}
+          className="shrink-0 flex items-center justify-center rounded-lg transition-all duration-150"
           style={{
-            width: 28, height: 28,
-            background:   'rgba(212,137,30,0.1)',
-            border:       '1px solid rgba(212,137,30,0.2)',
-            color:        '#d4891e',
-            fontWeight:   700,
-            fontSize:     14,
-            fontFamily:   'var(--font-arabic, serif)',
+            width: 30,
+            height: 30,
+            background: expanded ? 'rgba(212,137,30,0.1)' : 'rgba(212,137,30,0.08)',
+            border: '1px solid rgba(212,137,30,0.2)',
+            color: '#d4891e',
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,137,30,0.16)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = expanded ? 'rgba(212,137,30,0.1)' : 'rgba(212,137,30,0.08)'; }}
         >
-          ن
-        </div>
+          {expanded ? (
+            /* Collapse chevron (→ in RTL, closes sidebar toward right) */
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <polyline points="4,2 8,6 4,10" />
+            </svg>
+          ) : (
+            /* Logo glyph */
+            <span style={{ fontWeight: 700, fontSize: 14, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1 }}>
+              ن
+            </span>
+          )}
+        </button>
 
         {/* Brand text — only when expanded */}
         <div
-          className="flex flex-col min-w-0 transition-all duration-200"
+          className="flex flex-col min-w-0 flex-1 transition-all duration-200"
           style={{
-            opacity:   expanded ? 1 : 0,
-            maxWidth:  expanded ? 120 : 0,
-            overflow:  'hidden',
+            opacity:    expanded ? 1 : 0,
+            maxWidth:   expanded ? 140 : 0,
+            overflow:   'hidden',
             whiteSpace: 'nowrap',
           }}
         >
-          <span
-            style={{
-              fontSize: 13, fontWeight: 700,
-              color: '#d4891e',
-              fontFamily: 'var(--font-arabic, serif)',
-              lineHeight: 1.2,
-            }}
-          >
+          <span style={{
+            fontSize: 13, fontWeight: 700,
+            color: '#d4891e',
+            fontFamily: 'var(--font-arabic, serif)',
+            lineHeight: 1.2,
+          }}>
             نفير
           </span>
-          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', fontFamily: 'monospace', letterSpacing: '0.08em' }}>
+          <span style={{ fontSize: 9, color: textDim, fontFamily: 'monospace', letterSpacing: '0.1em' }}>
             EDITOR
           </span>
         </div>
+
+        {/* Theme toggle — only when expanded */}
+        {expanded && (
+          <ThemeToggle theme={theme} toggle={toggleTheme} expanded={expanded} />
+        )}
       </div>
 
       {/* ── Subject chip ──────────────────────────────────────────────────── */}
@@ -186,22 +281,20 @@ export default function EditorSidebar({
         <div
           className="shrink-0 overflow-hidden transition-all duration-300"
           style={{
-            maxHeight:    expanded ? 44 : 0,
+            maxHeight:    expanded ? 48 : 0,
             opacity:      expanded ? 1  : 0,
-            padding:      expanded ? '8px 14px' : '0 14px',
-            borderBottom: expanded ? '1px solid rgba(255,255,255,0.05)' : 'none',
+            padding:      expanded ? '8px 12px' : '0 12px',
+            borderBottom: expanded ? `1px solid ${sidebarBorder}` : 'none',
           }}
         >
           <div
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
             style={{ background: 'rgba(212,137,30,0.07)', border: '1px solid rgba(212,137,30,0.15)' }}
           >
-            <span
-              style={{ fontSize: 11, fontWeight: 700, color: '#d4891e', fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.2 }}
-            >
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#d4891e', fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.2 }}>
               {subjectInfo.ar}
             </span>
-            <span style={{ fontSize: 9, color: 'rgba(212,137,30,0.4)', fontFamily: 'monospace' }}>
+            <span style={{ fontSize: 9, color: 'rgba(212,137,30,0.5)', fontFamily: 'monospace' }}>
               {subjectInfo.en}
             </span>
           </div>
@@ -209,7 +302,7 @@ export default function EditorSidebar({
       )}
 
       {/* ── Nav items ─────────────────────────────────────────────────────── */}
-      <nav className="flex-1 flex flex-col py-3 w-full overflow-hidden">
+      <nav className="flex-1 flex flex-col py-2 w-full overflow-hidden">
         {NAV.map((item) => {
           const active = currentPage === item.id || (currentPage === 'editor' && item.id === 'lessons');
           const count  = counts[item.id];
@@ -221,49 +314,52 @@ export default function EditorSidebar({
               title={!expanded ? item.label : undefined}
               className="relative flex items-center w-full transition-all duration-150 group"
               style={{
-                height:     44,
-                padding:    expanded ? '0 14px' : '0',
+                height:         42,
+                padding:        expanded ? '0 12px' : '0',
                 justifyContent: expanded ? 'flex-start' : 'center',
-                gap:        expanded ? 12 : 0,
-                color:      active ? '#e2c98a' : 'rgba(255,255,255,0.25)',
-                background: active
-                  ? 'rgba(212,137,30,0.07)'
-                  : 'transparent',
+                gap:            expanded ? 10 : 0,
+                color:          active ? textActive : textDim,
+                background:     active ? 'rgba(212,137,30,0.08)' : 'transparent',
               }}
-              onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = active ? 'rgba(212,137,30,0.07)' : 'rgba(255,255,255,0.03)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = active ? '#e2c98a' : 'rgba(255,255,255,0.25)'; e.currentTarget.style.background = active ? 'rgba(212,137,30,0.07)' : 'transparent'; }}
+              onMouseEnter={(e) => {
+                if (!active) e.currentTarget.style.color = textMid;
+                e.currentTarget.style.background = active ? 'rgba(212,137,30,0.10)' : 'rgba(212,137,30,0.04)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color      = active ? textActive : textDim;
+                e.currentTarget.style.background = active ? 'rgba(212,137,30,0.08)' : 'transparent';
+              }}
             >
-              {/* Active bar */}
+              {/* Active bar — right edge in RTL */}
               {active && (
                 <span
                   className="absolute right-0 rounded-l"
-                  style={{ width: 2, height: 20, top: '50%', transform: 'translateY(-50%)', background: '#d4891e' }}
+                  style={{ width: 2.5, height: 22, top: '50%', transform: 'translateY(-50%)', background: activeAccent }}
                 />
               )}
 
               {/* Icon */}
               <span
                 className="shrink-0 transition-colors duration-150"
-                style={{ fontSize: 14, fontFamily: 'monospace', lineHeight: 1, color: active ? '#d4891e' : 'inherit' }}
+                style={{ fontSize: 13, fontFamily: 'monospace', lineHeight: 1, color: active ? activeAccent : 'inherit' }}
               >
                 {item.icon}
               </span>
 
               {/* Label + sub — expanded only */}
               <div
-                className="flex flex-col min-w-0 text-right transition-all duration-200"
+                className="flex flex-col min-w-0 text-right transition-all duration-200 flex-1"
                 style={{
-                  opacity:   expanded ? 1 : 0,
-                  maxWidth:  expanded ? 120 : 0,
-                  overflow:  'hidden',
+                  opacity:    expanded ? 1 : 0,
+                  maxWidth:   expanded ? 130 : 0,
+                  overflow:   'hidden',
                   whiteSpace: 'nowrap',
-                  flex: 1,
                 }}
               >
                 <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.3, color: 'inherit' }}>
                   {item.label}
                 </span>
-                <span style={{ fontSize: 9, fontFamily: 'monospace', color: 'rgba(255,255,255,0.2)', lineHeight: 1.2 }}>
+                <span style={{ fontSize: 9, fontFamily: 'monospace', color: textDim, lineHeight: 1.2 }}>
                   {item.sub}
                 </span>
               </div>
@@ -277,15 +373,13 @@ export default function EditorSidebar({
                     fontFamily:   'monospace',
                     padding:      '1px 5px',
                     borderRadius: 6,
-                    background:   active ? 'rgba(212,137,30,0.2)' : 'rgba(255,255,255,0.05)',
-                    color:        active ? '#d4891e' : 'rgba(255,255,255,0.2)',
-                    border:       `1px solid ${active ? 'rgba(212,137,30,0.25)' : 'rgba(255,255,255,0.06)'}`,
-                    marginRight:  expanded ? 0 : -4,
-                    // collapsed: tiny dot-like; expanded: full pill
-                    opacity: expanded ? 1 : 0.7,
-                    position: expanded ? 'static' : 'absolute',
-                    top:  expanded ? 'auto' : 6,
-                    left: expanded ? 'auto' : 4,
+                    background:   active ? 'rgba(212,137,30,0.18)' : 'rgba(128,128,128,0.08)',
+                    color:        active ? '#d4891e' : textDim,
+                    border:       `1px solid ${active ? 'rgba(212,137,30,0.28)' : 'rgba(128,128,128,0.12)'}`,
+                    opacity:      expanded ? 1 : 0.8,
+                    position:     expanded ? 'static' : 'absolute',
+                    top:          expanded ? 'auto' : 5,
+                    left:         expanded ? 'auto' : 4,
                   }}
                 >
                   {count > 99 ? '99+' : count}
@@ -301,66 +395,69 @@ export default function EditorSidebar({
         <div
           className="shrink-0 overflow-hidden transition-all duration-300 flex items-center"
           style={{
-            height:       expanded ? 32 : 28,
-            padding:      expanded ? '0 14px' : '0',
+            height:         expanded ? 30 : 26,
+            padding:        expanded ? '0 12px' : '0',
             justifyContent: expanded ? 'flex-start' : 'center',
-            gap:          6,
-            borderTop:    '1px solid rgba(255,255,255,0.04)',
-            background:   'rgba(0,0,0,0.2)',
+            gap:            6,
+            borderTop:      `1px solid ${sidebarBorder}`,
+            background:     isDark ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.03)',
           }}
         >
           <SyncDot isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
           {expanded && syncLabel && (
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-arabic, serif)', color: 'rgba(255,255,255,0.22)', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-arabic, serif)', color: textDim, whiteSpace: 'nowrap', overflow: 'hidden' }}>
               {syncLabel}
             </span>
           )}
         </div>
       )}
 
-      {/* ── Profile + sign out ────────────────────────────────────────────── */}
+      {/* ── Profile + theme (collapsed) + sign out ────────────────────────── */}
       <div
         className="shrink-0 flex items-center overflow-hidden"
         style={{
-          height:         expanded ? 60 : 52,
-          padding:        expanded ? '0 12px' : '0',
-          borderTop:      '1px solid rgba(255,255,255,0.05)',
+          height:         expanded ? 58 : 52,
+          padding:        expanded ? '0 10px' : '0',
+          borderTop:      `1px solid ${sidebarBorder}`,
           justifyContent: expanded ? 'flex-start' : 'center',
-          gap:            expanded ? 10 : 0,
+          gap:            expanded ? 8 : 0,
           transition:     'height 0.28s ease, padding 0.28s ease',
         }}
       >
+        {/* Theme toggle in collapsed state — lives here */}
+        {!expanded && (
+          <div style={{ position: 'absolute', bottom: 60, right: 0, width: COLLAPSED_W, display: 'flex', justifyContent: 'center', padding: '4px 0' }}>
+            <ThemeToggle theme={theme} toggle={toggleTheme} expanded={false} />
+          </div>
+        )}
+
         {contributor ? (
           <>
             <Avatar contributor={contributor} size={26} expanded={expanded} />
 
-            {/* Name + subject — expanded only */}
+            {/* Name + username — expanded only */}
             <div
               className="flex flex-col min-w-0 flex-1 transition-all duration-200"
-              style={{ opacity: expanded ? 1 : 0, maxWidth: expanded ? 100 : 0, overflow: 'hidden', whiteSpace: 'nowrap' }}
+              style={{ opacity: expanded ? 1 : 0, maxWidth: expanded ? 110 : 0, overflow: 'hidden', whiteSpace: 'nowrap' }}
             >
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.3 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: textMid, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.3 }}>
                 {(contributor.name || '').split(' ')[0]}
               </span>
               {contributor.username && (
-                <span style={{ fontSize: 9, fontFamily: 'monospace', color: 'rgba(255,255,255,0.2)' }}>
+                <span style={{ fontSize: 9, fontFamily: 'monospace', color: textDim }}>
                   @{contributor.username}
                 </span>
               )}
             </div>
 
-            {/* Sign out — expanded: text button; collapsed: icon only */}
+            {/* Sign out */}
             <button
               onClick={handleSignOut}
               title="تسجيل الخروج"
               className="shrink-0 transition-all duration-150 rounded-lg flex items-center justify-center"
-              style={{
-                width:      28, height: 28,
-                color:      'rgba(255,255,255,0.18)',
-                background: 'transparent',
-              }}
+              style={{ width: 28, height: 28, color: textDim, background: 'transparent' }}
               onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.18)'; e.currentTarget.style.background = 'transparent'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = textDim; e.currentTarget.style.background = 'transparent'; }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -370,14 +467,13 @@ export default function EditorSidebar({
             </button>
           </>
         ) : (
-          /* No contributor — just sign out */
           <button
             onClick={handleSignOut}
             title="تسجيل الخروج"
-            className="flex items-center justify-center w-full py-2 transition-colors"
-            style={{ color: 'rgba(255,255,255,0.2)' }}
+            className="flex items-center justify-center transition-colors"
+            style={{ width: 28, height: 28, color: textDim, background: 'transparent' }}
             onMouseEnter={(e) => (e.currentTarget.style.color = '#f87171')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.2)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = textDim)}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
