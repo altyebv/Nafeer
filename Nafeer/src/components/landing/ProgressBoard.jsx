@@ -7,20 +7,26 @@ import { SUBJECTS_CATALOG, TRACK_CONFIG, getTotalLessons } from '@/shared/curric
 gsap.registerPlugin(ScrollTrigger);
 
 const colorMap = {
-  sand:    { bar: '#d4891e', text: '#e4a83a', badge: { bg: 'rgba(212,137,30,0.15)',  border: 'rgba(212,137,30,0.3)',  color: '#e4a83a' } },
-  blue:    { bar: '#3b82f6', text: '#60a5fa', badge: { bg: 'rgba(59,130,246,0.15)',  border: 'rgba(59,130,246,0.3)',  color: '#60a5fa' } },
-  purple:  { bar: '#a855f7', text: '#c084fc', badge: { bg: 'rgba(168,85,247,0.15)',  border: 'rgba(168,85,247,0.3)',  color: '#c084fc' } },
-  green:   { bar: '#22c55e', text: '#4ade80', badge: { bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.3)',   color: '#4ade80' } },
-  orange:  { bar: '#f97316', text: '#fb923c', badge: { bg: 'rgba(249,115,22,0.15)',  border: 'rgba(249,115,22,0.3)',  color: '#fb923c' } },
-  teal:    { bar: '#14b8a6', text: '#2dd4bf', badge: { bg: 'rgba(20,184,166,0.15)',  border: 'rgba(20,184,166,0.3)',  color: '#2dd4bf' } },
-  ember:   { bar: '#ea6c0a', text: '#fb923c', badge: { bg: 'rgba(234,108,10,0.15)',  border: 'rgba(234,108,10,0.3)',  color: '#fb923c' } },
-  yellow:  { bar: '#eab308', text: '#facc15', badge: { bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.3)',   color: '#facc15' } },
-  cyan:    { bar: '#06b6d4', text: '#22d3ee', badge: { bg: 'rgba(6,182,212,0.15)',   border: 'rgba(6,182,212,0.3)',   color: '#22d3ee' } },
-  emerald: { bar: '#10b981', text: '#34d399', badge: { bg: 'rgba(16,185,129,0.15)',  border: 'rgba(16,185,129,0.3)',  color: '#34d399' } },
-  indigo:  { bar: '#6366f1', text: '#818cf8', badge: { bg: 'rgba(99,102,241,0.15)',  border: 'rgba(99,102,241,0.3)',  color: '#818cf8' } },
-  amber:   { bar: '#f59e0b', text: '#fbbf24', badge: { bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.3)',  color: '#fbbf24' } },
-  slate:   { bar: '#64748b', text: '#94a3b8', badge: { bg: 'rgba(100,116,139,0.15)', border: 'rgba(100,116,139,0.3)', color: '#94a3b8' } },
+  sand:    { bar: '#d4891e', text: '#e4a83a' },
+  blue:    { bar: '#3b82f6', text: '#60a5fa' },
+  purple:  { bar: '#a855f7', text: '#c084fc' },
+  green:   { bar: '#22c55e', text: '#4ade80' },
+  orange:  { bar: '#f97316', text: '#fb923c' },
+  teal:    { bar: '#14b8a6', text: '#2dd4bf' },
+  ember:   { bar: '#ea6c0a', text: '#fb923c' },
+  yellow:  { bar: '#eab308', text: '#facc15' },
+  cyan:    { bar: '#06b6d4', text: '#22d3ee' },
+  emerald: { bar: '#10b981', text: '#34d399' },
+  indigo:  { bar: '#6366f1', text: '#818cf8' },
+  amber:   { bar: '#f59e0b', text: '#fbbf24' },
+  slate:   { bar: '#64748b', text: '#94a3b8' },
 };
+
+const TRACKS = [
+  { key: 'COMMON',   label: 'المواد المشتركة', desc: 'لجميع الطلاب' },
+  { key: 'SCIENCE',  label: 'المسار العلمي',   desc: 'علمي' },
+  { key: 'LITERARY', label: 'المسار الأدبي',   desc: 'أدبي' },
+];
 
 export default function ProgressBoard() {
   const sectionRef = useRef(null);
@@ -48,35 +54,34 @@ export default function ProgressBoard() {
     const targetLessons = getTotalLessons(s.id);
     const approved      = live?.approvedLessons || 0;
     const progress      = targetLessons > 0 ? Math.round((approved / targetLessons) * 100) : 0;
-    return { ...s, progress, totalLessons: targetLessons, contributor: null };
+    return { ...s, progress, totalLessons: targetLessons };
   });
 
-  const totalSubjects     = subjects.length;
-  const mappedSubjects    = subjects.filter(s => s.progress > 0).length;
-  const totalContributors = subjects.filter(s => s.contributor).length;
-  const openSeats         = subjects.filter(s => !s.contributor).length;
+  const totalSubjects  = subjects.length;
+  const mappedSubjects = subjects.filter(s => s.progress > 0).length;
+  const openSeats      = subjects.filter(s => s.progress === 0).length;
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo('.progress-header',
-        { opacity: 0, y: 32 },
+        { opacity: 0, y: 28 },
         {
-          opacity: 1, y: 0, duration: 0.85, ease: 'power3.out',
+          opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
           scrollTrigger: { trigger: '.progress-header', start: 'top 90%', once: true },
         }
       );
       gsap.fromTo('.progress-stat',
-        { opacity: 0, y: 20, scale: 0.9 },
+        { opacity: 0, y: 16, scale: 0.92 },
         {
-          opacity: 1, y: 0, scale: 1, duration: 0.55, stagger: 0.1, ease: 'back.out(1.4)',
-          scrollTrigger: { trigger: '.progress-stats', start: 'top 90%', once: true },
+          opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.1, ease: 'back.out(1.4)',
+          scrollTrigger: { trigger: '.progress-stats', start: 'top 92%', once: true },
         }
       );
-      gsap.fromTo('.subject-card',
-        { opacity: 0, y: 24, scale: 0.95 },
+      gsap.fromTo('.subject-row',
+        { opacity: 0, x: 12 },
         {
-          opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.045, ease: 'power3.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 80%', once: true },
+          opacity: 1, x: 0, duration: 0.35, stagger: 0.03, ease: 'power2.out',
+          scrollTrigger: { trigger: sectionRef.current, start: 'top 82%', once: true },
         }
       );
     }, sectionRef);
@@ -86,12 +91,12 @@ export default function ProgressBoard() {
 
   return (
     <section ref={sectionRef} className="py-20 sm:py-28 px-4 sm:px-6 relative">
-      <div className="ember-line max-w-6xl mx-auto mb-16 sm:mb-24 opacity-40" />
+      <div className="ember-line max-w-6xl mx-auto mb-16 sm:mb-20 opacity-40" />
 
       <div className="max-w-6xl mx-auto">
 
         {/* Header */}
-        <div className="progress-header mb-12 sm:mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-8">
+        <div className="progress-header mb-10 sm:mb-14 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <span
               className="inline-block text-xs sm:text-sm tracking-widest uppercase mb-4 font-mono"
@@ -109,87 +114,88 @@ export default function ProgressBoard() {
               className="max-w-md leading-loose text-sm sm:text-base font-arabic"
               style={{ color: 'var(--text-secondary)' }}
             >
-              كل شريط تقدم هنا بناه إنسان حقيقي — معلم، طالب جامعة، أو متطوع
-              خصّص وقته لمادة يعرفها.
-              <span style={{ color: 'var(--accent)' }}> الأشرطة الفارغة ليست نقصاً — هي مقاعد شاغرة.</span>
+              كل شريط تقدم بناه إنسان حقيقي.{' '}
+              <span style={{ color: 'var(--accent)' }}>الأشرطة الفارغة مقاعد شاغرة.</span>
             </p>
           </div>
 
           {/* Stats */}
-          <div className="progress-stats flex gap-5 sm:gap-8">
+          <div className="progress-stats flex gap-6 sm:gap-10 shrink-0">
             {[
-              { value: totalSubjects,     label: 'مادة'          },
-              { value: mappedSubjects,    label: 'بُدئت'         },
-              { value: openSeats,         label: 'مقعد شاغر'     },
+              { value: totalSubjects,  label: 'مادة'      },
+              { value: mappedSubjects, label: 'بُدئت'     },
+              { value: openSeats,      label: 'مقعد شاغر' },
             ].map((stat, i) => (
               <div key={i} className="progress-stat text-center">
                 <div
                   className="text-3xl sm:text-4xl font-bold stat-number"
                   style={{ color: 'var(--accent)' }}
                 >{stat.value}</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{stat.label}</div>
+                <div className="text-xs mt-1 font-arabic" style={{ color: 'var(--text-muted)' }}>{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Track groups */}
-        {[
-          { trackKey: 'COMMON',   label: 'المواد المشتركة', desc: 'يأخذها جميع الطلاب' },
-          { trackKey: 'SCIENCE',  label: 'المسار العلمي',   desc: 'مسار + تخصص (اختر واحداً من الثلاثة)' },
-          { trackKey: 'LITERARY', label: 'المسار الأدبي',   desc: 'مسار + تخصص (اختر واحداً من الاثنين)' },
-        ].map(({ trackKey, label, desc }) => {
-          const trackSubjects = subjects.filter(s => s.track === trackKey);
-          const required      = trackSubjects.filter(s => !s.isMajor);
-          const majors        = trackSubjects.filter(s => s.isMajor);
-          return (
-            <div key={trackKey} className="mb-10 sm:mb-14">
-              <div className="flex items-baseline gap-2 sm:gap-3 mb-4 sm:mb-5 flex-wrap">
-                <h3
-                  className="text-base sm:text-lg font-bold"
-                  style={{ color: TRACK_CONFIG[trackKey].color }}
-                >{label}</h3>
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{desc}</span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
-                {required.map(s => <SubjectCard key={s.id} subject={s} />)}
-              </div>
-              {majors.length > 0 && (
-                <div className="pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-                  <p
-                    className="text-xs font-mono mb-3"
-                    style={{ color: 'var(--text-muted)' }}
-                  >— تخصص، اختر واحداً</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {majors.map(s => <SubjectCard key={s.id} subject={s} isMajor />)}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        <div className="space-y-8 sm:space-y-10">
+          {TRACKS.map(({ key, label, desc }) => {
+            const trackSubjects = subjects.filter(s => s.track === key);
+            const required      = trackSubjects.filter(s => !s.isMajor);
+            const majors        = trackSubjects.filter(s => s.isMajor);
 
-        {/* Bottom CTA */}
-        <div className="mt-8 sm:mt-10 text-center">
-          <p className="mb-2 text-sm sm:text-base font-arabic" style={{ color: 'var(--text-secondary)' }}>
+            return (
+              <div key={key}>
+                {/* Track header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <h3
+                    className="text-sm sm:text-base font-bold font-arabic"
+                    style={{ color: TRACK_CONFIG[key].color }}
+                  >{label}</h3>
+                  <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{desc}</span>
+                  <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+                </div>
+
+                {/* Subject rows — 1 col mobile, 2 col md+ */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {required.map(s => <SubjectRow key={s.id} subject={s} />)}
+                </div>
+
+                {majors.length > 0 && (
+                  <div className="mt-3 pt-3" style={{ borderTop: '1px dashed var(--border-subtle)' }}>
+                    <p className="text-xs font-mono mb-2" style={{ color: 'var(--text-muted)' }}>
+                      تخصص — اختر واحداً
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {majors.map(s => <SubjectRow key={s.id} subject={s} isMajor />)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* CTA */}
+        <div className="mt-10 sm:mt-14 flex flex-col sm:flex-row items-center justify-between gap-5 pt-8 sm:pt-10"
+             style={{ borderTop: '1px solid var(--border-subtle)' }}>
+          <p className="font-arabic text-center sm:text-right" style={{ color: 'var(--text-secondary)' }}>
             مادتك في انتظارك — لديك معرفة فيها؟
-          </p>
-          <p className="mb-6" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            احجز مقعدك في النفير
+            <span className="block text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>احجز مقعدك في النفير</span>
           </p>
           <a
             href="/prejoin"
-            className="inline-flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
+            className="shrink-0 inline-flex items-center gap-2 px-7 py-3 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
             style={{ background: 'var(--accent)', color: '#0e0c09' }}
             onMouseEnter={e => {
               e.currentTarget.style.background = 'var(--accent-hover)';
-              e.currentTarget.style.boxShadow = '0 0 40px var(--glow)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow  = '0 0 36px var(--glow)';
+              e.currentTarget.style.transform  = 'translateY(-2px)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.background = 'var(--accent)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow  = 'none';
+              e.currentTarget.style.transform  = 'translateY(0)';
             }}
           >
             طلب انضمام للنفير
@@ -200,90 +206,87 @@ export default function ProgressBoard() {
   );
 }
 
-function SubjectCard({ subject, isMajor = false }) {
+function SubjectRow({ subject, isMajor = false }) {
   const c           = colorMap[subject.color] ?? colorMap.sand;
-  const isAvailable = !subject.contributor;
-  const trackCfg    = TRACK_CONFIG[subject.track];
+  const isAvailable = subject.progress === 0 && !subject.contributor;
+  const pct         = subject.progress;
 
   return (
     <div
-      className="subject-card relative p-3 sm:p-5 rounded-xl overflow-hidden transition-all duration-300"
+      className="subject-row flex items-center gap-3 py-2.5 px-3.5 rounded-xl transition-all duration-200"
       style={{
-        background:    'var(--bg-card)',
-        backdropFilter:'blur(12px)',
-        border:        `1px solid ${isAvailable ? 'var(--border-subtle)' : c.badge.border + '80'}`,
-        borderStyle:   isMajor ? 'dashed' : 'solid',
+        background: 'var(--bg-card)',
+        border:     `1px solid var(--border-subtle)`,
+        borderStyle: isMajor ? 'dashed' : 'solid',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.transform   = 'translateY(-3px)';
-        e.currentTarget.style.borderColor = c.bar + '60';
-        e.currentTarget.style.boxShadow   = '0 8px 30px rgba(0,0,0,0.2)';
+        e.currentTarget.style.borderColor = c.bar + '55';
+        e.currentTarget.style.background  = 'var(--bg-secondary)';
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.transform   = 'translateY(0)';
-        e.currentTarget.style.borderColor = isAvailable ? 'var(--border-subtle)' : c.badge.border + '80';
-        e.currentTarget.style.boxShadow   = 'none';
+        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+        e.currentTarget.style.background  = 'var(--bg-card)';
       }}
     >
-      <div className="relative z-10">
-        <div className="flex items-center gap-1.5 sm:gap-2 mb-3 flex-wrap">
-          <span
-            className="inline-block text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-mono"
-            style={{ background: c.badge.bg, border: `1px solid ${c.badge.border}`, color: c.badge.color }}
-          >
-            {trackCfg.label}
-          </span>
-          {isMajor && (
-            <span
-              className="inline-block text-xs px-1.5 py-0.5 rounded-full font-mono"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}
-            >
-              تخصص
-            </span>
-          )}
-        </div>
+      {/* Color accent */}
+      <div
+        className="w-1 self-stretch rounded-full shrink-0"
+        style={{ background: c.bar, opacity: pct > 0 ? 0.8 : 0.25, minHeight: '20px' }}
+      />
 
-        <h3
-          className="text-sm sm:text-base font-bold mb-0.5 sm:mb-1"
+      {/* Name */}
+      <div className="flex-1 min-w-0">
+        <span
+          className="text-sm font-arabic font-semibold block leading-snug"
           style={{ color: 'var(--text-primary)' }}
-        >{subject.nameAr}</h3>
-
-        <p className="text-xs mb-3 sm:mb-4" style={{ color: 'var(--text-muted)' }}>
+        >
+          {subject.nameAr}
+        </span>
+        <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
           {subject.units.length} وحدات · {subject.totalLessons} درس
-        </p>
+        </span>
+      </div>
 
-        {/* Progress bar */}
-        <div className="w-full h-1 rounded-full mb-2 sm:mb-3" style={{ background: 'var(--border-mid)' }}>
+      {/* Progress bar */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div
+          className="w-16 sm:w-24 h-1 rounded-full overflow-hidden"
+          style={{ background: 'var(--border-mid)' }}
+        >
           <div
-            className="h-1 rounded-full"
-            style={{
-              width: `${subject.progress}%`,
-              background: c.bar,
-              transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
+            className="h-full rounded-full transition-all duration-1000"
+            style={{ width: `${pct}%`, background: c.bar }}
           />
         </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-mono" style={{ color: c.text }}>{subject.progress}%</span>
-          {isAvailable ? (
-            <a
-              href="/prejoin"
-              className="text-xs px-2 py-0.5 rounded-full font-mono transition-all duration-200"
-              style={{
-                color: 'var(--accent)',
-                background: 'var(--accent-dim)',
-                border: '1px solid rgba(212,137,30,0.2)',
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              + احجز المقعد
-            </a>
-          ) : (
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{subject.contributor}</span>
-          )}
-        </div>
+        <span
+          className="text-xs font-mono w-7 text-center tabular-nums"
+          style={{ color: pct > 0 ? c.text : 'var(--text-muted)' }}
+        >
+          {pct}٪
+        </span>
       </div>
+
+      {/* CTA or contributor name */}
+      {isAvailable ? (
+        <a
+          href="/prejoin"
+          className="text-xs px-2 py-1 rounded-lg font-mono shrink-0 transition-all duration-200"
+          style={{
+            color:      'var(--accent)',
+            background: 'var(--accent-dim)',
+            border:     '1px solid rgba(212,137,30,0.2)',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,137,30,0.15)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--accent-dim)'}
+          onClick={e => e.stopPropagation()}
+        >
+          احجز
+        </a>
+      ) : subject.contributor ? (
+        <span className="text-xs shrink-0 font-arabic" style={{ color: 'var(--text-muted)' }}>
+          {subject.contributor}
+        </span>
+      ) : null}
     </div>
   );
 }
