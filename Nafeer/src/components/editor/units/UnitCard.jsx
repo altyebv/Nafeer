@@ -16,16 +16,11 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
   const [titleDraft,    setTitleDraft]    = useState(unit.title);
   const [addingLesson,  setAddingLesson]  = useState(false);
   const [newTitle,      setNewTitle]      = useState('');
-  const addInputRef = useRef(null);
+  const addInputRef   = useRef(null);
   const titleInputRef = useRef(null);
 
-  useEffect(() => {
-    if (addingLesson) addInputRef.current?.focus();
-  }, [addingLesson]);
-
-  useEffect(() => {
-    if (editingTitle) titleInputRef.current?.focus();
-  }, [editingTitle]);
+  useEffect(() => { if (addingLesson)  addInputRef.current?.focus();   }, [addingLesson]);
+  useEffect(() => { if (editingTitle)  titleInputRef.current?.focus(); }, [editingTitle]);
 
   const unitLessons = lessons
     .filter((l) => l.unitId === unit.id)
@@ -49,26 +44,35 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
     setAddingLesson(false);
   };
 
-  // Coverage avg for display
-  const avgCov = unitCoverage?.avgCoverage ?? null;
+  const avgCov  = unitCoverage?.avgCoverage ?? null;
   const covLevel = avgCov != null
     ? (avgCov >= 80 ? 'high' : avgCov >= 40 ? 'medium' : avgCov > 0 ? 'low' : 'none')
     : null;
-  const covCfg = covLevel ? COVERAGE_LEVEL_CONFIG[covLevel] : null;
-
+  const covCfg  = covLevel ? COVERAGE_LEVEL_CONFIG[covLevel] : null;
   const ordinal = ARABIC_ORDINALS[index] || `${index + 1}`;
 
+  // Split lessons: main + variation children
+  const mainLessons = unitLessons.filter((l) => !l.parentLesson);
+  const variationOf = (parentId) => unitLessons.filter((l) => l.parentLesson === parentId);
+
   return (
-    <section>
-      {/* ── Unit header ──────────────────────────────────────────────────────── */}
+    <section
+      className="rounded-2xl overflow-hidden transition-all duration-200"
+      style={{
+        background:   'var(--bg-card)',
+        border:       '1px solid var(--border-subtle)',
+      }}
+    >
+      {/* ── Unit header ──────────────────────────────────────────────────── */}
       <div
-        className="flex items-baseline gap-4 mb-3 cursor-pointer group select-none"
+        className="flex items-center gap-4 px-5 py-3.5 cursor-pointer select-none group"
+        style={{ borderBottom: expanded ? '1px solid var(--border-subtle)' : 'none' }}
         onClick={() => !editingTitle && setExpanded((v) => !v)}
       >
-        {/* Chapter number — large faint mono */}
+        {/* Unit number */}
         <span
-          className="text-4xl font-mono font-bold leading-none shrink-0 transition-colors"
-          style={{ color: 'rgba(255,255,255,0.04)' }}
+          className="text-3xl font-mono font-bold leading-none shrink-0 transition-all duration-300"
+          style={{ color: 'var(--border-mid)', letterSpacing: '-0.02em' }}
           aria-hidden
         >
           {String(index + 1).padStart(2, '0')}
@@ -87,22 +91,24 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
                 if (e.key === 'Escape') { setTitleDraft(unit.title); setEditingTitle(false); }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="text-lg font-semibold bg-transparent border-b border-sand-600 text-sand-200
-                focus:outline-none font-arabic w-full pb-0.5"
+              className="text-base font-semibold bg-transparent focus:outline-none font-arabic w-full pb-0.5"
+              style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--accent)' }}
             />
           ) : (
-            <h2 className="text-lg font-semibold text-ink-100 font-arabic truncate group-hover:text-sand-200 transition-colors">
+            <h2
+              className="text-base font-semibold font-arabic truncate transition-colors"
+              style={{ color: 'var(--text-primary)' }}
+            >
               {unit.title}
             </h2>
           )}
 
-          {/* Inline ordinal label */}
-          <span className="text-xs text-ink-700 font-arabic shrink-0">
+          <span className="font-arabic shrink-0" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
             الوحدة {ordinal}
           </span>
         </div>
 
-        {/* Meta cluster — stops propagation so clicking doesn't toggle */}
+        {/* Meta cluster */}
         <div
           className="flex items-center gap-2 shrink-0"
           onClick={(e) => e.stopPropagation()}
@@ -110,129 +116,156 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
           {/* Coverage badge */}
           {covCfg && avgCov != null && (
             <span
-              className="text-[10px] font-mono px-1.5 py-0.5 rounded border"
-              style={{ background: covCfg.bg, borderColor: covCfg.border, color: covCfg.color }}
+              className="font-mono px-1.5 py-0.5 rounded border"
+              style={{ fontSize: 10, background: covCfg.bg, borderColor: covCfg.border, color: covCfg.color }}
               title={`تغطية الوحدة: ${avgCov}%`}
             >
               {avgCov}%
             </span>
           )}
 
-          {/* Progress fraction */}
-          <span className={`text-xs font-mono px-2 py-0.5 rounded border
-            ${pct === 100
-              ? 'bg-emerald-900/30 text-emerald-500 border-emerald-800/40'
-              : pct > 0
-                ? 'bg-amber-900/20 text-amber-500 border-amber-800/30'
-                : 'text-ink-700 border-ink-800'
-            }`}
+          {/* Progress */}
+          <span
+            className="font-mono"
+            style={{ fontSize: 11, color: done === total && total > 0 ? '#10b981' : 'var(--text-secondary)' }}
           >
             {done}/{total}
           </span>
 
           {/* Edit title */}
           <button
-            onClick={() => { setTitleDraft(unit.title); setEditingTitle(true); }}
-            className="p-1 text-ink-800 hover:text-ink-400 transition-colors rounded"
-            title="تعديل العنوان"
+            onClick={(e) => { e.stopPropagation(); setTitleDraft(unit.title); setEditingTitle(true); }}
+            className="rounded transition-all duration-150 opacity-0 group-hover:opacity-100"
+            style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)';   e.currentTarget.style.background = 'transparent'; }}
+            title="تعديل اسم الوحدة"
           >
             <PencilIcon />
           </button>
 
           {/* Collapse chevron */}
-          <span className={`text-ink-700 text-xs transition-transform duration-200 ${expanded ? '' : '-rotate-90'}`}>
+          <span
+            className="transition-transform duration-300"
+            style={{
+              fontSize: 10,
+              color: 'var(--text-muted)',
+              transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+            }}
+          >
             ▾
           </span>
         </div>
       </div>
 
-      {/* Thin rule */}
-      <div className="h-px bg-ink-800/60 mb-4" />
-
-      {/* ── Lesson list ──────────────────────────────────────────────────────── */}
+      {/* ── Lessons grid ─────────────────────────────────────────────────── */}
       {expanded && (
-        <div className="space-y-1 mb-4">
-          {unitLessons.length === 0 && !addingLesson && (
-            <p className="text-xs text-ink-700 font-arabic py-3 text-center">
-              لا توجد دروس — ابدأ بإضافة درس
-            </p>
+        <div className="p-3">
+          {unitLessons.length === 0 ? (
+            <div
+              className="py-8 rounded-xl text-center cursor-pointer group"
+              style={{ border: '1.5px dashed var(--border-subtle)' }}
+              onClick={() => setAddingLesson(true)}
+            >
+              <p className="font-arabic" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                لا توجد دروس بعد
+              </p>
+              <p className="font-arabic mt-1 group-hover:opacity-100 transition-opacity"
+                style={{ fontSize: 11, color: 'var(--accent)', opacity: 0 }}>
+                اضغط لإضافة درس
+              </p>
+            </div>
+          ) : (
+            /* Two-column grid for wider screens; single column on small */
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
+              {mainLessons.map((lesson, i) => {
+                const globalIndex = unitLessons.findIndex((l) => l.id === lesson.id);
+                const children = variationOf(lesson.id);
+                const cvLevel  = coverageMap?.[lesson.id]?.level ?? null;
+                return (
+                  <div key={lesson.id}>
+                    <LessonItem
+                      lesson={lesson}
+                      index={globalIndex}
+                      onEdit={() => onEditLesson(lesson.id, unit.id)}
+                      coverageLevel={cvLevel}
+                    />
+                    {children.map((child) => (
+                      <LessonItem
+                        key={child.id}
+                        lesson={child}
+                        index={unitLessons.findIndex((l) => l.id === child.id)}
+                        onEdit={() => onEditLesson(child.id, unit.id)}
+                        coverageLevel={coverageMap?.[child.id]?.level ?? null}
+                        isVariation
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
           )}
 
-          {/* Build tree: root lessons first, then their variations indented */}
-          {(() => {
-            const roots      = unitLessons.filter((l) => !l.parentLesson);
-            const variations = unitLessons.filter((l) => !!l.parentLesson);
-            const varsByParent = variations.reduce((acc, v) => {
-              if (!acc[v.parentLesson]) acc[v.parentLesson] = [];
-              acc[v.parentLesson].push(v);
-              return acc;
-            }, {});
-
-            return roots.map((lesson, li) => (
-              <div key={lesson.id}>
-                <LessonItem
-                  lesson={lesson}
-                  index={li}
-                  onEdit={() => onEditLesson(lesson.id, unit.id)}
-                  coverageLevel={coverageMap?.[lesson.contentId]?.coverageLevel}
-                />
-                {/* Variations indented beneath parent */}
-                {(varsByParent[lesson.id] || []).map((vLesson) => (
-                  <div key={vLesson.id} className="pr-6 mt-0.5">
-                    <LessonItem
-                      lesson={vLesson}
-                      index={null}
-                      onEdit={() => onEditLesson(vLesson.id, unit.id)}
-                      coverageLevel={coverageMap?.[vLesson.contentId]?.coverageLevel}
-                      isVariation
-                    />
-                  </div>
-                ))}
-              </div>
-            ));
-          })()}
-
-          {/* Inline add-lesson input */}
+          {/* Add lesson row */}
           {addingLesson ? (
-            <div className="flex items-center gap-2 pl-4 pr-2 py-2 border border-sand-800/60 rounded-lg bg-ink-900/40 mt-2">
-              <span className="text-xs text-ink-700 font-mono shrink-0">
-                {String(unitLessons.length + 1).padStart(2, '0')}
-              </span>
+            <div
+              className="flex gap-2 mt-2"
+              style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 8 }}
+            >
               <input
                 ref={addInputRef}
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter')  confirmAddLesson();
-                  if (e.key === 'Escape') { setNewTitle(''); setAddingLesson(false); }
+                  if (e.key === 'Escape') setAddingLesson(false);
                 }}
-                placeholder="عنوان الدرس الجديد…"
-                className="flex-1 bg-transparent text-sand-200 text-sm font-arabic
-                  placeholder-ink-700 focus:outline-none"
+                placeholder="عنوان الدرس… ثم Enter"
+                className="flex-1 rounded-lg px-3 py-2 font-arabic focus:outline-none transition-colors"
+                style={{
+                  fontSize:    13,
+                  background:  'var(--bg-primary)',
+                  border:      '1px solid var(--border-mid)',
+                  color:       'var(--text-primary)',
+                }}
               />
               <button
                 onClick={confirmAddLesson}
-                disabled={!newTitle.trim()}
-                className="text-xs px-2.5 py-1 bg-sand-800 text-ink-950 rounded-md font-arabic
-                  disabled:opacity-30 disabled:cursor-not-allowed hover:bg-sand-700 transition-colors"
+                className="px-3 py-2 rounded-lg font-arabic text-sm transition-colors"
+                style={{ background: 'rgba(212,137,30,0.12)', border: '1px solid rgba(212,137,30,0.2)', color: '#d4891e' }}
               >
                 إضافة
               </button>
               <button
-                onClick={() => { setNewTitle(''); setAddingLesson(false); }}
-                className="text-xs text-ink-600 hover:text-ink-400 font-arabic transition-colors"
+                onClick={() => setAddingLesson(false)}
+                className="px-3 py-2 rounded-lg text-sm transition-colors"
+                style={{ color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}
               >
-                إلغاء
+                ✕
               </button>
             </div>
           ) : (
             <button
               onClick={() => setAddingLesson(true)}
-              className="w-full mt-1 py-2 text-xs text-ink-700 hover:text-sand-500
-                border border-dashed border-ink-800 hover:border-sand-900
-                rounded-lg font-arabic transition-colors hover:bg-sand-900/5"
+              className="w-full mt-2 py-2 rounded-xl font-arabic text-sm transition-all group"
+              style={{
+                color:      'var(--text-muted)',
+                border:     '1px dashed var(--border-subtle)',
+                background: 'transparent',
+                fontSize:   12,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color      = 'var(--accent)';
+                e.currentTarget.style.borderColor = 'rgba(212,137,30,0.3)';
+                e.currentTarget.style.background  = 'rgba(212,137,30,0.03)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color      = 'var(--text-muted)';
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                e.currentTarget.style.background  = 'transparent';
+              }}
             >
-              + درس جديد
+              + إضافة درس
             </button>
           )}
         </div>
@@ -241,10 +274,9 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
   );
 }
 
-// ─── Micro icons ──────────────────────────────────────────────────────────────
 function PencilIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
       <path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z"
         stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
     </svg>
