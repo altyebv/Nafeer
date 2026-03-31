@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-sand-600" />
             ADMIN ACCESS
           </div>
-          <h1 className="text-3xl font-arabic font-bold text-sand-400 mb-1">نافير</h1>
+          <h1 className="text-3xl font-arabic font-bold text-sand-400 mb-1">نفير</h1>
           <p className="text-ink-500 text-sm">لوحة التحكم</p>
         </div>
 

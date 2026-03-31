@@ -8,7 +8,7 @@ export function AdminSidebar({ section, badges, onSelect, onCreateContributor, o
       {/* Brand */}
       <div className="px-5 pt-6 pb-5 border-b border-ink-800/60">
         <div className="flex items-center gap-2.5">
-          <span className="text-xl font-arabic font-bold text-sand-400">نافير</span>
+          <span className="text-xl font-arabic font-bold text-sand-400">نفير</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-sand-900/50 border border-sand-800/60 text-sand-600 tracking-widest">
             ADMIN
           </span>
