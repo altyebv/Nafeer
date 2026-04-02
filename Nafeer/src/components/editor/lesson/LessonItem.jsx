@@ -13,7 +13,7 @@ const STATUS_BORDER = {
   done:    '#10b981',
 };
 
-export default function LessonItem({ lesson, index, onEdit, coverageLevel, isVariation }) {
+export default function LessonItem({ lesson, index, onEdit, onAddVariation, coverageLevel, isVariation }) {
   const { sections, blocks, updateLesson } = useDataStore();
 
   const [editingTitle, setEditingTitle] = useState(false);
@@ -163,6 +163,34 @@ export default function LessonItem({ lesson, index, onEdit, coverageLevel, isVar
           >
             <PencilIcon />
           </button>
+
+          {/* Add variation — only shown on root lessons */}
+          {!isVariation && onAddVariation && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onAddVariation(); }}
+              className="flex items-center gap-1 rounded-md font-arabic transition-all opacity-0 group-hover:opacity-100"
+              style={{
+                padding:    '3px 7px',
+                fontSize:   11,
+                color:      'var(--text-muted)',
+                border:     '1px solid var(--border-subtle)',
+                background: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color       = '#8b5cf6';
+                e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)';
+                e.currentTarget.style.background  = 'rgba(139,92,246,0.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color       = 'var(--text-muted)';
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                e.currentTarget.style.background  = 'transparent';
+              }}
+              title="إضافة تنويع لهذا الدرس"
+            >
+              ＋ تنويع
+            </button>
+          )}
 
           <button
             onClick={onEdit}
