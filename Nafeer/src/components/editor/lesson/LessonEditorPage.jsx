@@ -22,11 +22,10 @@ const FIELD =
   'hover:border-ink-700';
 
 const TABS = [
-  { id: 'meta',       ar: '١', label: 'البيانات'  },
-  { id: 'body',       ar: '٢', label: 'المحتوى'   },
-  { id: 'questions',  ar: '٣', label: 'الأسئلة'   },
-  { id: 'feed',       ar: '٤', label: 'التغذية'   },
-  { id: 'variations', ar: '٥', label: 'التنويعات' },
+  { id: 'meta',      ar: '١', label: 'البيانات' },
+  { id: 'body',      ar: '٢', label: 'المحتوى'  },
+  { id: 'questions', ar: '٣', label: 'الأسئلة'  },
+  { id: 'feed',      ar: '٤', label: 'التغذية'  },
 ];
 
 const PART_NAMES_AR = ['الأوَّل', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
@@ -104,11 +103,10 @@ export default function LessonEditorPage({
   const completedChecks = checklist.filter((c) => c.done).length;
 
   const tabDone = (tab) => {
-    if (tab.id === 'meta')       return checklist.slice(0,2).every(c => c.done);
-    if (tab.id === 'body')       return checklist.slice(2,4).every(c => c.done);
-    if (tab.id === 'questions')  return checklist[4]?.done;
-    if (tab.id === 'feed')       return checklist[5]?.done;
-    if (tab.id === 'variations') return variations.length > 0;
+    if (tab.id === 'meta')      return checklist.slice(0,2).every(c => c.done);
+    if (tab.id === 'body')      return checklist.slice(2,4).every(c => c.done);
+    if (tab.id === 'questions') return checklist[4]?.done;
+    if (tab.id === 'feed')      return checklist[5]?.done;
     return false;
   };
 
