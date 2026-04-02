@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useDataStore }    from '@/store/dataStore';
 import { computeProgress } from '@/lib/LessonStatus';
 import LessonItem          from '@/components/editor/lesson/LessonItem';
+import AddVariationModal   from '@/components/editor/lesson/AddVariationModal';
 import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
 
 const ARABIC_ORDINALS = ['الأولى','الثانية','الثالثة','الرابعة','الخامسة',
@@ -14,8 +15,10 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
   const [expanded,      setExpanded]      = useState(true);
   const [editingTitle,  setEditingTitle]  = useState(false);
   const [titleDraft,    setTitleDraft]    = useState(unit.title);
-  const [addingLesson,  setAddingLesson]  = useState(false);
-  const [newTitle,      setNewTitle]      = useState('');
+  const [addingLesson,    setAddingLesson]    = useState(false);
+  const [newTitle,        setNewTitle]        = useState('');
+  // variationTarget: the parent lesson for which we're creating a variation
+  const [variationTarget, setVariationTarget] = useState(null);
   const addInputRef   = useRef(null);
   const titleInputRef = useRef(null);
 
@@ -188,6 +191,7 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
                       lesson={lesson}
                       index={globalIndex}
                       onEdit={() => onEditLesson(lesson.id, unit.id)}
+                      onAddVariation={() => setVariationTarget(lesson)}
                       coverageLevel={cvLevel}
                     />
                     {children.map((child) => (
@@ -269,6 +273,16 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
             </button>
           )}
         </div>
+      )}
+
+      {/* ── Add Variation Modal ───────────────────────────────────────────── */}
+      {variationTarget && (
+        <AddVariationModal
+          parentLesson={variationTarget}
+          unitId={unit.id}
+          onCreated={() => {/* lesson lands in store — list re-renders automatically */}}
+          onClose={() => setVariationTarget(null)}
+        />
       )}
     </section>
   );
