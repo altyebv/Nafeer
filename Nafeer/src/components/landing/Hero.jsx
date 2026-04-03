@@ -173,7 +173,7 @@ export default function Hero() {
 
         {/* Badge — pre-hidden via inline style */}
         <div
-          className="gsap-hero-badge mb-5 sm:mb-6 inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs font-mono"
+          className="gsap-hero-badge mb-5 sm:mb-6 inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-sm font-mono"
           style={{
             border: '1px solid var(--border-mid)', background: 'var(--bg-card)', color: 'var(--text-muted)',
             opacity: 0, transform: 'translateY(16px) scale(0.94)',
@@ -185,7 +185,7 @@ export default function Hero() {
 
         {/* Eyebrow */}
         <p
-          className="gsap-hero-eyebrow text-xs sm:text-sm font-mono mb-3 sm:mb-4 tracking-widest uppercase"
+          className="gsap-hero-eyebrow text-lg sm:text-sm font-mono mb-3 sm:mb-4 tracking-widest uppercase"
           style={{ color: 'var(--accent)', opacity: 0, transform: 'translateY(12px)' }}
         >
           رفيق الشهادة السودانية
