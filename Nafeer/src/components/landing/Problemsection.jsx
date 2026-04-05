@@ -5,21 +5,21 @@ import { gsap, ScrollTrigger } from '@/lib/gsap';
 const scenes = [
   {
     num: '١',
-    label: 'فجوة الفهم',
-    labelEn: 'The Comprehension Gap',
-    text: 'الكتاب موجود. المعلومة موجودة. لكن الفهم الحقيقي — ذلك الذي يجعلك تحل أي سؤال لا فقط الأسئلة التي حفظتها — بعيد المنال.',
+    label: 'كنز في انتظار مفتاحه',
+    labelEn: 'A Goldmine Awaiting Its Key',
+    text: 'المنهج السوداني مليء بالعمق — علم حقيقي، مفاهيم راسخة، معرفة تستحق الفهم. المشكلة ليست فيما يُدرَّس، بل في الجسر بين الكتاب وعقل الطالب. بشير هو ذلك الجسر.',
   },
   {
     num: '٢',
-    label: 'واقع البنية',
-    labelEn: 'The Infrastructure Reality',
-    text: 'الإنترنت غير مضمون. الكهرباء تنقطع. والتطبيقات التعليمية الجيدة لم تُصنع للبيئة السودانية — صُنعت لعالم مختلف.',
+    label: 'صُنع لهذا العالم تحديداً',
+    labelEn: 'Built for This World Specifically',
+    text: 'معظم التطبيقات التعليمية صُنعت لبيئات مختلفة. بشير صُنع للواقع السوداني — يعمل بلا إنترنت، بلا انقطاع، بلا استثناء. لأن التعليم الجيد حق لكل طالب، بغض النظر عن ظروف اتصاله.',
   },
   {
     num: '٣',
-    label: 'ثمن الوضع الحالي',
-    labelEn: 'The Cost of the Status Quo',
-    text: 'الطالب الجيد يحفظ، يؤدي، وينسى. والمنهج يمشي — لكن الفهم لا يتراكم، والأساس يبقى هشاً.',
+    label: 'المعرفة التي تبقى وتبني',
+    labelEn: 'Knowledge That Stays and Builds',
+    text: 'كثير من المفاهيم التي تُدرَّس في المرحلة الثانوية هي أساس لما يأتي بعدها. بشير يُساعد الطالب على رؤية هذه الروابط — فلا تُعاد دراسة ما سبق تعلّمه، بل يُبنى عليه.',
   },
 ];
 
@@ -92,7 +92,7 @@ export default function ProblemSection() {
 
       {/* Faint background watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style={{ opacity: 0.018 }}>
-        <span className="text-[30vw] font-arabic font-bold leading-none" style={{ color: 'var(--text-primary)' }}>الواقع</span>
+        <span className="text-[30vw] font-arabic font-bold leading-none" style={{ color: 'var(--text-primary)' }}>الإمكانية</span>
       </div>
 
       <div className="max-w-4xl mx-auto relative z-10">
@@ -100,12 +100,12 @@ export default function ProblemSection() {
         {/* Eyebrow */}
         <div className="problem-eyebrow mb-14 sm:mb-20" style={{ opacity: 0 }}>
           <span className="inline-block text-xs sm:text-sm font-mono tracking-widest uppercase mb-4" style={{ color: 'var(--accent)' }}>
-            المشهد المألوف
+            لماذا بشير
           </span>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-arabic font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>
-            الطالب السوداني يستحق أكثر
+            الإمكانية موجودة دائماً
             <br />
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75em', fontWeight: 400 }}>مما يحدث الآن</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75em', fontWeight: 400 }}>نحتاج فقط الأداة المناسبة لإطلاقها</span>
           </h2>
         </div>
 
@@ -147,13 +147,13 @@ export default function ProblemSection() {
             <div className="relative z-10 flex items-start gap-5">
               <div className="problem-pivot-bar w-1 self-stretch rounded-full shrink-0 hidden sm:block" style={{ background: 'var(--accent)', opacity: 0.5, transform: 'scaleY(0)' }} />
               <div>
-                <p className="text-xs font-mono mb-3 tracking-widest uppercase" style={{ color: 'var(--accent)' }}>نقطة التحول</p>
+                <p className="text-md font-mono mb-3 tracking-widest uppercase" style={{ color: 'var(--accent)' }}>الفرق الذي يصنعه بشير</p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-arabic font-bold leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                   بشير لا يُبدّل المنهج —
-                  <span style={{ color: 'var(--accent)' }}> يُبدّل طريقة عيشه.</span>
+                  <span style={{ color: 'var(--accent)' }}> يُبدّل طريقة عيشِه.</span>
                 </p>
                 <p className="text-base leading-loose mt-3 font-arabic" style={{ color: 'var(--text-muted)' }}>
-                  نفس المقررات. نفس المواد. طريقة مختلفة تماماً في التعلم.
+                  نفس المقررات، نفس المواد — لكن بتجربة تعلّم مرئية، تراكمية، مصممة للطالب السوداني تحديداً.
                 </p>
               </div>
             </div>
