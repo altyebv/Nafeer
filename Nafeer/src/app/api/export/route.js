@@ -125,6 +125,7 @@ export async function GET(request) {
         description: unit.description || null,
         lessons: (lessonsByUnit[unit.contentId] || []).map((lesson) => ({
           id:               lesson.contentId,
+          metadata: lesson.metadata || null,
           title:            lesson.title,
           order:            lesson.order,
           estimatedMinutes: lesson.estimatedMinutes || 15,
