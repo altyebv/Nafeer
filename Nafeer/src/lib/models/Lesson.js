@@ -15,6 +15,8 @@ const LessonSchema = new mongoose.Schema(
       unique: true,
     },
 
+    metadata: { type: mongoose.Schema.Types.Mixed, default: null },
+
     subjectId: {
       type: String,
       required: true,
