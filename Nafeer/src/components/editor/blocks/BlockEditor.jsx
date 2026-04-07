@@ -132,8 +132,9 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
       );
     }
 
-    // ── IMAGE / GIF ─────────────────────────────────────────────────────────
+    // ── IMAGE / GIF / INTERACTIVE_IMAGE ─────────────────────────────────────
     case 'IMAGE':
+    case 'INTERACTIVE_IMAGE':
     case 'GIF':
       return (
         <MediaBlockEditor
@@ -373,18 +374,38 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
 }
 
 // ─── MediaBlockEditor ─────────────────────────────────────────────────────────
-// Handles IMAGE and GIF blocks. Shows:
-//   • A thumbnail preview if a URL is already set
-//   • A "اختر صورة" button that opens the MediaPicker modal
-//   • Interactive marker editor (IMAGE blocks only — not GIF)
-//   • A manual URL/path fallback input (for Android local assets)
-//   • A caption field
+// Handles IMAGE, INTERACTIVE_IMAGE, and GIF blocks.
+//
+// For IMAGE blocks a toggle lets the author flip to INTERACTIVE_IMAGE mode.
+// This mutates block.type so the exported JSON carries the correct type and
+// Android's BlockType.valueOf() picks up INTERACTIVE_IMAGE correctly.
+//
+// When interactive (block.type === 'INTERACTIVE_IMAGE'):
+//   • block.metadata.markers holds the pin array (normalised 0-1 coords)
+//   • The markers panel is always open — no need to expand it
+//   • The block header badge shows "صورة تفاعلية"
+//
+// When static (block.type === 'IMAGE'):
+//   • markers section is hidden (markers cleared on toggle-off)
 function MediaBlockEditor({ block, update, subjectId, ta }) {
-  const [pickerOpen,   setPickerOpen]   = useState(false);
-  const [markersOpen,  setMarkersOpen]  = useState(false);
-  const hasUrl  = Boolean(block.content?.trim());
-  const isGif   = block.type === 'GIF';
-  const markers = sanitiseMarkers(block.metadata?.markers);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const hasUrl       = Boolean(block.content?.trim());
+  const isGif        = block.type === 'GIF';
+  const isInteractive = block.type === 'INTERACTIVE_IMAGE';
+  const markers      = sanitiseMarkers(block.metadata?.markers);
+
+  // Flip between IMAGE ↔ INTERACTIVE_IMAGE
+  const handleInteractiveToggle = (on) => {
+    update({
+      type: on ? 'INTERACTIVE_IMAGE' : 'IMAGE',
+      metadata: {
+        ...(block.metadata || {}),
+        // Clear markers when switching back to static to avoid ghost data
+        markers: on ? (block.metadata?.markers || []) : [],
+      },
+    });
+  };
 
   const handleSelect = (item) => {
     update({
@@ -396,10 +417,10 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
 
   const handleClear = () => {
     update({
+      type:     isInteractive ? 'IMAGE' : block.type,
       content:  '',
       metadata: { ...(block.metadata || {}), mediaId: null, alt: '', markers: [] },
     });
-    setMarkersOpen(false);
   };
 
   const handleMarkersChange = (next) => {
@@ -410,9 +431,11 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
     <>
       <div className="space-y-2">
 
-        {/* ── Thumbnail preview ────────────────────────────────────────────── */}
+        {/* ── Thumbnail preview ─────────────────────────────────────────────── */}
         {hasUrl && (
-          <div className="relative group/thumb rounded-lg overflow-hidden border border-ink-800 bg-ink-950">
+          <div className={`relative group/thumb rounded-lg overflow-hidden border bg-ink-950 ${
+            isInteractive ? 'border-sand-700/50' : 'border-ink-800'
+          }`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={block.content}
@@ -420,7 +443,6 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
               className="max-h-48 w-auto mx-auto object-contain py-2"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
-            {/* Clear button overlay */}
             <button
               onClick={handleClear}
               title="إزالة الصورة"
@@ -428,14 +450,12 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
             >
               ✕
             </button>
-            {/* GIF badge */}
             {isGif && (
               <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-900/80 text-purple-300 text-[10px] font-bold rounded">
                 GIF
               </span>
             )}
-            {/* Marker count badge */}
-            {!isGif && markers.length > 0 && (
+            {isInteractive && markers.length > 0 && (
               <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-sand-900/80 text-sand-300 text-[10px] font-bold rounded border border-sand-700/60">
                 ✦ {markers.length}
               </span>
@@ -443,7 +463,7 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
           </div>
         )}
 
-        {/* ── Picker button ────────────────────────────────────────────────── */}
+        {/* ── Picker button ─────────────────────────────────────────────────── */}
         <button
           onClick={() => setPickerOpen(true)}
           className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-ink-700 hover:border-sand-600 text-ink-500 hover:text-sand-400 text-sm font-arabic transition-all"
@@ -452,7 +472,7 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
           <span>{hasUrl ? 'تغيير الصورة من المكتبة' : 'اختر صورة من المكتبة'}</span>
         </button>
 
-        {/* ── Caption ──────────────────────────────────────────────────────── */}
+        {/* ── Caption ───────────────────────────────────────────────────────── */}
         <input
           type="text"
           value={block.caption || ''}
@@ -461,39 +481,59 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
           placeholder="وصف الصورة (اختياري)…"
         />
 
-        {/* ── Interactive markers section (IMAGE only) ─────────────────────── */}
+        {/* ── Interactive toggle + markers panel (IMAGE/INTERACTIVE_IMAGE only) */}
         {!isGif && (
-          <div className="rounded-lg border border-ink-800 overflow-hidden">
-            <button
-              onClick={() => setMarkersOpen((o) => !o)}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-arabic transition-colors ${
-                markersOpen
-                  ? 'bg-sand-900/20 text-sand-400 border-b border-sand-800/40'
-                  : 'bg-ink-900/40 text-ink-500 hover:text-ink-300 hover:bg-ink-900/60'
-              }`}
-            >
-              <span className="font-mono text-sand-600">✦</span>
-              <span className="font-semibold">العلامات التفاعلية</span>
-              {markers.length > 0 && (
-                <span className="px-1.5 py-0.5 bg-sand-900/60 text-sand-400 text-[10px] rounded-full border border-sand-800/40">
-                  {markers.length}
+          <div className={`rounded-lg border overflow-hidden transition-colors ${
+            isInteractive ? 'border-sand-700/50' : 'border-ink-800'
+          }`}>
+
+            {/* Toggle row */}
+            <div className={`flex items-center gap-3 px-3 py-2.5 ${
+              isInteractive
+                ? 'bg-sand-900/20 border-b border-sand-800/40'
+                : 'bg-ink-900/40 hover:bg-ink-900/60 transition-colors'
+            }`}>
+              <span className={`font-mono text-sm ${isInteractive ? 'text-sand-500' : 'text-ink-600'}`}>✦</span>
+              <span className={`text-xs font-arabic font-semibold flex-1 ${
+                isInteractive ? 'text-sand-400' : 'text-ink-500'
+              }`}>
+                صورة تفاعلية
+              </span>
+              {isInteractive && (
+                <span className="text-[10px] text-sand-600 font-arabic">
+                  {markers.length > 0 ? `${markers.length} علامة` : 'لا علامات بعد'}
                 </span>
               )}
-              {!hasUrl && (
-                <span className="text-ink-700 text-[10px] mr-auto">اختر صورة أولاً</span>
-              )}
-              <span className={`mr-auto font-mono text-[10px] transition-transform ${markersOpen ? 'rotate-90' : ''}`}>
-                ▶
-              </span>
-            </button>
+              {/* Toggle switch */}
+              <button
+                onClick={() => handleInteractiveToggle(!isInteractive)}
+                className={`relative w-10 h-5 rounded-full border transition-all shrink-0 ${
+                  isInteractive
+                    ? 'bg-sand-800/60 border-sand-600/60'
+                    : 'bg-ink-800 border-ink-700 hover:border-ink-600'
+                }`}
+                title={isInteractive ? 'تحويل إلى صورة عادية' : 'تفعيل العلامات التفاعلية'}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${
+                  isInteractive ? 'right-0.5 bg-sand-400' : 'left-0.5 bg-ink-600'
+                }`} />
+              </button>
+            </div>
 
-            {markersOpen && (
+            {/* Markers panel — shown only when interactive */}
+            {isInteractive && (
               <div className="p-3 bg-ink-950/30">
-                <ImageMarkerEditor
-                  imageUrl={block.content}
-                  markers={markers}
-                  onChange={handleMarkersChange}
-                />
+                {!hasUrl ? (
+                  <p className="text-xs text-ink-700 font-arabic text-center py-3">
+                    اختر صورة أولاً لإضافة العلامات
+                  </p>
+                ) : (
+                  <ImageMarkerEditor
+                    imageUrl={block.content}
+                    markers={markers}
+                    onChange={handleMarkersChange}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -521,10 +561,10 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
         </details>
       </div>
 
-      {/* ── Picker modal ─────────────────────────────────────────────────────── */}
+      {/* ── Picker modal ──────────────────────────────────────────────────────── */}
       {pickerOpen && (
         <MediaPicker
-          type={block.type}
+          type="IMAGE"
           subjectId={subjectId}
           onSelect={handleSelect}
           onClose={() => setPickerOpen(false)}
