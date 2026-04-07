@@ -6,11 +6,73 @@ import Modal from '@/components/editor/shared/Modal';
 import DeleteButton from '@/components/editor/shared/DeleteButton';
 import StatusBadge from '@/components/editor/shared/StatusBadge';
 
-const inputClass =
-  'w-full px-4 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
+// ─── Themed primitives ────────────────────────────────────────────────────────
+const FIELD = {
+  padding: '10px 14px',
+  background: 'var(--bg-secondary)',
+  border: '1px solid var(--border-mid)',
+  borderRadius: 10,
+  color: 'var(--text-primary)',
+  fontSize: 14,
+  outline: 'none',
+  width: '100%',
+  fontFamily: 'inherit',
+  transition: 'border-color 0.2s',
+};
 
-const labelClass = 'block text-xs text-ink-500 mb-1.5 font-arabic';
+// Soft colour accent per concept type — purely decorative strip
+const TYPE_HUE = {
+  DEFINITION:   '#6366f1',
+  FORMULA:      '#f59e0b',
+  DATE:         '#ec4899',
+  PERSON:       '#10b981',
+  LAW:          '#ef4444',
+  FACT:         '#3b82f6',
+  PROCESS:      '#8b5cf6',
+  COMPARISON:   '#06b6d4',
+  PLACE:        '#84cc16',
+  CAUSE_EFFECT: '#f97316',
+};
 
+function TypePill({ type }) {
+  const cfg   = CONCEPT_TYPE_CONFIG[type] || {};
+  const color = TYPE_HUE[type] || 'var(--accent)';
+  return (
+    <span
+      className="inline-flex items-center gap-1 font-arabic"
+      style={{
+        fontSize: 11,
+        padding: '2px 8px',
+        borderRadius: 20,
+        background: `${color}18`,
+        color,
+        border: `1px solid ${color}40`,
+        lineHeight: '18px',
+      }}
+    >
+      <span style={{ fontSize: 10 }}>{cfg.icon}</span>
+      {cfg.label}
+    </span>
+  );
+}
+
+function DifficultyDots({ n = 1, max = 5 }) {
+  return (
+    <span className="flex items-center gap-0.5">
+      {Array.from({ length: max }).map((_, i) => (
+        <span
+          key={i}
+          style={{
+            width: 5, height: 5, borderRadius: '50%',
+            background: i < n ? 'var(--accent)' : 'var(--border-mid)',
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function ConceptsPage({ subjectId }) {
   const { concepts, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore();
   const { syncConcept, submitForReview } = useAtlasSync();
@@ -63,8 +125,6 @@ export default function ConceptsPage({ subjectId }) {
     setShowModal(true);
   };
 
-  const handleDelete = (id) => deleteConcept(id);
-
   const handleAddTag = () => {
     if (!newTagName.trim()) return;
     addTag({ nameAr: newTagName.trim() });
@@ -86,68 +146,120 @@ export default function ConceptsPage({ subjectId }) {
     return matchType && matchSearch;
   });
 
+  // Stat breakdown
+  const typeCounts = Object.keys(CONCEPT_TYPES).reduce((acc, k) => {
+    acc[k] = concepts.filter((c) => c.type === k).length;
+    return acc;
+  }, {});
+
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between mb-7">
         <div>
-          <h1 className="text-2xl font-semibold text-sand-200 font-arabic">المفاهيم</h1>
-          <p className="text-ink-500 mt-0.5 text-sm font-arabic">
+          <h1 className="font-bold font-arabic" style={{ fontSize: 24, color: 'var(--text-primary)' }}>
+            المفاهيم
+          </h1>
+          <p className="font-arabic mt-0.5" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
             الوحدة الذرية للمعرفة — تربط الدروس والتغذية والأسئلة
           </p>
         </div>
         <button
           onClick={() => { resetForm(); setShowModal(true); }}
-          className="px-4 py-2 bg-sand-700 text-ink-950 rounded-lg hover:bg-sand-600 transition-colors font-semibold font-arabic text-sm"
+          className="font-arabic font-semibold flex items-center gap-1.5 transition-colors"
+          style={{
+            padding: '8px 16px', borderRadius: 10, fontSize: 13,
+            background: 'var(--accent)', color: '#fff',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-hover)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
         >
-          + مفهوم جديد
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> مفهوم جديد
         </button>
       </div>
 
-      {/* Type Filter */}
+      {/* ── Stats strip ────────────────────────────────────────────────────── */}
+      <div
+        className="flex items-center gap-5 mb-6 pb-5"
+        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+      >
+        <StatItem n={concepts.length} label="إجمالي" />
+        {Object.entries(typeCounts).map(([k, n]) => n > 0 && (
+          <StatItem key={k} n={n} label={CONCEPT_TYPE_CONFIG[k]?.label} color={TYPE_HUE[k]} />
+        ))}
+      </div>
+
+      {/* ── Filter pills ───────────────────────────────────────────────────── */}
       <div className="flex gap-2 flex-wrap mb-4">
-        <button
+        <FilterPill
+          active={!filterType}
           onClick={() => setFilterType('')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-arabic transition-colors border
-            ${!filterType ? 'bg-sand-900/50 text-sand-400 border-sand-700' : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'}`}
-        >
-          الكل ({concepts.length})
-        </button>
+          label={`الكل (${concepts.length})`}
+        />
         {Object.entries(CONCEPT_TYPES).map(([key]) => {
           const cfg   = CONCEPT_TYPE_CONFIG[key];
-          const count = concepts.filter((c) => c.type === key).length;
-          if (count === 0) return null;
+          const count = typeCounts[key];
+          if (!count) return null;
           return (
-            <button
+            <FilterPill
               key={key}
+              active={filterType === key}
               onClick={() => setFilterType(filterType === key ? '' : key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-arabic transition-colors border flex items-center gap-1
-                ${filterType === key ? 'bg-sand-900/50 text-sand-400 border-sand-700' : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'}`}
-            >
-              <span>{cfg.icon}</span>
-              <span>{cfg.label}</span>
-              <span className="font-mono text-ink-600">({count})</span>
-            </button>
+              label={`${cfg.icon} ${cfg.label}`}
+              count={count}
+              color={TYPE_HUE[key]}
+            />
           );
         })}
       </div>
 
-      {/* Search */}
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full px-4 py-2.5 bg-ink-900 border border-ink-800 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-600 mb-6"
-        placeholder="بحث في المفاهيم..."
-      />
+      {/* ── Search ─────────────────────────────────────────────────────────── */}
+      <div className="relative mb-6">
+        <span
+          className="absolute"
+          style={{
+            right: 12, top: '50%', transform: 'translateY(-50%)',
+            color: 'var(--text-muted)', fontSize: 14, pointerEvents: 'none',
+          }}
+        >
+          🔍
+        </span>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ ...FIELD, paddingRight: 36 }}
+          placeholder="بحث في المفاهيم..."
+          className="font-arabic"
+          onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+          onBlur={e => e.currentTarget.style.borderColor = 'var(--border-mid)'}
+        />
+      </div>
 
-      {/* Tags Section */}
+      {/* ── Tags cloud ─────────────────────────────────────────────────────── */}
       {tags.length > 0 && (
-        <div className="mb-6 p-4 bg-ink-900 border border-ink-800 rounded-xl">
-          <h3 className="text-xs text-ink-500 mb-2 font-arabic">الوسوم</h3>
+        <div
+          className="mb-6 p-4"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 12,
+          }}
+        >
+          <p className="font-arabic mb-2.5" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            الوسوم
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {tags.map((tag) => (
-              <span key={tag.id} className="px-2 py-0.5 bg-ink-800 text-ink-400 text-xs rounded border border-ink-700 font-arabic">
+              <span
+                key={tag.id}
+                className="font-arabic"
+                style={{
+                  fontSize: 12, padding: '2px 8px', borderRadius: 20,
+                  background: 'var(--accent-dim)', color: 'var(--accent)',
+                  border: '1px solid var(--border-mid)',
+                }}
+              >
                 #{tag.nameAr}
               </span>
             ))}
@@ -155,71 +267,121 @@ export default function ConceptsPage({ subjectId }) {
         </div>
       )}
 
-      {/* Concepts Grid */}
+      {/* ── Concepts list ──────────────────────────────────────────────────── */}
       {filtered.length === 0 ? (
-        <div className="text-center py-20 bg-ink-900 rounded-xl border border-ink-800">
-          <div className="text-4xl mb-4">💡</div>
-          <p className="text-ink-400 font-arabic">
-            {concepts.length === 0 ? 'لا توجد مفاهيم بعد' : 'لا توجد نتائج'}
-          </p>
-        </div>
+        <EmptyState
+          icon="💡"
+          title={concepts.length === 0 ? 'لا توجد مفاهيم بعد' : 'لا توجد نتائج'}
+          action={concepts.length === 0 ? (
+            <button
+              onClick={() => { resetForm(); setShowModal(true); }}
+              className="font-arabic"
+              style={{
+                marginTop: 12, padding: '8px 20px', borderRadius: 10, fontSize: 13,
+                background: 'var(--accent)', color: '#fff', cursor: 'pointer',
+                border: 'none',
+              }}
+            >
+              أضف أول مفهوم
+            </button>
+          ) : null}
+        />
       ) : (
         <div className="space-y-2">
           {filtered.map((concept) => {
-            const cfg = CONCEPT_TYPE_CONFIG[concept.type];
+            const cfg         = CONCEPT_TYPE_CONFIG[concept.type];
             const conceptTags = tags.filter((t) => concept.tagIds?.includes(t.id));
+            const accentColor = TYPE_HUE[concept.type] || 'var(--accent)';
             return (
               <div
                 key={concept.id}
-                className="flex items-start gap-4 p-4 bg-ink-900 rounded-xl border border-ink-800 hover:border-ink-700 transition-colors group"
+                className="group flex items-start gap-0"
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  transition: 'border-color 0.2s, background 0.2s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-mid)';
+                  e.currentTarget.style.background = 'var(--bg-secondary)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.background = 'var(--bg-card)';
+                }}
               >
-                <div className="w-8 h-8 flex items-center justify-center bg-ink-800 rounded-lg text-sm flex-shrink-0">
-                  {cfg?.icon}
-                </div>
+                {/* Type accent stripe */}
+                <div style={{ width: 3, background: accentColor, alignSelf: 'stretch', flexShrink: 0 }} />
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-medium text-ink-100 text-sm font-arabic">{concept.titleAr}</span>
-                    {concept.titleEn && (
-                      <span className="text-xs text-ink-600" dir="ltr">{concept.titleEn}</span>
-                    )}
-                    <span className="text-xs px-1.5 py-0.5 bg-ink-800 text-ink-500 rounded font-arabic border border-ink-700">
-                      {cfg?.label}
-                    </span>
-                    <span className="text-xs text-ink-700 font-mono">
-                      {'★'.repeat(concept.difficulty || 1)}
-                    </span>
-                    {concept.atlasStatus && <StatusBadge status={concept.atlasStatus} />}
-                  </div>
-                  <p className="text-xs text-ink-500 line-clamp-2 font-arabic">{concept.definition}</p>
-                  {conceptTags.length > 0 && (
-                    <div className="flex gap-1 mt-1.5 flex-wrap">
-                      {conceptTags.map((t) => (
-                        <span key={t.id} className="text-xs px-1.5 py-0.5 bg-ink-800 text-ink-600 rounded font-arabic">
-                          #{t.nameAr}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {(!concept.atlasStatus || concept.atlasStatus === 'draft') && subjectId && (
-                    <button
-                      onClick={() => submitForReview(concept.id, 'concept').catch(() => {})}
-                      className="px-2 py-1 text-[10px] bg-amber-900/30 text-amber-500 border border-amber-700/40 rounded transition-colors hover:bg-amber-800/40 font-arabic"
-                      title="إرسال للمراجعة"
-                    >
-                      ⇪
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleEdit(concept)}
-                    className="p-1.5 text-ink-600 hover:text-sand-400 hover:bg-ink-800 rounded transition-colors"
+                {/* Content */}
+                <div className="flex items-start gap-3 flex-1 p-4 min-w-0">
+                  {/* Icon */}
+                  <div
+                    style={{
+                      width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+                      background: `${accentColor}15`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 16,
+                    }}
                   >
-                    ✏
-                  </button>
-                  <DeleteButton onDelete={() => handleDelete(concept.id)} />
+                    {cfg?.icon}
+                  </div>
+
+                  {/* Main text */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="font-arabic font-semibold" style={{ fontSize: 14, color: 'var(--text-primary)' }}>
+                        {concept.titleAr}
+                      </span>
+                      {concept.titleEn && (
+                        <span className="font-mono" dir="ltr" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                          {concept.titleEn}
+                        </span>
+                      )}
+                      <TypePill type={concept.type} />
+                      <DifficultyDots n={concept.difficulty || 1} />
+                      {concept.atlasStatus && <StatusBadge status={concept.atlasStatus} />}
+                    </div>
+                    <p className="font-arabic line-clamp-2" style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                      {concept.definition}
+                    </p>
+                    {conceptTags.length > 0 && (
+                      <div className="flex gap-1 mt-1.5 flex-wrap">
+                        {conceptTags.map((t) => (
+                          <span
+                            key={t.id}
+                            className="font-arabic"
+                            style={{
+                              fontSize: 11, padding: '1px 6px', borderRadius: 10,
+                              background: 'var(--accent-dim)', color: 'var(--text-muted)',
+                            }}
+                          >
+                            #{t.nameAr}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div
+                    className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    style={{ paddingTop: 2 }}
+                  >
+                    {(!concept.atlasStatus || concept.atlasStatus === 'draft') && subjectId && (
+                      <ActionBtn
+                        onClick={() => submitForReview(concept.id, 'concept').catch(() => {})}
+                        title="إرسال للمراجعة"
+                        color="#f59e0b"
+                      >
+                        ⇪
+                      </ActionBtn>
+                    )}
+                    <ActionBtn onClick={() => handleEdit(concept)} title="تعديل">✏</ActionBtn>
+                    <DeleteButton onDelete={() => deleteConcept(concept.id)} />
+                  </div>
                 </div>
               </div>
             );
@@ -227,7 +389,7 @@ export default function ConceptsPage({ subjectId }) {
         </div>
       )}
 
-      {/* Modal */}
+      {/* ── Modal ─────────────────────────────────────────────────────────── */}
       <Modal
         isOpen={showModal}
         onClose={() => { setShowModal(false); resetForm(); }}
@@ -236,37 +398,42 @@ export default function ConceptsPage({ subjectId }) {
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>العنوان بالعربية *</label>
+            <FormField label="العنوان بالعربية *">
               <input
                 type="text"
                 value={form.titleAr}
                 onChange={(e) => setForm({ ...form, titleAr: e.target.value })}
-                className={inputClass}
+                style={FIELD}
                 placeholder="مثال: قانون نيوتن الأول"
+                className="font-arabic"
                 autoFocus
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-mid)'}
               />
-            </div>
-            <div>
-              <label className={labelClass}>العنوان بالإنجليزية</label>
+            </FormField>
+            <FormField label="العنوان بالإنجليزية">
               <input
                 type="text"
                 value={form.titleEn}
                 onChange={(e) => setForm({ ...form, titleEn: e.target.value })}
-                className={`${inputClass}`}
+                style={FIELD}
                 placeholder="Newton's First Law"
                 dir="ltr"
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-mid)'}
               />
-            </div>
+            </FormField>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>النوع</label>
+            <FormField label="النوع">
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className={`${inputClass} cursor-pointer`}
+                style={{ ...FIELD, cursor: 'pointer' }}
+                className="font-arabic"
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-mid)'}
               >
                 {Object.entries(CONCEPT_TYPES).map(([key]) => (
                   <option key={key} value={key}>
@@ -274,75 +441,83 @@ export default function ConceptsPage({ subjectId }) {
                   </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className={labelClass}>الصعوبة (1–5)</label>
+            </FormField>
+            <FormField label="الصعوبة (1–5)">
               <div className="flex gap-1.5">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
                     onClick={() => setForm({ ...form, difficulty: n })}
-                    className={`flex-1 py-2 rounded-lg text-xs font-mono transition-colors border
-                      ${form.difficulty === n
-                        ? 'bg-sand-900/60 text-sand-400 border-sand-700'
-                        : 'bg-ink-800 text-ink-600 border-ink-700 hover:border-ink-600'
-                      }`}
+                    className="flex-1 font-mono transition-all"
+                    style={{
+                      padding: '8px 0', borderRadius: 8, fontSize: 13,
+                      background: form.difficulty === n ? 'var(--accent-dim)' : 'var(--bg-secondary)',
+                      color: form.difficulty === n ? 'var(--accent)' : 'var(--text-muted)',
+                      border: `1px solid ${form.difficulty === n ? 'var(--accent)' : 'var(--border-mid)'}`,
+                      fontWeight: form.difficulty === n ? 600 : 400,
+                    }}
                   >
                     {n}
                   </button>
                 ))}
               </div>
-            </div>
+            </FormField>
           </div>
 
-          <div>
-            <label className={labelClass}>التعريف الكامل *</label>
+          <FormField label="التعريف الكامل *">
             <textarea
               value={form.definition}
               onChange={(e) => setForm({ ...form, definition: e.target.value })}
-              className={`${inputClass} resize-y min-h-[80px]`}
+              style={{ ...FIELD, resize: 'vertical', minHeight: 80, lineHeight: 1.8 }}
               placeholder="التعريف أو الشرح الكامل..."
+              className="font-arabic"
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'var(--border-mid)'}
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label className={labelClass}>تعريف مختصر (يُستخدم في التغذية)</label>
+          <FormField label="تعريف مختصر (يُستخدم في التغذية)">
             <input
               type="text"
               value={form.shortDefinition}
               onChange={(e) => setForm({ ...form, shortDefinition: e.target.value })}
-              className={inputClass}
+              style={FIELD}
               placeholder="جملة واحدة تلخص المفهوم..."
+              className="font-arabic"
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'var(--border-mid)'}
             />
-          </div>
+          </FormField>
 
           {(form.type === 'FORMULA' || form.type === 'LAW') && (
-            <div>
-              <label className={labelClass}>الصيغة / المعادلة</label>
+            <FormField label="الصيغة / المعادلة">
               <input
                 type="text"
                 value={form.formula}
                 onChange={(e) => setForm({ ...form, formula: e.target.value })}
-                className={`${inputClass} font-mono`}
+                style={{ ...FIELD, fontFamily: 'monospace' }}
                 placeholder="F = ma"
                 dir="ltr"
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-mid)'}
               />
-            </div>
+            </FormField>
           )}
 
           {/* Tags */}
-          <div>
-            <label className={labelClass}>الوسوم</label>
+          <FormField label="الوسوم">
             <div className="flex flex-wrap gap-1.5 mb-2">
               {tags.map((tag) => (
                 <button
                   key={tag.id}
                   onClick={() => toggleTagInForm(tag.id)}
-                  className={`px-2 py-0.5 text-xs rounded border font-arabic transition-colors
-                    ${form.tagIds.includes(tag.id)
-                      ? 'bg-sand-900/50 text-sand-400 border-sand-700'
-                      : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'
-                    }`}
+                  className="font-arabic transition-all"
+                  style={{
+                    fontSize: 12, padding: '3px 10px', borderRadius: 20,
+                    background: form.tagIds.includes(tag.id) ? 'var(--accent-dim)' : 'var(--bg-secondary)',
+                    color: form.tagIds.includes(tag.id) ? 'var(--accent)' : 'var(--text-muted)',
+                    border: `1px solid ${form.tagIds.includes(tag.id) ? 'var(--accent)' : 'var(--border-mid)'}`,
+                  }}
                 >
                   #{tag.nameAr}
                 </button>
@@ -354,36 +529,150 @@ export default function ConceptsPage({ subjectId }) {
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                className={`${inputClass} flex-1`}
+                style={{ ...FIELD }}
                 placeholder="وسم جديد..."
+                className="font-arabic flex-1"
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-mid)'}
               />
               <button
                 onClick={handleAddTag}
                 disabled={!newTagName.trim()}
-                className="px-3 py-2 bg-ink-800 text-ink-300 rounded-lg hover:bg-ink-700 disabled:opacity-40 transition-colors text-sm"
+                className="font-arabic transition-colors"
+                style={{
+                  padding: '8px 14px', borderRadius: 8, fontSize: 13,
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-mid)',
+                  opacity: newTagName.trim() ? 1 : 0.4,
+                  cursor: newTagName.trim() ? 'pointer' : 'default',
+                }}
               >
                 + إضافة
               </button>
             </div>
-          </div>
+          </FormField>
 
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleSubmit}
               disabled={!form.titleAr.trim()}
-              className="flex-1 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 transition-colors font-semibold font-arabic"
+              className="flex-1 font-arabic font-semibold transition-colors"
+              style={{
+                padding: '10px', borderRadius: 10, fontSize: 14,
+                background: form.titleAr.trim() ? 'var(--accent)' : 'var(--border-mid)',
+                color: form.titleAr.trim() ? '#fff' : 'var(--text-muted)',
+                border: 'none', cursor: form.titleAr.trim() ? 'pointer' : 'default',
+              }}
             >
-              {editingId ? 'حفظ التعديلات' : 'إضافة'}
+              {editingId ? 'حفظ التعديلات' : 'إضافة المفهوم'}
             </button>
             <button
               onClick={() => { setShowModal(false); resetForm(); }}
-              className="px-4 py-2 text-ink-400 hover:bg-ink-800 rounded-lg transition-colors font-arabic"
+              className="font-arabic transition-colors"
+              style={{
+                padding: '10px 16px', borderRadius: 10, fontSize: 14,
+                background: 'transparent', color: 'var(--text-muted)',
+                border: '1px solid var(--border-subtle)', cursor: 'pointer',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               إلغاء
             </button>
           </div>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+// ─── Local sub-components ─────────────────────────────────────────────────────
+function StatItem({ n, label, color }) {
+  return (
+    <span className="flex items-baseline gap-1.5">
+      <span className="font-mono font-semibold" style={{ fontSize: 15, color: color || 'var(--text-secondary)' }}>
+        {n}
+      </span>
+      <span className="font-arabic" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+        {label}
+      </span>
+    </span>
+  );
+}
+
+function FilterPill({ active, onClick, label, count, color }) {
+  return (
+    <button
+      onClick={onClick}
+      className="font-arabic transition-all"
+      style={{
+        padding: '5px 12px', borderRadius: 20, fontSize: 12,
+        background: active
+          ? (color ? `${color}18` : 'var(--accent-dim)')
+          : 'var(--bg-card)',
+        color: active
+          ? (color || 'var(--accent)')
+          : 'var(--text-muted)',
+        border: `1px solid ${active ? (color ? `${color}50` : 'var(--accent)') : 'var(--border-subtle)'}`,
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+      }}
+    >
+      {label}
+      {count != null && (
+        <span style={{ fontSize: 10, opacity: 0.7 }}>({count})</span>
+      )}
+    </button>
+  );
+}
+
+function FormField({ label, children }) {
+  return (
+    <div>
+      <label
+        className="block font-arabic mb-1.5"
+        style={{ fontSize: 12, color: 'var(--text-muted)' }}
+      >
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function ActionBtn({ onClick, title, color, children }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="transition-colors"
+      style={{
+        padding: '4px 6px', borderRadius: 6, fontSize: 12,
+        background: 'transparent',
+        color: color || 'var(--text-muted)',
+        border: 'none', cursor: 'pointer',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EmptyState({ icon, title, action }) {
+  return (
+    <div
+      className="text-center py-20"
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 16,
+      }}
+    >
+      <div style={{ fontSize: 36, marginBottom: 12 }}>{icon}</div>
+      <p className="font-arabic" style={{ fontSize: 14, color: 'var(--text-muted)' }}>{title}</p>
+      {action}
     </div>
   );
 }
