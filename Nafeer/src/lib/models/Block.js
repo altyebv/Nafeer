@@ -8,7 +8,7 @@ import { SUBJECT_IDS } from '@/shared/curriculum';
 // (plain string for TEXT/HEADING, stringified JSON for TABLE, etc.)
 
 const BLOCK_TYPES = [
-  'TEXT', 'HEADING', 'IMAGE', 'GIF', 'FORMULA',
+  'TEXT', 'HEADING', 'IMAGE', 'INTERACTIVE_IMAGE', 'GIF', 'FORMULA',
   'HIGHLIGHT_BOX', 'EXAMPLE', 'TIP', 'LIST', 'TABLE', 'QUOTE', 'DIVIDER',
 ];
 
