@@ -15,11 +15,12 @@ export const BLOCK_TYPES = {
 };
 
 export const BLOCK_TYPE_CONFIG = {
-  TEXT:          { label: 'نص',           icon: '¶',  color: 'gray' },
-  HEADING:       { label: 'عنوان',         icon: 'H',  color: 'blue',
-                   defaultMeta: { level: 2 } },
-  IMAGE:         { label: 'صورة',          icon: '⬜', color: 'green' },
-  GIF:           { label: 'صورة متحركة',   icon: '▷',  color: 'purple' },
+  TEXT:              { label: 'نص',             icon: '¶',  color: 'gray' },
+  HEADING:           { label: 'عنوان',           icon: 'H',  color: 'blue',
+                       defaultMeta: { level: 2 } },
+  IMAGE:             { label: 'صورة',            icon: '⬜', color: 'green' },
+  INTERACTIVE_IMAGE: { label: 'صورة تفاعلية',    icon: '✦',  color: 'sand' },
+  GIF:               { label: 'صورة متحركة',     icon: '▷',  color: 'purple' },
   FORMULA:       { label: 'معادلة',        icon: '∑',  color: 'orange',
                    defaultMeta: { displayMode: false } },
   HIGHLIGHT_BOX: { label: 'مربع مهم',      icon: '!',  color: 'yellow',
