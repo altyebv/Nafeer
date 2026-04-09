@@ -7,6 +7,10 @@ const SiteSettingsSchema = new mongoose.Schema(
 
     // Landing page toggles
     showContributorsOnLanding: { type: Boolean, default: true },
+
+    // Analytics
+    visitCount:   { type: Number, default: 0 },
+    supportCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
