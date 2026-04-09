@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Link from 'next/link';
+import SupportButton from '@/components/landing/SupportButton';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -115,6 +116,11 @@ export default function FinalCTA() {
               >
                 جرّب بشير الآن — معاينة تفاعلية حقيقية قبل الإطلاق على Play Store.
               </p>
+            </div>
+
+            {/* Support counter */}
+            <div className="relative z-10 mb-5">
+              <SupportButton />
             </div>
 
             {/* ← Changed: href="/demo" instead of "#features" */}
