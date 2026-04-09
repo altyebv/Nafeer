@@ -60,6 +60,7 @@ function SettingRow({ label, description, checked, onChange, loading }) {
 // ── Main section ──────────────────────────────────────────────────────────────
 export function SiteSettingsSection() {
   const [settings, setSettings] = useState({ showContributorsOnLanding: true });
+  const [stats,    setStats]    = useState({ visitCount: null, supportCount: null });
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(null); // key being saved
   const [toast,    setToast]    = useState(null);
@@ -68,7 +69,13 @@ export function SiteSettingsSection() {
     fetch('/api/admin/site-setting')
       .then((r) => r.json())
       .then((d) => {
-        if (d.ok) setSettings(d.data);
+        if (d.ok) {
+          setSettings(d.data);
+          setStats({
+            visitCount:   d.data.visitCount   ?? 0,
+            supportCount: d.data.supportCount ?? 0,
+          });
+        }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -113,19 +120,55 @@ export function SiteSettingsSection() {
             جارٍ التحميل…
           </div>
         ) : (
-          <div className="space-y-3">
-            {/* Section label */}
-            <p className="text-xs font-mono text-ink-600 uppercase tracking-widest mb-4">
-              الصفحة الرئيسية
-            </p>
+          <div className="space-y-6">
 
-            <SettingRow
-              label="قسم المساهمين (قاعة الشرف)"
-              description="عند التفعيل، يظهر قسم أعمدة المشروع في الصفحة الرئيسية مع بيانات المساهمين المعتمدين."
-              checked={settings.showContributorsOnLanding}
-              onChange={(v) => update('showContributorsOnLanding', v)}
-              loading={saving === 'showContributorsOnLanding'}
-            />
+            {/* ── Analytics stats ── */}
+            <div>
+              <p className="text-xs font-mono text-ink-600 uppercase tracking-widest mb-4">
+                الإحصائيات
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'زيارات الصفحة', value: stats.visitCount, icon: '👁' },
+                  { label: 'طلاب داعمون', value: stats.supportCount, icon: '🙋' },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="flex items-center gap-4 px-5 py-4 rounded-xl"
+                    style={{
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <span className="text-2xl">{stat.icon}</span>
+                    <div>
+                      <p
+                        className="text-2xl font-bold font-mono tabular-nums"
+                        style={{ color: 'var(--accent, #d4891e)' }}
+                      >
+                        {stat.value === null ? '…' : stat.value.toLocaleString('ar-EG')}
+                      </p>
+                      <p className="text-xs text-ink-500 font-arabic mt-0.5">{stat.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Landing page toggles ── */}
+            <div>
+              <p className="text-xs font-mono text-ink-600 uppercase tracking-widest mb-4">
+                الصفحة الرئيسية
+              </p>
+
+              <SettingRow
+                label="قسم المساهمين (قاعة الشرف)"
+                description="عند التفعيل، يظهر قسم أعمدة المشروع في الصفحة الرئيسية مع بيانات المساهمين المعتمدين."
+                checked={settings.showContributorsOnLanding}
+                onChange={(v) => update('showContributorsOnLanding', v)}
+                loading={saving === 'showContributorsOnLanding'}
+              />
+            </div>
           </div>
         )}
 
