@@ -1,15 +1,32 @@
 'use client';
 import { useEffect, useRef } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { gsap, ScrollTrigger } from '@/lib/gsap';
 
-gsap.registerPlugin(ScrollTrigger);
-
-const roadmap = [
-  { label: 'دعم اللغات السودانية المحلية',  status: 'قريباً' },
-  { label: 'وضع الامتحان التجريبي الكامل',   status: 'قريباً' },
-  { label: 'تحليل نقاط ضعف الطالب تلقائياً', status: 'مستقبلاً' },
-  { label: 'أدوات متابعة لأولياء الأمور',    status: 'مستقبلاً' },
+const horizons = [
+  {
+    phase: 'المرحلة التالية',
+    title: 'تغطية كاملة للمرحلة الثانوية',
+    desc: 'بشير اليوم يخدم طلاب الشهادة. الخطوة القادمة: الصف الأول والثاني الثانوي — حتى لا يصل الطالب للشهادة وعنده فجوات من سنتين.',
+    accent: true,
+  },
+  {
+    phase: 'قريباً',
+    title: 'منافسة ولوحات شرف',
+    desc: 'تحديات أسبوعية بين الطلاب، ومسابقات بين المدارس. التعلم لا يحتاج أن يكون صامتاً — المنافسة الصحية تُشعل الشغف.',
+    accent: false,
+  },
+  {
+    phase: 'قريباً',
+    title: 'نماذج أذكى، تجربة أعمق',
+    desc: 'شرح يتكيف مع طريقة تفكير كل طالب. عندما لا يفهم طريقة واحدة، يجرب بشير طريقة ثانية وثالثة — آلياً.',
+    accent: false,
+  },
+  {
+    phase: 'دائماً',
+    title: 'تحسين مستمر بلا توقف',
+    desc: 'كل إصدار أفضل من السابق. المحتوى يُراجع، الأداء يُقاس، والملاحظات من الطلاب والمساهمين تشكّل كل قرار.',
+    accent: false,
+  },
 ];
 
 export default function FutureSection() {
@@ -17,20 +34,43 @@ export default function FutureSection() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo('.future-content',
+
+      gsap.fromTo('.future-eyebrow',
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+          scrollTrigger: { trigger: '.future-eyebrow', start: 'top 90%', once: true } }
+      );
+
+      gsap.fromTo('.future-headline',
         { opacity: 0, y: 36 },
-        {
-          opacity: 1, y: 0, duration: 0.95, ease: 'power3.out',
-          scrollTrigger: { trigger: '.future-content', start: 'top 88%', once: true },
-        }
+        { opacity: 1, y: 0, duration: 1.05, ease: 'power3.out',
+          scrollTrigger: { trigger: '.future-headline', start: 'top 88%', once: true } }
       );
-      gsap.fromTo('.future-item',
-        { opacity: 0, x: 20 },
-        {
-          opacity: 1, x: 0, duration: 0.55, stagger: 0.1, ease: 'power3.out',
-          scrollTrigger: { trigger: '.future-items', start: 'top 90%', once: true },
-        }
+
+      gsap.fromTo('.future-sub',
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', delay: 0.1,
+          scrollTrigger: { trigger: '.future-sub', start: 'top 88%', once: true } }
       );
+
+      gsap.fromTo('.future-horizon',
+        { opacity: 0, y: 28 },
+        { opacity: 1, y: 0, duration: 0.7, stagger: 0.13, ease: 'power3.out',
+          scrollTrigger: { trigger: '.future-horizons', start: 'top 88%', once: true } }
+      );
+
+      gsap.fromTo('.future-open-source',
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out',
+          scrollTrigger: { trigger: '.future-open-source', start: 'top 92%', once: true } }
+      );
+
+      gsap.fromTo('.future-closing',
+        { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
+          scrollTrigger: { trigger: '.future-closing', start: 'top 92%', once: true } }
+      );
+
     }, sectionRef);
 
     return () => ctx.revert();
@@ -40,145 +80,146 @@ export default function FutureSection() {
     <section
       ref={sectionRef}
       id="future"
-      className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden"
+      className="py-24 sm:py-36 px-4 sm:px-6 relative overflow-hidden"
     >
-      <div className="ember-line max-w-6xl mx-auto mb-16 sm:mb-20 opacity-40" />
+      {/* Background watermark */}
+      <div
+        className="absolute left-1/2 bottom-0 -translate-x-1/2 pointer-events-none select-none"
+        style={{ opacity: 0.014 }}
+      >
+        <span className="text-[40vw] font-arabic font-bold leading-none" style={{ color: 'var(--text-primary)' }}>
+          غداً
+        </span>
+      </div>
 
-      <div className="max-w-6xl mx-auto">
-        <div
-          className="future-content relative rounded-3xl overflow-hidden p-10 sm:p-16"
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid rgba(212,137,30,0.15)',
-          }}
-        >
-          {/* Ambient layers */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse 60% 50% at 20% 50%, rgba(212,137,30,0.06) 0%, transparent 70%)' }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse 50% 60% at 80% 20%, rgba(234,108,10,0.04) 0%, transparent 70%)' }}
-          />
+      {/* Ambient glow — top */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-64 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at center top, rgba(212,137,30,0.07), transparent 70%)' }}
+      />
 
-          {/* Watermark */}
-          <div
-            className="absolute left-0 bottom-0 pointer-events-none select-none"
-            style={{ opacity: 0.025 }}
+      <div className="max-w-4xl mx-auto relative z-10">
+
+        {/* ── Vision statement ── */}
+        <div className="mb-16 sm:mb-24">
+          <span
+            className="future-eyebrow inline-block text-xs tracking-widest uppercase font-mono mb-6"
+            style={{ color: 'var(--accent)', opacity: 0 }}
           >
-            <span
-              className="text-[18vw] font-arabic font-bold leading-none"
-              style={{ color: 'var(--text-primary)' }}
+            إلى أين نذهب
+          </span>
+
+          <h2
+            className="future-headline text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-arabic font-bold leading-snug mb-7"
+            style={{ color: 'var(--text-primary)', opacity: 0 }}
+          >
+            بشير اليوم بداية.
+            <br />
+            <span style={{ color: 'var(--accent)' }}>والطريق أمامنا طويل.</span>
+          </h2>
+
+          <p
+            className="future-sub text-base sm:text-lg leading-loose font-arabic max-w-2xl"
+            style={{ color: 'var(--text-secondary)', opacity: 0 }}
+          >
+            بُني بيد واحدة، ويُطور الآن بمساهمة عشرات. الهدف لم يتغير:
+            أن لا يعتمد أي طالب سوداني على الحظ ليفهم مادته.
+            هذا ما يبدو عليه الطريق من هنا.
+          </p>
+        </div>
+
+        {/* ── Roadmap horizons ── */}
+        <div className="future-horizons space-y-4 mb-16 sm:mb-20">
+          {horizons.map((item, i) => (
+            <div
+              key={i}
+              className="future-horizon group relative flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-8 py-6 sm:py-7 px-6 sm:px-8 rounded-2xl transition-all duration-300"
+              style={{
+                background: item.accent ? 'var(--accent-dim)' : 'var(--bg-card)',
+                border: item.accent
+                  ? '1px solid rgba(212,137,30,0.22)'
+                  : '1px solid var(--border-subtle)',
+                opacity: 0,
+              }}
+              onMouseEnter={e => {
+                if (!item.accent) {
+                  e.currentTarget.style.borderColor = 'rgba(212,137,30,0.18)';
+                  e.currentTarget.style.background = 'var(--bg-card)';
+                }
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = item.accent ? 'rgba(212,137,30,0.22)' : 'var(--border-subtle)';
+                e.currentTarget.style.background = item.accent ? 'var(--accent-dim)' : 'var(--bg-card)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
             >
-              غداً
-            </span>
-          </div>
-
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-start gap-12 lg:gap-20">
-
-            {/* Left: The vision */}
-            <div className="flex-1">
-              <span
-                className="inline-block text-xs sm:text-sm font-mono tracking-widest uppercase mb-5"
-                style={{ color: 'var(--accent)' }}
-              >
-                إلى أين نذهب
-              </span>
-
-              <h2
-                className="text-3xl sm:text-4xl md:text-5xl font-arabic font-bold leading-snug mb-6"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                الشهادة السودانية
-                <br />
-                لا تحتاج تعذراً.
-                <br />
-                <span style={{ color: 'var(--accent)' }}>تحتاج أدوات.</span>
-              </h2>
-
-              <div
-                className="space-y-4 text-base leading-loose font-arabic"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <p>
-                  بشير اليوم مشروع ناشئ بُني بيد واحدة. في المستقبل،
-                  سيكون منصة مجتمعية تجمع مئات المساهمين من المعلمين
-                  والطلاب والمتطوعين من كل أنحاء السودان والمهجر.
-                </p>
-                <p style={{ color: 'var(--text-muted)' }}>
-                  لكن ذلك يبدأ اليوم — بمساهم واحد، ودرس واحد.
-                </p>
-              </div>
-            </div>
-
-            {/* Right: Roadmap */}
-            <div className="lg:w-72 shrink-0">
-              <p
-                className="text-xs font-mono mb-5 tracking-widest uppercase"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                على الطريق
-              </p>
-
-              <div className="future-items space-y-3">
-                {roadmap.map((item, i) => (
-                  <div
-                    key={i}
-                    className="future-item flex items-center justify-between gap-4 py-3 px-4 rounded-xl"
-                    style={{
-                      background: 'var(--bg-primary)',
-                      border: '1px solid var(--border-subtle)',
-                    }}
-                  >
-                    <span
-                      className="text-sm font-arabic leading-snug"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {item.label}
-                    </span>
-                    <span
-                      className="text-xs font-mono px-2 py-0.5 rounded-full shrink-0"
-                      style={
-                        item.status === 'قريباً'
-                          ? {
-                              background: 'rgba(212,137,30,0.12)',
-                              border: '1px solid rgba(212,137,30,0.25)',
-                              color: 'var(--accent)',
-                            }
-                          : {
-                              background: 'var(--bg-card)',
-                              border: '1px solid var(--border-subtle)',
-                              color: 'var(--text-muted)',
-                            }
-                      }
-                    >
-                      {item.status}
-                    </span>
-                  </div>
-                ))}
+              {/* Phase pill */}
+              <div className="shrink-0 sm:w-28 sm:text-left">
+                <span
+                  className="inline-block text-xs font-mono px-2.5 py-1 rounded-full"
+                  style={
+                    item.phase === 'دائماً'
+                      ? { background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-mid)', color: 'var(--text-muted)' }
+                      : item.accent
+                      ? { background: 'rgba(212,137,30,0.18)', border: '1px solid rgba(212,137,30,0.3)', color: 'var(--accent)' }
+                      : { background: 'rgba(212,137,30,0.08)', border: '1px solid rgba(212,137,30,0.18)', color: 'var(--accent)', opacity: 0.75 }
+                  }
+                >
+                  {item.phase}
+                </span>
               </div>
 
-              {/* Open source note */}
-              <div
-                className="mt-6 pt-5 flex items-start gap-3"
-                style={{ borderTop: '1px solid var(--border-subtle)' }}
-              >
-                <div
-                  className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-                  style={{ background: '#22c55e' }}
-                />
+              {/* Content */}
+              <div className="flex-1">
+                <h3
+                  className="font-bold text-base sm:text-lg mb-2 font-arabic"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {item.title}
+                </h3>
                 <p
-                  className="text-xs leading-relaxed font-arabic"
+                  className="text-sm leading-loose font-arabic"
                   style={{ color: 'var(--text-muted)' }}
                 >
-                  بشير مفتوح المصدر، مجاني الآن وللأبد. القرار ليس تكتيكاً — هو مبدأ.
+                  {item.desc}
                 </p>
               </div>
             </div>
-
-          </div>
+          ))}
         </div>
+
+        {/* ── Open source commitment ── */}
+        <div
+          className="future-open-source flex items-start gap-4 mb-16 sm:mb-20 py-5 px-6 rounded-xl"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', opacity: 0 }}
+        >
+          <div className="mt-1 shrink-0">
+            <div className="w-2 h-2 rounded-full" style={{ background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.4)' }} />
+          </div>
+          <p className="text-sm leading-relaxed font-arabic" style={{ color: 'var(--text-muted)' }}>
+            <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>بشير مفتوح المصدر ومجاني الآن وللأبد.</span>{' '}
+            هذا القرار ليس تكتيكاً تسويقياً — هو مبدأ. التعليم الجيد لا يجب أن يكون خلف جدار.
+          </p>
+        </div>
+
+        {/* ── Closing statement ── */}
+        <div className="future-closing text-center" style={{ opacity: 0 }}>
+          <div
+            className="w-12 h-px mx-auto mb-8"
+            style={{ background: 'linear-gradient(90deg, transparent, var(--accent), transparent)' }}
+          />
+          <p
+            className="text-xl sm:text-2xl md:text-3xl font-arabic font-bold leading-relaxed mb-3"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            كل هذا يبدأ بمساهم واحد.
+          </p>
+          <p className="text-md font-arabic" style={{ color: 'var(--text-muted)' }}>
+            ربما أنت.
+          </p>
+        </div>
+
       </div>
     </section>
   );
