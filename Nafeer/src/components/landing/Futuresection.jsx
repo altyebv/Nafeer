@@ -22,6 +22,12 @@ const horizons = [
     accent: false,
   },
   {
+    phase: 'قريباً',
+    title: 'المعمل',
+    desc: 'بيئة تفاعلية لتجريب المفاهيم العلمية والرياضية. لا تكتفي بفهم النظرية — جربها بنفسك وشاهدها تعمل.',
+    accent: false,
+  },
+  {
     phase: 'دائماً',
     title: 'تحسين مستمر بلا توقف',
     desc: 'كل إصدار أفضل من السابق. المحتوى يُراجع، الأداء يُقاس، والملاحظات من الطلاب والمساهمين تشكّل كل قرار.',
@@ -103,7 +109,7 @@ export default function FutureSection() {
         {/* ── Vision statement ── */}
         <div className="mb-16 sm:mb-24">
           <span
-            className="future-eyebrow inline-block text-xs tracking-widest uppercase font-mono mb-6"
+            className="future-eyebrow inline-block text-md tracking-widest uppercase font-mono mb-6"
             style={{ color: 'var(--accent)', opacity: 0 }}
           >
             إلى أين نذهب
