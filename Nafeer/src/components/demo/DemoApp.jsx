@@ -26,10 +26,10 @@ const TABS = [
 //   'onboarding' → user enters name, path, grade
 //   'app'        → full app with guided tour overlay
 //
-// Content area uses position: relative + overflow: hidden so that:
-//   - FeedScreen can do internal snap-scroll (absolute-fills its slot)
-//   - GuidedTour overlay can cover the content area precisely
-//   - Other screens scroll inside their own absolute wrapper
+// previewMode: when the tour is active AND the current tour step is the
+//   lesson tab, we pass previewMode=true to LessonScreen so it jumps
+//   straight to the content view (skipping hook/orientation). This lets
+//   the tour spotlight the actual lesson content instead of the hook screen.
 // ─────────────────────────────────────────────────────────────────────────────
 export default function DemoApp() {
   const [phase,       setPhase]       = useState('onboarding');
@@ -50,7 +50,6 @@ export default function DemoApp() {
   // ── Tab navigation ──
   function navigateTo(tabId) {
     setActiveTab(tabId);
-    // Sync tour step when user taps a tab that matches a tour step
     if (tourActive) {
       const idx = TOUR_STEPS.findIndex(s => s.tab === tabId);
       if (idx !== -1) setTourStep(idx);
@@ -76,18 +75,17 @@ export default function DemoApp() {
     setTourActive(false);
   }
 
+  // previewMode: true only when tour is showing the lesson step
+  const lessonTourStepIndex = TOUR_STEPS.findIndex(s => s.tab === 'lesson');
+  const lessonPreviewMode   = tourActive && tourStep === lessonTourStepIndex;
+
   return (
     <div
-      // Mobile:  full bleed — width/height fill the parent flex cell, no rounded corners.
-      // Desktop: fixed 375×680 pill, centered, with shadow + border.
       className={[
-        // sizing
         'w-full h-full',
         'sm:w-[375px] sm:h-[680px]',
-        // shape
         'rounded-none',
         'sm:rounded-[32px]',
-        // decoration (desktop only)
         'sm:border sm:border-white/10',
         'sm:shadow-[0_0_0_1px_rgba(0,0,0,0.5),0_40px_100px_rgba(0,0,0,0.6)]',
       ].join(' ')}
@@ -101,18 +99,13 @@ export default function DemoApp() {
         zIndex:        1,
       }}
     >
-      {/* ── Fake status bar (hidden during onboarding) ── */}
+      {/* ── Fake status bar ── */}
       {phase === 'app' && <StatusBar />}
 
-      {/* ── App top bar (hidden during onboarding) ── */}
+      {/* ── App top bar ── */}
       {phase === 'app' && <AppTopBar activeTab={activeTab} />}
 
-      {/* ── Content area ──
-           position: relative + overflow: hidden are critical:
-           - Allows FeedScreen to absolute-fill and snap-scroll internally
-           - Allows GuidedTour overlay to cover exactly this region
-           - Other screens scroll inside their own overflow-y wrapper
-      ── */}
+      {/* ── Content area ── */}
       <div
         style={{
           flex:     1,
@@ -137,10 +130,12 @@ export default function DemoApp() {
             )}
             {activeTab === 'lesson' && (
               <ScrollPane>
-                <LessonScreen userPath={userProfile?.path} />
+                <LessonScreen
+                  userPath={userProfile?.path}
+                  previewMode={lessonPreviewMode}
+                />
               </ScrollPane>
             )}
-            {/* FeedScreen manages its own absolute positioning + snap scroll */}
             {activeTab === 'feed' && (
               <FeedScreen userPath={userProfile?.path} />
             )}
@@ -155,7 +150,7 @@ export default function DemoApp() {
               </ScrollPane>
             )}
 
-            {/* ── On-screen guided tour overlay ── */}
+            {/* ── Guided tour overlay ── */}
             {tourActive && (
               <GuidedTour
                 stepIndex={tourStep}
@@ -168,12 +163,12 @@ export default function DemoApp() {
         )}
       </div>
 
-      {/* ── Bottom tab bar (hidden during onboarding) ── */}
+      {/* ── Bottom tab bar ── */}
       {phase === 'app' && (
         <BottomBar tabs={TABS} activeTab={activeTab} onTabChange={navigateTo} />
       )}
 
-      {/* ── Restart tour button — appears after tour is dismissed ── */}
+      {/* ── Restart tour button ── */}
       {phase === 'app' && !tourActive && (
         <button
           onClick={() => { setTourActive(true); setTourStep(0); setActiveTab('home'); }}
@@ -203,7 +198,7 @@ export default function DemoApp() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ScrollPane — wraps normal screens that need overflow-y scroll
+// ScrollPane
 // ─────────────────────────────────────────────────────────────────────────────
 function ScrollPane({ children }) {
   return (
@@ -234,11 +229,9 @@ function StatusBar() {
         9:41
       </span>
       <div className="flex items-center gap-1.5">
-        {/* Wifi */}
         <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--text-muted)">
           <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
         </svg>
-        {/* Battery */}
         <svg width="16" height="11" viewBox="0 0 24 14" fill="none" stroke="var(--text-muted)" strokeWidth="1.5">
           <rect x="1" y="1" width="18" height="12" rx="2"/>
           <path d="M21 5v4"/>
