@@ -1,5 +1,5 @@
 'use client';
-import { HeadingBlock, TextBlock, TipBlock } from './PrimitiveBlocks';
+import { HeadingBlock, TextBlock, TipBlock, ArabicFormulaBlock, ImagePlaceholderBlock, GifPlaceholderBlock, TableBlock } from './PrimitiveBlocks';
 import { HighlightBox }  from './HighlightBox';
 import { FormulaBlock }  from './FormulaBlock';
 import { ExampleBlock }  from './ExampleBlock';
@@ -12,12 +12,26 @@ import { ExampleBlock }  from './ExampleBlock';
 
 export default function BlockRenderer({ block }) {
   switch (block.type) {
-    case 'HEADING':       return <HeadingBlock block={block} />;
-    case 'TEXT':          return <TextBlock block={block} />;
-    case 'TIP':           return <TipBlock block={block} />;
-    case 'HIGHLIGHT_BOX': return <HighlightBox block={block} />;
-    case 'FORMULA':       return <FormulaBlock block={block} />;
-    case 'EXAMPLE':       return <ExampleBlock block={block} />;
-    default:              return null;
+    // ── Core text blocks ──────────────────────────────────────────────────
+    case 'HEADING':           return <HeadingBlock         block={block} />;
+    case 'TEXT':              return <TextBlock            block={block} />;
+    case 'TIP':               return <TipBlock             block={block} />;
+
+    // ── Highlight / callout boxes ─────────────────────────────────────────
+    case 'HIGHLIGHT_BOX':     return <HighlightBox         block={block} />;
+
+    // ── Formula blocks ────────────────────────────────────────────────────
+    case 'FORMULA':           return <FormulaBlock         block={block} />;  // KaTeX / LaTeX
+    case 'ARABIC_FORMULA':    return <ArabicFormulaBlock   block={block} />;  // Arabic-symbol equations
+
+    // ── Interactive example ───────────────────────────────────────────────
+    case 'EXAMPLE':           return <ExampleBlock         block={block} />;
+
+    // ── Rich media placeholders ───────────────────────────────────────────
+    case 'IMAGE_PLACEHOLDER': return <ImagePlaceholderBlock block={block} />;
+    case 'GIF_PLACEHOLDER':   return <GifPlaceholderBlock   block={block} />;
+    case 'TABLE':             return <TableBlock            block={block} />;
+
+    default:                  return null;
   }
 }
