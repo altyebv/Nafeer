@@ -32,7 +32,7 @@ function formatTime(ms) {
 // previewMode: when true (set by DemoApp during guided tour) skips hook/orientation
 //              and starts directly at 'content'.
 // ─────────────────────────────────────────────────────────────────────────────
-export default function LessonScreen({ userPath, previewMode = false }) {
+export default function LessonScreen({ userPath, previewMode = false, onGoHome, setFullScreen }) {
   const lesson = LESSON_BY_PATH[userPath] || LESSON_BY_PATH.SCIENCE;
   const color  = SUBJECT_COLORS[lesson.subjectKey] || '#4A90D9';
 
@@ -69,6 +69,7 @@ export default function LessonScreen({ userPath, previewMode = false }) {
     startTimeRef.current = Date.now();
     setElapsed(0);
     setPhase('content');
+    if (setFullScreen) setFullScreen(true);
   }
 
   function goToCheckpoint() {
@@ -77,10 +78,12 @@ export default function LessonScreen({ userPath, previewMode = false }) {
     setTimeSpent(spent);
     setCheckAnswer(null);
     setPhase('checkpoint');
+    if (setFullScreen) setFullScreen(false);
   }
 
   function goToComplete() {
     setPhase('complete');
+    if (setFullScreen) setFullScreen(false);
   }
 
   const progress = Math.round((lesson.currentSection / lesson.totalSections) * 100);
@@ -112,10 +115,18 @@ export default function LessonScreen({ userPath, previewMode = false }) {
         displayStreak={displayStreak}
         xpVisible={xpVisible}
         streakBefore={lesson.complete.streakBefore}
-        onRestart={() => {
-          startTimeRef.current = null;
-          setElapsed(0);
-          setPhase('hook');
+        onContinue={() => {
+          // Navigate back to home screen if the parent provided a handler,
+          // otherwise fall back to restarting the lesson (e.g. in DemoSection)
+          if (onGoHome) {
+            if (setFullScreen) setFullScreen(false);
+            onGoHome();
+          } else {
+            startTimeRef.current = null;
+            setElapsed(0);
+            setPhase('hook');
+            if (setFullScreen) setFullScreen(false);
+          }
         }}
       />
     );
@@ -551,7 +562,7 @@ function CheckpointPhase({ lesson, color, checkAnswer, setCheckAnswer, onContinu
 // ─────────────────────────────────────────────────────────────────────────────
 // CompletePhase — streak, time, XP + visual forward pull
 // ─────────────────────────────────────────────────────────────────────────────
-function CompletePhase({ lesson, color, timeSpent, displayStreak, xpVisible, streakBefore, onRestart }) {
+function CompletePhase({ lesson, color, timeSpent, displayStreak, xpVisible, streakBefore, onContinue }) {
   const { xpGained, forwardPull } = lesson.complete;
   const streakIncremented = displayStreak > streakBefore;
 
@@ -720,9 +731,9 @@ function CompletePhase({ lesson, color, timeSpent, displayStreak, xpVisible, str
         </div>
       </div>
 
-      {/* Restart */}
+      {/* Continue → home */}
       <button
-        onClick={onRestart}
+        onClick={onContinue}
         className="w-full py-3.5 rounded-2xl font-arabic font-bold text-sm"
         style={{
           background: color, color: '#fff', border: 'none', cursor: 'pointer',
@@ -731,7 +742,7 @@ function CompletePhase({ lesson, color, timeSpent, displayStreak, xpVisible, str
         onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
         onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
       >
-        استمر →
+        العودة للرئيسية →
       </button>
 
       <style>{`

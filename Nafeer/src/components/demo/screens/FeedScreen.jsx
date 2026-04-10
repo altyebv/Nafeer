@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { DefinitionCard, FlashCard, TrueFalseCard } from '../feed/Feedcards';
 import { FEED_CARDS_BY_PATH } from '../demoData';
 
@@ -12,11 +12,19 @@ import { FEED_CARDS_BY_PATH } from '../demoData';
 //
 // Card order: 4 lesson bites → 1 T/F (swipe left/right) → 1 flip card
 // ─────────────────────────────────────────────────────────────────────────────
-export default function FeedScreen({ userPath = 'SCIENCE' }) {
+export default function FeedScreen({ userPath = 'SCIENCE', setFullScreen }) {
   const cards       = FEED_CARDS_BY_PATH[userPath] || FEED_CARDS_BY_PATH.SCIENCE;
   const total       = cards.length;
   const containerRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
+
+  // Set full screen when mounted
+  useEffect(() => {
+    if (setFullScreen) {
+      setFullScreen(true);
+      return () => setFullScreen(false);
+    }
+  }, [setFullScreen]);
 
   // Keep currentIdx in sync with scroll position (for the progress indicator)
   const handleScroll = useCallback(() => {
