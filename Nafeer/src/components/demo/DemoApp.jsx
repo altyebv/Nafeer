@@ -20,16 +20,20 @@ const TABS = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DemoApp — full phone-shell experience
+// DemoApp
 //
 // Phases:
 //   'onboarding' → user enters name, path, grade
 //   'app'        → full app with guided tour overlay
 //
-// previewMode: when the tour is active AND the current tour step is the
-//   lesson tab, we pass previewMode=true to LessonScreen so it jumps
-//   straight to the content view (skipping hook/orientation). This lets
-//   the tour spotlight the actual lesson content instead of the hook screen.
+// Tour chrome hiding:
+//   TOUR_STEPS[n].focusMode = true → hide StatusBar + AppTopBar + BottomBar
+//   so the demo shows what "focus mode" really looks like in Basheer.
+//
+// previewMode:
+//   When the tour is on a lesson step AND focusMode is false, we pass
+//   previewMode=true to LessonScreen so it skips hook/orientation and
+//   shows actual content blocks (what the tour spotlight targets).
 // ─────────────────────────────────────────────────────────────────────────────
 export default function DemoApp() {
   const [phase,       setPhase]       = useState('onboarding');
@@ -37,6 +41,8 @@ export default function DemoApp() {
   const [activeTab,   setActiveTab]   = useState('home');
   const [tourStep,    setTourStep]    = useState(0);
   const [tourActive,  setTourActive]  = useState(true);
+  const [lessonFullScreen, setLessonFullScreen] = useState(false);
+  const [feedFullScreen, setFeedFullScreen] = useState(false);
 
   // ── Onboarding completion ──
   function handleOnboardingComplete(profile) {
@@ -50,7 +56,10 @@ export default function DemoApp() {
   // ── Tab navigation ──
   function navigateTo(tabId) {
     setActiveTab(tabId);
+    setLessonFullScreen(false);
+    setFeedFullScreen(false);
     if (tourActive) {
+      // Prefer to land on the first step for this tab
       const idx = TOUR_STEPS.findIndex(s => s.tab === tabId);
       if (idx !== -1) setTourStep(idx);
     }
@@ -75,9 +84,15 @@ export default function DemoApp() {
     setTourActive(false);
   }
 
-  // previewMode: true only when tour is showing the lesson step
-  const lessonTourStepIndex = TOUR_STEPS.findIndex(s => s.tab === 'lesson');
-  const lessonPreviewMode   = tourActive && tourStep === lessonTourStepIndex;
+  // ── Focus mode: hide chrome when the current tour step requests it ──
+  const currentTourStep = tourActive ? TOUR_STEPS[tourStep] : null;
+  const focusMode       = Boolean(currentTourStep?.focusMode);
+
+  // ── Lesson preview mode: show content blocks when on a lesson tour step that is NOT focus-mode ──
+  const lessonPreviewMode =
+    tourActive &&
+    currentTourStep?.tab === 'lesson' &&
+    !focusMode;
 
   return (
     <div
@@ -99,28 +114,23 @@ export default function DemoApp() {
         zIndex:        1,
       }}
     >
-      {/* ── Fake status bar ── */}
-      {phase === 'app' && <StatusBar />}
+      {/* ── Fake status bar — hidden in focus mode ── */}
+      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && <StatusBar />}
 
-      {/* ── App top bar ── */}
-      {phase === 'app' && <AppTopBar activeTab={activeTab} />}
+      {/* ── App top bar — hidden in focus mode ── */}
+      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && <AppTopBar activeTab={activeTab} />}
 
       {/* ── Content area ── */}
-      <div
-        style={{
-          flex:     1,
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
+      <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
+
         {/* ONBOARDING phase */}
         {phase === 'onboarding' && (
-          <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', scrollbarWidth: 'none' }}>
+          <div style={{ position:'absolute', inset:0, overflowY:'auto', scrollbarWidth:'none' }}>
             <OnboardingScreen onComplete={handleOnboardingComplete} />
           </div>
         )}
 
-        {/* APP phase — screens */}
+        {/* APP phase */}
         {phase === 'app' && (
           <>
             {activeTab === 'home' && (
@@ -128,22 +138,28 @@ export default function DemoApp() {
                 <HomeScreen onNavigate={navigateTo} userProfile={userProfile} />
               </ScrollPane>
             )}
+
             {activeTab === 'lesson' && (
               <ScrollPane>
                 <LessonScreen
                   userPath={userProfile?.path}
                   previewMode={lessonPreviewMode}
+                  onGoHome={() => navigateTo('home')}
+                  setFullScreen={setLessonFullScreen}
                 />
               </ScrollPane>
             )}
+
             {activeTab === 'feed' && (
-              <FeedScreen userPath={userProfile?.path} />
+              <FeedScreen userPath={userProfile?.path} setFullScreen={setFeedFullScreen} />
             )}
+
             {activeTab === 'quiz' && (
               <ScrollPane>
                 <QuizBankScreen />
               </ScrollPane>
             )}
+
             {activeTab === 'profile' && (
               <ScrollPane>
                 <ProfileScreen userProfile={userProfile} />
@@ -163,8 +179,8 @@ export default function DemoApp() {
         )}
       </div>
 
-      {/* ── Bottom tab bar ── */}
-      {phase === 'app' && (
+      {/* ── Bottom tab bar — hidden in focus mode ── */}
+      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && (
         <BottomBar tabs={TABS} activeTab={activeTab} onTabChange={navigateTo} />
       )}
 
