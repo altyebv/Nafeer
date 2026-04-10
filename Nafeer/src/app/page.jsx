@@ -9,10 +9,12 @@ import Problemsection from '@/components/landing/Problemsection';
 import Visionsection from '@/components/landing/Visionsection';
 import Futuresection from '@/components/landing/Futuresection';
 import FinalCTA from '@/components/landing/Finalcta';
+import VisitTracker from '@/components/VisitTracker';
 
 export default function HomePage() {
   return (
     <div className="grain">
+      <VisitTracker />
       <Navbar />
       <Hero />
       <Problemsection />
