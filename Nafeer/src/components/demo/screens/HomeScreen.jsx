@@ -9,12 +9,14 @@ function toAr(n) {
 // HomeScreen — accepts optional userProfile from onboarding
 // Falls back to DEMO_USER / SCIENCE defaults if not provided
 // ─────────────────────────────────────────────────────────────────────────────
-export default function HomeScreen({ onNavigate, userProfile }) {
+export default function HomeScreen({ onNavigate, userProfile, bonusXp = 0 }) {
   const path       = userProfile?.path  || 'SCIENCE';
   const nameAr     = userProfile?.name  || DEMO_USER.nameAr;
   const grade      = userProfile?.grade;
 
-  const { streak, dailyGoalDone, dailyGoalTotal, xp, xpToNext } = DEMO_USER;
+  const { streak, dailyGoalDone, dailyGoalTotal } = DEMO_USER;
+  const xp         = DEMO_USER.xp + bonusXp;
+  const xpToNext   = DEMO_USER.xpToNext;
   const goalProgress = Math.round((dailyGoalDone / dailyGoalTotal) * 100);
   const xpProgress   = Math.round((xp / xpToNext) * 100);
   const subjects     = SUBJECTS_BY_PATH[path] || SUBJECTS_BY_PATH.SCIENCE;
