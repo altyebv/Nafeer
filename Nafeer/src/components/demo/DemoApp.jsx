@@ -7,6 +7,7 @@ import FeedScreen       from './screens/FeedScreen';
 import QuizBankScreen   from './screens/QuizBankScreen';
 import ProfileScreen    from './screens/ProfileScreen';
 import GuidedTour, { TOUR_STEPS } from './GuidedTour';
+import { LESSON_BY_PATH } from './demoData';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TABS — 5 screens matching Basheer's bottom nav
@@ -43,6 +44,8 @@ export default function DemoApp() {
   const [tourActive,  setTourActive]  = useState(true);
   const [lessonFullScreen, setLessonFullScreen] = useState(false);
   const [feedFullScreen, setFeedFullScreen] = useState(false);
+  // Tracks XP earned in feed/lesson sessions so HomeScreen can reflect it
+  const [bonusXp, setBonusXp] = useState(0);
 
   // ── Onboarding completion ──
   function handleOnboardingComplete(profile) {
@@ -135,7 +138,7 @@ export default function DemoApp() {
           <>
             {activeTab === 'home' && (
               <ScrollPane>
-                <HomeScreen onNavigate={navigateTo} userProfile={userProfile} />
+                <HomeScreen onNavigate={navigateTo} userProfile={userProfile} bonusXp={bonusXp} />
               </ScrollPane>
             )}
 
@@ -144,14 +147,19 @@ export default function DemoApp() {
                 <LessonScreen
                   userPath={userProfile?.path}
                   previewMode={lessonPreviewMode}
-                  onGoHome={() => navigateTo('home')}
+                  onGoHome={() => { setBonusXp(xp => xp + (LESSON_BY_PATH[userProfile?.path]?.complete?.xpGained || 45)); navigateTo('home'); }}
                   setFullScreen={setLessonFullScreen}
                 />
               </ScrollPane>
             )}
 
             {activeTab === 'feed' && (
-              <FeedScreen userPath={userProfile?.path} setFullScreen={setFeedFullScreen} />
+              <FeedScreen
+                userPath={userProfile?.path}
+                setFullScreen={setFeedFullScreen}
+                onGoHome={() => navigateTo('home')}
+                onXpEarned={(xp) => setBonusXp(prev => prev + xp)}
+              />
             )}
 
             {activeTab === 'quiz' && (
