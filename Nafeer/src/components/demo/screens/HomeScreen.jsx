@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useRef, useState } from 'react';
 import { DEMO_USER, SUBJECTS_BY_PATH, FOCUS_BY_PATH, SUBJECT_COLORS } from '../demoData';
 
 function toAr(n) {
@@ -6,22 +7,54 @@ function toAr(n) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HomeScreen — accepts optional userProfile from onboarding
-// Falls back to DEMO_USER / SCIENCE defaults if not provided
+// HomeScreen
 // ─────────────────────────────────────────────────────────────────────────────
-export default function HomeScreen({ onNavigate, userProfile, bonusXp = 0 }) {
+export default function HomeScreen({
+  onNavigate,
+  userProfile,
+  bonusXp    = 0,
+  xpFlash    = false,
+  leveledUp  = false,
+  currentLevelLabel = 'طالب مبتدئ',
+  level      = 1,
+}) {
   const path       = userProfile?.path  || 'SCIENCE';
   const nameAr     = userProfile?.name  || DEMO_USER.nameAr;
   const grade      = userProfile?.grade;
 
   const { streak, dailyGoalDone, dailyGoalTotal } = DEMO_USER;
-  const xp         = DEMO_USER.xp + bonusXp;
-  const xpToNext   = DEMO_USER.xpToNext;
+  const xp           = DEMO_USER.xp + bonusXp;
+  const xpToNext     = DEMO_USER.xpToNext;
   const goalProgress = Math.round((dailyGoalDone / dailyGoalTotal) * 100);
-  const xpProgress   = Math.round((xp / xpToNext) * 100);
+  // Cap bar at 100% after level-up so it looks full/satisfied
+  const xpProgress   = Math.min(100, Math.round((xp / xpToNext) * 100));
   const subjects     = SUBJECTS_BY_PATH[path] || SUBJECTS_BY_PATH.SCIENCE;
   const focus        = FOCUS_BY_PATH[path]    || FOCUS_BY_PATH.SCIENCE;
   const gradeLabel   = grade === '3' ? 'الثالث ثانوي' : 'الثاني ثانوي';
+
+  // XP count-up animation
+  const [displayXp, setDisplayXp] = useState(DEMO_USER.xp);
+  const animRef = useRef(null);
+
+  useEffect(() => {
+    const target = xp;
+    const start  = displayXp;
+    if (target === start) return;
+    const diff     = target - start;
+    const duration = Math.min(900, Math.abs(diff) * 6);
+    const startTime = performance.now();
+
+    function tick(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setDisplayXp(Math.round(start + diff * eased));
+      if (t < 1) animRef.current = requestAnimationFrame(tick);
+    }
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [xp]);
 
   return (
     <div className="pb-6" dir="rtl">
@@ -56,6 +89,17 @@ export default function HomeScreen({ onNavigate, userProfile, bonusXp = 0 }) {
         </div>
       </div>
 
+      {/* ── XP / Level Card (polished) ── */}
+      <XpLevelCard
+        xp={displayXp}
+        xpToNext={xpToNext}
+        xpProgress={xpProgress}
+        level={level}
+        levelLabel={currentLevelLabel}
+        xpFlash={xpFlash}
+        leveledUp={leveledUp}
+      />
+
       {/* ── Daily Goal ── */}
       <div
         className="mx-4 mb-4 rounded-2xl p-4"
@@ -76,28 +120,6 @@ export default function HomeScreen({ onNavigate, userProfile, bonusXp = 0 }) {
         <p className="font-arabic text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
           {toAr(dailyGoalTotal - dailyGoalDone)} عناصر متبقية لإتمام هدفك
         </p>
-      </div>
-
-      {/* ── XP Bar ── */}
-      <div
-        className="mx-4 mb-4 rounded-2xl p-3.5"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-      >
-        <div className="flex justify-between items-center mb-1.5">
-          <div className="flex items-center gap-1.5">
-            <span style={{ fontSize: '14px' }}>⭐</span>
-            <p className="font-arabic text-xs font-bold" style={{ color: 'var(--text-primary)' }}>نقاط XP</p>
-          </div>
-          <p className="font-arabic text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
-            {toAr(xp)} / {toAr(xpToNext)}
-          </p>
-        </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${xpProgress}%`, background: 'linear-gradient(90deg, #9B59B6, #d4891e)' }}
-          />
-        </div>
       </div>
 
       {/* ── Today's Focus ── */}
@@ -158,6 +180,191 @@ export default function HomeScreen({ onNavigate, userProfile, bonusXp = 0 }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// XpLevelCard — the polished gamification card
+// ─────────────────────────────────────────────────────────────────────────────
+function XpLevelCard({ xp, xpToNext, xpProgress, level, levelLabel, xpFlash, leveledUp }) {
+  function toAr(n) {
+    return n.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+  }
+
+  const CIRCUMFERENCE = 2 * Math.PI * 20; // small ring r=20
+
+  return (
+    <div
+      className="mx-4 mb-4 rounded-2xl p-4"
+      style={{
+        background:  'var(--bg-card)',
+        border:      `1px solid ${leveledUp ? 'rgba(212,137,30,0.55)' : 'var(--border-subtle)'}`,
+        position:    'relative',
+        overflow:    'hidden',
+        transition:  'border-color 0.6s ease',
+        boxShadow:   leveledUp
+          ? '0 0 0 1px rgba(212,137,30,0.20), 0 4px 24px rgba(212,137,30,0.18)'
+          : 'none',
+      }}
+    >
+      {/* Pulsing ember shimmer on xpFlash */}
+      {xpFlash && (
+        <div
+          style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(ellipse at 50% 50%, rgba(212,137,30,0.16) 0%, transparent 70%)',
+            animation: 'xpCardShimmer 1.6s ease-out forwards',
+            pointerEvents: 'none',
+            borderRadius: '16px',
+          }}
+        />
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+
+        {/* Level ring — small circular progress */}
+        <div style={{ position: 'relative', flexShrink: 0, width: 52, height: 52 }}>
+          <svg width="52" height="52" viewBox="0 0 52 52" style={{ transform: 'rotate(-90deg)' }}>
+            {/* Track */}
+            <circle cx="26" cy="26" r="20" fill="none" stroke="rgba(212,137,30,0.12)" strokeWidth="3.5" />
+            {/* Progress */}
+            <circle
+              cx="26" cy="26" r="20"
+              fill="none"
+              stroke="var(--accent)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={CIRCUMFERENCE * (1 - xpProgress / 100)}
+              style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1)' }}
+            />
+          </svg>
+          {/* Level number */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-arabic, inherit)',
+              fontSize: '7px', fontWeight: 600,
+              color: 'rgba(212,137,30,0.65)',
+              lineHeight: 1,
+            }}>
+              Lv.
+            </span>
+            <span style={{
+              fontFamily: 'var(--font-arabic, inherit)',
+              fontSize: '18px', fontWeight: 900, lineHeight: 1,
+              color: 'var(--accent)',
+            }}>
+              {toAr(level)}
+            </span>
+          </div>
+        </div>
+
+        {/* Right side — label + bar + XP count */}
+        <div style={{ flex: 1 }}>
+          {/* Top row: label + XP numbers */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13px' }}>⭐</span>
+              <span style={{
+                fontFamily: 'var(--font-arabic, inherit)',
+                fontSize: '12px', fontWeight: 700,
+                color: leveledUp ? 'var(--accent)' : 'var(--text-primary)',
+                transition: 'color 0.5s ease',
+              }}>
+                {levelLabel}
+              </span>
+              {leveledUp && (
+                <span style={{
+                  fontFamily: 'var(--font-arabic, inherit)',
+                  fontSize: '10px', fontWeight: 700,
+                  color: '#fff',
+                  background: 'var(--accent)',
+                  padding: '1px 7px',
+                  borderRadius: '10px',
+                  animation: 'xpBadgePop 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
+                }}>
+                  جديد!
+                </span>
+              )}
+            </div>
+            <span style={{
+              fontFamily: 'monospace',
+              fontSize: '10px',
+              color: 'var(--text-muted)',
+              direction: 'ltr',
+            }}>
+              {toAr(Math.min(xp, xpToNext))} / {toAr(xpToNext)}
+            </span>
+          </div>
+
+          {/* XP bar */}
+          <div style={{
+            height: '6px', borderRadius: '3px', overflow: 'hidden',
+            background: 'var(--border-subtle)',
+            position: 'relative',
+          }}>
+            <div
+              style={{
+                height: '100%', borderRadius: '3px',
+                width: `${xpProgress}%`,
+                background: leveledUp
+                  ? 'linear-gradient(90deg, var(--accent), #f0a830)'
+                  : 'linear-gradient(90deg, #9B59B6, var(--accent))',
+                transition: 'width 0.9s cubic-bezier(0.22,1,0.36,1), background 0.6s ease',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Shine sweep on flash */}
+              {xpFlash && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent)',
+                  animation: 'xpBarShine 0.9s ease-out forwards',
+                  borderRadius: '3px',
+                }} />
+              )}
+            </div>
+          </div>
+
+          {/* Subtext */}
+          <p style={{
+            fontFamily: 'var(--font-arabic, inherit)',
+            fontSize: '10px',
+            color: 'var(--text-muted)',
+            marginTop: '5px',
+          }}>
+            {leveledUp
+              ? `🎉 مبروك! انتقلت إلى المستوى ${toAr(level)}`
+              : `${toAr(xpToNext - Math.min(xp, xpToNext))} نقطة للمستوى التالي`
+            }
+          </p>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes xpCardShimmer {
+          0%   { opacity: 0; }
+          20%  { opacity: 1; }
+          100% { opacity: 0; }
+        }
+        @keyframes xpBarShine {
+          from { transform: translateX(-100%); }
+          to   { transform: translateX(200%); }
+        }
+        @keyframes xpBadgePop {
+          from { opacity: 0; transform: scale(0.5); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SubjectCard
+// ─────────────────────────────────────────────────────────────────────────────
 function SubjectCard({ subject }) {
   const color = SUBJECT_COLORS[subject.key] || '#4A90D9';
   return (
