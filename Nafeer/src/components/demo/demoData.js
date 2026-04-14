@@ -17,8 +17,8 @@ export const SUBJECT_COLORS = {
 export const DEMO_USER = {
   nameAr:         'يوسف',
   streak:         7,
-  xp:             1240,
-  xpToNext:       2000,
+  xp:             1165,
+  xpToNext:       1200,
   dailyGoalDone:  2,
   dailyGoalTotal: 5,
 };
