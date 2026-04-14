@@ -59,9 +59,9 @@ export default function HomeScreen({ onNavigate, userProfile, bonusXp = 0, justL
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-1">
           <div>
-            <p className="font-arabic text-xs" style={{ color: 'var(--text-muted)' }}>أهلاً،</p>
+            <p className="font-arabic text-sm" style={{ color: 'var(--text-muted)' }}>أهلاً،</p>
             <h2 className="font-arabic text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              {nameAr} 👋
+              {nameAr} 
             </h2>
             {grade && (
               <p className="font-arabic text-xs mt-0.5" style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
