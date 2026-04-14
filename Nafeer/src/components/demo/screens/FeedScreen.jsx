@@ -57,6 +57,7 @@ export default function FeedScreen({ userPath = 'SCIENCE', setFullScreen, onGoHo
       <SessionEndScreen
         data={sessionEnd}
         onGoHome={onGoHome}
+        onXpEarned={onXpEarned}
         setFullScreen={setFullScreen}
       />
     );
@@ -149,7 +150,7 @@ function ExitButton({ onGoHome, setFullScreen }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // SessionEndScreen — end-of-session celebration
 // ─────────────────────────────────────────────────────────────────────────────
-function SessionEndScreen({ data, onGoHome, setFullScreen }) {
+function SessionEndScreen({ data, onGoHome, onXpEarned, setFullScreen }) {
   const [xpVisible, setXpVisible] = useState(false);
 
   useEffect(() => {
@@ -158,6 +159,7 @@ function SessionEndScreen({ data, onGoHome, setFullScreen }) {
   }, []);
 
   function handleHome() {
+    if (onXpEarned && data.xpEarned) onXpEarned(data.xpEarned);
     if (setFullScreen) setFullScreen(false);
     if (onGoHome) onGoHome();
   }
