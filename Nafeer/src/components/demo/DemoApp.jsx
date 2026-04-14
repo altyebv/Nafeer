@@ -13,7 +13,7 @@ const TABS = [
   { id: 'home',    labelAr: 'الرئيسية', locked: false },
   { id: 'lesson',  labelAr: 'الدروس',   locked: false },
   { id: 'feed',    labelAr: 'اللقطات',  locked: false },
-  { id: 'quiz',    labelAr: 'البنك',    locked: true  },
+  { id: 'quiz',    labelAr: 'البنك',    locked: false  },
   { id: 'profile', labelAr: 'الملف',    locked: false },
 ];
 
@@ -158,11 +158,11 @@ export default function DemoApp() {
                 onXpEarned={(xp) => awardXp(xp)}
               />
             )}
-
             {activeTab === 'quiz' && (
-              <ScrollPane><QuizBankScreen /></ScrollPane>
+              <ScrollPane>
+                <QuizBankScreen onXpEarned={(xp) => awardXp(xp)} />
+              </ScrollPane>
             )}
-
             {activeTab === 'profile' && (
               <ScrollPane><ProfileScreen userProfile={userProfile} /></ScrollPane>
             )}
