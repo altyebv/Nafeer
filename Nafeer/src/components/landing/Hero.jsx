@@ -215,7 +215,7 @@ export default function Hero() {
             className="gsap-hero-subtitle text-xl sm:text-2xl md:text-3xl font-arabic leading-relaxed max-w-2xl"
             style={{ color: 'var(--text-secondary)', opacity: 0, transform: 'translateY(26px)' }}
           >
-            من الحفظ إلى الفهم —{' '}
+            ما بين القراءة و الفهم —{' '}
             <span style={{ color: 'var(--accent)' }}>لأول مرة، المنهج كما يجب أن يكون</span>
           </h2>
         </div>
@@ -260,7 +260,7 @@ export default function Hero() {
         {/* Stats row */}
         <div className="flex flex-wrap gap-7 sm:gap-12 pt-6 sm:pt-8" style={{ borderTop: '1px solid var(--border-subtle)' }}>
           {[
-            { value: '١٢',   label: 'مادة في متناولك' },
+            { value: '١٣',   label: 'مادة في متناولك' },
             { value: '٠',    label: 'اتصال مطلوب'     },
             { value: '١٠٠٪', label: 'مجاني — للأبد'   },
           ].map((s, i) => (

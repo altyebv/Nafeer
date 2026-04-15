@@ -99,8 +99,8 @@ const INTELLIGENCE_FEATURES = [
         <path d="M14 4v3M14 21v3M4 14h3M21 14h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.3"/>
       </svg>
     ),
-    title: 'كشف نقاط الضعف',
-    subtitle: 'Weak Area Detection',
+    title: 'مُحرك ذكي',
+    subtitle: 'Smart Recommendation Engine',
     desc: 'يرصد بشير تقدمك ، ماذا درست ، أين تتعثر — أي مفاهيم تراجعت، أي وحدات تحتاج تعزيزاً — ويُحرّك محتوى يستهدف هذه الفجوات تحديداً قبل أن تتسع.',
   },
   {
@@ -598,7 +598,7 @@ function SectionHeader() {
 
   return (
     <div ref={ref} className="mb-14 sm:mb-20" style={{ opacity: 1 }}>
-      <p className="feat-eyebrow text-xs sm:text-sm font-mono tracking-widest uppercase mb-5" style={{ color: 'var(--accent)', opacity: 0 }}>
+      <p className="feat-eyebrow text-md sm:text-sm font-mono font-bold tracking-widest uppercase mb-5" style={{ color: 'var(--accent)', opacity: 0 }}>
         داخل التطبيق
       </p>
 

@@ -181,7 +181,7 @@ export default function VisionSection() {
         {/* ── Vision statement ─────────────────────────────────────── */}
         <div className="vision-statement mb-16 sm:mb-24" style={{ opacity: 0 }}>
           <span
-            className="inline-block text-xs sm:text-sm font-mono tracking-widest uppercase mb-5"
+            className="inline-block text-md sm:text-sm font-mono font-bold tracking-widest uppercase mb-5"
             style={{ color: 'var(--accent)' }}
           >
             الإمكانية الحقيقية

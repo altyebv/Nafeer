@@ -114,7 +114,7 @@ export default function FinalCTA() {
                 className="text-base leading-loose mb-8 font-arabic"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                جرّب بشير الآن — معاينة تفاعلية حقيقية قبل الإطلاق على Play Store.
+                جرّب بشير الآن — معاينة تفاعلية قصيرة قبل الإطلاق الفعلي على Play Store.
               </p>
             </div>
 

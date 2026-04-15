@@ -125,10 +125,10 @@ export default function FutureSection() {
           </h2>
 
           <p
-            className="future-sub text-base sm:text-lg leading-loose font-arabic max-w-2xl"
+            className="future-sub text-xl sm:text-lg leading-loose font-arabic max-w-2xl"
             style={{ color: 'var(--text-secondary)', opacity: 0 }}
           >
-            بُني بيد واحدة، ويُطور الآن بمساهمة عشرات. الهدف لم يتغير:
+            بَدأَ بيد واحدة، ويُطور الآن بمساهمة عشرات. الهدف لم يتغير:
             أن لا يعتمد أي طالب سوداني على الحظ ليفهم مادته.
             هذا ما يبدو عليه الطريق من هنا.
           </p>
@@ -185,7 +185,7 @@ export default function FutureSection() {
                   {item.title}
                 </h3>
                 <p
-                  className="text-sm leading-loose font-arabic"
+                  className="text-md leading-loose font-arabic"
                   style={{ color: 'var(--text-muted)' }}
                 >
                   {item.desc}
@@ -203,9 +203,9 @@ export default function FutureSection() {
           <div className="mt-1 shrink-0">
             <div className="w-2 h-2 rounded-full" style={{ background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.4)' }} />
           </div>
-          <p className="text-sm leading-relaxed font-arabic" style={{ color: 'var(--text-muted)' }}>
-            <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>بشير مفتوح المصدر ومجاني الآن وللأبد.</span>{' '}
-            هذا القرار ليس تكتيكاً تسويقياً — هو مبدأ. التعليم الجيد لا يجب أن يكون خلف جدار.
+          <p className="text-md leading-relaxed font-arabic" style={{ color: 'var(--text-muted)' }}>
+            <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>بشير مفتوح المصدر ومجاني الآن و دائماً.</span>{' '}
+            هذا ليس تكتيكاً تسويقياً — هو مبدأ. التعليم الجيد لا يجب أن يكون خلف جدار.
           </p>
         </div>
 
