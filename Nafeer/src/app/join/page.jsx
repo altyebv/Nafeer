@@ -2,33 +2,54 @@
 import { useState, useEffect } from 'react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
-// ─── Subject groups (used when no role is selected) ────────────────────────
+// ─── Curriculum subject groups ─────────────────────────────────────────────
 const SUBJECT_GROUPS = [
   { trackKey: 'COMMON',   label: 'مشترك'  },
   { trackKey: 'SCIENCE',  label: 'علمي'   },
   { trackKey: 'LITERARY', label: 'أدبي'   },
 ];
 
+// ─── Category meta — NO emojis ────────────────────────────────────────────
 const CATEGORY_META = {
-  learning:   { label: 'بناء التجربة التعليمية', icon: '✏️' },
-  core:       { label: 'بناء المنصة',            icon: '🧠' },
-  growth:     { label: 'نشر الفكرة',             icon: '📢' },
-  operations: { label: 'تنظيم نافير',            icon: '⚙️' },
+  learning:   { label: 'بناء التجربة التعليمية' },
+  core:       { label: 'بناء المنصة'            },
+  growth:     { label: 'نشر الفكرة'             },
+  operations: { label: 'تنظيم نافير'            },
 };
 
-
+// Category accent colours (kept from existing system)
 const CATEGORY_COLORS = {
-  content:     { active: 'rgba(212,137,30,0.15)',  border: 'rgba(212,137,30,0.45)',  text: 'var(--accent)'  },
-  development: { active: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.35)',  text: '#93c5fd'         },
-  design:      { active: 'rgba(168,85,247,0.12)',  border: 'rgba(168,85,247,0.35)',  text: '#d8b4fe'         },
+  learning:    { active: 'rgba(212,137,30,0.15)',  border: 'rgba(212,137,30,0.45)',  text: 'var(--accent)'  },
+  core:        { active: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.35)',  text: '#93c5fd'        },
+  growth:      { active: 'rgba(168,85,247,0.12)',  border: 'rgba(168,85,247,0.35)',  text: '#d8b4fe'        },
+  operations:  { active: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.30)',   text: '#86efac'        },
 };
 
-// ─── Step indicator ────────────────────────────────────────────────────────
+// ─── AI tools list ─────────────────────────────────────────────────────────
+const AI_TOOLS = [
+  { id: 'chatgpt',     label: 'ChatGPT'     },
+  { id: 'gemini',      label: 'Gemini'      },
+  { id: 'notebooklm',  label: 'NotebookLM'  },
+  { id: 'claude',      label: 'Claude'      },
+  { id: 'copilot',     label: 'Copilot'     },
+  { id: 'perplexity',  label: 'Perplexity'  },
+];
+
+// ─── Age ranges ────────────────────────────────────────────────────────────
+const AGE_RANGES = [
+  { value: 'under-18', label: 'أقل من ١٨' },
+  { value: '18-22',    label: '١٨ – ٢٢'  },
+  { value: '23-27',    label: '٢٣ – ٢٧'  },
+  { value: '28-35',    label: '٢٨ – ٣٥'  },
+  { value: 'over-35',  label: 'فوق ٣٥'   },
+];
+
+// ─── Step bar ──────────────────────────────────────────────────────────────
 function StepBar({ current = 1, total = 3 }) {
   const steps = [
-    { n: 1, label: 'اختيار الدور'    },
-    { n: 2, label: 'التعريف بنفسك'   },
-    { n: 3, label: 'إرسال الطلب'     },
+    { n: 1, label: 'اختيار الدور'  },
+    { n: 2, label: 'التعريف بنفسك' },
+    { n: 3, label: 'إرسال الطلب'   },
   ];
   return (
     <div className="mb-10">
@@ -86,8 +107,8 @@ function StepBar({ current = 1, total = 3 }) {
 
 // ─── Role card ─────────────────────────────────────────────────────────────
 function RoleCard({ role, selected, onSelect }) {
-  const colors = CATEGORY_COLORS[role.category] || CATEGORY_COLORS.content;
-  const meta   = CATEGORY_META[role.category]   || CATEGORY_META.content;
+  const colors = CATEGORY_COLORS[role.category] || CATEGORY_COLORS.learning;
+  const meta   = CATEGORY_META[role.category]   || {};
   return (
     <button
       type="button"
@@ -101,13 +122,10 @@ function RoleCard({ role, selected, onSelect }) {
       }}
     >
       <div className="flex items-start gap-3">
-        <span className="text-lg mt-0.5 shrink-0" style={{ color: colors.text }}>{meta.icon}</span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="font-arabic font-bold text-base" style={{ color: 'var(--text-primary)' }}>
-              {role.name}
-            </span>
-          </div>
+          <span className="font-arabic font-bold text-base" style={{ color: 'var(--text-primary)' }}>
+            {role.name}
+          </span>
           {role.description && (
             <p className="text-sm leading-loose mt-1" style={{ color: 'var(--text-muted)' }}>
               {role.description}
@@ -128,15 +146,14 @@ function RoleCard({ role, selected, onSelect }) {
   );
 }
 
-// ─── Step 1 — Role selector ────────────────────────────────────────────────
+// ─── Role selector ─────────────────────────────────────────────────────────
 function RoleSelector({ roles, selected, onSelect }) {
+  const categoryOrder = ['learning', 'core', 'growth', 'operations'];
   const grouped = roles.reduce((acc, r) => {
     if (!acc[r.category]) acc[r.category] = [];
     acc[r.category].push(r);
     return acc;
   }, {});
-
-const categoryOrder = ['learning', 'core', 'growth', 'operations'];
 
   return (
     <div className="space-y-6">
@@ -146,8 +163,11 @@ const categoryOrder = ['learning', 'core', 'growth', 'operations'];
         const meta = CATEGORY_META[cat];
         return (
           <div key={cat}>
-            <p className="text-xs font-arabic mb-2.5" style={{ color: 'var(--text-muted)' }}>
-              {meta.icon} {meta.label}
+            <p
+              className="text-xs font-arabic mb-2.5 tracking-wide"
+              style={{ color: 'var(--text-muted)', letterSpacing: '0.04em' }}
+            >
+              {meta.label}
             </p>
             <div className="space-y-2">
               {catRoles.map((role) => (
@@ -163,10 +183,9 @@ const categoryOrder = ['learning', 'core', 'growth', 'operations'];
         );
       })}
 
-      {/* Fallback: no specific role */}
       <div>
         <p className="text-xs font-arabic mb-2.5" style={{ color: 'var(--text-muted)' }}>
-        لست متأكداً بعد
+          لست متأكداً بعد
         </p>
         <button
           type="button"
@@ -178,10 +197,116 @@ const categoryOrder = ['learning', 'core', 'growth', 'operations'];
             color: 'var(--text-muted)',
           }}
         >
-          سنساعدك في اختيار المسار المناسب 
+          سنساعدك في اختيار المسار المناسب
         </button>
       </div>
     </div>
+  );
+}
+
+// ─── Field wrapper ─────────────────────────────────────────────────────────
+function Field({ label, hint, required, children }) {
+  return (
+    <div>
+      <label className="block mb-1.5">
+        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          {label}
+          {required && <span className="mr-1" style={{ color: 'var(--accent)' }}>*</span>}
+        </span>
+        {hint && <span className="block text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{hint}</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+// ─── Section divider ───────────────────────────────────────────────────────
+function SectionLabel({ children }) {
+  return (
+    <div className="flex items-center gap-3 pt-2">
+      <span className="text-xs font-mono tracking-widest" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+        {children}
+      </span>
+      <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+    </div>
+  );
+}
+
+const inputStyle = {
+  background: 'rgba(255,255,255,0.04)',
+  border:     '1px solid var(--border-mid)',
+  color:      'var(--text-primary)',
+  outline:    'none',
+};
+
+// ─── Pill toggle (yes/no or option chips) ─────────────────────────────────
+function PillGroup({ options, value, onChange }) {
+  return (
+    <div className="flex gap-2 flex-wrap">
+      {options.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(active ? null : opt.value)}
+            className="px-4 py-2 rounded-lg text-sm font-arabic transition-all duration-200"
+            style={{
+              background: active ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
+              border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
+              color:      active ? 'var(--accent)' : 'var(--text-muted)',
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Boolean yes/no toggle ────────────────────────────────────────────────
+function YesNo({ value, onChange }) {
+  return (
+    <div className="flex gap-2">
+      {[{ v: true, label: 'نعم' }, { v: false, label: 'لا' }].map(({ v, label }) => {
+        const active = value === v;
+        return (
+          <button
+            key={String(v)}
+            type="button"
+            onClick={() => onChange(active ? null : v)}
+            className="px-5 py-2 rounded-lg text-sm font-arabic transition-all duration-200"
+            style={{
+              background: active ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
+              border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
+              color:      active ? 'var(--accent)' : 'var(--text-muted)',
+            }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── AI tool chip ──────────────────────────────────────────────────────────
+function AiToolChip({ tool, selected, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(tool.id)}
+      className="px-3 py-1.5 rounded-lg text-xs transition-all duration-200"
+      style={{
+        background: selected ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
+        border:     selected ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
+        color:      selected ? 'var(--accent)' : 'var(--text-muted)',
+        fontFamily: 'var(--font-mono, monospace)',
+      }}
+    >
+      {tool.label}
+    </button>
   );
 }
 
@@ -194,9 +319,9 @@ function SubjectChip({ subject, selected, onToggle }) {
       className="px-3 py-1.5 rounded-lg text-xs font-arabic transition-all duration-200"
       style={{
         background: selected ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
-        border: selected ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
-        color: selected ? 'var(--accent)' : 'var(--text-muted)',
-        transform: selected ? 'translateY(-1px)' : 'none',
+        border:     selected ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
+        color:      selected ? 'var(--accent)' : 'var(--text-muted)',
+        transform:  selected ? 'translateY(-1px)' : 'none',
       }}
     >
       {subject.nameAr}
@@ -236,7 +361,7 @@ function SuccessScreen({ name }) {
           <div className="space-y-3">
             {[
               { n: '٢', text: 'بعض الأسئلة القصيرة لنفهمك أكثر' },
-              { n: '٣', text: 'مهمة صغيرة تُظهر أسلوبك في الشرح' },
+              { n: '٣', text: 'مهمة صغيرة تُظهر أسلوبك في التفكير' },
             ].map((item) => (
               <div key={item.n} className="flex items-start gap-3">
                 <span className="text-xs font-mono mt-0.5 shrink-0" style={{ color: 'var(--accent)', opacity: 0.7 }}>
@@ -255,46 +380,34 @@ function SuccessScreen({ name }) {
   );
 }
 
-// ─── Field helper ──────────────────────────────────────────────────────────
-function Field({ label, hint, required, children }) {
-  return (
-    <div>
-      <label className="block mb-1.5">
-        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {label}
-          {required && <span className="mr-1" style={{ color: 'var(--accent)' }}>*</span>}
-        </span>
-        {hint && <span className="block text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{hint}</span>}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-const inputStyle = {
-  background: 'rgba(255,255,255,0.04)',
-  border:     '1px solid var(--border-mid)',
-  color:      'var(--text-primary)',
-  outline:    'none',
-};
-
 // ─── Main page ─────────────────────────────────────────────────────────────
 export default function JoinPage() {
-  const [pageStep,  setPageStep]  = useState(1); // 1 = role select, 2 = personal info
-  const [roles,     setRoles]     = useState([]);
-  const [rolesLoading, setRolesLoading] = useState(true);
-  const [selectedRole, setSelectedRole] = useState(undefined); // undefined = not chosen yet, null = no role
+  const [pageStep,     setPageStep]    = useState(1);
+  const [roles,        setRoles]       = useState([]);
+  const [rolesLoading, setRolesLoading]= useState(true);
+  const [selectedRole, setSelectedRole]= useState(undefined); // undefined = not chosen, null = no role
 
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [loading,   setLoading]  = useState(false);
+  const [error,     setError]    = useState('');
+  const [submitted, setSubmitted]= useState(false);
 
   const [form, setForm] = useState({
+    // Identity
     name:               '',
     email:              '',
+    gender:             null,   // 'male' | 'female' | null
+    age:                null,   // age range string | null
+    town:               '',
+    // Background
     background:         '',
     fieldOfStudy:       '',
     subjectsOfInterest: [],
+    // Readiness
+    hasPcOrTablet:      null,
+    hasStableInternet:  null,
+    // AI familiarity
+    usesAiTools:        null,
+    aiToolsList:        [],
   });
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -308,6 +421,15 @@ export default function JoinPage() {
     }));
   };
 
+  const toggleAiTool = (id) => {
+    setForm((f) => ({
+      ...f,
+      aiToolsList: f.aiToolsList.includes(id)
+        ? f.aiToolsList.filter((t) => t !== id)
+        : [...f.aiToolsList, id],
+    }));
+  };
+
   // Load active roles
   useEffect(() => {
     fetch('/api/admin/roles?active=true')
@@ -318,13 +440,12 @@ export default function JoinPage() {
   }, []);
 
   const handleRoleContinue = () => {
-    if (selectedRole === undefined) return; // force a selection
+    if (selectedRole === undefined) return;
     setPageStep(2);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Content roles require at least one subject; other roles don't
     if (selectedRole?.category === 'learning' && form.subjectsOfInterest.length === 0) {
       setError('يرجى اختيار مادة واحدة على الأقل');
       return;
@@ -337,6 +458,7 @@ export default function JoinPage() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           ...form,
+          gender: form.gender || '',
           roleId: selectedRole?._id || null,
         }),
       });
@@ -407,7 +529,7 @@ export default function JoinPage() {
         {/* Step bar */}
         <StepBar current={pageStep} total={3} />
 
-        {/* ── Step 1: Role selector ───────────────────────────────────── */}
+        {/* ── Step 1: Role selector ─────────────────────────────────────── */}
         {pageStep === 1 && (
           <div
             className="rounded-2xl p-6 sm:p-8"
@@ -447,7 +569,7 @@ export default function JoinPage() {
           </div>
         )}
 
-        {/* ── Step 2: Personal info ──────────────────────────────────── */}
+        {/* ── Step 2: Personal info ──────────────────────────────────────── */}
         {pageStep === 2 && (
           <div
             className="rounded-2xl p-6 sm:p-8"
@@ -473,38 +595,99 @@ export default function JoinPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
+
+              {/* ── الهوية ── */}
+              <SectionLabel>الهوية</SectionLabel>
 
               <Field label="الاسم" required>
-                <input type="text" required value={form.name} onChange={(e) => set('name', e.target.value)}
+                <input
+                  type="text" required value={form.name}
+                  onChange={(e) => set('name', e.target.value)}
                   placeholder="اسمك الكريم"
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all" style={inputStyle} />
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all"
+                  style={inputStyle}
+                />
               </Field>
 
               <Field label="البريد الإلكتروني" required>
-                <input type="email" required dir="ltr" value={form.email} onChange={(e) => set('email', e.target.value)}
+                <input
+                  type="email" required dir="ltr" value={form.email}
+                  onChange={(e) => set('email', e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all" style={inputStyle} />
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all"
+                  style={inputStyle}
+                />
               </Field>
 
-              <Field label="الخلفية التعليمية" hint="جامعة، كلية، تخصص، أو وصف مختصر">
-                <input type="text" value={form.background} onChange={(e) => set('background', e.target.value)}
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="الجنس">
+                  <div className="flex gap-2">
+                    {[{ v: 'male', label: 'ذكر' }, { v: 'female', label: 'أنثى' }].map(({ v, label }) => {
+                      const active = form.gender === v;
+                      return (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => set('gender', active ? null : v)}
+                          className="flex-1 py-2.5 rounded-xl text-sm font-arabic transition-all duration-200"
+                          style={{
+                            background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.03)',
+                            border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
+                            color:      active ? 'var(--accent)' : 'var(--text-muted)',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Field>
+
+                <Field label="الفئة العمرية">
+                  <select
+                    value={form.age || ''}
+                    onChange={(e) => set('age', e.target.value || null)}
+                    className="w-full px-4 py-3 rounded-xl text-sm transition-all"
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                  >
+                    <option value="">اختر</option>
+                    {AGE_RANGES.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+
+              <Field label="المدينة أو الولاية" hint="أين تعيش حالياً؟">
+                <input
+                  type="text" value={form.town}
+                  onChange={(e) => set('town', e.target.value)}
+                  placeholder="مثلاً: الخرطوم، بورتسودان، أم درمان"
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all"
+                  style={inputStyle}
+                />
+              </Field>
+
+              {/* ── الخلفية ── */}
+              <SectionLabel>الخلفية</SectionLabel>
+
+              <Field label="الخلفية التعليمية أو المهنية" hint="جامعة، كلية، تخصص — أو وصف مختصر">
+                <input
+                  type="text" value={form.background}
+                  onChange={(e) => set('background', e.target.value)}
                   placeholder="مثلاً: طالب هندسة — جامعة الخرطوم"
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all" style={inputStyle} />
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all"
+                  style={inputStyle}
+                />
               </Field>
 
-              <Field label="مجال الدراسة أو الاهتمام" hint="حتى لو لم تكن في بيئة أكاديمية">
-                <input type="text" value={form.fieldOfStudy} onChange={(e) => set('fieldOfStudy', e.target.value)}
-                  placeholder="مثلاً: علوم حاسوب، أو معلم رياضيات"
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all" style={inputStyle} />
-              </Field>
-
-              {/* Subject chips — show for content roles or no-role */}
+              {/* Subjects — for learning roles or undecided */}
               {(!selectedRole || selectedRole.category === 'learning') && (
                 <Field
                   label="المواد التي تريد المساهمة فيها"
                   hint="اختر واحدة أو أكثر"
-                  required={selectedRole?.category === 'content'}
+                  required={selectedRole?.category === 'learning'}
                 >
                   <div className="space-y-3 mt-1">
                     {SUBJECT_GROUPS.map(({ trackKey, label }) => {
@@ -531,6 +714,46 @@ export default function JoinPage() {
                 </Field>
               )}
 
+              {/* ── الاستعداد ── */}
+              <SectionLabel>الاستعداد التقني</SectionLabel>
+
+              <Field
+                label="هل لديك وصول إلى حاسوب أو جهاز لوحي؟"
+                hint="نستخدم نافير من المتصفح — لا يعمل من الجوال فقط"
+              >
+                <YesNo value={form.hasPcOrTablet} onChange={(v) => set('hasPcOrTablet', v)} />
+              </Field>
+
+              <Field label="هل لديك اتصال إنترنت مستقر؟">
+                <YesNo value={form.hasStableInternet} onChange={(v) => set('hasStableInternet', v)} />
+              </Field>
+
+              {/* ── أدوات الذكاء الاصطناعي ── */}
+              <SectionLabel>الذكاء الاصطناعي</SectionLabel>
+
+              <Field label="هل تستخدم أدوات ذكاء اصطناعي؟">
+                <YesNo value={form.usesAiTools} onChange={(v) => {
+                  set('usesAiTools', v);
+                  if (!v) set('aiToolsList', []);
+                }} />
+              </Field>
+
+              {form.usesAiTools === true && (
+                <Field label="أي منها؟" hint="اختر كل ما ينطبق">
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {AI_TOOLS.map((tool) => (
+                      <AiToolChip
+                        key={tool.id}
+                        tool={tool}
+                        selected={form.aiToolsList.includes(tool.id)}
+                        onToggle={toggleAiTool}
+                      />
+                    ))}
+                  </div>
+                </Field>
+              )}
+
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
@@ -540,11 +763,15 @@ export default function JoinPage() {
                   color:      loading ? 'var(--text-muted)' : '#0e0c09',
                   border:     loading ? '1px solid var(--border-subtle)' : 'none',
                   cursor:     loading ? 'wait' : 'pointer',
+                  marginTop:  '8px',
                 }}
                 onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 30px var(--glow)'; } }}
                 onMouseLeave={e => { e.currentTarget.style.background = loading ? 'var(--bg-card)' : 'var(--accent)'; e.currentTarget.style.boxShadow = 'none'; }}
               >
-                {loading ? <span>جاري الإرسال...</span> : <><span>إرسال الطلب</span><span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span></>}
+                {loading
+                  ? <span>جاري الإرسال...</span>
+                  : <><span>إرسال الطلب</span><span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span></>
+                }
               </button>
             </form>
           </div>
@@ -552,9 +779,13 @@ export default function JoinPage() {
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-6 px-1">
-          <a href="/signin" className="text-xs transition-colors" style={{ color: 'var(--text-muted)' }}
+          <a
+            href="/signin"
+            className="text-xs transition-colors"
+            style={{ color: 'var(--text-muted)' }}
             onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
             لديك حساب؟ سجّل الدخول
           </a>
           <p className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
