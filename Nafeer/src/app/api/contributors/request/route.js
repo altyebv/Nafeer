@@ -1,15 +1,22 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Contributor } from '@/lib/models/Contributor';
+import { connectDB }    from '@/lib/db';
+import { Contributor }  from '@/lib/models/Contributor';
 
 export async function POST(request) {
   try {
     const {
       name,
       email,
+      gender,
+      age,
+      town,
       background,
       fieldOfStudy,
       subjectsOfInterest,
+      hasPcOrTablet,
+      hasStableInternet,
+      usesAiTools,
+      aiToolsList,
       roleId,
     } = await request.json();
 
@@ -45,9 +52,16 @@ export async function POST(request) {
     const contributor = await Contributor.create({
       name:               name.trim(),
       email:              email.toLowerCase().trim(),
+      gender:             gender || '',
+      age:                age || '',
+      town:               town?.trim() || '',
       background:         background?.trim() || '',
       fieldOfStudy:       fieldOfStudy?.trim() || '',
       subjectsOfInterest: subjectsOfInterest || [],
+      hasPcOrTablet:      hasPcOrTablet ?? null,
+      hasStableInternet:  hasStableInternet ?? null,
+      usesAiTools:        usesAiTools ?? null,
+      aiToolsList:        aiToolsList || [],
       roleId:             roleId || null,
       status:             'pending',
     });
