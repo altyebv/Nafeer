@@ -84,9 +84,6 @@ export default function PreJoinPage() {
           ease: 'power3.out',
           stagger: 0.14,
           delay: 0.1,
-          onStart() {
-            // divider uses scaleX not y
-          },
         }
       );
       gsap.fromTo('.pj-divider',
@@ -179,6 +176,14 @@ export default function PreJoinPage() {
             النفير — قبل أن تنضم
           </p>
 
+          {/*
+            CHANGED: Was "التعليم الجيد ليس حكراً / ونحن نبنيه معاً"
+            The old headline carried an unintended edge — as if pointing a finger
+            at someone who's gatekeeping. The new headline puts the focus on
+            collective action and the Sudanese student specifically, which is
+            the real story. It echoes the Nafeer concept from the landing page
+            and opens with aspiration instead of complaint.
+          */}
           <h1
             className="pj-headline font-arabic font-bold leading-snug mb-7"
             style={{
@@ -187,18 +192,25 @@ export default function PreJoinPage() {
               opacity: 0,
             }}
           >
-            التعليم الجيد ليس حكراً
+            كل طالب سوداني يستحق
             <br />
-            <span style={{ color: 'var(--accent)' }}>ونحن نبنيه معاً</span>
+            <span style={{ color: 'var(--accent)' }}>تعليماً يصله أينما كان</span>
           </h1>
 
+          {/*
+            CHANGED: Tightened the sub to land faster. Removed "بلا إعلانات"
+            (true but feels defensive at this stage of the pitch) and replaced
+            the explanatory last sentence with something that invites, not explains.
+            The reader already knows why they're here — they clicked from the
+            landing page. This sub should make them feel seen, not briefed.
+          */}
           <p
             className="pj-sub text-base sm:text-lg leading-loose max-w-2xl"
             style={{ color: 'var(--text-secondary)', opacity: 0 }}
           >
-            بشير تطبيق تعليمي مجاني وبلا إعلانات، مبني بالكامل للطالب السوداني.
-            لا منهج يُباع، لا محتوى محاط بجدار. فقط تعليم حقيقي — يصل لكل طالب في كل مكان.
-            الصفحة هذه تشرح من نحن وما الذي نبنيه قبل أن تقرر.
+            بشير تطبيق تعليمي مجاني مبني بالكامل للطالب السوداني —
+            لا منهج يُباع، لا محتوى محاط بجدار. فقط تعليم يصل لكل طالب في كل مكان.
+            هذه الصفحة لمن يفكر في المساهمة في بنائه.
           </p>
 
           <div
@@ -344,7 +356,17 @@ export default function PreJoinPage() {
               ))}
             </div>
 
-            {/* Honest note */}
+            {/*
+              CHANGED: Honest note reframed.
+              Old version led with "لا رواتب ولا مكافآت مادية" which, however
+              honest, opens with what you're NOT getting. That's a conversion
+              killer — it anchors the reader on absence before the value has
+              landed. The new version reframes contribution as something
+              voluntary and meaningful, and then addresses the early-stage
+              reality with the same honesty but a different emotional stance:
+              we're not apologizing for being early, we're inviting the right
+              people to be part of something from the start.
+            */}
             <div
               className="mt-12 p-5 sm:p-6 rounded-xl"
               style={{
@@ -354,10 +376,12 @@ export default function PreJoinPage() {
             >
               <p className="text-xs font-mono mb-2" style={{ color: 'var(--accent)' }}>بصراحة</p>
               <p className="text-sm leading-loose" style={{ color: 'var(--text-secondary)' }}>
-                المشروع في مراحله الأولى. الأدوات تتطور وبعض الأشياء لم تُبنَ بعد.
+                بشير مشروع مجتمعي في جوهره — والمساهمة فيه طوعية بامتياز.
+                لا نقدم مكافآت مادية، ونقول ذلك بوضوح من البداية.
+                ما نقدمه هو فرصة حقيقية للإسهام في شيء يُبنى من الصفر — ويخدم طلاباً حقيقيين.
+                المشروع في مراحله الأولى وبعض الأدوات لا تزال تتطور.
                 إن كنت تبحث عن منصة ناضجة بكل شيء جاهز — ربما يكون الوقت مبكراً.
-                أما إن كنت تريد أن تكون جزءاً من بناء شيء من الصفر،
-                شيء يمكن أن يُفرّق — فأنت في المكان الصحيح.
+                أما إن كنت تريد أن تكون جزءاً من اللحظة التي يبدأ فيها شيء مهم — فأنت في المكان الصحيح.
               </p>
             </div>
 
@@ -367,14 +391,27 @@ export default function PreJoinPage() {
         {/* ── WHAT YOU GAIN ─────────────────────────────────── */}
         <section className="px-6 py-24 max-w-4xl mx-auto">
 
-          <SectionLabel text="ما الذي تكسبه؟" />
+          {/*
+            CHANGED: Section label was "ما الذي تكسبه؟"
+            Fine, but "تكسب" in Arabic can unconsciously read as material gain —
+            which creates dissonance after we just said there's no money.
+            "ما الذي يبقى منك" is warmer, more lasting, and reframes the
+            conversation from extraction to legacy. It sets up the GAINS cards
+            better because all four of them are about impact, not reward.
+          */}
+          <SectionLabel text="ما الذي يبقى منك" />
 
+          {/*
+            CHANGED: Old sub said "لا رواتب ولا مكافآت مادية — هذا واضح من البداية"
+            We already said that in the honest note above — repeating it here
+            doubles down on absence. The new sub skips the disclaimer and goes
+            straight to the emotional truth: the things worth having can't be bought.
+          */}
           <p
             className="text-sm sm:text-base leading-loose mb-12 max-w-xl"
             style={{ color: 'var(--text-secondary)' }}
           >
-            لا رواتب ولا مكافآت مادية — هذا واضح من البداية.
-            لكن ما تكسبه أصعب من أن يُشترى.
+            بعض الأشياء لا يمكن شراؤها — ولا تجدها في كل فرصة.
           </p>
 
           <div className="pj-gains grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -385,51 +422,89 @@ export default function PreJoinPage() {
 
         </section>
 
-        {/* ── PROCESS ───────────────────────────────────────── */}
+        {/* ── EXPANDING ROLES ───────────────────────────────── */}
+        {/*
+          NEW SECTION: The brief asks us to mention that we're not only looking
+          for content contributors — there will be designers and an internal team.
+          But since the roles aren't defined yet, we signal this lightly without
+          over-promising. The section is compact by design: it anchors the content
+          team as the core, then opens a door without giving it a name.
+        */}
         <section
           className="px-6 py-20 sm:py-24"
           style={{ background: 'var(--bg-secondary)' }}
         >
           <div className="max-w-4xl mx-auto">
 
-            <SectionLabel text="ما الذي يحدث بعدها؟" />
+            <SectionLabel text="النفير أوسع من المحتوى" />
 
             <p
-              className="text-sm sm:text-base leading-loose mb-10 max-w-xl"
+              className="text-base sm:text-lg leading-loose max-w-2xl mb-8"
               style={{ color: 'var(--text-secondary)' }}
             >
-              التقديم بسيط — لكنه مُصمَّم لنفهم بعضنا قبل أن نبدأ.
+              فريق المحتوى هو قلب بشير — وهو ما نبنيه الآن.
+              لكن مشروعاً من هذا النوع لا يقفه طاقم واحد:
+              تصميم، تطوير، جودة، تواصل — هذه أدوار ستُفتح مع نمو المشروع.
             </p>
 
-            <div className="pj-steps grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                { step: '١', label: 'تقدّم بطلبك', note: 'نموذج قصير — أقل من دقيقتين' },
-                { step: '٢', label: 'نراجع طلبك', note: 'الموافقة تتم يدوياً، نُعلمك بالنتيجة' },
-                { step: '٣', label: 'تبدأ المساهمة', note: 'رابط إعداد الحساب يصلك بعد القبول' },
-              ].map((s, i) => (
-                <div
-                  key={i}
-                  className="pj-step p-5 rounded-xl"
-                  style={{
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  <span
-                    className="block text-2xl font-bold font-mono mb-3"
-                    style={{ color: 'var(--accent)', opacity: 0.7 }}
-                  >{s.step}</span>
-                  <p className="font-bold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{s.label}</p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.note}</p>
-                </div>
-              ))}
+            <div
+              className="p-5 sm:p-6 rounded-xl flex items-start gap-4"
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <span className="text-lg mt-0.5 shrink-0" style={{ color: 'var(--accent)' }}>◎</span>
+              <p className="text-sm leading-loose" style={{ color: 'var(--text-secondary)' }}>
+                إن كانت مهارتك خارج المحتوى — تصميم، برمجة، أو غيرها —
+                قدّم طلبك الآن وأخبرنا ما الذي تجيده.
+                نحن نبني قائمة الأدوار بالتوازي مع بناء المنصة، وأفضل الناس يُختارون قبل أن يُعلن عنها.
+              </p>
             </div>
 
           </div>
         </section>
 
-        {/* ── CTA ───────────────────────────────────────────── */}
+        {/* ── PROCESS ───────────────────────────────────────── */}
         <section className="px-6 py-24 max-w-4xl mx-auto">
+
+          <SectionLabel text="ما الذي يحدث بعدها؟" />
+
+          <p
+            className="text-sm sm:text-base leading-loose mb-10 max-w-xl"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            التقديم بسيط — لكنه مُصمَّم لنفهم بعضنا قبل أن نبدأ.
+          </p>
+
+          <div className="pj-steps grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { step: '١', label: 'تقدّم بطلبك', note: 'نموذج قصير — أقل من دقيقتين' },
+              { step: '٢', label: 'نراجع طلبك', note: 'الموافقة تتم يدوياً، نُعلمك بالنتيجة' },
+              { step: '٣', label: 'تبدأ المساهمة', note: 'رابط إعداد الحساب يصلك بعد القبول' },
+            ].map((s, i) => (
+              <div
+                key={i}
+                className="pj-step p-5 rounded-xl"
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <span
+                  className="block text-2xl font-bold font-mono mb-3"
+                  style={{ color: 'var(--accent)', opacity: 0.7 }}
+                >{s.step}</span>
+                <p className="font-bold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{s.label}</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.note}</p>
+              </div>
+            ))}
+          </div>
+
+        </section>
+
+        {/* ── CTA ───────────────────────────────────────────── */}
+        <section className="px-6 pb-24 max-w-4xl mx-auto">
           <div
             className="pj-cta text-center py-16 px-8 rounded-2xl relative overflow-hidden"
             style={{
@@ -446,13 +521,27 @@ export default function PreJoinPage() {
             />
 
             <div className="relative z-10">
+              {/*
+                CHANGED: Old eyebrow was "الجيل القادم ينتظر"
+                True and evocative, but slightly generic. "طالب في مكان ما
+                ينتظر درساً لم يُكتب بعد" is specific — it creates a mental
+                image of a real person, which is more emotionally activating
+                than an abstract generation.
+              */}
               <p
                 className="text-xs font-mono mb-5 tracking-widest uppercase"
                 style={{ color: 'var(--text-muted)' }}
               >
-                الجيل القادم ينتظر
+                طالب في مكان ما ينتظر درساً لم يُكتب بعد
               </p>
 
+              {/*
+                CHANGED: Old headline was "نستطيع أن نصنع شيئاً يستحق — إن عملنا معاً"
+                Solid, but ends on a condition ("إن عملنا"). The new version
+                flips it into an invitation that assumes shared direction.
+                "نبنيه بأيدٍ كثيرة" echoes the Nafeer spirit from the landing
+                page and closes the loop the user started when they landed there.
+              */}
               <h2
                 className="font-arabic font-bold mb-5"
                 style={{
@@ -461,9 +550,9 @@ export default function PreJoinPage() {
                   lineHeight: '1.4',
                 }}
               >
-                نستطيع أن نصنع شيئاً يستحق —
+                شيء يستحق البناء —
                 <br />
-                <span style={{ color: 'var(--accent)' }}>إن عملنا معاً</span>
+                <span style={{ color: 'var(--accent)' }}>نبنيه بأيدٍ كثيرة</span>
               </h2>
 
               <p
