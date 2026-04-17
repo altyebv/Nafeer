@@ -3,8 +3,6 @@ import bcrypt from 'bcryptjs';
 import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Username validation ──────────────────────────────────────────────────────
-// Allows: Arabic letters (\u0600-\u06FF), English letters, digits, underscores, dots, hyphens
-// Length: 3–20 characters
 const USERNAME_RE = /^[\w\u0600-\u06FF._-]{3,20}$/;
 
 // ─── Stats subdocument ────────────────────────────────────────────────────────
@@ -26,11 +24,10 @@ const StatsSchema = new mongoose.Schema(
 
 const ContributorSchema = new mongoose.Schema(
   {
-    name:     { type: String, required: true, trim: true },
-    gender:   { type: String, enum: ['male', 'female', ''], default: '' },
-    email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
+    name:   { type: String, required: true, trim: true },
+    gender: { type: String, enum: ['male', 'female', ''], default: '' },
+    email:  { type: String, required: true, unique: true, lowercase: true, trim: true },
 
-    // sparse: true so existing docs with null username don't clash on unique index
     username: {
       type: String, unique: true, sparse: true, trim: true,
       validate: {
@@ -39,28 +36,39 @@ const ContributorSchema = new mongoose.Schema(
       },
     },
 
-    // Admin-assigned after approval — not required at application stage
-    subject:      { type: String, enum: [...SUBJECT_IDS, ''], default: '' },
+    subject: { type: String, enum: [...SUBJECT_IDS, ''], default: '' },
 
-    // Application fields — collected at join stage
-    background:        { type: String, default: '', trim: true },
-    fieldOfStudy:      { type: String, default: '', trim: true },
-    subjectsOfInterest:{ type: [String], default: [] },
+    // ── Application / demographic fields ─────────────────────────────────────
+    background:         { type: String, default: '', trim: true },
+    fieldOfStudy:       { type: String, default: '', trim: true },
+    subjectsOfInterest: { type: [String], default: [] },
 
+    // Demographics — collected at join stage
+    age:  { type: String, default: '' },  // stored as range string e.g. "18-22"
+    town: { type: String, default: '', trim: true },
+
+    // Readiness — device + connectivity access
+    hasPcOrTablet:    { type: Boolean, default: null },
+    hasStableInternet:{ type: Boolean, default: null },
+
+    // AI familiarity
+    usesAiTools: { type: Boolean, default: null },
+    aiToolsList: { type: [String], default: [] }, // e.g. ['chatgpt', 'gemini', 'notebooklm']
+
+    // ── Auth ──────────────────────────────────────────────────────────────────
     passwordHash: { type: String, select: false },
-
     avatarUrl:    { type: String, default: null },
     avatarPath:   { type: String, select: false, default: null },
     bio:          { type: String, default: '', trim: true, maxlength: 280 },
 
-    // ── Role assignment (dynamic onboarding system) ───────────────────────
+    // ── Role assignment ───────────────────────────────────────────────────────
     roleId: { type: mongoose.Schema.Types.ObjectId, ref: 'ContributorRole', default: null },
 
-    // ── Interview (Step 2 of intake pipeline) ─────────────────────────────
+    // ── Interview ─────────────────────────────────────────────────────────────
     interviewToken:     { type: String, select: false, default: null },
     interviewExpiresAt: { type: Date,   default: null },
 
-    // Legacy fixed answers — kept for backward compatibility with existing applicants
+    // Legacy fixed answers
     interviewAnswers: {
       motivation:        { type: String, default: '' },
       educationCritique: { type: String, default: '' },
@@ -70,14 +78,13 @@ const ContributorSchema = new mongoose.Schema(
       submittedAt:       { type: Date,   default: null },
     },
 
-    // Dynamic answers — used when contributor has a roleId with configured questions
-    // [{questionId: ObjectId, question: String (snapshot), answer: String}]
+    // Dynamic answers (role-based)
     dynamicAnswers: {
       type: [
         new mongoose.Schema(
           {
             questionId: { type: mongoose.Schema.Types.ObjectId, default: null },
-            question:   { type: String, default: '' }, // snapshot of question text at submit time
+            question:   { type: String, default: '' },
             answer:     { type: String, default: '' },
           },
           { _id: false }
@@ -85,10 +92,10 @@ const ContributorSchema = new mongoose.Schema(
       ],
       default: [],
     },
-    dynamicAnswersSubmittedAt: { type: Date, default: null },
-    dynamicMicroTask:          { type: String, default: '' }, // micro task answer for dynamic flow
+    dynamicAnswersSubmittedAt: { type: Date,   default: null },
+    dynamicMicroTask:          { type: String, default: '' },
 
-    // ── Onboarding (post-approval) ─────────────────────────────────────────
+    // ── Onboarding ────────────────────────────────────────────────────────────
     onboarded:           { type: Boolean, default: false },
     onboardingToken:     { type: String,  select: false, default: null },
     onboardingExpiresAt: { type: Date,    default: null },
