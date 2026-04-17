@@ -10,10 +10,12 @@ const SUBJECT_GROUPS = [
 ];
 
 const CATEGORY_META = {
-  content:     { label: 'محتوى تعليمي', icon: '◈', color: 'sand'   },
-  development: { label: 'تطوير',         icon: '⬡', color: 'blue'   },
-  design:      { label: 'تصميم',         icon: '◇', color: 'purple' },
+  learning:   { label: 'بناء التجربة التعليمية', icon: '✏️' },
+  core:       { label: 'بناء المنصة',            icon: '🧠' },
+  growth:     { label: 'نشر الفكرة',             icon: '📢' },
+  operations: { label: 'تنظيم نافير',            icon: '⚙️' },
 };
+
 
 const CATEGORY_COLORS = {
   content:     { active: 'rgba(212,137,30,0.15)',  border: 'rgba(212,137,30,0.45)',  text: 'var(--accent)'  },
@@ -102,17 +104,12 @@ function RoleCard({ role, selected, onSelect }) {
         <span className="text-lg mt-0.5 shrink-0" style={{ color: colors.text }}>{meta.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="font-arabic font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+            <span className="font-arabic font-bold text-base" style={{ color: 'var(--text-primary)' }}>
               {role.name}
             </span>
-            {role.subcategory && (
-              <span className="text-[10px] font-arabic" style={{ color: 'var(--text-muted)' }}>
-                {role.subcategory}
-              </span>
-            )}
           </div>
           {role.description && (
-            <p className="text-xs font-arabic leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm leading-loose mt-1" style={{ color: 'var(--text-muted)' }}>
               {role.description}
             </p>
           )}
@@ -139,7 +136,7 @@ function RoleSelector({ roles, selected, onSelect }) {
     return acc;
   }, {});
 
-  const categoryOrder = ['content', 'development', 'design'];
+const categoryOrder = ['learning', 'core', 'growth', 'operations'];
 
   return (
     <div className="space-y-6">
@@ -169,7 +166,7 @@ function RoleSelector({ roles, selected, onSelect }) {
       {/* Fallback: no specific role */}
       <div>
         <p className="text-xs font-arabic mb-2.5" style={{ color: 'var(--text-muted)' }}>
-          أو بدون دور محدد
+        لست متأكداً بعد
         </p>
         <button
           type="button"
@@ -181,7 +178,7 @@ function RoleSelector({ roles, selected, onSelect }) {
             color: 'var(--text-muted)',
           }}
         >
-          تقديم بدون دور محدد — سيتولى الفريق التصنيف
+          سنساعدك في اختيار المسار المناسب 
         </button>
       </div>
     </div>
@@ -328,7 +325,7 @@ export default function JoinPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     // Content roles require at least one subject; other roles don't
-    if (selectedRole?.category === 'content' && form.subjectsOfInterest.length === 0) {
+    if (selectedRole?.category === 'learning' && form.subjectsOfInterest.length === 0) {
       setError('يرجى اختيار مادة واحدة على الأقل');
       return;
     }
@@ -402,7 +399,7 @@ export default function JoinPage() {
           </h1>
           <p className="text-sm leading-loose" style={{ color: 'var(--text-muted)' }}>
             {pageStep === 1
-              ? 'اختر الدور الذي يناسب خبرتك وما تريد تقديمه.'
+              ? 'كل شخص يساهم بطريقة مختلفة — اختر المسار الأقرب لك'
               : 'لا نطلب الكثير في البداية — فقط ما يكفي لنبدأ المحادثة.'}
           </p>
         </div>
@@ -503,7 +500,7 @@ export default function JoinPage() {
               </Field>
 
               {/* Subject chips — show for content roles or no-role */}
-              {(!selectedRole || selectedRole.category === 'content') && (
+              {(!selectedRole || selectedRole.category === 'learning') && (
                 <Field
                   label="المواد التي تريد المساهمة فيها"
                   hint="اختر واحدة أو أكثر"
