@@ -1,38 +1,64 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
 // ─── Curriculum subject groups ─────────────────────────────────────────────
 const SUBJECT_GROUPS = [
-  { trackKey: 'COMMON',   label: 'مشترك'  },
-  { trackKey: 'SCIENCE',  label: 'علمي'   },
-  { trackKey: 'LITERARY', label: 'أدبي'   },
+  { trackKey: 'COMMON',   label: 'مشترك' },
+  { trackKey: 'SCIENCE',  label: 'علمي'  },
+  { trackKey: 'LITERARY', label: 'أدبي'  },
 ];
 
-// ─── Category meta — NO emojis ────────────────────────────────────────────
+// ─── Category metadata ─────────────────────────────────────────────────────
 const CATEGORY_META = {
-  learning:   { label: 'بناء التجربة التعليمية' },
-  core:       { label: 'بناء المنصة'            },
-  growth:     { label: 'نشر الفكرة'             },
-  operations: { label: 'تنظيم نفير'            },
+  learning:    { label: 'بناء التجربة التعليمية' },
+  core:        { label: 'بناء المنصة'            },
+  growth:      { label: 'نشر الفكرة'             },
+  operations:  { label: 'تنظيم نفير'             },
+  // legacy
+  content:     { label: 'محتوى تعليمي'           },
+  development: { label: 'تطوير'                  },
+  design:      { label: 'تصميم'                  },
 };
 
-// Category accent colours (kept from existing system)
 const CATEGORY_COLORS = {
   learning:    { active: 'rgba(212,137,30,0.15)',  border: 'rgba(212,137,30,0.45)',  text: 'var(--accent)'  },
   core:        { active: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.35)',  text: '#93c5fd'        },
   growth:      { active: 'rgba(168,85,247,0.12)',  border: 'rgba(168,85,247,0.35)',  text: '#d8b4fe'        },
   operations:  { active: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.30)',   text: '#86efac'        },
+  content:     { active: 'rgba(212,137,30,0.15)',  border: 'rgba(212,137,30,0.45)',  text: 'var(--accent)'  },
+  development: { active: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.35)',  text: '#93c5fd'        },
+  design:      { active: 'rgba(168,85,247,0.12)',  border: 'rgba(168,85,247,0.35)',  text: '#d8b4fe'        },
 };
 
-// ─── AI tools list ─────────────────────────────────────────────────────────
+// ─── Role category helpers ─────────────────────────────────────────────────
+// Returns true for roles that build the platform (devs, designers)
+const isBuilderRole = (role) =>
+  role && ['core', 'development', 'design'].includes(role.category);
+
+// Returns true for roles that need subject-specific content knowledge
+const isLearningRole = (role) =>
+  role && ['learning', 'content'].includes(role.category);
+
+// ─── Context banners per category ─────────────────────────────────────────
+const ROLE_CONTEXT = {
+  learning:    { icon: '◈', text: 'سنحتاج معرفة المواد التي تتقنها وخلفيتك في التعليم.' },
+  core:        { icon: '⬡', text: 'سنحتاج رابط مشاريعك — GitHub أو أي عمل سابق يمكننا مراجعته.' },
+  growth:      { icon: '◉', text: 'سنحتاج معرفة تجربتك مع المحتوى والمجتمعات الرقمية.' },
+  operations:  { icon: '▦', text: 'سنحتاج فهم أسلوبك في التنظيم ومتابعة الفرق.' },
+  content:     { icon: '◈', text: 'سنحتاج معرفة المواد التي تتقنها وخلفيتك في التعليم.' },
+  development: { icon: '⬡', text: 'سنحتاج رابط مشاريعك — GitHub أو أي عمل سابق يمكننا مراجعته.' },
+  design:      { icon: '◇', text: 'سنحتاج رابط أعمالك — Behance أو Figma أو أي معرض تصميم.' },
+};
+
+// ─── AI tools ──────────────────────────────────────────────────────────────
 const AI_TOOLS = [
-  { id: 'chatgpt',     label: 'ChatGPT'     },
-  { id: 'gemini',      label: 'Gemini'      },
-  { id: 'notebooklm',  label: 'NotebookLM'  },
-  { id: 'claude',      label: 'Claude'      },
-  { id: 'copilot',     label: 'Copilot'     },
-  { id: 'perplexity',  label: 'Perplexity'  },
+  { id: 'chatgpt',    label: 'ChatGPT'    },
+  { id: 'gemini',     label: 'Gemini'     },
+  { id: 'notebooklm', label: 'NotebookLM' },
+  { id: 'claude',     label: 'Claude'     },
+  { id: 'copilot',    label: 'Copilot'    },
+  { id: 'perplexity', label: 'Perplexity' },
 ];
 
 // ─── Age ranges ────────────────────────────────────────────────────────────
@@ -44,8 +70,16 @@ const AGE_RANGES = [
   { value: 'over-35',  label: 'فوق ٣٥'   },
 ];
 
+// ─── Shared input style ────────────────────────────────────────────────────
+const inputStyle = {
+  background: 'rgba(255,255,255,0.04)',
+  border:     '1px solid var(--border-mid)',
+  color:      'var(--text-primary)',
+  outline:    'none',
+};
+
 // ─── Step bar ──────────────────────────────────────────────────────────────
-function StepBar({ current = 1, total = 3 }) {
+function StepBar({ current = 1 }) {
   const steps = [
     { n: 1, label: 'اختيار الدور'  },
     { n: 2, label: 'التعريف بنفسك' },
@@ -60,43 +94,21 @@ function StepBar({ current = 1, total = 3 }) {
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-mono font-bold transition-all duration-300"
                 style={{
-                  background: s.n === current
-                    ? 'var(--accent)'
-                    : s.n < current
-                      ? 'rgba(212,137,30,0.2)'
-                      : 'var(--bg-card)',
-                  border: s.n === current
-                    ? '2px solid var(--accent)'
-                    : s.n < current
-                      ? '2px solid rgba(212,137,30,0.4)'
-                      : '1px solid var(--border-mid)',
-                  color: s.n === current
-                    ? '#0e0c09'
-                    : s.n < current
-                      ? 'var(--accent)'
-                      : 'var(--text-muted)',
+                  background: s.n === current ? 'var(--accent)' : s.n < current ? 'rgba(212,137,30,0.2)' : 'var(--bg-card)',
+                  border:     s.n === current ? '2px solid var(--accent)' : s.n < current ? '2px solid rgba(212,137,30,0.4)' : '1px solid var(--border-mid)',
+                  color:      s.n === current ? '#0e0c09' : s.n < current ? 'var(--accent)' : 'var(--text-muted)',
                 }}
               >
                 {s.n < current ? '✓' : s.n}
               </div>
-              <span
-                className="text-xs mt-1.5 text-center leading-tight hidden sm:block"
-                style={{
-                  color: s.n === current ? 'var(--text-secondary)' : 'var(--text-muted)',
-                  fontSize: '10px',
-                }}
-              >
+              <span className="text-xs mt-1.5 text-center leading-tight hidden sm:block"
+                style={{ color: s.n === current ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: '10px' }}>
                 {s.label}
               </span>
             </div>
             {i < steps.length - 1 && (
-              <div
-                className="flex-1 h-px mx-2"
-                style={{
-                  background: s.n < current ? 'rgba(212,137,30,0.35)' : 'var(--border-subtle)',
-                  transition: 'background 0.4s ease',
-                }}
-              />
+              <div className="flex-1 h-px mx-2"
+                style={{ background: s.n < current ? 'rgba(212,137,30,0.35)' : 'var(--border-subtle)', transition: 'background 0.4s ease' }} />
             )}
           </div>
         ))}
@@ -116,9 +128,9 @@ function RoleCard({ role, selected, onSelect }) {
       className="w-full text-right p-4 rounded-xl transition-all duration-200"
       style={{
         background: selected ? colors.active : 'var(--bg-card)',
-        border: selected ? `1px solid ${colors.border}` : '1px solid var(--border-subtle)',
-        transform: selected ? 'translateY(-1px)' : 'none',
-        boxShadow: selected ? `0 4px 20px ${colors.active}` : 'none',
+        border:     selected ? `1px solid ${colors.border}` : '1px solid var(--border-subtle)',
+        transform:  selected ? 'translateY(-1px)' : 'none',
+        boxShadow:  selected ? `0 4px 20px ${colors.active}` : 'none',
       }}
     >
       <div className="flex items-start gap-3">
@@ -132,13 +144,8 @@ function RoleCard({ role, selected, onSelect }) {
             </p>
           )}
         </div>
-        <div
-          className="shrink-0 w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center"
-          style={{
-            borderColor: selected ? colors.text : 'var(--border-mid)',
-            background:  selected ? colors.active : 'transparent',
-          }}
-        >
+        <div className="shrink-0 w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center"
+          style={{ borderColor: selected ? colors.text : 'var(--border-mid)', background: selected ? colors.active : 'transparent' }}>
           {selected && <span className="text-[8px]" style={{ color: colors.text }}>✓</span>}
         </div>
       </div>
@@ -148,7 +155,7 @@ function RoleCard({ role, selected, onSelect }) {
 
 // ─── Role selector ─────────────────────────────────────────────────────────
 function RoleSelector({ roles, selected, onSelect }) {
-  const categoryOrder = ['learning', 'core', 'growth', 'operations'];
+  const categoryOrder = ['learning', 'core', 'growth', 'operations', 'content', 'development', 'design'];
   const grouped = roles.reduce((acc, r) => {
     if (!acc[r.category]) acc[r.category] = [];
     acc[r.category].push(r);
@@ -163,20 +170,13 @@ function RoleSelector({ roles, selected, onSelect }) {
         const meta = CATEGORY_META[cat];
         return (
           <div key={cat}>
-            <p
-              className="text-xs font-arabic mb-2.5 tracking-wide"
-              style={{ color: 'var(--text-muted)', letterSpacing: '0.04em' }}
-            >
+            <p className="text-xs font-arabic mb-2.5 tracking-wide"
+              style={{ color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
               {meta.label}
             </p>
             <div className="space-y-2">
               {catRoles.map((role) => (
-                <RoleCard
-                  key={role._id}
-                  role={role}
-                  selected={selected?._id === role._id}
-                  onSelect={onSelect}
-                />
+                <RoleCard key={role._id} role={role} selected={selected?._id === role._id} onSelect={onSelect} />
               ))}
             </div>
           </div>
@@ -184,17 +184,15 @@ function RoleSelector({ roles, selected, onSelect }) {
       })}
 
       <div>
-        <p className="text-xs font-arabic mb-2.5" style={{ color: 'var(--text-muted)' }}>
-          لست متأكداً بعد
-        </p>
+        <p className="text-xs font-arabic mb-2.5" style={{ color: 'var(--text-muted)' }}>لست متأكداً بعد</p>
         <button
           type="button"
           onClick={() => onSelect(null)}
           className="w-full text-right p-3 rounded-xl transition-all duration-200 text-xs font-arabic"
           style={{
             background: selected === null ? 'rgba(212,137,30,0.08)' : 'transparent',
-            border: selected === null ? '1px solid rgba(212,137,30,0.3)' : '1px solid var(--border-subtle)',
-            color: 'var(--text-muted)',
+            border:     selected === null ? '1px solid rgba(212,137,30,0.3)' : '1px solid var(--border-subtle)',
+            color:      'var(--text-muted)',
           }}
         >
           سنساعدك في اختيار المسار المناسب
@@ -232,57 +230,20 @@ function SectionLabel({ children }) {
   );
 }
 
-const inputStyle = {
-  background: 'rgba(255,255,255,0.04)',
-  border:     '1px solid var(--border-mid)',
-  color:      'var(--text-primary)',
-  outline:    'none',
-};
-
-// ─── Pill toggle (yes/no or option chips) ─────────────────────────────────
-function PillGroup({ options, value, onChange }) {
-  return (
-    <div className="flex gap-2 flex-wrap">
-      {options.map((opt) => {
-        const active = value === opt.value;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(active ? null : opt.value)}
-            className="px-4 py-2 rounded-lg text-sm font-arabic transition-all duration-200"
-            style={{
-              background: active ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
-              border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
-              color:      active ? 'var(--accent)' : 'var(--text-muted)',
-            }}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Boolean yes/no toggle ────────────────────────────────────────────────
+// ─── Yes / No toggle ───────────────────────────────────────────────────────
 function YesNo({ value, onChange }) {
   return (
     <div className="flex gap-2">
       {[{ v: true, label: 'نعم' }, { v: false, label: 'لا' }].map(({ v, label }) => {
         const active = value === v;
         return (
-          <button
-            key={String(v)}
-            type="button"
-            onClick={() => onChange(active ? null : v)}
+          <button key={String(v)} type="button" onClick={() => onChange(active ? null : v)}
             className="px-5 py-2 rounded-lg text-sm font-arabic transition-all duration-200"
             style={{
               background: active ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
               border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
               color:      active ? 'var(--accent)' : 'var(--text-muted)',
-            }}
-          >
+            }}>
             {label}
           </button>
         );
@@ -291,41 +252,43 @@ function YesNo({ value, onChange }) {
   );
 }
 
-// ─── AI tool chip ──────────────────────────────────────────────────────────
-function AiToolChip({ tool, selected, onToggle }) {
+// ─── Generic pill chip ─────────────────────────────────────────────────────
+function Chip({ label, selected, onToggle, mono = false }) {
   return (
-    <button
-      type="button"
-      onClick={() => onToggle(tool.id)}
+    <button type="button" onClick={onToggle}
       className="px-3 py-1.5 rounded-lg text-xs transition-all duration-200"
       style={{
         background: selected ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
         border:     selected ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
         color:      selected ? 'var(--accent)' : 'var(--text-muted)',
-        fontFamily: 'var(--font-mono, monospace)',
-      }}
-    >
-      {tool.label}
+        fontFamily: mono ? 'var(--font-mono, monospace)' : 'var(--font-arabic, inherit)',
+        transform:  selected ? 'translateY(-1px)' : 'none',
+      }}>
+      {label}
     </button>
   );
 }
 
 // ─── Subject chip ──────────────────────────────────────────────────────────
 function SubjectChip({ subject, selected, onToggle }) {
+  return <Chip label={subject.nameAr} selected={selected} onToggle={() => onToggle(subject.id)} />;
+}
+
+// ─── Role context banner (shown at top of step 2) ──────────────────────────
+function RoleContextBanner({ role }) {
+  if (!role) return null;
+  const colors = CATEGORY_COLORS[role.category] || CATEGORY_COLORS.learning;
+  const ctx    = ROLE_CONTEXT[role.category];
+  if (!ctx) return null;
   return (
-    <button
-      type="button"
-      onClick={() => onToggle(subject.id)}
-      className="px-3 py-1.5 rounded-lg text-xs font-arabic transition-all duration-200"
-      style={{
-        background: selected ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
-        border:     selected ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
-        color:      selected ? 'var(--accent)' : 'var(--text-muted)',
-        transform:  selected ? 'translateY(-1px)' : 'none',
-      }}
-    >
-      {subject.nameAr}
-    </button>
+    <div className="mb-6 px-4 py-3 rounded-xl flex items-start gap-3"
+      style={{ background: colors.active, border: `1px solid ${colors.border}` }}>
+      <span className="text-base shrink-0 mt-0.5" style={{ color: colors.text }}>{ctx.icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-arabic font-bold mb-0.5" style={{ color: colors.text }}>{role.name}</p>
+        <p className="text-xs font-arabic leading-relaxed" style={{ color: 'var(--text-muted)' }}>{ctx.text}</p>
+      </div>
+    </div>
   );
 }
 
@@ -334,17 +297,13 @@ function SuccessScreen({ name }) {
   return (
     <div className="min-h-screen flex items-center justify-center px-6 relative">
       <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[40vh] rounded-full"
-          style={{ background: 'radial-gradient(ellipse, rgba(212,137,30,0.07), transparent 70%)', filter: 'blur(40px)' }}
-        />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[40vh] rounded-full"
+          style={{ background: 'radial-gradient(ellipse, rgba(212,137,30,0.07), transparent 70%)', filter: 'blur(40px)' }} />
       </div>
       <div className="relative z-10 text-center max-w-md">
-        <div className="mb-10 text-right" dir="rtl"><StepBar current={3} total={3} /></div>
-        <div
-          className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6"
-          style={{ background: 'rgba(212,137,30,0.12)', border: '1px solid rgba(212,137,30,0.25)' }}
-        >
+        <div className="mb-10 text-right" dir="rtl"><StepBar current={3} /></div>
+        <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6"
+          style={{ background: 'rgba(212,137,30,0.12)', border: '1px solid rgba(212,137,30,0.25)' }}>
           <span style={{ color: 'var(--accent)', fontSize: '22px' }}>✓</span>
         </div>
         <h1 className="text-2xl font-arabic font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
@@ -353,10 +312,8 @@ function SuccessScreen({ name }) {
         <p className="text-sm leading-loose mb-8" style={{ color: 'var(--text-secondary)' }}>
           سنراجع طلبك ونتواصل معك على بريدك الإلكتروني لنكمل باقي الخطوات.
         </p>
-        <div
-          className="p-5 rounded-xl text-right mb-8"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-        >
+        <div className="p-5 rounded-xl text-right mb-8"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
           <p className="text-xs font-mono mb-4" style={{ color: 'var(--text-muted)' }}>ما الذي سيأتي بعد ذلك؟</p>
           <div className="space-y-3">
             {[
@@ -364,9 +321,7 @@ function SuccessScreen({ name }) {
               { n: '٣', text: 'مهمة صغيرة تُظهر أسلوبك في التفكير' },
             ].map((item) => (
               <div key={item.n} className="flex items-start gap-3">
-                <span className="text-xs font-mono mt-0.5 shrink-0" style={{ color: 'var(--accent)', opacity: 0.7 }}>
-                  {item.n}
-                </span>
+                <span className="text-xs font-mono mt-0.5 shrink-0" style={{ color: 'var(--accent)', opacity: 0.7 }}>{item.n}</span>
                 <p className="text-xs leading-loose" style={{ color: 'var(--text-muted)' }}>{item.text}</p>
               </div>
             ))}
@@ -382,30 +337,26 @@ function SuccessScreen({ name }) {
 
 // ─── Main page ─────────────────────────────────────────────────────────────
 export default function JoinPage() {
-  const [pageStep,     setPageStep]    = useState(1);
-  const [roles,        setRoles]       = useState([]);
-  const [rolesLoading, setRolesLoading]= useState(true);
-  const [selectedRole, setSelectedRole]= useState(undefined); // undefined = not chosen, null = no role
-
-  const [loading,   setLoading]  = useState(false);
-  const [error,     setError]    = useState('');
-  const [submitted, setSubmitted]= useState(false);
+  const [pageStep,      setPageStep]      = useState(1);
+  const [roles,         setRoles]         = useState([]);
+  const [rolesLoading,  setRolesLoading]  = useState(true);
+  const [selectedRole,  setSelectedRole]  = useState(undefined); // undefined=not chosen, null=undecided
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState('');
+  const [submitted,     setSubmitted]     = useState(false);
+  const formTopRef = useRef(null);
 
   const [form, setForm] = useState({
-    // Identity
     name:               '',
     email:              '',
-    gender:             null,   // 'male' | 'female' | null
-    age:                null,   // age range string | null
+    gender:             null,
+    age:                null,
     town:               '',
-    // Background
     background:         '',
-    fieldOfStudy:       '',
     subjectsOfInterest: [],
-    // Readiness
+    portfolioUrl:       '',
     hasPcOrTablet:      null,
     hasStableInternet:  null,
-    // AI familiarity
     usesAiTools:        null,
     aiToolsList:        [],
   });
@@ -439,15 +390,23 @@ export default function JoinPage() {
       .finally(() => setRolesLoading(false));
   }, []);
 
+  // Scroll to top of form when moving to step 2
   const handleRoleContinue = () => {
     if (selectedRole === undefined) return;
     setPageStep(2);
+    setTimeout(() => formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (selectedRole?.category === 'learning' && form.subjectsOfInterest.length === 0) {
+    // Learning roles require at least one subject
+    if (isLearningRole(selectedRole) && form.subjectsOfInterest.length === 0) {
       setError('يرجى اختيار مادة واحدة على الأقل');
+      return;
+    }
+    // Builder roles require a portfolio URL if the role has a portfolioPrompt
+    if (isBuilderRole(selectedRole) && selectedRole?.portfolioPrompt && !form.portfolioUrl.trim()) {
+      setError('يرجى إضافة رابط مشاريعك أو أعمالك');
       return;
     }
     setLoading(true);
@@ -474,39 +433,36 @@ export default function JoinPage() {
 
   if (submitted) return <SuccessScreen name={form.name} />;
 
+  // Derived flags — drive adaptive form sections
+  const showSubjects    = !selectedRole || isLearningRole(selectedRole);
+  const showPortfolio   = !!selectedRole?.portfolioPrompt;
+  const showDevReadiness = isBuilderRole(selectedRole);
+
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-20 relative" dir="rtl">
 
-      {/* Ambient */}
+      {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[70vw] h-[50vh] rounded-full"
-          style={{ background: 'radial-gradient(ellipse, rgba(212,137,30,0.05), transparent 70%)', filter: 'blur(50px)' }}
-        />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70vw] h-[50vh] rounded-full"
+          style={{ background: 'radial-gradient(ellipse, rgba(212,137,30,0.05), transparent 70%)', filter: 'blur(50px)' }} />
       </div>
 
-      <div className="relative z-10 w-full max-w-lg">
+      <div ref={formTopRef} className="relative z-10 w-full max-w-lg">
 
-        {/* Back */}
+        {/* Back link */}
         {pageStep === 1 ? (
-          <a
-            href="/prejoin"
-            className="inline-flex items-center gap-2 text-xs mb-8 transition-colors"
+          <a href="/prejoin" className="inline-flex items-center gap-2 text-xs mb-8 transition-colors"
             style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-          >
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
             ← العودة لصفحة التعريف
           </a>
         ) : (
-          <button
-            type="button"
-            onClick={() => setPageStep(1)}
+          <button type="button" onClick={() => setPageStep(1)}
             className="inline-flex items-center gap-2 text-xs mb-8 transition-colors"
             style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-          >
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
             ← العودة لاختيار الدور
           </button>
         )}
@@ -526,15 +482,12 @@ export default function JoinPage() {
           </p>
         </div>
 
-        {/* Step bar */}
-        <StepBar current={pageStep} total={3} />
+        <StepBar current={pageStep} />
 
-        {/* ── Step 1: Role selector ─────────────────────────────────────── */}
+        {/* ── Step 1: Role selector ────────────────────────────────────── */}
         {pageStep === 1 && (
-          <div
-            className="rounded-2xl p-6 sm:p-8"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}
-          >
+          <div className="rounded-2xl p-6 sm:p-8"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>
             {rolesLoading ? (
               <div className="py-12 text-center">
                 <p className="text-sm font-arabic animate-pulse" style={{ color: 'var(--text-muted)' }}>
@@ -542,11 +495,7 @@ export default function JoinPage() {
                 </p>
               </div>
             ) : (
-              <RoleSelector
-                roles={roles}
-                selected={selectedRole}
-                onSelect={setSelectedRole}
-              />
+              <RoleSelector roles={roles} selected={selectedRole} onSelect={setSelectedRole} />
             )}
 
             <button
@@ -560,8 +509,8 @@ export default function JoinPage() {
                 border:     (selectedRole === undefined || rolesLoading) ? '1px solid var(--border-subtle)' : 'none',
                 cursor:     (selectedRole === undefined || rolesLoading) ? 'not-allowed' : 'pointer',
               }}
-              onMouseEnter={e => { if (selectedRole !== undefined && !rolesLoading) { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 30px var(--glow)'; } }}
-              onMouseLeave={e => { e.currentTarget.style.background = (selectedRole !== undefined && !rolesLoading) ? 'var(--accent)' : 'var(--bg-card)'; e.currentTarget.style.boxShadow = 'none'; }}
+              onMouseEnter={(e) => { if (selectedRole !== undefined && !rolesLoading) { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 30px var(--glow)'; } }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = (selectedRole !== undefined && !rolesLoading) ? 'var(--accent)' : 'var(--bg-card)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               <span>متابعة</span>
               <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span>
@@ -569,28 +518,18 @@ export default function JoinPage() {
           </div>
         )}
 
-        {/* ── Step 2: Personal info ──────────────────────────────────────── */}
+        {/* ── Step 2: Personal info (adaptive) ────────────────────────── */}
         {pageStep === 2 && (
-          <div
-            className="rounded-2xl p-6 sm:p-8"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}
-          >
-            {/* Selected role recap */}
-            {selectedRole && (
-              <div
-                className="mb-6 p-3 rounded-xl flex items-center gap-3"
-                style={{ background: 'rgba(212,137,30,0.06)', border: '1px solid rgba(212,137,30,0.15)' }}
-              >
-                <span style={{ color: 'var(--accent)', opacity: 0.7 }}>◆</span>
-                <span className="text-xs font-arabic" style={{ color: 'var(--accent)' }}>{selectedRole.name}</span>
-              </div>
-            )}
+          <div className="rounded-2xl p-6 sm:p-8"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>
 
+            {/* Role context banner */}
+            <RoleContextBanner role={selectedRole} />
+
+            {/* Error */}
             {error && (
-              <div
-                className="mb-6 p-3 rounded-lg text-sm text-center"
-                style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', color: '#f87171' }}
-              >
+              <div className="mb-6 p-3 rounded-lg text-sm text-center"
+                style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', color: '#f87171' }}>
                 {error}
               </div>
             )}
@@ -601,22 +540,24 @@ export default function JoinPage() {
               <SectionLabel>الهوية</SectionLabel>
 
               <Field label="الاسم" required>
-                <input
-                  type="text" required value={form.name}
+                <input type="text" required value={form.name}
                   onChange={(e) => set('name', e.target.value)}
                   placeholder="اسمك الكريم"
                   className="w-full px-4 py-3 rounded-xl text-sm transition-all"
                   style={inputStyle}
+                  onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
+                  onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
                 />
               </Field>
 
               <Field label="البريد الإلكتروني" required>
-                <input
-                  type="email" required dir="ltr" value={form.email}
+                <input type="email" required dir="ltr" value={form.email}
                   onChange={(e) => set('email', e.target.value)}
                   placeholder="you@example.com"
                   className="w-full px-4 py-3 rounded-xl text-sm transition-all"
                   style={inputStyle}
+                  onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
+                  onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
                 />
               </Field>
 
@@ -625,17 +566,13 @@ export default function JoinPage() {
                   {[{ v: 'male', label: 'ذكر' }, { v: 'female', label: 'أنثى' }].map(({ v, label }) => {
                     const active = form.gender === v;
                     return (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => set('gender', active ? null : v)}
+                      <button key={v} type="button" onClick={() => set('gender', active ? null : v)}
                         className="flex-1 py-2.5 rounded-xl text-sm font-arabic transition-all duration-200"
                         style={{
                           background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.03)',
                           border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
                           color:      active ? 'var(--accent)' : 'var(--text-muted)',
-                        }}
-                      >
+                        }}>
                         {label}
                       </button>
                     );
@@ -648,17 +585,13 @@ export default function JoinPage() {
                   {AGE_RANGES.map((r) => {
                     const active = form.age === r.value;
                     return (
-                      <button
-                        key={r.value}
-                        type="button"
-                        onClick={() => set('age', active ? null : r.value)}
+                      <button key={r.value} type="button" onClick={() => set('age', active ? null : r.value)}
                         className="px-4 py-2 rounded-lg text-sm font-arabic transition-all duration-200"
                         style={{
                           background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.03)',
                           border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
                           color:      active ? 'var(--accent)' : 'var(--text-muted)',
-                        }}
-                      >
+                        }}>
                         {r.label}
                       </button>
                     );
@@ -667,12 +600,13 @@ export default function JoinPage() {
               </Field>
 
               <Field label="المدينة أو الولاية" hint="أين تعيش حالياً؟">
-                <input
-                  type="text" value={form.town}
+                <input type="text" value={form.town}
                   onChange={(e) => set('town', e.target.value)}
                   placeholder="مثلاً: الخرطوم، بورتسودان، أم درمان"
                   className="w-full px-4 py-3 rounded-xl text-sm transition-all"
                   style={inputStyle}
+                  onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
+                  onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
                 />
               </Field>
 
@@ -680,21 +614,64 @@ export default function JoinPage() {
               <SectionLabel>الخلفية</SectionLabel>
 
               <Field label="الخلفية التعليمية أو المهنية" hint="جامعة، كلية، تخصص — أو وصف مختصر">
-                <input
-                  type="text" value={form.background}
+                <input type="text" value={form.background}
                   onChange={(e) => set('background', e.target.value)}
-                  placeholder="مثلاً: طالب هندسة — جامعة الخرطوم"
+                  placeholder={
+                    isBuilderRole(selectedRole)
+                      ? 'مثلاً: مطوّر واجهات — ٣ سنوات خبرة، React / Next.js'
+                      : isLearningRole(selectedRole)
+                        ? 'مثلاً: طالب هندسة — جامعة الخرطوم، أدرّس الفيزياء لصفوف الثانوي'
+                        : 'مثلاً: طالب هندسة — جامعة الخرطوم'
+                  }
                   className="w-full px-4 py-3 rounded-xl text-sm transition-all"
                   style={inputStyle}
+                  onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
+                  onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
                 />
               </Field>
 
-              {/* Subjects — for learning roles or undecided */}
-              {(!selectedRole || selectedRole.category === 'learning') && (
+              {/* Portfolio link — only for roles that have a portfolioPrompt */}
+              {showPortfolio && (
+                <Field
+                  label={selectedRole.portfolioPrompt}
+                  hint="رابط يمكننا فتحه مباشرة"
+                  required={true}
+                >
+                  <div className="relative">
+                    <input
+                      type="url"
+                      dir="ltr"
+                      value={form.portfolioUrl}
+                      onChange={(e) => set('portfolioUrl', e.target.value)}
+                      placeholder="https://github.com/username"
+                      className="w-full px-4 py-3 rounded-xl text-sm transition-all"
+                      style={inputStyle}
+                      onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
+                      onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
+                    />
+                    {form.portfolioUrl && (
+                      <a
+                        href={form.portfolioUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-mono transition-colors"
+                        style={{ color: 'var(--text-muted)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                      >
+                        ↗
+                      </a>
+                    )}
+                  </div>
+                </Field>
+              )}
+
+              {/* Subjects — only for learning/content roles or undecided */}
+              {showSubjects && (
                 <Field
                   label="المواد التي تريد المساهمة فيها"
                   hint="اختر واحدة أو أكثر"
-                  required={selectedRole?.category === 'learning'}
+                  required={isLearningRole(selectedRole)}
                 >
                   <div className="space-y-3 mt-1">
                     {SUBJECT_GROUPS.map(({ trackKey, label }) => {
@@ -715,26 +692,31 @@ export default function JoinPage() {
                   </div>
                   {form.subjectsOfInterest.length > 0 && (
                     <p className="text-xs mt-3 font-mono" style={{ color: 'var(--accent)', opacity: 0.8 }}>
-                      {form.subjectsOfInterest.length === 1 ? 'مادة واحدة مختارة' : `${form.subjectsOfInterest.length} مواد مختارة`}
+                      {form.subjectsOfInterest.length === 1
+                        ? 'مادة واحدة مختارة'
+                        : `${form.subjectsOfInterest.length} مواد مختارة`}
                     </p>
                   )}
                 </Field>
               )}
 
-              {/* ── الاستعداد ── */}
-              <SectionLabel>الاستعداد التقني</SectionLabel>
+              {/* ── الاستعداد التقني ── */}
+              {/* Builder roles (devs/designers): skip the basic device questions — they obviously have a device */}
+              {!showDevReadiness && (
+                <>
+                  <SectionLabel>الاستعداد التقني</SectionLabel>
 
-              <Field
-                label="هل لديك وصول إلى حاسوب أو جهاز لوحي؟"
-              >
-                <YesNo value={form.hasPcOrTablet} onChange={(v) => set('hasPcOrTablet', v)} />
-              </Field>
+                  <Field label="هل لديك وصول إلى حاسوب أو جهاز لوحي؟">
+                    <YesNo value={form.hasPcOrTablet} onChange={(v) => set('hasPcOrTablet', v)} />
+                  </Field>
 
-              <Field label="هل لديك اتصال إنترنت مستقر؟">
-                <YesNo value={form.hasStableInternet} onChange={(v) => set('hasStableInternet', v)} />
-              </Field>
+                  <Field label="هل لديك اتصال إنترنت مستقر؟">
+                    <YesNo value={form.hasStableInternet} onChange={(v) => set('hasStableInternet', v)} />
+                  </Field>
+                </>
+              )}
 
-              {/* ── أدوات الذكاء الاصطناعي ── */}
+              {/* ── الذكاء الاصطناعي ── */}
               <SectionLabel>الذكاء الاصطناعي</SectionLabel>
 
               <Field label="هل تستخدم أدوات ذكاء اصطناعي؟">
@@ -748,12 +730,9 @@ export default function JoinPage() {
                 <Field label="أي منها؟" hint="اختر كل ما ينطبق">
                   <div className="flex flex-wrap gap-2 mt-1">
                     {AI_TOOLS.map((tool) => (
-                      <AiToolChip
-                        key={tool.id}
-                        tool={tool}
+                      <Chip key={tool.id} label={tool.label} mono
                         selected={form.aiToolsList.includes(tool.id)}
-                        onToggle={toggleAiTool}
-                      />
+                        onToggle={() => toggleAiTool(tool.id)} />
                     ))}
                   </div>
                 </Field>
@@ -771,8 +750,8 @@ export default function JoinPage() {
                   cursor:     loading ? 'wait' : 'pointer',
                   marginTop:  '8px',
                 }}
-                onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 30px var(--glow)'; } }}
-                onMouseLeave={e => { e.currentTarget.style.background = loading ? 'var(--bg-card)' : 'var(--accent)'; e.currentTarget.style.boxShadow = 'none'; }}
+                onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 30px var(--glow)'; } }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = loading ? 'var(--bg-card)' : 'var(--accent)'; e.currentTarget.style.boxShadow = 'none'; }}
               >
                 {loading
                   ? <span>جاري الإرسال...</span>
@@ -785,13 +764,9 @@ export default function JoinPage() {
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-6 px-1">
-          <a
-            href="/signin"
-            className="text-xs transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-          >
+          <a href="/signin" className="text-xs transition-colors" style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
             لديك حساب؟ سجّل الدخول
           </a>
           <p className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
