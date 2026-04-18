@@ -67,7 +67,7 @@ const LessonSchema = new mongoose.Schema(
     //   'extension'    — deeper / more advanced content after the parent
     //   'simplified'   — easier version for struggling students
     parentLesson: {
-      type:    String,       // contentId of parent lesson, null = root lesson
+      type:    String,
       default: null,
       index:   true,
     },
@@ -80,6 +80,26 @@ const LessonSchema = new mongoose.Schema(
       type:    String,
       default: null,
       maxlength: 200,
+    },
+
+    // ── Within-unit lesson grouping (optional) ────────────────────────────
+    // Presentational only — no effect on progress, analytics, or quiz logic.
+    // All lessons sharing the same groupId within a unit are rendered under
+    // a shared groupTitle sub-header in the Android app.
+    groupId: {
+      type:    String,
+      default: null,
+      index:   true,         // indexed so we can query all lessons of a group
+    },
+    groupTitle: {
+      type:    String,
+      default: null,
+    },
+    // JSON blob — reserved for future group-level data (description, icon, color…)
+    // Currently stores { description: string } when set by contributors.
+    groupMetadata: {
+      type:    String,
+      default: null,
     },
 
     ...versioningFields,
