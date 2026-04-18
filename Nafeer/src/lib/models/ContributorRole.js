@@ -3,10 +3,13 @@ import mongoose from 'mongoose';
 // ─── Interview question subdocument ───────────────────────────────────────────
 const QuestionSchema = new mongoose.Schema(
   {
-    text:        { type: String, required: true, trim: true },
-    placeholder: { type: String, default: '',    trim: true },
-    minChars:    { type: Number, default: 80 },
-    order:       { type: Number, default: 0  },
+    text:          { type: String, required: true, trim: true },
+    placeholder:   { type: String, default: '',    trim: true },
+    minChars:      { type: Number, default: 80 },
+    order:         { type: Number, default: 0  },
+    // Optional: only surface this question when the applicant selected these subjects.
+    // Empty array means the question applies to all applicants in this role.
+    subjectFilter: { type: [String], default: [] },
   },
   { _id: true }
 );
@@ -26,9 +29,18 @@ const ContributorRoleSchema = new mongoose.Schema(
     // Display info
     name:        { type: String, required: true, trim: true },
     slug:        { type: String, required: true, unique: true, trim: true, lowercase: true },
-    category:    { type: String, required: true, enum: ['content', 'development', 'design'] },
+    // Covers both legacy values (content/development/design) and current seed values
+    category: {
+      type:     String,
+      required: true,
+      enum:     ['learning', 'core', 'growth', 'operations', 'content', 'development', 'design'],
+    },
     subcategory: { type: String, default: '', trim: true },
     description: { type: String, default: '', trim: true },
+
+    // Portfolio / links prompt — rendered on the join form for roles that need it (devs, designers).
+    // Leave empty to hide the field for this role entirely.
+    portfolioPrompt: { type: String, default: '', trim: true },
 
     // Availability
     isActive: { type: Boolean, default: true },
