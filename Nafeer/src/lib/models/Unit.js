@@ -25,6 +25,19 @@ const UnitSchema = new mongoose.Schema(
     order:       { type: Number, required: true },
     description: { type: String, default: null },
 
+    // ── Multi-book support ─────────────────────────────────────────────────
+    // When set, units sharing the same bookId are rendered under a named
+    // book divider in the Android app (e.g. Arabic's 3 books).
+    bookId: {
+      type:    String,
+      default: null,
+      index:   true,
+    },
+    bookTitle: {
+      type:    String,
+      default: null,
+    },
+
     ...versioningFields,
   },
   { timestamps: true }
