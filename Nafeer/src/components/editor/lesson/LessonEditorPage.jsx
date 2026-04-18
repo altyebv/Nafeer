@@ -489,6 +489,69 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
       </Card>
 
       <Card>
+        <CardHeader icon="⊞" title="تجميع الدروس" hint="اختياري — يُنظِّم الدروس في مجموعات داخل الوحدة" />
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="معرّف المجموعة" hint="ثابت — مثال: ARABIC_U1_G1">
+              <input
+                type="text"
+                value={lesson.groupId || ''}
+                onChange={(e) => updateLesson(lesson.id, { groupId: e.target.value.trim().toUpperCase() || null })}
+                className={FIELD}
+                placeholder="ARABIC_U1_G1"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="اسم المجموعة" hint="يظهر كعنوان فرعي في التطبيق">
+              <input
+                type="text"
+                value={lesson.groupTitle || ''}
+                onChange={(e) => updateLesson(lesson.id, { groupTitle: e.target.value || null })}
+                className={FIELD}
+                placeholder="فهم المقروء"
+              />
+            </Field>
+          </div>
+
+          <Field label="وصف المجموعة" hint="اختياري — ملاحظات عن هذه المجموعة">
+            <textarea
+              value={lesson.groupMetadata ? (() => { try { return JSON.parse(lesson.groupMetadata)?.description || ''; } catch { return ''; } })() : ''}
+              onChange={(e) => {
+                const desc = e.target.value.trim();
+                updateLesson(lesson.id, {
+                  groupMetadata: desc ? JSON.stringify({ description: desc }) : null,
+                });
+              }}
+              className={`${FIELD} resize-y min-h-[60px]`}
+              placeholder="وصف يساعد المحررين على فهم منطق هذه المجموعة…"
+            />
+          </Field>
+
+          {/* Live preview of how it appears in the app */}
+          {lesson.groupTitle && (
+            <div className="mt-1 pt-4 border-t border-ink-800/40">
+              <p className="text-xs text-ink-500 font-arabic mb-2">معاينة في التطبيق</p>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-ink-800/30 border border-ink-800/60 w-fit">
+                <span className="w-1 h-3 rounded-full bg-sand-700/60" />
+                <span className="text-xs font-arabic text-ink-400">{lesson.groupTitle}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Warning when groupId is set but groupTitle is missing (or vice versa) */}
+          {(lesson.groupId && !lesson.groupTitle) && (
+            <p className="text-xs text-amber-600 font-arabic">⚠ معرّف المجموعة موجود دون اسم — أضف الاسم حتى يظهر في التطبيق</p>
+          )}
+          {(!lesson.groupId && lesson.groupTitle) && (
+            <p className="text-xs text-amber-600 font-arabic">⚠ اسم المجموعة موجود دون معرّف — أضف المعرّف لربط الدروس معاً</p>
+          )}
+          {lesson.groupId && lesson.groupTitle && (
+            <p className="text-xs text-emerald-700 font-arabic">✓ مجموعة محددة — ستظهر الدروس ذات المعرّف نفسه تحت عنوان واحد</p>
+          )}
+        </div>
+      </Card>
+
+      <Card>
         <CardHeader icon="◎" title="اكتمال الدرس" />
         <div className="p-5">
           <div className="flex items-center gap-3 mb-4">
