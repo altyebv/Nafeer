@@ -42,6 +42,7 @@ const ContributorSchema = new mongoose.Schema(
     background:         { type: String, default: '', trim: true },
     fieldOfStudy:       { type: String, default: '', trim: true },
     subjectsOfInterest: { type: [String], default: [] },
+    portfolioUrl:       { type: String, default: '', trim: true },
 
     // Demographics — collected at join stage
     age:  { type: String, default: '' },  // stored as range string e.g. "18-22"
