@@ -17,6 +17,7 @@ export async function POST(request) {
       hasStableInternet,
       usesAiTools,
       aiToolsList,
+      portfolioUrl,
       roleId,
     } = await request.json();
 
@@ -62,6 +63,7 @@ export async function POST(request) {
       hasStableInternet:  hasStableInternet ?? null,
       usesAiTools:        usesAiTools ?? null,
       aiToolsList:        aiToolsList || [],
+      portfolioUrl:       portfolioUrl?.trim() || '',
       roleId:             roleId || null,
       status:             'pending',
     });
