@@ -31,12 +31,26 @@ export const useSubjectStore = create(
 
       // ── Units ─────────────────────────────────────────────────────────────
       addUnit: (unit) =>
-        set((state) => ({
-          units: [
-            ...state.units,
-            { ...unit, id: unit.id || generateId('unit'), order: state.units.length + 1 },
-          ],
-        })),
+        set((state) => {
+          const nextOrder = state.units.reduce((m, u) => Math.max(m, u.order), 0) + 1;
+          // Deterministic ID: matches Android convention SUBJECT_U<n>
+          // Falls back to this pattern even for manually added units so IDs
+          // never diverge from what the seeder expects.
+          const subjectId = state.subject?.id ?? 'UNKNOWN';
+          const id = unit.id || `${subjectId}_U${nextOrder}`;
+          return {
+            units: [
+              ...state.units,
+              {
+                ...unit,
+                id,
+                order:     unit.order ?? nextOrder,
+                bookId:    unit.bookId    || null,
+                bookTitle: unit.bookTitle || null,
+              },
+            ],
+          };
+        }),
 
       updateUnit: (id, updates) =>
         set((state) => ({
@@ -69,6 +83,9 @@ export const useSubjectStore = create(
                 parentLesson:     lesson.parentLesson  || null,
                 variationType:    lesson.variationType || null,
                 variationNote:    lesson.variationNote || null,
+                groupId:          lesson.groupId       || null,
+                groupTitle:       lesson.groupTitle    || null,
+                groupMetadata:    lesson.groupMetadata || null,
               },
             ],
           };
