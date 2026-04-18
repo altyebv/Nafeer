@@ -7,6 +7,8 @@ const CATEGORIES = [
   { id: 'content',     label: 'محتوى تعليمي', icon: '◈', subs: ['متخصص مادة', 'كاتب دروس', 'مناهج'] },
   { id: 'development', label: 'تطوير',         icon: '⬡', subs: ['باك إند', 'موبايل', 'فرونت إند'] },
   { id: 'design',      label: 'تصميم',         icon: '◇', subs: ['واجهات', 'رسوم توضيحية'] },
+  { id: 'growth',      label: 'نشر الفكرة',    icon: '◉', subs: ['محتوى', 'مجتمع', 'تسويق'] },
+  { id: 'operations',  label: 'تنظيم الجهود',  icon: '▦', subs: ['تنسيق', 'متابعة', 'إدارة'] },
 ];
 
 const DEFAULT_Q = { text: '', placeholder: '', minChars: 80 };
@@ -189,12 +191,12 @@ export function RoleModal({ role = null, onClose, onSaved }) {
 
         {/* Category */}
         <Field label="الفئة *">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => { setCategory(cat.id); setSubcategory(''); }}
-                className={`flex-1 py-2 rounded-lg text-xs font-arabic border transition-all ${
+                className={`flex-1 min-w-[80px] py-2 rounded-lg text-xs font-arabic border transition-all ${
                   category === cat.id
                     ? 'bg-sand-900/50 border-sand-700/60 text-sand-300'
                     : 'bg-ink-800/40 border-ink-700/50 text-ink-500 hover:text-ink-300 hover:border-ink-600/60'
@@ -228,6 +230,9 @@ export function RoleModal({ role = null, onClose, onSaved }) {
                 type="text"
                 value={activeCat.subs.includes(subcategory) ? '' : subcategory}
                 onChange={(e) => setSubcategory(e.target.value)}
+                onFocus={() => {
+                  if (activeCat.subs.includes(subcategory)) setSubcategory('');
+                }}
                 placeholder="أو اكتب تخصصاً..."
                 className={inputStyle('flex-1 min-w-[120px]')}
               />

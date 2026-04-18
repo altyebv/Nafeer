@@ -9,6 +9,8 @@ const CATEGORY_META = {
   content:     { label: 'محتوى تعليمي', icon: '◈', color: 'text-amber-400  bg-amber-900/20  border-amber-800/40'  },
   development: { label: 'تطوير',         icon: '⬡', color: 'text-blue-400   bg-blue-900/20   border-blue-800/40'   },
   design:      { label: 'تصميم',         icon: '◇', color: 'text-purple-400 bg-purple-900/20 border-purple-800/40' },
+  growth:      { label: 'نشر الفكرة',    icon: '◉', color: 'text-green-400  bg-green-900/20  border-green-800/40'  },
+  operations:  { label: 'تنظيم الجهود',  icon: '▦', color: 'text-teal-400   bg-teal-900/20   border-teal-800/40'   },
 };
 
 function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
