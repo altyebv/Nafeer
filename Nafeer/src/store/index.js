@@ -161,11 +161,19 @@ function assembleExportData(s) {
     })),
     units: s.units.sort((a, b) => a.order - b.order).map((unit) => ({
       id: unit.id, title: unit.title, order: unit.order, description: unit.description || null,
+      bookId:    unit.bookId    || null,
+      bookTitle: unit.bookTitle || null,
       lessons: s.lessons.filter((l) => l.unitId === unit.id).sort((a, b) => a.order - b.order)
         .map((lesson) => ({
           id: lesson.id, title: lesson.title, order: lesson.order,
           estimatedMinutes: lesson.estimatedMinutes || 15, summary: lesson.summary || null,
           metadata: lesson.metadata || null,
+          parentLesson:  lesson.parentLesson  || null,
+          variationType: lesson.variationType || null,
+          variationNote: lesson.variationNote || null,
+          groupId:       lesson.groupId       || null,
+          groupTitle:    lesson.groupTitle    || null,
+          groupMetadata: lesson.groupMetadata || null,
           sections: s.sections.filter((sec) => sec.lessonId === lesson.id).sort((a, b) => a.order - b.order)
             .map((section) => ({
               id: section.id, title: section.title, order: section.order,
