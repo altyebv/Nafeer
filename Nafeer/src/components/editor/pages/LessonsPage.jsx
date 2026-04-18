@@ -123,18 +123,29 @@ export default function LessonsPage({ onEditLesson }) {
         </div>
       </header>
 
-      {/* ── Units ─────────────────────────────────────────────────────────── */}
+      {/* ── Units — grouped by book when bookId is set (e.g. Arabic) ──────── */}
       <div className="space-y-6">
-        {sortedUnits.map((unit, index) => (
-          <UnitCard
-            key={unit.id}
-            unit={unit}
-            index={index}
-            onEditLesson={onEditLesson}
-            coverageMap={coverageMap}
-            unitCoverage={unitMap[unit.contentId]}
-          />
-        ))}
+        {(() => {
+          let lastBookId = '__none__';
+          return sortedUnits.map((unit, index) => {
+            const showBookDivider = unit.bookId && unit.bookId !== lastBookId;
+            if (unit.bookId) lastBookId = unit.bookId;
+            return (
+              <div key={unit.id}>
+                {showBookDivider && (
+                  <BookDivider title={unit.bookTitle || unit.bookId} first={index === 0} />
+                )}
+                <UnitCard
+                  unit={unit}
+                  index={index}
+                  onEditLesson={onEditLesson}
+                  coverageMap={coverageMap}
+                  unitCoverage={unitMap[unit.contentId]}
+                />
+              </div>
+            );
+          });
+        })()}
       </div>
 
     </div>
@@ -183,5 +194,30 @@ function Stat({ n, label }) {
       <span className="font-mono font-semibold" style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{n}</span>
       <span className="font-arabic" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</span>
     </span>
+  );
+}
+
+// ─── BookDivider ──────────────────────────────────────────────────────────────
+// Rendered between unit groups when a subject uses multiple named books (Arabic).
+function BookDivider({ title, first }) {
+  return (
+    <div
+      className="flex items-center gap-3"
+      style={{ marginBottom: 12, marginTop: first ? 0 : 28 }}
+    >
+      <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+      <span
+        className="font-arabic font-semibold shrink-0 px-3 py-1 rounded-full"
+        style={{
+          fontSize:    12,
+          color:       'var(--accent)',
+          background:  'rgba(212,137,30,0.08)',
+          border:      '1px solid rgba(212,137,30,0.18)',
+        }}
+      >
+        {title}
+      </span>
+      <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+    </div>
   );
 }
