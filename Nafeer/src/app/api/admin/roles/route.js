@@ -36,7 +36,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { name, category, subcategory, description, interviewQuestions, microTask, isActive, order } = body;
+    const { name, category, subcategory, description, portfolioPrompt, interviewQuestions, microTask, isActive, order } = body;
 
     if (!name?.trim() || !category) {
       return NextResponse.json(
@@ -63,6 +63,7 @@ export async function POST(request) {
       category,
       subcategory:        subcategory?.trim() || '',
       description:        description?.trim() || '',
+      portfolioPrompt:    portfolioPrompt?.trim() || '',
       interviewQuestions: interviewQuestions || [],
       microTask:          microTask || { prompt: '', minChars: 80 },
       isActive:           isActive !== false,
