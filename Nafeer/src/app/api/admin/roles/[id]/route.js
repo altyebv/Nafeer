@@ -22,7 +22,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ ok: false, error: 'الدور غير موجود' }, { status: 404 });
     }
 
-    const allowed = ['name', 'category', 'subcategory', 'description', 'interviewQuestions', 'microTask', 'isActive', 'order'];
+    const allowed = ['name', 'category', 'subcategory', 'description', 'portfolioPrompt', 'interviewQuestions', 'microTask', 'isActive', 'order'];
     allowed.forEach((key) => {
       if (body[key] !== undefined) role[key] = body[key];
     });
