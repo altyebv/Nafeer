@@ -14,7 +14,7 @@ const CATEGORY_META = {
   learning:   { label: 'بناء التجربة التعليمية' },
   core:       { label: 'بناء المنصة'            },
   growth:     { label: 'نشر الفكرة'             },
-  operations: { label: 'تنظيم نافير'            },
+  operations: { label: 'تنظيم نفير'            },
 };
 
 // Category accent colours (kept from existing system)
@@ -620,44 +620,51 @@ export default function JoinPage() {
                 />
               </Field>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="الجنس">
-                  <div className="flex gap-2">
-                    {[{ v: 'male', label: 'ذكر' }, { v: 'female', label: 'أنثى' }].map(({ v, label }) => {
-                      const active = form.gender === v;
-                      return (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => set('gender', active ? null : v)}
-                          className="flex-1 py-2.5 rounded-xl text-sm font-arabic transition-all duration-200"
-                          style={{
-                            background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.03)',
-                            border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
-                            color:      active ? 'var(--accent)' : 'var(--text-muted)',
-                          }}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Field>
+              <Field label="الجنس">
+                <div className="flex gap-2">
+                  {[{ v: 'male', label: 'ذكر' }, { v: 'female', label: 'أنثى' }].map(({ v, label }) => {
+                    const active = form.gender === v;
+                    return (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => set('gender', active ? null : v)}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-arabic transition-all duration-200"
+                        style={{
+                          background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.03)',
+                          border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
+                          color:      active ? 'var(--accent)' : 'var(--text-muted)',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
 
-                <Field label="الفئة العمرية">
-                  <select
-                    value={form.age || ''}
-                    onChange={(e) => set('age', e.target.value || null)}
-                    className="w-full px-4 py-3 rounded-xl text-sm transition-all"
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
-                    <option value="">اختر</option>
-                    {AGE_RANGES.map((r) => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
+              <Field label="الفئة العمرية">
+                <div className="flex flex-wrap gap-2">
+                  {AGE_RANGES.map((r) => {
+                    const active = form.age === r.value;
+                    return (
+                      <button
+                        key={r.value}
+                        type="button"
+                        onClick={() => set('age', active ? null : r.value)}
+                        className="px-4 py-2 rounded-lg text-sm font-arabic transition-all duration-200"
+                        style={{
+                          background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.03)',
+                          border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
+                          color:      active ? 'var(--accent)' : 'var(--text-muted)',
+                        }}
+                      >
+                        {r.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
 
               <Field label="المدينة أو الولاية" hint="أين تعيش حالياً؟">
                 <input
@@ -719,7 +726,6 @@ export default function JoinPage() {
 
               <Field
                 label="هل لديك وصول إلى حاسوب أو جهاز لوحي؟"
-                hint="نستخدم نافير من المتصفح — لا يعمل من الجوال فقط"
               >
                 <YesNo value={form.hasPcOrTablet} onChange={(v) => set('hasPcOrTablet', v)} />
               </Field>
