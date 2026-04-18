@@ -109,6 +109,21 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
           <span className="font-arabic shrink-0" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
             الوحدة {ordinal}
           </span>
+
+          {/* Book pill — only for multi-book subjects like Arabic */}
+          {unit.bookTitle && (
+            <span
+              className="font-arabic shrink-0 px-2 py-0.5 rounded"
+              style={{
+                fontSize:   10,
+                color:      'var(--accent)',
+                background: 'rgba(212,137,30,0.08)',
+                border:     '1px solid rgba(212,137,30,0.15)',
+              }}
+            >
+              {unit.bookTitle}
+            </span>
+          )}
         </div>
 
         {/* Meta cluster */}
@@ -179,34 +194,49 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
               </p>
             </div>
           ) : (
-            /* Two-column grid for wider screens; single column on small */
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
-              {mainLessons.map((lesson, i) => {
-                const globalIndex = unitLessons.findIndex((l) => l.id === lesson.id);
-                const children = variationOf(lesson.id);
-                const cvLevel  = coverageMap?.[lesson.id]?.level ?? null;
-                return (
-                  <div key={lesson.id}>
-                    <LessonItem
-                      lesson={lesson}
-                      index={globalIndex}
-                      onEdit={() => onEditLesson(lesson.id, unit.id)}
-                      onAddVariation={() => setVariationTarget(lesson)}
-                      coverageLevel={cvLevel}
-                    />
-                    {children.map((child) => (
-                      <LessonItem
-                        key={child.id}
-                        lesson={child}
-                        index={unitLessons.findIndex((l) => l.id === child.id)}
-                        onEdit={() => onEditLesson(child.id, unit.id)}
-                        coverageLevel={coverageMap?.[child.id]?.level ?? null}
-                        isVariation
-                      />
-                    ))}
-                  </div>
-                );
-              })}
+            /* Lessons — grouped by groupTitle when present */
+            <div>
+              {(() => {
+                let lastGroupId = '__none__';
+                return mainLessons.map((lesson, i) => {
+                  const globalIndex = unitLessons.findIndex((l) => l.id === lesson.id);
+                  const children    = variationOf(lesson.id);
+                  const cvLevel     = coverageMap?.[lesson.id]?.level ?? null;
+                  const showGroup   = lesson.groupId && lesson.groupId !== lastGroupId;
+                  if (lesson.groupId) lastGroupId = lesson.groupId;
+                  return (
+                    <div key={lesson.id}>
+                      {showGroup && (
+                        <LessonGroupSubHeader
+                          title={lesson.groupTitle || lesson.groupId}
+                          first={i === 0}
+                        />
+                      )}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5 mb-1.5">
+                        <div>
+                          <LessonItem
+                            lesson={lesson}
+                            index={globalIndex}
+                            onEdit={() => onEditLesson(lesson.id, unit.id)}
+                            onAddVariation={() => setVariationTarget(lesson)}
+                            coverageLevel={cvLevel}
+                          />
+                          {children.map((child) => (
+                            <LessonItem
+                              key={child.id}
+                              lesson={child}
+                              index={unitLessons.findIndex((l) => l.id === child.id)}
+                              onEdit={() => onEditLesson(child.id, unit.id)}
+                              coverageLevel={coverageMap?.[child.id]?.level ?? null}
+                              isVariation
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           )}
 
@@ -294,5 +324,25 @@ function PencilIcon() {
       <path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z"
         stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+// ─── LessonGroupSubHeader ─────────────────────────────────────────────────────
+// Rendered inside a unit when consecutive lessons share a groupId.
+function LessonGroupSubHeader({ title, first }) {
+  return (
+    <div
+      className="flex items-center gap-2"
+      style={{ marginTop: first ? 4 : 14, marginBottom: 6 }}
+    >
+      <div className="w-1 h-3 rounded-full" style={{ background: 'var(--accent)', opacity: 0.5 }} />
+      <span
+        className="font-arabic"
+        style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}
+      >
+        {title}
+      </span>
+      <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+    </div>
   );
 }
