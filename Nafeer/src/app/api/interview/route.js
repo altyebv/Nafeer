@@ -6,7 +6,44 @@ import { ContributorRole }  from '@/lib/models/ContributorRole';
 const MIN_LENGTH = 80;
 
 // ─── GET /api/interview?token=xxx ─────────────────────────────────────────────
-// Validates the token and returns contributor info + role questions.
+// Validates the token and returns contributor info + role questions. 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Resolves which questions + microTask to use for a given role + contributor.
+ *
+ * For roles that carry a subjectQuestionMap, we pick the entry matching the
+ * contributor's first subject of interest. Falls back to the role's generic
+ * interviewQuestions / microTask if no subject-specific entry is found.
+ */
+function resolveQuestions(role, subjectsOfInterest = []) {
+  const primarySubject = subjectsOfInterest[0] || null;
+
+  if (primarySubject && Array.isArray(role.subjectQuestionMap) && role.subjectQuestionMap.length > 0) {
+    const entry = role.subjectQuestionMap.find((e) => e.subjectId === primarySubject);
+    if (entry && entry.questions?.length > 0) {
+      return {
+        questions:         (entry.questions || []).sort((a, b) => a.order - b.order),
+        microTask:         entry.microTask?.prompt
+          ? { prompt: entry.microTask.prompt, minChars: entry.microTask.minChars ?? MIN_LENGTH }
+          : null,
+        isSubjectSpecific: true,
+        resolvedSubjectId: primarySubject,
+      };
+    }
+  }
+
+  return {
+    questions:         (role.interviewQuestions || []).sort((a, b) => a.order - b.order),
+    microTask:         role.microTask?.prompt
+      ? { prompt: role.microTask.prompt, minChars: role.microTask.minChars ?? MIN_LENGTH }
+      : null,
+    isSubjectSpecific: false,
+    resolvedSubjectId: null,
+  };
+}
+
+// ─── GET /api/interview?token=xxx ─────────────────────────────────────────────
 
 export async function GET(request) {
   const token = new URL(request.url).searchParams.get('token');
@@ -34,7 +71,6 @@ export async function GET(request) {
     );
   }
 
-  // Block re-submission — check both dynamic and legacy paths
   const alreadySubmitted =
     contributor.dynamicAnswersSubmittedAt ||
     contributor.interviewAnswers?.submittedAt;
@@ -46,20 +82,19 @@ export async function GET(request) {
     );
   }
 
-  // If the contributor has a roleId, fetch that role's questions
-  let questions = [];
-  let microTask = null;
-  let roleName  = null;
+  let questions         = [];
+  let microTask         = null;
+  let roleName          = null;
+  let isSubjectSpecific = false;
 
   if (contributor.roleId) {
     const role = await ContributorRole.findById(contributor.roleId);
     if (role) {
-      roleName  = role.name;
-      questions = (role.interviewQuestions || [])
-        .sort((a, b) => a.order - b.order);
-      microTask = role.microTask?.prompt
-        ? { prompt: role.microTask.prompt, minChars: role.microTask.minChars ?? MIN_LENGTH }
-        : null;
+      roleName = role.name;
+      const resolved = resolveQuestions(role, contributor.subjectsOfInterest);
+      questions         = resolved.questions;
+      microTask         = resolved.microTask;
+      isSubjectSpecific = resolved.isSubjectSpecific;
     }
   }
 
@@ -71,12 +106,12 @@ export async function GET(request) {
       roleName,
       questions,
       microTask,
+      isSubjectSpecific,
     },
   });
 }
 
 // ─── POST /api/interview ───────────────────────────────────────────────────────
-// Saves interview answers. Handles both dynamic (role-based) and legacy flows.
 
 export async function POST(request) {
   try {
@@ -121,39 +156,44 @@ export async function POST(request) {
       );
     }
 
-    // Fetch role questions for validation + text snapshots
-    let roleQuestions = [];
+    // Resolve the same questions used at GET time to validate against
+    let resolvedQuestions = [];
+    let resolvedMicroTask = null;
+
     if (contributor.roleId) {
       const role = await ContributorRole.findById(contributor.roleId);
       if (role) {
-        roleQuestions = role.interviewQuestions || [];
-        // Validate each answer meets the role's minChars
-        for (const q of roleQuestions) {
-          const match    = answers.find((a) => String(a.questionId) === String(q._id));
-          const minChars = q.minChars ?? MIN_LENGTH;
-          if (!match?.answer?.trim() || match.answer.trim().length < minChars) {
-            return NextResponse.json(
-              { ok: false, error: `إجابة غير مكتملة: ${q.text}` },
-              { status: 400 }
-            );
-          }
-        }
-        // Validate micro task if role has one
-        if (role.microTask?.prompt) {
-          const minChars = role.microTask.minChars ?? MIN_LENGTH;
-          if (!microTask?.trim() || microTask.trim().length < minChars) {
-            return NextResponse.json(
-              { ok: false, error: 'يرجى إكمال المهمة التطبيقية' },
-              { status: 400 }
-            );
-          }
-        }
+        const resolved = resolveQuestions(role, contributor.subjectsOfInterest);
+        resolvedQuestions = resolved.questions;
+        resolvedMicroTask = resolved.microTask;
+      }
+    }
+
+    // Validate each answer meets its minChars requirement
+    for (const q of resolvedQuestions) {
+      const match    = answers.find((a) => String(a.questionId) === String(q._id));
+      const minChars = q.minChars ?? MIN_LENGTH;
+      if (!match?.answer?.trim() || match.answer.trim().length < minChars) {
+        return NextResponse.json(
+          { ok: false, error: `إجابة غير مكتملة: ${q.text}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (resolvedMicroTask?.prompt) {
+      const minChars = resolvedMicroTask.minChars ?? MIN_LENGTH;
+      if (!microTask?.trim() || microTask.trim().length < minChars) {
+        return NextResponse.json(
+          { ok: false, error: 'يرجى إكمال المهمة التطبيقية' },
+          { status: 400 }
+        );
       }
     }
 
     // Build dynamic answers with question text snapshots
     const questionMap = Object.fromEntries(
-      roleQuestions.map((q) => [String(q._id), q.text])
+      resolvedQuestions.map((q) => [String(q._id), q.text])
     );
 
     contributor.dynamicAnswers = answers.map((a) => ({
