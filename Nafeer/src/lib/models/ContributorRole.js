@@ -23,6 +23,19 @@ const MicroTaskSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// ─── Subject-specific question entry ─────────────────────────────────────────
+// Maps a subjectId to a tailored set of questions + micro-task.
+// Used by contributor roles that need per-subject interview customisation
+// (e.g. a subject-specialist applying for Physics gets physics-specific tasks).
+const SubjectQuestionEntrySchema = new mongoose.Schema(
+  {
+    subjectId: { type: String, required: true, trim: true },
+    questions: { type: [QuestionSchema], default: [] },
+    microTask: { type: MicroTaskSchema,  default: () => ({ prompt: '', minChars: 80 }) },
+  },
+  { _id: false }
+);
+
 // ─── Contributor role schema ───────────────────────────────────────────────────
 const ContributorRoleSchema = new mongoose.Schema(
   {
@@ -33,7 +46,7 @@ const ContributorRoleSchema = new mongoose.Schema(
     category: {
       type:     String,
       required: true,
-      enum:     ['learning', 'core', 'growth', 'operations', 'content', 'development', 'design'],
+      enum:     ['learning', 'core', 'growth', 'operations', 'community', 'content', 'development', 'design'],
     },
     subcategory: { type: String, default: '', trim: true },
     description: { type: String, default: '', trim: true },
@@ -47,8 +60,13 @@ const ContributorRoleSchema = new mongoose.Schema(
     order:    { type: Number,  default: 0    },
 
     // Interview configuration
-    interviewQuestions: { type: [QuestionSchema], default: [] },
-    microTask:          { type: MicroTaskSchema,  default: () => ({ prompt: '', minChars: 80 }) },
+    // Generic questions / micro-task — used as fallback when no subject-specific entry matches.
+    interviewQuestions: { type: [QuestionSchema],            default: [] },
+    microTask:          { type: MicroTaskSchema,             default: () => ({ prompt: '', minChars: 80 }) },
+    // Subject-specific overrides — keyed by subjectId.
+    // When a contributor's primary subject of interest matches an entry here,
+    // that entry's questions + micro-task replace the generic ones above.
+    subjectQuestionMap: { type: [SubjectQuestionEntrySchema], default: [] },
   },
   { timestamps: true }
 );
