@@ -22,7 +22,6 @@ build/
 *.swo
 
 # Testing
-coverage/
 .nyc_output/
 
 # Cache
