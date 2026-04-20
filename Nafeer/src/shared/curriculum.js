@@ -81,14 +81,18 @@ export const SUBJECTS_CATALOG = [
     isMajor: false,
     color:   'ember',
     order:   2,
+    // Arabic has 3 books — units carry bookId/bookTitle so the app groups them
     units: [
-      { order: 1, titleAr: 'الوحدة الأولى',   lessonCount: 5 },
-      { order: 2, titleAr: 'الوحدة الثانية',  lessonCount: 5 },
-      { order: 3, titleAr: 'الوحدة الثالثة',  lessonCount: 5 },
-      { order: 4, titleAr: 'الوحدة الرابعة',  lessonCount: 5 },
-      { order: 5, titleAr: 'الوحدة الخامسة',  lessonCount: 5 },
-      { order: 6, titleAr: 'الوحدة السادسة',  lessonCount: 5 },
-      { order: 7, titleAr: 'الوحدة السابعة',  lessonCount: 5 },
+      // ── كتاب المطالعة و الأدب ──────────────────────────────────────────
+      { order: 1, titleAr: 'الوحدة الأولى',   lessonCount: 5, bookId: 'ARABIC_BOOK_MATALAA',  bookTitle: 'المطالعة و الأدب' },
+      { order: 2, titleAr: 'الوحدة الثانية',  lessonCount: 5, bookId: 'ARABIC_BOOK_MATALAA',  bookTitle: 'المطالعة و الأدب' },
+      { order: 3, titleAr: 'الوحدة الثالثة',  lessonCount: 5, bookId: 'ARABIC_BOOK_MATALAA',  bookTitle: 'المطالعة و الأدب' },
+      // ── كتاب قواعد النحو ───────────────────────────────────────────────
+      { order: 4, titleAr: 'الوحدة الأولى',   lessonCount: 5, bookId: 'ARABIC_BOOK_NAHW',     bookTitle: 'قواعد النحو' },
+      { order: 5, titleAr: 'الوحدة الثانية',  lessonCount: 5, bookId: 'ARABIC_BOOK_NAHW',     bookTitle: 'قواعد النحو' },
+      { order: 6, titleAr: 'الوحدة الثالثة',  lessonCount: 5, bookId: 'ARABIC_BOOK_NAHW',     bookTitle: 'قواعد النحو' },
+      // ── كتاب البلاغة و التعبير ─────────────────────────────────────────
+      { order: 7, titleAr: 'الوحدة الأولى',   lessonCount: 5, bookId: 'ARABIC_BOOK_BALAGHA',  bookTitle: 'البلاغة و التعبير' },
     ],
   },
   {
@@ -114,19 +118,44 @@ export const SUBJECTS_CATALOG = [
     id:      'MATH',
     nameAr:  'رياضيات',
     nameEn:  'Mathematics',
-    track:   TRACKS.COMMON,
+    track:   TRACKS.LITERARY,
     isMajor: false,
     color:   'sand',
     order:   4,
     units: [
-      { order: 1, titleAr: 'الوحدة الأولى',   lessonCount: 5 },
-      { order: 2, titleAr: 'الوحدة الثانية',  lessonCount: 5 },
-      { order: 3, titleAr: 'الوحدة الثالثة',  lessonCount: 5 },
-      { order: 4, titleAr: 'الوحدة الرابعة',  lessonCount: 5 },
-      { order: 5, titleAr: 'الوحدة الخامسة',  lessonCount: 5 },
-      { order: 6, titleAr: 'الوحدة السادسة',  lessonCount: 5 },
-      { order: 7, titleAr: 'الوحدة السابعة',  lessonCount: 5 },
-      { order: 8, titleAr: 'الوحدة الثامنة',  lessonCount: 5 },
+      { order: 1, titleAr: 'الدوال الحقيقية و النهايات',   lessonCount: 7 },
+      { order: 2, titleAr: 'التفاضل',  lessonCount: 8 },
+      { order: 3, titleAr: 'التكامل كعملية عكسية للتفاضل',  lessonCount: 1 },
+      { order: 4, titleAr: 'الإحصاء',  lessonCount: 6 },
+      { order: 5, titleAr: 'الإحتمالات',  lessonCount: 8 },
+      { order: 6, titleAr: 'المصفوفات',  lessonCount: 9 },
+    ],
+  },
+  // ── الرياضيات المتخصصة — Science track only ────────────────────────────────
+  // Science students study both MATH (common) and this subject.
+  // Kept as a separate subject so progress, quiz bank, and feed are isolated.
+  {
+    id:      'MATH_SCIENCE',
+    nameAr:  'رياضيات متخصصة',
+    nameEn:  'Advanced Mathematics',
+    track:   TRACKS.SCIENCE,
+    isMajor: false,
+    color:   'sand',
+    order:   5,
+    units: [
+      { order: 1, titleAr: 'الإستنتاج الرياضين التباديل و التوافيق و نظرية ذات الحدين',   lessonCount: 6, bookId: 'SpecialOne',  bookTitle: 'الكتاب الأول'},
+      { order: 2, titleAr: 'المصفوفات',  lessonCount: 11 , bookId: 'SpecialOne',  bookTitle: 'الكتاب الأول' },
+      { order: 3, titleAr: 'الكسور الجزئية',  lessonCount: 4 , bookId: 'SpecialOne',  bookTitle: 'الكتاب الأول'},
+      { order: 4, titleAr: 'الإحتمالات',  lessonCount: 9 , bookId: 'SpecialOne',  bookTitle: 'الكتاب الأول'},
+      { order: 5, titleAr: 'الإحصاء',  lessonCount: 6 , bookId: 'SpecialOne',  bookTitle: 'الكتاب الأول'},
+      // -─ كتاب الرياضيات المتخصصة 2 ───────────────────────────────────────────────
+      { order: 6, titleAr: 'الدوال الحقيقية و النهايات',   lessonCount: 8, bookId: 'SpecialTwo',  bookTitle: 'الكتاب الثاني'},
+      { order: 7, titleAr: 'التفاضل',  lessonCount: 7 , bookId: 'SpecialTwo',  bookTitle: 'الكتاب الثاني'},
+      { order: 8, titleAr: 'تطبيفات على التفاضل',  lessonCount: 4 , bookId: 'SpecialTwo',  bookTitle: 'الكتاب الثاني'},
+      { order: 9, titleAr: 'التكامل',  lessonCount: 2 , bookId: 'SpecialTwo',  bookTitle: 'الكتاب الثاني'},
+      { order: 10, titleAr: 'التكامل المحدد و تطبيقاته',  lessonCount: 4 , bookId: 'SpecialTwo',  bookTitle: 'الكتاب الثاني'},
+      { order: 10, titleAr: 'الدائرة',  lessonCount: 5 , bookId: 'SpecialTwo',  bookTitle: 'الكتاب الثاني'},
+      { order: 10, titleAr: 'مجموعة الأعداد المركبة',  lessonCount: 7 , bookId: 'SpecialTwo',  bookTitle: 'الكتاب الثاني'},
     ],
   },
 
@@ -138,7 +167,7 @@ export const SUBJECTS_CATALOG = [
     track:   TRACKS.SCIENCE,
     isMajor: false,
     color:   'cyan',
-    order:   5,
+    order:   6,
     units: [
       { order: 1, titleAr: 'الوحدة الأولى',   lessonCount: 4 },
       { order: 2, titleAr: 'الوحدة الثانية',  lessonCount: 4 },
@@ -155,7 +184,7 @@ export const SUBJECTS_CATALOG = [
     track:   TRACKS.SCIENCE,
     isMajor: false,
     color:   'purple',
-    order:   6,
+    order:   7,
     units: [
       { order: 1, titleAr: 'الوحدة الأولى',   lessonCount: 4 },
       { order: 2, titleAr: 'الوحدة الثانية',  lessonCount: 4 },
@@ -174,7 +203,7 @@ export const SUBJECTS_CATALOG = [
     track:   TRACKS.SCIENCE,
     isMajor: true,
     color:   'green',
-    order:   7,
+    order:   8,
     units: [
       { order: 1, titleAr: 'الوحدة الأولى',   lessonCount: 5 },
       { order: 2, titleAr: 'الوحدة الثانية',  lessonCount: 5 },
@@ -192,7 +221,7 @@ export const SUBJECTS_CATALOG = [
     track:   TRACKS.SCIENCE,
     isMajor: true,
     color:   'orange',
-    order:   8,
+    order:   9,
     units: [
       { order: 1, titleAr: 'أساسيات الرسم الهندسي',   lessonCount: 13 },
       { order: 2, titleAr: 'أساسيات الهندسة الميكانيكية',  lessonCount: 24 },
@@ -207,7 +236,7 @@ export const SUBJECTS_CATALOG = [
     track:   TRACKS.SCIENCE,
     isMajor: true,
     color:   'indigo',
-    order:   9,
+    order:   10,
     units: [
       { order: 1, titleAr: 'الدوائر المنطقية و العد الثنائي',   lessonCount: 9 },
       { order: 2, titleAr: 'بنائيات البيانات',  lessonCount: 13 },
@@ -225,7 +254,7 @@ export const SUBJECTS_CATALOG = [
     track:   TRACKS.LITERARY,
     isMajor: false,
     color:   'yellow',
-    order:   10,
+    order:   11,
     units: [
       { order: 1, titleAr: 'الثورة و الدولة المهدية',   lessonCount: 12  },
       { order: 2, titleAr: 'الحكم الثنائي و الحركة الوطنية',  lessonCount: 10 },
@@ -240,7 +269,7 @@ export const SUBJECTS_CATALOG = [
     track:   TRACKS.LITERARY,
     isMajor: false,
     color:   'teal',
-    order:   11,
+    order:   12,
     units: [
       { order: 1, titleAr: 'مقدمة في قراءة و تفسير الصور الجوية',   lessonCount: 4 },
       { order: 2, titleAr: 'الجغرافيا الإقتصادية',  lessonCount: 28 },
@@ -257,7 +286,7 @@ export const SUBJECTS_CATALOG = [
     track:   TRACKS.LITERARY,
     isMajor: true,
     color:   'amber',
-    order:   12,
+    order:   13,
     units: [
       { order: 1, titleAr: 'القأن الكريم و علومه',   lessonCount: 11 },
       { order: 2, titleAr: 'النظام الإقتصادي',  lessonCount: 6 },
@@ -272,7 +301,7 @@ export const SUBJECTS_CATALOG = [
     track:   TRACKS.LITERARY,
     isMajor: true,
     color:   'slate',
-    order:   13,
+    order:   14,
     units: [
       { order: 1, titleAr: 'الإستراتيحية القومية',   lessonCount: 1 },
       { order: 2, titleAr: 'الإستراتيجية العسكرية',  lessonCount: 1 },
@@ -330,6 +359,9 @@ export const buildSubjectScaffold = (subjectId) => {
       title:       unitTemplate.titleAr,
       order:       unitTemplate.order,
       description: null,
+      // Multi-book support — null for most subjects
+      bookId:      unitTemplate.bookId    || null,
+      bookTitle:   unitTemplate.bookTitle || null,
     });
 
     for (let l = 1; l <= unitTemplate.lessonCount; l++) {
@@ -340,6 +372,10 @@ export const buildSubjectScaffold = (subjectId) => {
         order:            l,
         estimatedMinutes: 15,
         summary:          null,
+        // Lesson grouping within a unit — null by default, set by contributor
+        groupId:          null,
+        groupTitle:       null,
+        groupMetadata:    null,
       });
     }
   });
