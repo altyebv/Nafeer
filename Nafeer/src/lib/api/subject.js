@@ -6,14 +6,12 @@ import { initialChangelog } from '@/lib/models/versioning';
 import { buildSubjectScaffold, SUBJECTS_BY_ID } from '@/shared/curriculum';
 
 // ─── getSubject ───────────────────────────────────────────────────────────────
-// Get a subject document from Atlas by its stable subjectId string.
 export async function getSubject(subjectId) {
   await connectDB();
   return Subject.findOne({ subjectId }).lean();
 }
 
 // ─── getSubjectWithProgress ───────────────────────────────────────────────────
-// Returns subject + aggregated lesson counts (for ProgressBoard).
 export async function getSubjectWithProgress(subjectId) {
   await connectDB();
 
@@ -29,12 +27,9 @@ export async function getSubjectWithProgress(subjectId) {
 }
 
 // ─── getAllSubjectsProgress ───────────────────────────────────────────────────
-// For the landing page ProgressBoard — one query per subject is expensive,
-// so we aggregate all at once.
 export async function getAllSubjectsProgress() {
   await connectDB();
 
-  // Get lesson counts per subject in one aggregation
   const counts = await Lesson.aggregate([
     {
       $group: {
@@ -49,28 +44,28 @@ export async function getAllSubjectsProgress() {
     counts.map((c) => [c._id, { total: c.total, approved: c.approved }])
   );
 
-  // Merge with SUBJECTS_CATALOG so every subject appears (even un-started ones)
   const { SUBJECTS_CATALOG } = await import('@/shared/curriculum');
   return SUBJECTS_CATALOG.map((subject) => ({
-    subjectId:      subject.id,
-    nameAr:         subject.nameAr,
-    track:          subject.track,
-    isMajor:        subject.isMajor,
-    color:          subject.color,
-    order:          subject.order,
-    totalLessons:   countMap[subject.id]?.total    || 0,
+    subjectId:       subject.id,
+    nameAr:          subject.nameAr,
+    track:           subject.track,
+    isMajor:         subject.isMajor,
+    color:           subject.color,
+    order:           subject.order,
+    totalLessons:    countMap[subject.id]?.total    || 0,
     approvedLessons: countMap[subject.id]?.approved || 0,
-    targetLessons:  subject.units.reduce((acc, u) => acc + u.lessonCount, 0),
+    targetLessons:   subject.units.reduce((acc, u) => acc + u.lessonCount, 0),
   }));
 }
 
 // ─── bootstrapSubject ─────────────────────────────────────────────────────────
-// Called on editor mount. Ensures Subject + all Units + all Lessons exist in Atlas.
+// Called on editor mount. Ensures Subject + all Units + all Lessons exist.
 // Uses the deterministic scaffold from curriculum.js.
 // Safe to call multiple times — only creates what's missing.
 //
-// @param subjectId    - e.g. 'PHYSICS'
-// @param contributorId - MongoDB ObjectId of the contributor
+// The scaffold may throw if the curriculum has duplicate unit orders.
+// That's intentional — surface the bug immediately rather than silently
+// dropping units in Atlas.
 //
 export async function bootstrapSubject(subjectId, contributorId) {
   await connectDB();
@@ -78,6 +73,7 @@ export async function bootstrapSubject(subjectId, contributorId) {
   const catalog = SUBJECTS_BY_ID[subjectId];
   if (!catalog) throw new Error(`Unknown subjectId: ${subjectId}`);
 
+  // buildSubjectScaffold validates for duplicate unit orders and throws if found
   const scaffold = buildSubjectScaffold(subjectId);
 
   // ── Subject document ──────────────────────────────────────────────────────
@@ -109,12 +105,19 @@ export async function bootstrapSubject(subjectId, contributorId) {
       subjectId,
       title:      u.title,
       order:      u.order,
+      // ── Book metadata — critical for multi-book subjects (ARABIC, MATH_SCIENCE…)
+      bookId:     u.bookId    ?? null,
+      bookTitle:  u.bookTitle ?? null,
+      // bookOrder: display-only per-book numbering (resets to 1 per book)
+      bookOrder:  u.bookOrder ?? null,
       createdBy:  contributorId,
       changelog:  initialChangelog(contributorId),
     }));
 
   if (newUnits.length > 0) {
-    await Unit.insertMany(newUnits, { ordered: false });
+    // ordered: true so a duplicate contentId (curriculum bug) throws loudly
+    // rather than silently dropping units.
+    await Unit.insertMany(newUnits, { ordered: true });
   }
 
   // ── Lessons ───────────────────────────────────────────────────────────────
@@ -137,14 +140,19 @@ export async function bootstrapSubject(subjectId, contributorId) {
     }));
 
   if (newLessons.length > 0) {
-    await Lesson.insertMany(newLessons, { ordered: false });
+    await Lesson.insertMany(newLessons, { ordered: true });
   }
 
-  return { subject: catalog, unitsCreated: newUnits.length, lessonsCreated: newLessons.length };
+  return {
+    subject:        catalog,
+    unitsCreated:   newUnits.length,
+    lessonsCreated: newLessons.length,
+  };
 }
 
 // ─── getUnitsWithLessons ──────────────────────────────────────────────────────
-// Returns all units + lessons for a subject, nested (for SubjectOverview).
+// Returns all units + lessons for a subject, units sorted by global order,
+// with lessons nested inside their unit.
 export async function getUnitsWithLessons(subjectId) {
   await connectDB();
 
