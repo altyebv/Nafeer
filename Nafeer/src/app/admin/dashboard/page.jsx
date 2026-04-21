@@ -1,21 +1,22 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { AdminSidebar }         from './components/AdminSidebar';
-import { ContributorsSection }  from './components/ContributorsSection';
-import { ReviewQueueSection }   from './components/ReviewQueueSection';
-import { CoverageSection }      from './components/CoverageSection';
-import { MediaSection }         from './components/MediaSection';
-import { RolesSection }         from './components/RolesSection';
-import { AdminsSection }        from './components/AdminSection';
+import { AdminSidebar }          from './components/AdminSidebar';
+import { OverviewSection }       from './components/OverviewSection';
+import { ContributorsSection }   from './components/ContributorsSection';
+import { ReviewQueueSection }    from './components/ReviewQueueSection';
+import { CoverageSection }       from './components/CoverageSection';
+import { MediaSection }          from './components/MediaSection';
+import { RolesSection }          from './components/RolesSection';
+import { AdminsSection }         from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
-import { SiteSettingsSection } from './components/SiteSettingSection';
-import { SeedSection } from './components/SeedSection';
+import { SiteSettingsSection }   from './components/SiteSettingSection';
+import { SeedSection }           from './components/SeedSection';
 
 export default function AdminDashboard() {
   const router = useRouter();
 
-  const [section,         setSection]    = useState('contributors');
+  const [section,         setSection]    = useState('overview');
   const [allContributors, setAll]        = useState([]);
   const [reviewTotal,     setReviewTotal] = useState(0);
   const [showCreate,      setShowCreate] = useState(false);
@@ -49,24 +50,22 @@ export default function AdminDashboard() {
       />
 
       <main className="flex-1 mr-56 min-h-screen overflow-y-auto">
-        {section === 'contributors' && (
-          <ContributorsSection
-            allContributors={allContributors}
-            onRefresh={loadAll}
-          />
+        {section === 'overview'      && <OverviewSection allContributors={allContributors} />}
+        {section === 'contributors'  && (
+          <ContributorsSection allContributors={allContributors} onRefresh={loadAll} />
         )}
-        {section === 'roles'   && <RolesSection />}
-        {section === 'review' && (
+        {section === 'roles'         && <RolesSection />}
+        {section === 'review'        && (
           <ReviewQueueSection
             onTotalChange={setReviewTotal}
             onUnauthorized={() => router.push('/admin/login')}
           />
         )}
-        {section === 'coverage' && <CoverageSection />}
-        {section === 'media'    && <MediaSection />}
-        {section === 'admins'   && <AdminsSection />}
-        {section === 'settings' && <SiteSettingsSection />}
-        {section === 'seed'     && <SeedSection />}
+        {section === 'coverage'      && <CoverageSection />}
+        {section === 'media'         && <MediaSection />}
+        {section === 'admins'        && <AdminsSection />}
+        {section === 'settings'      && <SiteSettingsSection />}
+        {section === 'seed'          && <SeedSection />}
       </main>
 
       {showCreate && (

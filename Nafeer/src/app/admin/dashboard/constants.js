@@ -16,21 +16,21 @@ export const REVIEW_TYPE = {
 };
 
 export const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
-
 export const SUBJECTS_CATALOG_REF = SUBJECTS_CATALOG;
 
 export const NAV = [
-  { id: 'contributors', icon: '◉', label: 'المساهمون',     badgeKey: 'pending'     },
-  { id: 'roles',        icon: '◆', label: 'الأدوار',        badgeKey: null          },
-  { id: 'review',       icon: '◎', label: 'طابور المراجعة', badgeKey: 'reviewTotal' },
-  { id: 'coverage',     icon: '▦', label: 'خريطة التغطية',  badgeKey: null          },
-  { id: 'media',        icon: '⬜', label: 'الوسائط',        badgeKey: null          },
-  { id: 'admins',       icon: '⬡', label: 'المشرفون',       badgeKey: null          },
-  { id: 'settings',     icon: '⚙', label: 'الإعدادات',      badgeKey: null          },
-  { id: 'seed', icon: '◈', label: 'إدارة البذر', badgeKey: null },
+  { id: 'overview',      icon: '◈', label: 'نظرة عامة',     badgeKey: null          },
+  { id: 'contributors',  icon: '◉', label: 'المساهمون',     badgeKey: 'pending'     },
+  { id: 'roles',         icon: '◆', label: 'الأدوار',        badgeKey: null          },
+  { id: 'review',        icon: '◎', label: 'طابور المراجعة', badgeKey: 'reviewTotal' },
+  { id: 'coverage',      icon: '▦', label: 'خريطة التغطية',  badgeKey: null          },
+  { id: 'media',         icon: '⬜', label: 'الوسائط',        badgeKey: null          },
+  { id: 'admins',        icon: '⬡', label: 'المشرفون',       badgeKey: null          },
+  { id: 'settings',      icon: '⚙', label: 'الإعدادات',      badgeKey: null          },
+  { id: 'seed',          icon: '◈', label: 'إدارة البذر',    badgeKey: null          },
 ];
 
-// Pipeline stage for a pending applicant — drives the status chip in ContributorCard
+// Pipeline stage for a pending applicant
 export function getPipelineStage(c) {
   if (c.status !== 'pending') return null;
   const hasAnswers = c.interviewAnswers?.submittedAt || c.dynamicAnswersSubmittedAt;
