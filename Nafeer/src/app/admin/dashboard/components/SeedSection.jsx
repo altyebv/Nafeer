@@ -1,216 +1,156 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { SUBJECTS_CATALOG, TRACK_CONFIG }   from '../constants';
-import { SectionHeader }                     from './ui/shared';
+import { SectionHeader } from './ui/shared';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
-const TRACK_ORDER = ['COMMON', 'SCIENCE', 'LITERARY'];
-
-function healthStatus(s) {
-  if (s.catalogError)                                              return 'error';
-  if (!s.seeded)                                                   return 'empty';
-  if (s.staleUnits > 0 || s.staleLessons > 0)                     return 'stale';
-  if (s.missingUnits > 0 || s.missingLessons > 0)                 return 'partial';
-  if (s.dbUnits === s.expectedUnits && s.dbLessons === s.expectedLessons) return 'ok';
-  return 'partial';
+function StatusBadge({ seeded, missingUnits, missingLessons, staleUnits, staleLessons, catalogError }) {
+  if (catalogError) return (
+    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-red-800/60 bg-red-950/40 text-red-400">خطأ</span>
+  );
+  if (!seeded) return (
+    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-ink-700/60 bg-ink-900/40 text-ink-500">فارغ</span>
+  );
+  const hasIssues = missingUnits > 0 || missingLessons > 0 || staleUnits > 0 || staleLessons > 0;
+  if (hasIssues) return (
+    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-amber-800/60 bg-amber-950/40 text-amber-400">ناقص</span>
+  );
+  return (
+    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-green-800/60 bg-green-950/40 text-green-400">مكتمل</span>
+  );
 }
 
-const STATUS_CFG = {
-  ok:      { label: 'مكتمل',   dot: 'bg-green-500',  pill: 'bg-green-900/20 text-green-400 border-green-800/30'  },
-  partial: { label: 'ناقص',    dot: 'bg-amber-400',  pill: 'bg-amber-900/20 text-amber-400 border-amber-800/30'  },
-  stale:   { label: 'قديم',    dot: 'bg-orange-500', pill: 'bg-orange-900/20 text-orange-400 border-orange-800/30'},
-  empty:   { label: 'فارغ',    dot: 'bg-ink-700',    pill: 'bg-ink-800/60 text-ink-500 border-ink-700/30'        },
-  error:   { label: 'خطأ',     dot: 'bg-red-500',    pill: 'bg-red-900/20 text-red-400 border-red-800/30'        },
-};
-
-// ─── Confirm overlay ──────────────────────────────────────────────────────────
-
-function ConfirmDialog({ msg, onConfirm, onCancel, danger = false }) {
+function TrackBadge({ track }) {
+  const styles = { COMMON: 'border-sky-800/50 text-sky-400/80', SCIENCE: 'border-emerald-800/50 text-emerald-400/80', LITERARY: 'border-purple-800/50 text-purple-400/80' };
+  const labels = { COMMON: 'مشترك', SCIENCE: 'علمي', LITERARY: 'أدبي' };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-ink-900 border border-ink-700/60 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-        <p className="text-sm text-sand-300 font-arabic leading-relaxed mb-6">{msg}</p>
-        <div className="flex gap-2">
-          <button
-            onClick={onConfirm}
-            className={`flex-1 py-2 rounded-lg text-xs font-mono font-semibold transition-all ${
-              danger
-                ? 'bg-red-900/50 hover:bg-red-800/60 border border-red-800/40 text-red-400'
-                : 'bg-green-900/40 hover:bg-green-800/50 border border-green-700/40 text-green-400'
-            }`}
-          >
-            تأكيد
-          </button>
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2 rounded-lg text-xs font-mono border border-ink-700/50 text-ink-400 hover:text-ink-200 hover:border-ink-600 transition-all"
-          >
-            إلغاء
-          </button>
-        </div>
-      </div>
+    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${styles[track] || 'border-ink-700 text-ink-500'}`}>
+      {labels[track] || track}
+    </span>
+  );
+}
+
+function Bar({ value, max }) {
+  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+  return (
+    <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: '#d4891e' }} />
     </div>
   );
 }
 
-// ─── Subject row ──────────────────────────────────────────────────────────────
+function ActionBtn({ onClick, loading, disabled, variant = 'default', children }) {
+  const variants = {
+    default: 'border-ink-700/60 text-ink-400 hover:border-sand-700/50 hover:text-sand-300',
+    green:   'border-green-800/60 text-green-400 hover:border-green-700/60',
+    amber:   'border-amber-800/60 text-amber-400 hover:border-amber-700/60',
+    red:     'border-red-800/60 text-red-400 hover:border-red-700/60',
+  };
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading || disabled}
+      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono border transition-all ${variants[variant]} ${loading || disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      {loading && <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
+      {children}
+    </button>
+  );
+}
 
-function SubjectRow({ s, onAction, busy }) {
-  const status  = healthStatus(s);
-  const cfg     = STATUS_CFG[status];
-  const trackCfg = TRACK_CONFIG[s.track] ?? {};
+function SubjectRow({ s, onAction }) {
+  const [busy, setBusy]         = useState(null);
+  const [expanded, setExpanded] = useState(false);
+  const [confirmWipe, setConfirm] = useState(false);
 
-  const unitPct   = s.expectedUnits   ? Math.round((s.dbUnits   / s.expectedUnits)   * 100) : 0;
-  const lessonPct = s.expectedLessons ? Math.round((s.dbLessons / s.expectedLessons) * 100) : 0;
+  const run = async (action) => {
+    setBusy(action);
+    await onAction(s.id, action);
+    setBusy(null);
+    setConfirm(false);
+  };
+
+  const hasStale   = s.staleUnits > 0 || s.staleLessons > 0;
+  const hasMissing = s.missingUnits > 0 || s.missingLessons > 0;
 
   return (
-    <div className={`group rounded-xl border transition-all ${
-      status === 'ok'    ? 'border-ink-800/40 bg-ink-950/20' :
-      status === 'stale' ? 'border-orange-900/30 bg-orange-950/10' :
-      status === 'error' ? 'border-red-900/30 bg-red-950/10' :
-      status === 'empty' ? 'border-ink-800/30 bg-ink-950/10' :
-                           'border-amber-900/30 bg-amber-950/10'
-    }`}>
-      {/* ── Main row ── */}
-      <div className="flex items-center gap-3 px-4 py-3">
-
-        {/* Status dot */}
-        <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-
-        {/* Subject info */}
+    <div
+      className="rounded-xl border transition-all duration-200 overflow-hidden"
+      style={{
+        background: 'rgba(255,255,255,0.015)',
+        borderColor: s.catalogError ? 'rgba(239,68,68,0.25)' : s.seeded && !hasMissing && !hasStale ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.07)',
+      }}
+    >
+      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none" onClick={() => setExpanded((v) => !v)}>
+        <span className="text-ink-700 text-xs font-mono shrink-0">{expanded ? '▾' : '▸'}</span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[13px] font-arabic font-semibold text-sand-300">{s.nameAr}</span>
-            <span className="text-[9px] font-mono text-ink-600">{s.id}</span>
-            {s.isMajor && (
-              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-ink-800/60 border border-ink-700/30 text-ink-500">تخصص</span>
-            )}
-            <span className={`text-[9px] font-arabic px-1.5 py-0.5 rounded border ${trackCfg.badge}`}>
-              {trackCfg.label}
-            </span>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="font-arabic text-sm font-semibold text-ink-200">{s.nameAr}</span>
+            <TrackBadge track={s.track} />
+            {s.isMajor && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>}
+            <StatusBadge {...s} />
           </div>
-
-          {/* Progress bars */}
-          {s.seeded && (
-            <div className="mt-1.5 flex items-center gap-4">
-              {/* Units */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-mono text-ink-600 w-8">وحدات</span>
-                <div className="w-20 h-1 rounded-full bg-ink-800 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${unitPct}%`, background: unitPct === 100 ? '#22c55e' : unitPct > 50 ? '#f59e0b' : '#f97316' }}
-                  />
-                </div>
-                <span className="text-[9px] font-mono text-ink-500 tabular-nums">
-                  {s.dbUnits}/{s.expectedUnits}
-                </span>
-                {s.staleUnits > 0 && (
-                  <span className="text-[9px] font-mono text-orange-500">+{s.staleUnits} قديم</span>
-                )}
-              </div>
-              {/* Lessons */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-mono text-ink-600 w-8">دروس</span>
-                <div className="w-20 h-1 rounded-full bg-ink-800 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${lessonPct}%`, background: lessonPct === 100 ? '#22c55e' : lessonPct > 50 ? '#f59e0b' : '#f97316' }}
-                  />
-                </div>
-                <span className="text-[9px] font-mono text-ink-500 tabular-nums">
-                  {s.dbLessons}/{s.expectedLessons}
-                </span>
-                {s.staleLessons > 0 && (
-                  <span className="text-[9px] font-mono text-orange-500">+{s.staleLessons} قديم</span>
-                )}
-              </div>
-              {/* Approved lessons */}
-              {s.approvedLessons > 0 && (
-                <span className="text-[9px] font-mono text-green-500 tabular-nums">
-                  ✓ {s.approvedLessons} معتمد
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Catalog error */}
-          {s.catalogError && (
-            <p className="text-[10px] font-mono text-red-400 mt-1">{s.catalogError}</p>
-          )}
+          <div className="flex items-center gap-3">
+            <Bar value={s.dbLessons} max={s.expectedLessons} />
+            <span className="text-[10px] font-mono text-ink-600 shrink-0 w-12 text-left" dir="ltr">{s.dbLessons}/{s.expectedLessons}</span>
+          </div>
         </div>
-
-        {/* Status pill */}
-        <span className={`hidden sm:inline-flex text-[10px] font-arabic px-2 py-0.5 rounded-full border shrink-0 ${cfg.pill}`}>
-          {cfg.label}
-        </span>
-
-        {/* Action buttons */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Bootstrap — always show if there's something missing */}
-          {(status === 'empty' || status === 'partial' || status === 'stale') && !s.catalogError && (
-            <ActionBtn
-              label={s.seeded ? '+ إضافة المفقود' : '⬇ تهيئة'}
-              title="تهيئة الوحدات والدروس المفقودة فقط"
-              busy={busy === s.id + ':bootstrap'}
-              onClick={() => onAction('bootstrap', s)}
-              variant="green"
-            />
+        <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {!s.seeded && !s.catalogError && (
+            <ActionBtn variant="green" loading={busy === 'bootstrap'} onClick={() => run('bootstrap')}>بذر</ActionBtn>
           )}
-
-          {/* Wipe stale — only when there are stale IDs */}
-          {(s.staleUnits > 0 || s.staleLessons > 0) && (
-            <ActionBtn
-              label="حذف القديمة"
-              title={`حذف ${s.staleUnits} وحدة و ${s.staleLessons} درس قديم من قاعدة البيانات`}
-              busy={busy === s.id + ':wipe_stale'}
-              onClick={() => onAction('wipe_stale', s)}
-              variant="orange"
-            />
+          {s.seeded && hasMissing && (
+            <ActionBtn variant="amber" loading={busy === 'bootstrap'} onClick={() => run('bootstrap')}>إكمال</ActionBtn>
           )}
-
-          {/* Reseed — wipe + fresh bootstrap */}
-          {s.seeded && (
-            <ActionBtn
-              label="⟳ إعادة التهيئة"
-              title="حذف الوحدات والدروس ثم إعادة التهيئة من المنهج"
-              busy={busy === s.id + ':reseed'}
-              onClick={() => onAction('reseed', s)}
-              variant="amber"
-              danger
-            />
-          )}
-
-          {/* Wipe all */}
-          {s.seeded && (
-            <ActionBtn
-              label="✕ حذف الكل"
-              title="حذف جميع البيانات لهذه المادة بما فيها المحتوى"
-              busy={busy === s.id + ':wipe'}
-              onClick={() => onAction('wipe', s)}
-              variant="red"
-              danger
-            />
+          {hasStale && (
+            <ActionBtn variant="red" loading={busy === 'wipe_stale'} onClick={() => run('wipe_stale')}>حذف قديم</ActionBtn>
           )}
         </div>
       </div>
 
-      {/* Stale IDs detail — shown when stale records exist */}
-      {(s.staleUnits > 0 || s.staleLessons > 0) && (
-        <div className="px-4 pb-3 border-t border-ink-800/30 pt-2">
-          <p className="text-[10px] font-mono text-orange-400 mb-1">معرّفات قديمة في قاعدة البيانات (ليست في المنهج الحالي):</p>
-          <div className="flex flex-wrap gap-1">
-            {[...s.staleUnitIds, ...s.staleLessonIds].slice(0, 12).map((id) => (
-              <span key={id} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-orange-900/20 border border-orange-900/30 text-orange-500">
-                {id}
-              </span>
+      {expanded && (
+        <div className="px-4 pb-4 pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+          {s.catalogError && (
+            <p className="text-xs text-red-400 font-arabic mb-3 py-2 px-3 rounded-lg" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              {s.catalogError}
+            </p>
+          )}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {[
+              { label: 'الوحدات', db: s.dbUnits,         expected: s.expectedUnits   },
+              { label: 'الدروس',  db: s.dbLessons,       expected: s.expectedLessons },
+              { label: 'معتمد',   db: s.approvedLessons, expected: s.dbLessons       },
+            ].map(({ label, db, expected }) => (
+              <div key={label} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <p className="text-[10px] text-ink-600 font-arabic mb-1">{label}</p>
+                <p className="text-lg font-bold font-mono" style={{ color: 'var(--accent)' }}>{db}</p>
+                {expected > 0 && <p className="text-[10px] font-mono text-ink-700">/ {expected}</p>}
+              </div>
             ))}
-            {(s.staleUnitIds.length + s.staleLessonIds.length) > 12 && (
-              <span className="text-[9px] font-mono text-ink-600">
-                +{s.staleUnitIds.length + s.staleLessonIds.length - 12} أخرى
-              </span>
-            )}
+          </div>
+
+          {(hasMissing || hasStale) && (
+            <div className="space-y-1.5 mb-4">
+              {s.missingUnits   > 0 && <p className="text-[11px] font-arabic text-amber-400/80">◎ {s.missingUnits} وحدة ناقصة</p>}
+              {s.missingLessons > 0 && <p className="text-[11px] font-arabic text-amber-400/80">◎ {s.missingLessons} درس ناقص</p>}
+              {s.staleUnits     > 0 && <p className="text-[11px] font-arabic text-red-400/80">✕ {s.staleUnits} وحدة قديمة</p>}
+              {s.staleLessons   > 0 && <p className="text-[11px] font-arabic text-red-400/80">✕ {s.staleLessons} درس قديم</p>}
+            </div>
+          )}
+
+          <div className="p-3 rounded-lg" style={{ background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.12)' }}>
+            <p className="text-[10px] font-mono text-red-500/60 mb-2 uppercase tracking-wider">منطقة الخطر</p>
+            <div className="flex gap-2 flex-wrap">
+              {s.seeded && (
+                <ActionBtn variant="amber" loading={busy === 'reseed'} onClick={() => run('reseed')}>إعادة بذر</ActionBtn>
+              )}
+              {confirmWipe ? (
+                <>
+                  <ActionBtn variant="red" loading={busy === 'wipe'} onClick={() => run('wipe')}>تأكيد المسح الكامل</ActionBtn>
+                  <ActionBtn onClick={() => setConfirm(false)}>إلغاء</ActionBtn>
+                </>
+              ) : (
+                <ActionBtn variant="red" onClick={() => setConfirm(true)}>مسح كامل…</ActionBtn>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -218,43 +158,29 @@ function SubjectRow({ s, onAction, busy }) {
   );
 }
 
-function ActionBtn({ label, title, busy, onClick, variant = 'ghost', danger = false }) {
-  const V = {
-    green:  'bg-green-900/30 hover:bg-green-900/50 border-green-800/40 text-green-400',
-    amber:  'bg-amber-900/25 hover:bg-amber-900/40 border-amber-800/30 text-amber-400',
-    orange: 'bg-orange-900/25 hover:bg-orange-900/40 border-orange-800/30 text-orange-400',
-    red:    'bg-red-900/20 hover:bg-red-900/40 border-red-800/30 text-red-400',
-    ghost:  'bg-ink-800/40 hover:bg-ink-700/40 border-ink-700/40 text-ink-400',
-  };
-  return (
-    <button
-      onClick={onClick}
-      disabled={busy}
-      title={title}
-      className={`px-2.5 py-1.5 rounded-lg border text-[10px] font-arabic font-medium transition-all disabled:opacity-40 whitespace-nowrap ${V[variant]}`}
-    >
-      {busy ? <span className="font-mono animate-pulse">···</span> : label}
-    </button>
-  );
-}
-
-// ─── SeedSection ──────────────────────────────────────────────────────────────
-
 export function SeedSection() {
-  const [subjects,  setSubjects]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [busy,      setBusy]      = useState(null);    // '<subjectId>:<action>'
-  const [busyAll,   setBusyAll]   = useState(false);
-  const [confirm,   setConfirm]   = useState(null);    // { action, subject, msg, danger }
-  const [toast,     setToast]     = useState(null);    // { msg, ok }
-  const [filter,    setFilter]    = useState('all');   // 'all' | 'issues' | track
+  const [subjects, setSubjects] = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState(null);
+  const [toast,    setToast]    = useState(null);
+  const [busyAll,  setBusyAll]  = useState(false);
+  const [filter,   setFilter]   = useState('all');
+
+  const showToast = (msg, isErr = false) => {
+    setToast({ msg, isErr });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res  = await fetch('/api/admin/seed');
-      const json = await res.json();
-      if (json.ok) setSubjects(json.subjects);
+      const data = await res.json();
+      if (data.ok) setSubjects(data.subjects || []);
+      else setError(data.error || 'خطأ غير معروف');
+    } catch {
+      setError('تعذّر الاتصال بالخادم');
     } finally {
       setLoading(false);
     }
@@ -262,236 +188,133 @@ export function SeedSection() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Flash a toast for 3s
-  function flash(msg, ok = true) {
-    setToast({ msg, ok });
-    setTimeout(() => setToast(null), 3500);
-  }
-
-  // Execute a seed action
-  async function execute(action, subjectId) {
-    const key = `${subjectId}:${action}`;
-    setBusy(key);
+  const runAction = async (subjectId, action) => {
     try {
       const res  = await fetch('/api/admin/seed', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ action, subjectId }),
+        body: JSON.stringify({ action, subjectId }),
       });
-      const json = await res.json();
-      if (json.ok) {
-        const r = json.result;
-        flash(
-          action === 'wipe'
-            ? `تم حذف بيانات المادة`
-          : action === 'wipe_stale'
-            ? `تم حذف ${r.deletedUnits} وحدة و ${r.deletedLessons} درس قديم`
-          : action === 'reseed'
-            ? `إعادة تهيئة — ${r.unitsCreated} وحدة، ${r.lessonsCreated} درس`
-          : `تهيئة — ${r.unitsCreated} وحدة جديدة، ${r.lessonsCreated} درس جديد`
-        );
-        await load();
-      } else {
-        flash(json.error || 'حدث خطأ', false);
-      }
+      const data = await res.json();
+      if (data.ok) { showToast('تمّ ✓'); await load(); }
+      else showToast(data.error || 'حدث خطأ', true);
     } catch {
-      flash('تعذّر الاتصال بالخادم', false);
-    } finally {
-      setBusy(null);
+      showToast('تعذّر الاتصال', true);
     }
-  }
+  };
 
-  // Called from SubjectRow — may require confirmation
-  function onAction(action, subject) {
-    const dangerActions = { wipe: true, reseed: true, wipe_stale: true };
-    const msgs = {
-      wipe:       `سيتم حذف جميع بيانات "${subject.nameAr}" من قاعدة البيانات بما فيها الدروس والمحتوى. هذا الإجراء لا يمكن التراجع عنه.`,
-      reseed:     `سيتم حذف الوحدات والدروس فقط لمادة "${subject.nameAr}" ثم إعادة تهيئتها من المنهج. لا يمكن المتابعة إن وُجدت دروس معتمدة.`,
-      wipe_stale: `سيتم حذف ${subject.staleUnits} وحدة و ${subject.staleLessons} درس لا تنتمي للمنهج الحالي من مادة "${subject.nameAr}".`,
-    };
-    if (dangerActions[action]) {
-      setConfirm({ action, subjectId: subject.id, msg: msgs[action], danger: action === 'wipe' });
-    } else {
-      execute(action, subject.id);
-    }
-  }
-
-  // Seed all subjects
-  async function seedAll() {
+  const bootstrapAll = async () => {
     setBusyAll(true);
     try {
       const res  = await fetch('/api/admin/seed', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ action: 'bootstrap_all' }),
+        body: JSON.stringify({ action: 'bootstrap_all' }),
       });
-      const json = await res.json();
-      if (json.ok) {
-        const ok  = json.results.filter((r) => r.ok);
-        const bad = json.results.filter((r) => !r.ok);
-        flash(`تهيئة جميع المواد: ${ok.length} نجح${bad.length ? `، ${bad.length} فشل` : ''}`);
-        await load();
-      }
+      const data = await res.json();
+      const errs = data.results?.filter((r) => !r.ok).length ?? 0;
+      showToast(errs > 0 ? `اكتمل مع ${errs} أخطاء` : 'تمّ بذر الكل ✓', errs > 0);
+      await load();
     } catch {
-      flash('تعذّر الاتصال بالخادم', false);
+      showToast('تعذّر الاتصال', true);
     } finally {
       setBusyAll(false);
     }
-  }
+  };
 
-  // Filtered view
-  const filterOptions = [
-    { id: 'all',    label: 'الكل' },
-    { id: 'issues', label: 'تحتاج انتباه' },
-    { id: 'COMMON',   label: 'مشترك' },
-    { id: 'SCIENCE',  label: 'علمي' },
-    { id: 'LITERARY', label: 'أدبي' },
+  const seededCount = subjects.filter((s) => s.seeded).length;
+  const emptyCount  = subjects.filter((s) => !s.seeded).length;
+  const issueCount  = subjects.filter((s) => s.seeded && (s.missingUnits > 0 || s.missingLessons > 0 || s.staleUnits > 0 || s.staleLessons > 0 || s.catalogError)).length;
+
+  const FILTERS = [
+    { key: 'all',    label: 'الكل',  count: subjects.length },
+    { key: 'empty',  label: 'فارغ',  count: emptyCount      },
+    { key: 'issues', label: 'مشاكل', count: issueCount      },
+    { key: 'ok',     label: 'سليم',  count: seededCount - issueCount },
   ];
 
   const displayed = subjects.filter((s) => {
-    if (filter === 'issues') return healthStatus(s) !== 'ok';
-    if (filter === 'all')    return true;
-    return s.track === filter;
+    if (filter === 'empty')  return !s.seeded;
+    if (filter === 'issues') return s.catalogError || (s.seeded && (s.missingUnits > 0 || s.missingLessons > 0 || s.staleUnits > 0 || s.staleLessons > 0));
+    if (filter === 'ok')     return s.seeded && !s.catalogError && !s.missingUnits && !s.missingLessons && !s.staleUnits && !s.staleLessons;
+    return true;
   });
-
-  // Summary stats
-  const total    = subjects.length;
-  const seeded   = subjects.filter((s) => healthStatus(s) === 'ok').length;
-  const issues   = subjects.filter((s) => !['ok', 'empty'].includes(healthStatus(s))).length;
-  const empty    = subjects.filter((s) => healthStatus(s) === 'empty').length;
 
   return (
     <div>
-      {/* ── Header ── */}
-      <SectionHeader title="إدارة البذر" description="مزامنة قاعدة البيانات مع منهج curriculum.js — تهيئة، إعادة تهيئة، تنظيف">
-        <div className="mt-4 flex items-center gap-3 flex-wrap">
-          {/* Summary chips */}
-          <div className="flex items-center gap-2">
-            <Chip label={`${seeded}/${total} مكتمل`}  color="green" />
-            {issues > 0 && <Chip label={`${issues} تحتاج انتباه`} color="amber" />}
-            {empty  > 0 && <Chip label={`${empty} فارغ`}          color="ink"   />}
-          </div>
-
-          <div className="flex-1" />
-
-          {/* Seed all */}
-          <button
-            onClick={seedAll}
-            disabled={busyAll || loading}
-            className="px-3 py-2 rounded-lg border border-green-800/40 bg-green-900/20 text-green-400 text-xs font-arabic font-medium hover:bg-green-900/30 transition-all disabled:opacity-40"
-          >
-            {busyAll ? <span className="font-mono animate-pulse">···</span> : '⬇ تهيئة جميع المواد'}
-          </button>
-
-          {/* Refresh */}
-          <button
-            onClick={load}
-            disabled={loading}
-            className="px-3 py-2 rounded-lg border border-ink-700/50 text-ink-500 hover:text-ink-300 text-xs font-mono transition-all disabled:opacity-40"
-          >
-            {loading ? '···' : '↺ تحديث'}
-          </button>
-        </div>
-
-        {/* Filter tabs */}
-        <div className="mt-3 flex items-center gap-1">
-          {filterOptions.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              className={`px-3 py-1 rounded-lg text-[11px] font-arabic transition-all ${
-                filter === f.id
-                  ? 'bg-ink-800 text-sand-300 border border-ink-700/60'
-                  : 'text-ink-600 hover:text-ink-400'
-              }`}
-            >
-              {f.label}
-              {f.id === 'issues' && issues > 0 && (
-                <span className="ml-1 text-amber-500">{issues}</span>
-              )}
-            </button>
-          ))}
-        </div>
+      <SectionHeader title="إدارة البذر" description="مراقبة حالة المنهج وبذر المواد الأساسية في قاعدة البيانات">
+        <button onClick={load} disabled={loading}
+          className="text-xs font-mono text-ink-500 hover:text-ink-300 transition-colors px-3 py-1.5 rounded-lg border border-ink-800/60 hover:border-ink-700/60">
+          ↻ تحديث
+        </button>
       </SectionHeader>
 
-      {/* ── Body ── */}
-      <div className="px-8 pb-12">
+      <div className="px-8 pb-8">
         {loading ? (
-          <div className="text-center py-24 text-ink-700 font-mono text-xs tracking-widest animate-pulse">LOADING...</div>
-        ) : displayed.length === 0 ? (
-          <div className="text-center py-16 text-ink-600 font-arabic text-sm">لا توجد مواد تطابق الفلتر</div>
+          <div className="flex items-center gap-3 text-ink-500 text-sm py-12">
+            <span className="inline-block w-4 h-4 border-2 border-ink-700 border-t-sand-400 rounded-full animate-spin" />
+            <span className="font-arabic">جارٍ التحميل…</span>
+          </div>
+        ) : error ? (
+          <div className="py-10 text-center">
+            <p className="text-red-400 font-arabic text-sm mb-3">{error}</p>
+            <button onClick={load} className="text-xs font-mono text-ink-500 hover:text-ink-300 px-4 py-2 rounded-lg border border-ink-800">
+              إعادة المحاولة
+            </button>
+          </div>
         ) : (
           <>
-            {/* Group by track */}
-            {TRACK_ORDER.map((track) => {
-              const trackSubjects = displayed.filter((s) => s.track === track);
-              if (!trackSubjects.length) return null;
-              const trackCfg = TRACK_CONFIG[track];
-              return (
-                <div key={track} className="mb-8">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`text-[11px] font-arabic font-semibold ${trackCfg.color}`}>
-                      {trackCfg.label}
-                    </span>
-                    <div className="flex-1 h-px bg-ink-800/50" />
-                    <span className="text-[10px] font-mono text-ink-700">{trackSubjects.length} مادة</span>
-                  </div>
-                  <div className="space-y-2">
-                    {trackSubjects
-                      .sort((a, b) => a.order - b.order)
-                      .map((s) => (
-                        <SubjectRow
-                          key={s.id}
-                          s={s}
-                          onAction={onAction}
-                          busy={busy}
-                        />
-                      ))}
-                  </div>
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              {[
+                { label: 'مبذور',    val: seededCount - issueCount, color: 'text-green-400' },
+                { label: 'مشاكل',    val: issueCount,               color: 'text-amber-400' },
+                { label: 'فارغ',     val: emptyCount,               color: 'text-ink-500'   },
+                { label: 'الإجمالي', val: subjects.length,          color: 'text-ink-300'   },
+              ].map(({ label, val, color }) => (
+                <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-ink-800/50 bg-ink-900/30">
+                  <span className={`text-base font-mono font-bold ${color}`}>{val}</span>
+                  <span className="text-xs text-ink-600 font-arabic">{label}</span>
                 </div>
-              );
-            })}
+              ))}
+              <div className="mr-auto">
+                <button onClick={bootstrapAll} disabled={busyAll || emptyCount === 0}
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-arabic border transition-all border-sand-800/50 text-sand-400 hover:border-sand-700/60 hover:text-sand-300 disabled:opacity-40 disabled:cursor-not-allowed">
+                  {busyAll && <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
+                  بذر الجميع
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-1.5 mb-5 flex-wrap">
+              {FILTERS.map((f) => (
+                <button key={f.key} onClick={() => setFilter(f.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-arabic transition-all flex items-center gap-1.5 ${
+                    filter === f.key ? 'bg-sand-800/40 text-sand-300 border border-sand-700/50' : 'text-ink-500 hover:text-ink-300 border border-ink-800/60'
+                  }`}>
+                  {f.label}
+                  <span className="font-mono text-[10px] opacity-60">{f.count}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              {displayed.map((s) => <SubjectRow key={s.id} s={s} onAction={runAction} />)}
+              {displayed.length === 0 && (
+                <div className="py-12 text-center">
+                  <p className="text-ink-600 text-sm font-arabic">لا يوجد مواد في هذه الفئة</p>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
 
-      {/* ── Confirm dialog ── */}
-      {confirm && (
-        <ConfirmDialog
-          msg={confirm.msg}
-          danger={confirm.danger}
-          onConfirm={() => {
-            execute(confirm.action, confirm.subjectId);
-            setConfirm(null);
-          }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-
-      {/* ── Toast ── */}
       {toast && (
-        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl border shadow-2xl text-sm font-arabic transition-all ${
-          toast.ok
-            ? 'bg-green-900/80 border-green-700/60 text-green-300'
-            : 'bg-red-900/70 border-red-700/50 text-red-300'
-        }`}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl text-sm font-mono shadow-2xl z-50"
+          style={{ background: 'rgba(14,12,9,0.96)', border: `1px solid ${toast.isErr ? 'rgba(239,68,68,0.4)' : 'rgba(212,137,30,0.3)'}`, color: toast.isErr ? '#f87171' : 'var(--accent)', backdropFilter: 'blur(16px)' }}>
           {toast.msg}
         </div>
       )}
     </div>
-  );
-}
-
-// ─── tiny chip ────────────────────────────────────────────────────────────────
-function Chip({ label, color }) {
-  const C = {
-    green: 'bg-green-900/20 border-green-800/30 text-green-400',
-    amber: 'bg-amber-900/20 border-amber-800/30 text-amber-400',
-    ink:   'bg-ink-800/40 border-ink-700/30 text-ink-500',
-  };
-  return (
-    <span className={`text-[10px] font-arabic px-2 py-0.5 rounded-full border ${C[color]}`}>
-      {label}
-    </span>
   );
 }
