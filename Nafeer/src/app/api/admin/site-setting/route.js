@@ -1,13 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextResponse }     from 'next/server';
 import { verifyAdminToken } from '@/lib/adminAuth';
-import { connectDB }     from '@/lib/db';
-import { SiteSettings }  from '@/lib/models/SiteSettings';
+import { connectDB }        from '@/lib/db';
+import { SiteSettings }     from '@/lib/models/SiteSettings';
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
 }
 
-// ─── GET /api/admin/site-settings ─────────────────────────────────────────────
+// ─── GET /api/admin/site-setting ──────────────────────────────────────────────
+// Returns full settings including visitsByDay for sparkline display.
 export async function GET() {
   if (!(await verifyAdminToken())) return unauthorized();
   await connectDB();
@@ -15,11 +16,11 @@ export async function GET() {
   return NextResponse.json({ ok: true, data: settings });
 }
 
-// ─── PATCH /api/admin/site-settings ───────────────────────────────────────────
+// ─── PATCH /api/admin/site-setting ────────────────────────────────────────────
 export async function PATCH(request) {
   if (!(await verifyAdminToken())) return unauthorized();
 
-  const body = await request.json();
+  const body   = await request.json();
   const update = {};
 
   if (typeof body.showContributorsOnLanding === 'boolean') {

@@ -1,5 +1,15 @@
 import mongoose from 'mongoose';
 
+// ── Daily visit bucket ─────────────────────────────────────────────────────────
+const DailyVisitSchema = new mongoose.Schema(
+  {
+    date:  { type: String, required: true }, // 'YYYY-MM-DD'
+    count: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
+// ── Main schema ────────────────────────────────────────────────────────────────
 const SiteSettingsSchema = new mongoose.Schema(
   {
     // Singleton key — always 'global'
@@ -8,9 +18,12 @@ const SiteSettingsSchema = new mongoose.Schema(
     // Landing page toggles
     showContributorsOnLanding: { type: Boolean, default: true },
 
-    // Analytics
+    // Analytics — cumulative
     visitCount:   { type: Number, default: 0 },
     supportCount: { type: Number, default: 0 },
+
+    // Analytics — daily buckets (last 90 days kept)
+    visitsByDay: { type: [DailyVisitSchema], default: [] },
   },
   { timestamps: true }
 );
