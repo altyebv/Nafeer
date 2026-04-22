@@ -24,6 +24,7 @@ export const NAV = [
   { id: 'roles',         icon: '◆', label: 'الأدوار',        badgeKey: null          },
   { id: 'review',        icon: '◎', label: 'طابور المراجعة', badgeKey: 'reviewTotal' },
   { id: 'coverage',      icon: '▦', label: 'خريطة التغطية',  badgeKey: null          },
+  { id: 'publish',       icon: '⬆', label: 'نشر للتطبيق',   badgeKey: null          },  // ← NEW
   { id: 'media',         icon: '⬜', label: 'الوسائط',        badgeKey: null          },
   { id: 'admins',        icon: '⬡', label: 'المشرفون',       badgeKey: null          },
   { id: 'settings',      icon: '⚙', label: 'الإعدادات',      badgeKey: null          },

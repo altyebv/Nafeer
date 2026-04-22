@@ -12,6 +12,7 @@ import { AdminsSection }         from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
 import { SiteSettingsSection }   from './components/SiteSettingSection';
 import { SeedSection }           from './components/SeedSection';
+import { PublishSection }        from './components/PublishSection';  // ← NEW
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -62,6 +63,7 @@ export default function AdminDashboard() {
           />
         )}
         {section === 'coverage'      && <CoverageSection />}
+        {section === 'publish'       && <PublishSection />}        {/* ← NEW */}
         {section === 'media'         && <MediaSection />}
         {section === 'admins'        && <AdminsSection />}
         {section === 'settings'      && <SiteSettingsSection />}
