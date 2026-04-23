@@ -41,6 +41,15 @@ export async function POST(request) {
     await connectDB();
 
     // ── 1. Fetch all approved content for this subject ────────────────────────
+    //
+    // IMPORTANT: Only Lessons, Questions, Concepts, FeedItems, and Tags go through
+    // an explicit approval workflow (status: 'approved'). Sections and Blocks are
+    // "approved by association" — they belong to approved lessons and don't have
+    // their own review step. Their status stays at the 'draft' default from
+    // versioningFields, so filtering them by status: 'approved' drops ALL of them.
+    //
+    // Sections/Blocks are fetched by subjectId with status: { $ne: 'archived' }
+    // so only manually-archived items are excluded.
     const [
       subject, units, lessons, sections, blocks,
       concepts, tags, feedItems, questions, exams,
@@ -48,8 +57,13 @@ export async function POST(request) {
       Subject.findOne({ subjectId }).lean(),
       Unit.find({ subjectId }).sort({ order: 1 }).lean(),
       Lesson.find({ subjectId, status: 'approved' }).sort({ order: 1 }).lean(),
-      Section.find({ subjectId, status: 'approved' }).sort({ order: 1 }).lean(),
-      Block.find({ subjectId, status: 'approved' }).sort({ order: 1 }).lean(),
+
+      // ── FIX: no status: 'approved' filter — sections are approved by their lesson ──
+      Section.find({ subjectId, status: { $ne: 'archived' } }).sort({ order: 1 }).lean(),
+
+      // ── FIX: same for blocks ───────────────────────────────────────────────
+      Block.find({ subjectId, status: { $ne: 'archived' } }).sort({ order: 1 }).lean(),
+
       Concept.find({ subjectId, status: 'approved' }).lean(),
       Tag.find({ subjectId, status: 'approved' }).lean(),
       FeedItem.find({ subjectId, status: 'approved' }).sort({ order: 1 }).lean(),
@@ -71,6 +85,11 @@ export async function POST(request) {
     // ── 2. Assemble BasheerExportData (mirrors /api/export shape) ────────────
     const blocksBySection   = indexBy(blocks,   'sectionContentId');
     const sectionsByLesson  = indexBy(sections, 'lessonContentId');
+
+    // Only index sections that belong to an approved lesson (defensive filter).
+    // This ensures that if a lesson was un-approved after its sections were
+    // created, those orphaned sections don't sneak into a different lesson's slot.
+    const approvedLessonIds = new Set(lessons.map((l) => l.contentId));
     const lessonsByUnit     = indexBy(lessons,  'unitContentId');
 
     const exportData = {
@@ -123,23 +142,29 @@ export async function POST(request) {
           groupId:          lesson.groupId          || null,
           groupTitle:       lesson.groupTitle       || null,
           groupMetadata:    lesson.groupMetadata    || null,
-          sections: (sectionsByLesson[lesson.contentId] || []).map((section) => ({
-            id:           section.contentId,
-            title:        section.title,
-            order:        section.order,
-            partIndex:    section.partIndex    ?? 0,
-            learningType: section.learningType || 'UNDERSTANDING',
-            conceptIds:   section.conceptIds   || [],
-            blocks: (blocksBySection[section.contentId] || []).map((block) => ({
-              id:         block.contentId,
-              type:       block.type,
-              content:    block.content    || '',
-              order:      block.order,
-              conceptRef: block.conceptRef || null,
-              caption:    block.caption    || null,
-              metadata:   block.metadata   || null,
+          sections: (sectionsByLesson[lesson.contentId] || [])
+            // Defensive: only include sections whose lesson is approved
+            .filter(() => approvedLessonIds.has(lesson.contentId))
+            .map((section) => ({
+              id:           section.contentId,
+              title:        section.title,
+              order:        section.order,
+              partIndex:    section.partIndex    ?? 0,
+              learningType: section.learningType || 'UNDERSTANDING',
+              conceptIds:   section.conceptIds   || [],
+              blocks: (blocksBySection[section.contentId] || []).map((block) => ({
+                id:         block.contentId,
+                type:       block.type,
+                content:    block.content    || '',
+                order:      block.order,
+                conceptRef: block.conceptRef || null,
+                caption:    block.caption    || null,
+                // ── FIX: Block.metadata is Mixed (could be a JS object).
+                // BlockJson.metadata on Android is String? — always stringify objects
+                // so kotlinx-serialization can parse it without a type mismatch crash.
+                metadata:   coerceMixedToString(block.metadata),
+              })),
             })),
-          })),
         })),
       })),
       questions: questions.map((q) => ({
@@ -206,11 +231,9 @@ export async function POST(request) {
     const nextVersion   = String((parseInt(existingEntry?.version || '0', 10) + 1));
 
     // ── 4. Upload to Supabase Storage ─────────────────────────────────────────
-    const fileName  = `${subjectId.toLowerCase()}_v${nextVersion}.json`;
+    const fileName   = `${subjectId.toLowerCase()}_v${nextVersion}.json`;
     const jsonBuffer = Buffer.from(JSON.stringify(exportData), 'utf-8');
 
-    // uploadFile(bucket, path, buffer, mimeType) — from @/lib/supabase
-    // Uses upsert: false; versioned filename guarantees uniqueness per publish.
     await uploadFile(EXPORTS_BUCKET, fileName, jsonBuffer, 'application/json');
     const downloadUrl = getPublicUrl(EXPORTS_BUCKET, fileName);
 
@@ -223,6 +246,15 @@ export async function POST(request) {
 
     // ── 5. Update Firestore manifest ──────────────────────────────────────────
     const publishedAt = new Date().toISOString();
+
+    // Count sections and blocks for the status endpoint + dev screen comparison
+    const totalSections = sections.filter((s) => approvedLessonIds.has(s.lessonContentId)).length;
+    const totalBlocks   = blocks.filter((b) => {
+      // Block belongs to a section that belongs to an approved lesson
+      const section = sections.find((s) => s.contentId === b.sectionContentId);
+      return section && approvedLessonIds.has(section.lessonContentId);
+    }).length;
+
     await upsertSubjectEntry({
       id:                   subjectId,
       version:              nextVersion,
@@ -230,9 +262,10 @@ export async function POST(request) {
       enabled:              true,
       minAppVersion:        '1.0',
       updatedAt:            publishedAt,
-      // Snapshot of approved lesson count at publish time.
-      // Used by /status to detect whether new content exists since last publish.
+      // Snapshot counts — shown in the dev SyncStatus screen for comparison
       approvedLessonsCount: lessons.length,
+      approvedSectionsCount: totalSections,
+      approvedBlocksCount:   totalBlocks,
     });
 
     // ── 6. Return summary ─────────────────────────────────────────────────────
@@ -244,6 +277,8 @@ export async function POST(request) {
       publishedAt,
       stats: {
         lessons:   lessons.length,
+        sections:  totalSections,
+        blocks:    totalBlocks,
         questions: questions.length,
         feedItems: feedItems.length,
         concepts:  concepts.length,
@@ -256,7 +291,7 @@ export async function POST(request) {
   }
 }
 
-// ── Utility ───────────────────────────────────────────────────────────────────
+// ── Utilities ─────────────────────────────────────────────────────────────────
 
 /** Group an array of objects by a key into a map of arrays. */
 function indexBy(arr, key) {
@@ -265,4 +300,18 @@ function indexBy(arr, key) {
     if (k) { if (!acc[k]) acc[k] = []; acc[k].push(item); }
     return acc;
   }, {});
+}
+
+/**
+ * Coerce a Mongoose Mixed value to String | null so the Android BlockJson
+ * field (String?) can always parse it without a type mismatch crash.
+ *
+ * - null / undefined → null
+ * - already a string → pass through
+ * - object / array   → JSON.stringify (BlockEntity stores it as a JSON string)
+ */
+function coerceMixedToString(value) {
+  if (value == null) return null;
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
 }
