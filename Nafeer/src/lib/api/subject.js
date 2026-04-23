@@ -1,9 +1,21 @@
+import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import { Subject } from '@/lib/models/Subject';
 import { Unit } from '@/lib/models/Unit';
 import { Lesson } from '@/lib/models/Lesson';
 import { initialChangelog } from '@/lib/models/versioning';
 import { buildSubjectScaffold, SUBJECTS_BY_ID } from '@/shared/curriculum';
+
+// ─── Seed actor ───────────────────────────────────────────────────────────────
+// A stable, valid ObjectId used whenever bootstrapSubject is called from the
+// seed pipeline (which passes strings like 'admin-seed' instead of a real
+// contributor ObjectId). All three schemas (Subject, Unit, Lesson) declare
+// createdBy / contributor / changelog[].by as ObjectId refs — Mongoose will
+// reject a plain string with a BSONError at cast time.
+//
+// Using a fixed hex keeps seeds idempotent: every run produces the same
+// createdBy value, so diff checks and re-seeds stay consistent.
+const SEED_ACTOR_ID = new mongoose.Types.ObjectId('000000000000000000000001');
 
 // ─── getSubject ───────────────────────────────────────────────────────────────
 export async function getSubject(subjectId) {
@@ -73,6 +85,13 @@ export async function bootstrapSubject(subjectId, contributorId) {
   const catalog = SUBJECTS_BY_ID[subjectId];
   if (!catalog) throw new Error(`Unknown subjectId: ${subjectId}`);
 
+  // Resolve the actor to a valid ObjectId.
+  // The seed pipeline passes strings like 'admin-seed' / 'admin-reseed' which
+  // Mongoose can't cast to ObjectId — resolve them to the canonical SEED_ACTOR_ID.
+  const actorId = mongoose.isValidObjectId(contributorId)
+    ? new mongoose.Types.ObjectId(contributorId)
+    : SEED_ACTOR_ID;
+
   // buildSubjectScaffold validates for duplicate unit orders and throws if found
   const scaffold = buildSubjectScaffold(subjectId);
 
@@ -87,9 +106,9 @@ export async function bootstrapSubject(subjectId, contributorId) {
       path:        catalog.track,
       isMajor:     catalog.isMajor,
       order:       catalog.order,
-      contributor: contributorId,
-      createdBy:   contributorId,
-      changelog:   initialChangelog(contributorId, 'bootstrapped from curriculum'),
+      contributor: actorId,
+      createdBy:   actorId,
+      changelog:   initialChangelog(actorId, 'bootstrapped from curriculum'),
     });
   }
 
@@ -110,8 +129,8 @@ export async function bootstrapSubject(subjectId, contributorId) {
       bookTitle:  u.bookTitle ?? null,
       // bookOrder: display-only per-book numbering (resets to 1 per book)
       bookOrder:  u.bookOrder ?? null,
-      createdBy:  contributorId,
-      changelog:  initialChangelog(contributorId),
+      createdBy:  actorId,
+      changelog:  initialChangelog(actorId),
     }));
 
   if (newUnits.length > 0) {
@@ -135,8 +154,8 @@ export async function bootstrapSubject(subjectId, contributorId) {
       order:            l.order,
       estimatedMinutes: l.estimatedMinutes,
       summary:          null,
-      createdBy:        contributorId,
-      changelog:        initialChangelog(contributorId),
+      createdBy:        actorId,
+      changelog:        initialChangelog(actorId),
     }));
 
   if (newLessons.length > 0) {
