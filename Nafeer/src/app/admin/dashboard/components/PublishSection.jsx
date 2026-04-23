@@ -31,6 +31,18 @@ function AppStatusBadge({ isPublished, appVersion }) {
   );
 }
 
+function RemoteStatusBadge({ enabled }) {
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${
+      enabled
+        ? 'border-green-800/60 bg-green-950/40 text-green-400'
+        : 'border-red-800/60 bg-red-950/40 text-red-400'
+    }`}>
+      {enabled ? 'remote:on' : 'remote:off'}
+    </span>
+  );
+}
+
 function StatChip({ label, val, sub }) {
   return (
     <div className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
@@ -58,6 +70,20 @@ function ActionBtn({ onClick, loading, disabled, variant = 'default', children }
       {children}
     </button>
   );
+}
+
+function createManifestDraft(subject, entry) {
+  return {
+    id: entry?.id || subject?.id || '',
+    enabled: entry?.enabled ?? subject?.enabled ?? true,
+    minAppVersion: entry?.minAppVersion || subject?.minAppVersion || '1.0',
+    version: entry?.version || subject?.appVersion || '',
+    downloadUrl: entry?.downloadUrl || subject?.downloadUrl || '',
+    approvedLessonsCount: entry?.approvedLessonsCount ?? subject?.remoteLessons ?? subject?.lessons?.approved ?? 0,
+    approvedSectionsCount: entry?.approvedSectionsCount ?? subject?.remoteSections ?? 0,
+    approvedBlocksCount: entry?.approvedBlocksCount ?? subject?.remoteBlocks ?? 0,
+    updatedAt: entry?.updatedAt || subject?.publishedAt || null,
+  };
 }
 
 // ─── Subject row ──────────────────────────────────────────────────────────────
@@ -264,6 +290,173 @@ function FlagsPanel({ flags, onFlagChange }) {
   );
 }
 
+function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEntryId }) {
+  const [query, setQuery] = useState('');
+  const [drafts, setDrafts] = useState({});
+
+  const catalogMap = Object.fromEntries((subjects || []).map((subject) => [subject.id, subject]));
+  const remoteOnlyEntries = (manifestEntries || []).filter((entry) => !catalogMap[entry.id]);
+  const rows = [
+    ...(subjects || []).map((subject) => ({
+      subject,
+      entry: (manifestEntries || []).find((item) => item.id === subject.id) || null,
+      key: subject.id,
+    })),
+    ...remoteOnlyEntries.map((entry) => ({
+      subject: null,
+      entry,
+      key: entry.id,
+    })),
+  ];
+
+  useEffect(() => {
+    const nextDrafts = {};
+    rows.forEach(({ subject, entry, key }) => {
+      nextDrafts[key] = createManifestDraft(subject, entry);
+    });
+    setDrafts(nextDrafts);
+  }, [subjects, manifestEntries]);
+
+  const updateDraft = (id, key, value) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], [key]: value },
+    }));
+  };
+
+  const filteredRows = rows.filter(({ subject, entry, key }) => {
+    const haystack = [key, subject?.nameAr, subject?.track, entry?.downloadUrl].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(query.trim().toLowerCase());
+  });
+
+  return (
+    <div
+      className="rounded-xl border mt-6"
+      style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.07)' }}
+    >
+      <div className="px-4 py-3 border-b flex items-center gap-3 flex-wrap" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        <div className="flex-1 min-w-[240px]">
+          <h3 className="text-xs font-mono text-ink-400 uppercase tracking-wider">Remote Manifest</h3>
+          <p className="text-[11px] text-ink-600 font-arabic mt-0.5">عرض وتعديل بيانات Firebase الخاصة بالمواد المنشورة</p>
+        </div>
+        <input
+          dir="ltr"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search subject id / name"
+          className="w-full max-w-xs bg-ink-900/60 border border-ink-800/80 rounded-lg px-3 py-2 text-xs font-mono text-ink-300 placeholder:text-ink-700 focus:outline-none focus:border-sand-800/60"
+        />
+      </div>
+
+      <div className="px-4 py-4 space-y-3">
+        {filteredRows.map(({ subject, entry, key }) => {
+          const draft = drafts[key] || createManifestDraft(subject, entry);
+          const isRemoteOnly = !subject;
+          return (
+            <div
+              key={key}
+              className="rounded-xl border p-4"
+              style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
+            >
+              <div className="flex items-start gap-3 justify-between flex-wrap mb-3">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-arabic text-sm font-semibold text-ink-200">{subject?.nameAr || 'Remote Only Entry'}</span>
+                    {subject?.track && <TrackBadge track={subject.track} />}
+                    <AppStatusBadge isPublished={!!draft.version} appVersion={draft.version || '-'} />
+                    <RemoteStatusBadge enabled={draft.enabled} />
+                    {isRemoteOnly && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-amber-800/40 text-amber-500">orphan</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-mono text-ink-600 mt-1">{draft.id}</p>
+                </div>
+                <ActionBtn
+                  variant="primary"
+                  loading={savingEntryId === key}
+                  onClick={() => onSaveEntry(key, draft)}
+                >
+                  حفظ Firebase
+                </ActionBtn>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3 mb-3">
+                <label className="block">
+                  <span className="block text-[10px] font-mono text-ink-600 mb-1">minAppVersion</span>
+                  <input
+                    dir="ltr"
+                    value={draft.minAppVersion}
+                    onChange={(e) => updateDraft(key, 'minAppVersion', e.target.value)}
+                    className="w-full bg-ink-900/60 border border-ink-800/80 rounded-lg px-3 py-2 text-xs font-mono text-ink-300 focus:outline-none focus:border-sand-800/60"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-[10px] font-mono text-ink-600 mb-1">version</span>
+                  <input
+                    dir="ltr"
+                    value={draft.version}
+                    onChange={(e) => updateDraft(key, 'version', e.target.value)}
+                    className="w-full bg-ink-900/60 border border-ink-800/80 rounded-lg px-3 py-2 text-xs font-mono text-ink-300 focus:outline-none focus:border-sand-800/60"
+                  />
+                </label>
+              </div>
+
+              <label className="block mb-3">
+                <span className="block text-[10px] font-mono text-ink-600 mb-1">downloadUrl</span>
+                <input
+                  dir="ltr"
+                  value={draft.downloadUrl}
+                  onChange={(e) => updateDraft(key, 'downloadUrl', e.target.value)}
+                  className="w-full bg-ink-900/60 border border-ink-800/80 rounded-lg px-3 py-2 text-xs font-mono text-ink-300 focus:outline-none focus:border-sand-800/60"
+                />
+              </label>
+
+              <div className="grid md:grid-cols-4 gap-3 items-end">
+                {[
+                  ['approvedLessonsCount', 'lessons'],
+                  ['approvedSectionsCount', 'sections'],
+                  ['approvedBlocksCount', 'blocks'],
+                ].map(([field, label]) => (
+                  <label key={field} className="block">
+                    <span className="block text-[10px] font-mono text-ink-600 mb-1">{label}</span>
+                    <input
+                      dir="ltr"
+                      type="number"
+                      min="0"
+                      value={draft[field]}
+                      onChange={(e) => updateDraft(key, field, e.target.value)}
+                      className="w-full bg-ink-900/60 border border-ink-800/80 rounded-lg px-3 py-2 text-xs font-mono text-ink-300 focus:outline-none focus:border-sand-800/60"
+                    />
+                  </label>
+                ))}
+                <label className="flex items-center gap-2 rounded-lg border border-ink-800/70 bg-ink-900/40 px-3 py-2 h-10">
+                  <input
+                    type="checkbox"
+                    checked={!!draft.enabled}
+                    onChange={(e) => updateDraft(key, 'enabled', e.target.checked)}
+                  />
+                  <span className="text-xs font-mono text-ink-300">enabled</span>
+                </label>
+              </div>
+
+              <div className="mt-3 text-[10px] font-mono text-ink-600 flex items-center gap-3 flex-wrap">
+                <span>remote updated: {draft.updatedAt ? new Date(draft.updatedAt).toLocaleString('ar-SA') : '—'}</span>
+                {subject && <span>cms approved lessons: {subject.lessons.approved}</span>}
+              </div>
+            </div>
+          );
+        })}
+
+        {filteredRows.length === 0 && (
+          <div className="py-8 text-center">
+            <p className="text-ink-600 text-sm font-arabic">لا توجد سجلات مطابقة للبحث</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main section ─────────────────────────────────────────────────────────────
 
 export function PublishSection() {
@@ -275,6 +468,7 @@ export function PublishSection() {
   const [toast,     setToast]     = useState(null);
   const [flagsDirty, setFlagsDirty] = useState(false);
   const [savingFlags, setSavingFlags] = useState(false);
+  const [savingManifestId, setSavingManifestId] = useState(null);
   const [filter,    setFilter]    = useState('all');
 
   const showToast = (msg, isErr = false) => {
@@ -347,6 +541,39 @@ export function PublishSection() {
       showToast('تعذّر الاتصال', true);
     } finally {
       setSavingFlags(false);
+    }
+  };
+
+  const saveManifestEntry = async (id, draft) => {
+    setSavingManifestId(id);
+    try {
+      const res = await fetch('/api/content/manifest', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entry: {
+            id: draft.id,
+            enabled: !!draft.enabled,
+            minAppVersion: draft.minAppVersion || '1.0',
+            version: draft.version || '',
+            downloadUrl: draft.downloadUrl || null,
+            approvedLessonsCount: Number(draft.approvedLessonsCount || 0),
+            approvedSectionsCount: Number(draft.approvedSectionsCount || 0),
+            approvedBlocksCount: Number(draft.approvedBlocksCount || 0),
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(`✓ تم تحديث ${draft.id} في Firebase`);
+        await load();
+      } else {
+        showToast(data.error || 'فشل تحديث Firebase', true);
+      }
+    } catch {
+      showToast('تعذّر الاتصال', true);
+    } finally {
+      setSavingManifestId(null);
     }
   };
 
@@ -467,6 +694,13 @@ export function PublishSection() {
 
             {/* Feature flags */}
             <FlagsPanel flags={flags} onFlagChange={handleFlagChange} />
+
+            <RemoteManifestPanel
+              subjects={subjects}
+              manifestEntries={manifest?.subjects || []}
+              onSaveEntry={saveManifestEntry}
+              savingEntryId={savingManifestId}
+            />
           </>
         )}
       </div>
