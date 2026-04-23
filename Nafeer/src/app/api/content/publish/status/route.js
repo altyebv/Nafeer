@@ -92,6 +92,10 @@ export async function GET() {
         publishedAt:    entry?.updatedAt    || null,
         downloadUrl:    entry?.downloadUrl  || null,
         enabled:        entry?.enabled      ?? true,
+        minAppVersion:  entry?.minAppVersion || '1.0',
+        remoteLessons:  entry?.approvedLessonsCount ?? null,
+        remoteSections: entry?.approvedSectionsCount ?? null,
+        remoteBlocks:   entry?.approvedBlocksCount ?? null,
         // Derived signals
         isPublishable,
         isPublished,
@@ -105,6 +109,7 @@ export async function GET() {
         schemaVersion: manifest?.schemaVersion || null,
         updatedAt:     manifest?.updatedAt     || null,
         featureFlags:  manifest?.featureFlags  || null,
+        subjects:      manifest?.subjects      || [],
       },
       subjects,
     });
