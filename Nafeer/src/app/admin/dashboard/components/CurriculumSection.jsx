@@ -54,7 +54,12 @@ function InlineField({ value, onSave, placeholder, mono = false, dimmed = false,
     setDraft(value || '');
     setError(null);
     setEditing(true);
-    setTimeout(() => inputRef.current?.focus(), 0);
+    setTimeout(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.focus();
+      el.select();
+    }, 0);
   };
 
   const cancel = () => { setEditing(false); setError(null); };
@@ -119,7 +124,10 @@ function InlineField({ value, onSave, placeholder, mono = false, dimmed = false,
 
 // ─── Lesson Row ────────────────────────────────────────────────────────────────
 
-function LessonRow({ lesson, onPatch }) {
+function LessonRow({ lesson, onPatch, onDelete }) {
+  const [deleting,   setDeleting]  = useState(false);
+  const [confirmDel, setConfirm]   = useState(false);
+
   const patch = async (fields) => {
     const res  = await fetch(`/api/admin/curriculum/lessons/${lesson._id}`, {
       method:  'PATCH',
@@ -131,10 +139,23 @@ function LessonRow({ lesson, onPatch }) {
     onPatch(lesson._id, json.lesson);
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res  = await fetch(`/api/admin/curriculum/lessons/${lesson._id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'فشل الحذف');
+      onDelete(lesson._id);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setDeleting(false);
+      setConfirm(false);
+    }
+  };
+
   return (
-    <div
-      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.02] transition-colors group"
-    >
+    <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.02] transition-colors group">
       {/* Order */}
       <span className="text-[10px] font-mono text-ink-700 w-5 shrink-0 text-center">{lesson.order}</span>
 
@@ -179,14 +200,130 @@ function LessonRow({ lesson, onPatch }) {
       >
         {lesson.contentId}
       </span>
+
+      {/* Delete — appears on hover */}
+      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+        {confirmDel ? (
+          <>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-[10px] font-mono px-2 py-0.5 rounded border border-red-700/60 text-red-400 hover:bg-red-950/40 transition-colors disabled:opacity-40"
+            >
+              {deleting ? '…' : 'تأكيد'}
+            </button>
+            <button
+              onClick={() => setConfirm(false)}
+              className="text-[10px] font-mono px-2 py-0.5 rounded border border-ink-700/50 text-ink-500 hover:text-ink-300 transition-colors"
+            >
+              إلغاء
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setConfirm(true)}
+            className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-ink-800/40 text-ink-700 hover:border-red-800/50 hover:text-red-500 transition-colors"
+            title="حذف الدرس"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Add Lesson Form ───────────────────────────────────────────────────────────
+
+function AddLessonForm({ unit, subjectId, onAdded, onCancel }) {
+  const [title,   setTitle]   = useState('');
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const nextOrder = (unit.lessons.length > 0)
+    ? Math.max(...unit.lessons.map((l) => l.order)) + 1
+    : 1;
+
+  // contentId convention: SUBJECTID_UNITCONTENTID_L{order}
+  // Strip the subjectId prefix from unitContentId to avoid double-prefix
+  const unitSuffix  = unit.contentId.startsWith(subjectId + '_')
+    ? unit.contentId.slice(subjectId.length + 1)
+    : unit.contentId;
+  const contentId   = `${subjectId}_${unitSuffix}_L${nextOrder}`;
+
+  const save = async () => {
+    if (!title.trim()) { setError('العنوان مطلوب'); return; }
+    setSaving(true); setError(null);
+    try {
+      const res  = await fetch('/api/admin/curriculum/lessons', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          subjectId,
+          unitContentId:   unit.contentId,
+          contentId,
+          title:           title.trim(),
+          order:           nextOrder,
+          estimatedMinutes: 15,
+        }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'فشل الإنشاء');
+      onAdded(json.lesson);
+    } catch (e) {
+      setError(e.message);
+      setSaving(false);
+    }
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'Enter')  { e.preventDefault(); save(); }
+    if (e.key === 'Escape') { onCancel(); }
+  };
+
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-2 rounded-lg"
+      style={{ background: 'rgba(212,137,30,0.05)', border: '1px dashed rgba(212,137,30,0.2)' }}
+    >
+      <span className="text-[10px] font-mono text-ink-700 w-5 shrink-0 text-center">{nextOrder}</span>
+      <span className="w-1.5 h-1.5 rounded-full bg-ink-700/60 shrink-0" />
+      <input
+        ref={inputRef}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={onKey}
+        dir="rtl"
+        placeholder="عنوان الدرس الجديد"
+        className="flex-1 min-w-0 px-2 py-0.5 rounded text-sm font-arabic bg-ink-800/80 border border-sand-700/50 focus:border-sand-600/70 focus:outline-none text-ink-200 placeholder-ink-700"
+      />
+      <span className="text-[9px] font-mono text-ink-800 shrink-0 hidden lg:block">{contentId}</span>
+      {error && <span className="text-[10px] text-red-400 shrink-0">{error}</span>}
+      <button
+        onClick={save}
+        disabled={saving || !title.trim()}
+        className="text-[10px] font-mono px-2.5 py-1 rounded border border-sand-700/50 text-sand-300 hover:border-sand-600/60 transition-colors disabled:opacity-40"
+      >
+        {saving ? '…' : 'إضافة'}
+      </button>
+      <button
+        onClick={onCancel}
+        className="text-[10px] font-mono px-2 py-1 rounded border border-ink-700/50 text-ink-500 hover:text-ink-300 transition-colors"
+      >
+        إلغاء
+      </button>
     </div>
   );
 }
 
 // ─── Unit Card ─────────────────────────────────────────────────────────────────
 
-function UnitCard({ unit, onPatchUnit, onPatchLesson }) {
-  const [open, setOpen] = useState(false);
+function UnitCard({ unit, subjectId, onPatchUnit, onPatchLesson, onAddLesson, onDeleteLesson }) {
+  const [open,     setOpen]     = useState(false);
+  const [adding,   setAdding]   = useState(false);
 
   const patchUnit = async (fields) => {
     const res  = await fetch(`/api/admin/curriculum/units/${unit._id}`, {
@@ -242,7 +379,7 @@ function UnitCard({ unit, onPatchUnit, onPatchLesson }) {
           )}
         </div>
 
-        {/* Lesson progress */}
+        {/* Lesson progress + add button */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="h-1 w-16 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
             <div
@@ -254,6 +391,14 @@ function UnitCard({ unit, onPatchUnit, onPatchLesson }) {
             />
           </div>
           <span className="text-[10px] font-mono text-ink-600" dir="ltr">{approvedCount}/{totalCount}</span>
+          {/* Add lesson — stops propagation so the header doesn't collapse */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setOpen(true); setAdding(true); }}
+            className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-ink-800/50 text-ink-600 hover:border-sand-700/50 hover:text-sand-400 transition-colors"
+            title="إضافة درس جديد"
+          >
+            + درس
+          </button>
         </div>
       </div>
 
@@ -271,28 +416,50 @@ function UnitCard({ unit, onPatchUnit, onPatchLesson }) {
             />
           </div>
 
-          {unit.lessons.length === 0 ? (
-            <p className="text-[11px] font-arabic text-ink-700 px-3 py-3">لا يوجد دروس — قم بالبذر أولاً</p>
-          ) : (
-            <div className="space-y-0.5">
-              {/* Column headers */}
-              <div className="flex items-center gap-3 px-3 py-1">
-                <span className="w-5 text-[9px] font-mono text-ink-800">#</span>
-                <span className="w-2" />
-                <span className="flex-1 text-[9px] font-mono text-ink-700 uppercase tracking-widest">عنوان الدرس / المجموعة</span>
-                <span className="w-14 text-[9px] font-mono text-ink-700">دقائق</span>
-                <span className="hidden lg:block text-[9px] font-mono text-ink-800">contentId</span>
-              </div>
+          <div className="space-y-0.5">
+            {unit.lessons.length > 0 && (
+              <>
+                {/* Column headers */}
+                <div className="flex items-center gap-3 px-3 py-1">
+                  <span className="w-5 text-[9px] font-mono text-ink-800">#</span>
+                  <span className="w-2" />
+                  <span className="flex-1 text-[9px] font-mono text-ink-700 uppercase tracking-widest">عنوان الدرس / المجموعة</span>
+                  <span className="w-14 text-[9px] font-mono text-ink-700">دقائق</span>
+                  <span className="hidden lg:block text-[9px] font-mono text-ink-800">contentId</span>
+                  <span className="w-16" />
+                </div>
 
-              {unit.lessons.map((lesson) => (
-                <LessonRow
-                  key={lesson._id}
-                  lesson={lesson}
-                  onPatch={(id, updated) => onPatchLesson(unit._id, id, updated)}
+                {unit.lessons.map((lesson) => (
+                  <LessonRow
+                    key={lesson._id}
+                    lesson={lesson}
+                    onPatch={(id, updated) => onPatchLesson(unit._id, id, updated)}
+                    onDelete={(id) => onDeleteLesson(unit._id, id)}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Add lesson form / empty state */}
+            {adding ? (
+              <div className="pt-1">
+                <AddLessonForm
+                  unit={unit}
+                  subjectId={subjectId}
+                  onAdded={(lesson) => { onAddLesson(unit._id, lesson); setAdding(false); }}
+                  onCancel={() => setAdding(false)}
                 />
-              ))}
-            </div>
-          )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setAdding(true)}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-arabic text-ink-700 hover:text-sand-400 hover:bg-white/[0.015] transition-colors mt-0.5"
+              >
+                <span className="text-[9px]">＋</span>
+                {unit.lessons.length === 0 ? 'إضافة أول درس' : 'إضافة درس'}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -400,6 +567,30 @@ function CurriculumPanel({ subjectId }) {
     }));
   };
 
+  const handleAddLesson = (unitId, lesson) => {
+    setData((prev) => ({
+      ...prev,
+      units: prev.units.map((u) =>
+        String(u._id) !== String(unitId)
+          ? u
+          : { ...u, lessons: [...u.lessons, lesson] }
+      ),
+      counts: { ...prev.counts, lessons: prev.counts.lessons + 1 },
+    }));
+  };
+
+  const handleDeleteLesson = (unitId, lessonId) => {
+    setData((prev) => ({
+      ...prev,
+      units: prev.units.map((u) =>
+        String(u._id) !== String(unitId)
+          ? u
+          : { ...u, lessons: u.lessons.filter((l) => String(l._id) !== String(lessonId)) }
+      ),
+      counts: { ...prev.counts, lessons: Math.max(0, prev.counts.lessons - 1) },
+    }));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center gap-3 text-ink-500 py-16">
@@ -489,8 +680,11 @@ function CurriculumPanel({ subjectId }) {
             <UnitCard
               key={unit._id}
               unit={unit}
+              subjectId={subjectId}
               onPatchUnit={handlePatchUnit}
               onPatchLesson={handlePatchLesson}
+              onAddLesson={handleAddLesson}
+              onDeleteLesson={handleDeleteLesson}
             />
           ))
         )}
