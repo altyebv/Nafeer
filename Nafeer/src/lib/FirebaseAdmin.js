@@ -89,6 +89,26 @@ export async function upsertSubjectEntry(entry) {
   );
 }
 
+/** Remove one subject entry from the manifest while preserving all other fields. */
+export async function removeSubjectEntry(subjectId) {
+  const db       = getAdminFirestore();
+  const ref      = db.collection(COLLECTION).doc(DOC);
+  const snap     = await ref.get();
+  const existing = snap.exists ? snap.data() : { subjects: [], featureFlags: DEFAULT_FLAGS };
+
+  const subjects = (existing.subjects || []).filter((entry) => entry.id !== subjectId);
+
+  await ref.set(
+    {
+      schemaVersion: '2.0',
+      updatedAt:     new Date().toISOString(),
+      subjects,
+      featureFlags:  existing.featureFlags || DEFAULT_FLAGS,
+    },
+    { merge: true }
+  );
+}
+
 /** Merge-update only the featureFlags field. */
 export async function updateFeatureFlags(flags) {
   const db  = getAdminFirestore();
