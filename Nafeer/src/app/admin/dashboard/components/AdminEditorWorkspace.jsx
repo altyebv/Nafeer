@@ -38,18 +38,13 @@ function WorkspaceSpinner({ label }) {
 
 export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
   // ── Reactive data: proper Zustand selectors ────────────────────────────────
-  // Each of these creates a real subscription so React re-renders when
-  // the store updates after importData runs.
   const storeSubject = useSubjectStore((s) => s.subject);
   const lessons      = useSubjectStore((s) => s.lessons);
   const concepts     = useConceptStore((s) => s.concepts);
   const feedItems    = useFeedStore((s) => s.feedItems);
   const questions    = useQuizStore((s) => s.questions);
 
-  // ── Stable action refs ─────────────────────────────────────────────────────
-  // Pulled directly from their owning stores — Zustand guarantees these never
-  // change reference between renders. They are intentionally NOT in the
-  // useEffect dependency array (see comment below on the effect).
+  // ── Stable action refs (Zustand guarantees these never change reference) ───
   const resetSubject  = useSubjectStore((s) => s.resetSubject);
   const loadFromAtlas = useSubjectStore((s) => s.loadFromAtlas);
   const resetContent  = useContentStore((s) => s.resetContent);
@@ -70,24 +65,17 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
   const [error,            setError]            = useState(null);
   const [reloadKey,        setReloadKey]        = useState(0);
   const [origin,           setOrigin]           = useState('atlas');
+  // importing = first-time import (remote-only state) OR re-sync (atlas state)
   const [importing,        setImporting]        = useState(false);
   const [importError,      setImportError]      = useState(null);
+  const [importSuccess,    setImportSuccess]    = useState(false);
   const [currentPage,      setCurrentPage]      = useState('lessons');
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [selectedUnitId,   setSelectedUnitId]   = useState(null);
 
   // ── Load workspace ─────────────────────────────────────────────────────────
-  // BUG FIXED: deps are [subjectId, reloadKey] only.
-  //
-  // Previously this component used useDataStore() (the composite hook) with no
-  // selector to get importData/resetAll. That hook builds a plain merged object
-  // on every render — so importData and resetAll got *new references* on every
-  // render, which put them in this dep array, which fired this effect on every
-  // render, creating a permanent loading loop.
-  //
-  // Now all actions come from individual store selectors which Zustand
-  // guarantees are stable. They're safe to omit from deps (the eslint disable
-  // below is intentional — these are store actions, not reactive values).
+  // deps: [subjectId, reloadKey] only — all store actions are stable Zustand
+  // selectors that never change reference, so they're safe to omit from deps.
   useEffect(() => {
     let cancelled = false;
 
@@ -97,14 +85,14 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
       setLoading(true);
       setError(null);
       setImportError(null);
+      setImportSuccess(false);
       setCurrentPage('lessons');
       setSelectedLessonId(null);
       setSelectedUnitId(null);
 
       try {
-        // includeAll=true → returns draft + approved content.
-        // Without this, seeded lessons (status: 'draft') are silently excluded
-        // by the export route's default { status: 'approved' } filter.
+        // includeAll=true → returns draft + approved content so seeded
+        // lessons (status: 'draft') are not silently filtered out.
         const res  = await fetch(`/api/export?subjectId=${encodeURIComponent(subjectId)}&includeAll=true`);
         const json = await res.json();
 
@@ -114,15 +102,13 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
 
         if (cancelled) return;
 
-        // ── Wipe stale localStorage before loading new subject ────────────────
-        // The persist middleware hydrates stores from localStorage on mount.
-        // Without clearing it, stale data from the previous subject races with
-        // (and can overwrite) the fresh data we're loading below.
+        // Wipe stale localStorage so persist middleware hydration doesn't
+        // overwrite the fresh data we're about to load.
         PERSIST_KEYS.forEach((key) => {
           try { localStorage.removeItem(key); } catch { /* SSR / private browsing */ }
         });
 
-        // ── Reset all stores ──────────────────────────────────────────────────
+        // Reset all stores then load fresh data.
         resetSubject();
         resetContent();
         resetConcepts();
@@ -130,7 +116,6 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
         resetQuiz();
         resetMedia();
 
-        // ── Flatten nested export format into store's flat arrays ─────────────
         const data = json.data;
         const units = [], lessons = [], sections = [], blocks = [];
 
@@ -169,6 +154,34 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
     return () => { cancelled = true; };
   }, [subjectId, reloadKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Remote import / re-sync ────────────────────────────────────────────────
+  // Used for both the first-time import (remoteOnly) and re-syncing an already-
+  // imported subject from the latest published remote file (atlas mode).
+  // force: true is always sent — the admin is explicitly choosing to overwrite.
+  // Without force, a 409 is returned if the subject already exists in Atlas,
+  // which blocks every re-sync attempt after the first import.
+  const syncFromRemote = async () => {
+    setImporting(true);
+    setImportError(null);
+    setImportSuccess(false);
+    try {
+      const res  = await fetch('/api/admin/remote-subjects/import', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ subjectId, force: true }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || 'فشل استيراد المادة');
+      setImportSuccess(true);
+      setReloadKey((v) => v + 1); // re-fetch from Atlas (origin will flip to 'atlas')
+      onImported?.();
+    } catch (e) {
+      setImportError(e.message || 'فشل استيراد المادة');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   // ── Navigation ─────────────────────────────────────────────────────────────
   const navigateTo = (page, params = {}) => {
     setCurrentPage(page);
@@ -194,21 +207,18 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
             lastSynced={lastSynced}
           />
         );
-      case 'concepts':
-        return <ConceptsPage subjectId={subjectId} />;
-      case 'feeds':
-        return <FeedItemsPage subjectId={subjectId} />;
-      case 'quizbank':
-        return <QuizBankPage subjectId={subjectId} />;
+      case 'concepts':  return <ConceptsPage  subjectId={subjectId} />;
+      case 'feeds':     return <FeedItemsPage  subjectId={subjectId} />;
+      case 'quizbank':  return <QuizBankPage   subjectId={subjectId} />;
       case 'lessons':
       default:
         return <LessonsPage onEditLesson={(lessonId, unitId) => navigateTo('editor', { lessonId, unitId })} />;
     }
   };
 
-  // ── Loading / error guards ─────────────────────────────────────────────────
+  // ── Guards ─────────────────────────────────────────────────────────────────
   if (loading) {
-    return <WorkspaceSpinner label="جارٍ تحميل محتوى المادة المعتمد..." />;
+    return <WorkspaceSpinner label="جارٍ تحميل محتوى المادة..." />;
   }
 
   if (error) {
@@ -236,31 +246,12 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
 
   const remoteOnly = origin === 'remote';
 
-  const importRemoteSubject = async () => {
-    setImporting(true);
-    setImportError(null);
-    try {
-      const res  = await fetch('/api/admin/remote-subjects/import', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ subjectId }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || 'فشل استيراد المادة');
-      setReloadKey((v) => v + 1);
-      onImported?.();
-    } catch (e) {
-      setImportError(e.message || 'فشل استيراد المادة');
-    } finally {
-      setImporting(false);
-    }
-  };
-
   return (
     <div
       className="rounded-2xl border overflow-hidden"
       style={{ background: 'rgba(9,9,11,0.45)', borderColor: 'rgba(255,255,255,0.06)' }}
     >
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div
         className="px-5 py-4 border-b"
         style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}
@@ -272,7 +263,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
             <p className="text-[11px] font-arabic text-ink-500">
               {remoteOnly
                 ? 'تم تحميل النسخة المنشورة من التخزين البعيد. استوردها إلى Atlas أولاً لتفعيل التعديل الفعلي.'
-                : 'تم تحميل النسخة المعتمدة داخل المحرر لاختبار العرض والتعديل ثم النشر.'}
+                : 'المحتوى محمّل من Atlas — يمكن تعديله ونشره، أو سحب آخر نسخة منشورة عن بُعد.'}
             </p>
           </div>
 
@@ -284,6 +275,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
           </div>
         </div>
 
+        {/* Nav tabs */}
         <div className="flex items-center gap-2 flex-wrap">
           {NAV_ITEMS.map((item) => {
             const active = currentPage === item.id || (currentPage === 'editor' && item.id === 'lessons');
@@ -304,6 +296,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
           })}
         </div>
 
+        {/* ── Remote-only: first-time import banner ──────────────────────── */}
         {remoteOnly && (
           <div
             className="mt-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-4"
@@ -317,9 +310,9 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
               {importError && <p className="text-[11px] font-arabic text-red-400 mt-1">{importError}</p>}
             </div>
             <button
-              onClick={importRemoteSubject}
+              onClick={syncFromRemote}
               disabled={importing}
-              className="px-4 py-2 rounded-xl border text-sm font-arabic"
+              className="px-4 py-2 rounded-xl border text-sm font-arabic shrink-0"
               style={{
                 background:  'rgba(212,137,30,0.10)',
                 borderColor: 'rgba(212,137,30,0.28)',
@@ -331,10 +324,42 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
             </button>
           </div>
         )}
+
+        {/* ── Atlas mode: re-sync strip (always visible after import) ────── */}
+        {/* Lets you pull a fresh remote version to test the update sync flow */}
+        {!remoteOnly && (
+          <div
+            className="mt-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-3"
+            style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
+          >
+            <div className="min-w-0">
+              <p className="text-[11px] font-mono text-ink-500">
+                مزامنة من Remote — يستبدل محتوى Atlas الحالي بآخر نسخة منشورة
+              </p>
+              {importError   && <p className="text-[11px] font-arabic text-red-400 mt-0.5">{importError}</p>}
+              {importSuccess && <p className="text-[11px] font-arabic text-green-400 mt-0.5">✓ تم الاستيراد — تم إعادة تحميل المحتوى</p>}
+            </div>
+            <button
+              onClick={syncFromRemote}
+              disabled={importing}
+              className="shrink-0 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all"
+              style={{
+                background:  importing ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)',
+                borderColor: 'rgba(255,255,255,0.10)',
+                color:       importing ? 'var(--ink-600)' : 'var(--ink-300)',
+              }}
+            >
+              {importing
+                ? <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" /> جارٍ المزامنة...</span>
+                : '↓ سحب من Remote'}
+            </button>
+          </div>
+        )}
       </div>
 
       <SyncBar isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
 
+      {/* ── Body ───────────────────────────────────────────────────────────── */}
       <div className="p-5">
         {remoteOnly ? (
           <div
