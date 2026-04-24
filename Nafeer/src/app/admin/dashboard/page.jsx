@@ -12,8 +12,9 @@ import { AdminsSection }         from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
 import { SiteSettingsSection }   from './components/SiteSettingSection';
 import { SeedSection }           from './components/SeedSection';
-import { PublishSection }        from './components/PublishSection';  // ← NEW
-import { AdminEditorSection }        from './components/AdminEditorSection';  // ← NEWER + DEVVVVV
+import { PublishSection }        from './components/PublishSection';
+import { AdminEditorSection }    from './components/AdminEditorSection';
+import { CurriculumSection }    from './components/CurriculumSection';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -63,9 +64,10 @@ export default function AdminDashboard() {
             onUnauthorized={() => router.push('/admin/login')}
           />
         )}
-        {section === 'editor'        && <AdminEditorSection />}  {/*JUST TESTING */}
+        {section === 'editor'        && <AdminEditorSection />}
         {section === 'coverage'      && <CoverageSection />}
-        {section === 'publish'       && <PublishSection />}        
+        {section === 'curriculum'    && <CurriculumSection />}
+        {section === 'publish'       && <PublishSection />}
         {section === 'media'         && <MediaSection />}
         {section === 'admins'        && <AdminsSection />}
         {section === 'settings'      && <SiteSettingsSection />}
