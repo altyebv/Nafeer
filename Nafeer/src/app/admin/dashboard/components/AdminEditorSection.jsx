@@ -544,6 +544,10 @@ export function AdminEditorSection() {
                       setResult(null);
                       load();
                     }}
+                    onRemoteDeleted={() => {
+                      setResult(null);
+                      load();
+                    }}
                   />
                 </div>
               ) : (
