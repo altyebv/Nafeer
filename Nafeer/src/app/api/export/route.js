@@ -65,7 +65,7 @@ export async function GET(request) {
 
     if (!subject) {
       const remoteData = await loadRemoteSubjectExport(manifestEntry?.downloadUrl);
-      if (remoteData) return ok(remoteData);
+      if (remoteData) return ok(remoteData, { origin: 'remote' });
       return err('المادة غير موجودة في قاعدة البيانات', 404);
     }
 
@@ -244,10 +244,10 @@ export async function GET(request) {
       questions.length === 0
     ) {
       const remoteData = await loadRemoteSubjectExport(manifestEntry.downloadUrl);
-      if (remoteData) return ok(remoteData);
+      if (remoteData) return ok(remoteData, { origin: 'remote' });
     }
 
-    return ok(exportData);
+    return ok(exportData, { origin: 'atlas' });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[GET /api/export]', e);
