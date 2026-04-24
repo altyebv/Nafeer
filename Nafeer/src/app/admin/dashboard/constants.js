@@ -19,17 +19,18 @@ export const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id,
 export const SUBJECTS_CATALOG_REF = SUBJECTS_CATALOG;
 
 export const NAV = [
-  { id: 'overview',      icon: '◈', label: 'نظرة عامة',     badgeKey: null          },
-  { id: 'editor',        icon: '✦', label: 'المحرر',        badgeKey: null          },
-  { id: 'contributors',  icon: '◉', label: 'المساهمون',     badgeKey: 'pending'     },
-  { id: 'roles',         icon: '◆', label: 'الأدوار',        badgeKey: null          },
-  { id: 'review',        icon: '◎', label: 'طابور المراجعة', badgeKey: 'reviewTotal' },
-  { id: 'coverage',      icon: '▦', label: 'خريطة التغطية',  badgeKey: null          },
-  { id: 'publish',       icon: '⬆', label: 'نشر للتطبيق',   badgeKey: null          },  // ← NEW
-  { id: 'media',         icon: '⬜', label: 'الوسائط',        badgeKey: null          },
-  { id: 'admins',        icon: '⬡', label: 'المشرفون',       badgeKey: null          },
-  { id: 'settings',      icon: '⚙', label: 'الإعدادات',      badgeKey: null          },
-  { id: 'seed',          icon: '◈', label: 'إدارة البذر',    badgeKey: null          },
+  { id: 'overview',      icon: '◈', label: 'نظرة عامة',        badgeKey: null          },
+  { id: 'editor',        icon: '✎', label: 'محرر المشرف',       badgeKey: null          }, // edit + publish in one place
+  { id: 'curriculum',    icon: '◆', label: 'إدارة المنهج',      badgeKey: null          }, // unit/lesson title editor
+  { id: 'contributors',  icon: '◉', label: 'المساهمون',         badgeKey: 'pending'     },
+  { id: 'roles',         icon: '◈', label: 'الأدوار',            badgeKey: null          },
+  { id: 'review',        icon: '◎', label: 'طابور المراجعة',    badgeKey: 'reviewTotal' },
+  { id: 'coverage',      icon: '▦', label: 'خريطة التغطية',     badgeKey: null          },
+  { id: 'publish',       icon: '⬆', label: 'نشر للتطبيق',      badgeKey: null          },
+  { id: 'media',         icon: '⬜', label: 'الوسائط',           badgeKey: null          },
+  { id: 'admins',        icon: '⬡', label: 'المشرفون',          badgeKey: null          },
+  { id: 'settings',      icon: '⚙', label: 'الإعدادات',         badgeKey: null          },
+  { id: 'seed',          icon: '⊞', label: 'إدارة البذر',       badgeKey: null          },
 ];
 
 // Pipeline stage for a pending applicant
@@ -39,4 +40,4 @@ export function getPipelineStage(c) {
   if (hasAnswers)       return { label: 'أكمل المقابلة', color: 'bg-green-900/30 border-green-800/40 text-green-400' };
   if (c.interviewToken) return { label: 'ينتظر المقابلة', color: 'bg-blue-900/30 border-blue-800/40 text-blue-400'   };
   return                       { label: 'طلب جديد',       color: 'bg-amber-900/30 border-amber-800/40 text-amber-500' };
-}
+} 
