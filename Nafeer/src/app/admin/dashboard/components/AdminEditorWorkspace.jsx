@@ -28,7 +28,7 @@ function WorkspaceSpinner({ label }) {
   );
 }
 
-export function AdminEditorWorkspace({ subjectId, subjectMeta }) {
+export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
   const importData = useDataStore((s) => s.importData);
   const resetAll = useDataStore((s) => s.resetAll);
   const storeSubject = useDataStore((s) => s.subject);
@@ -42,6 +42,9 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [origin, setOrigin] = useState('atlas');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState(null);
   const [currentPage, setCurrentPage] = useState('lessons');
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [selectedUnitId, setSelectedUnitId] = useState(null);
@@ -54,6 +57,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta }) {
 
       setLoading(true);
       setError(null);
+      setImportError(null);
       setCurrentPage('lessons');
       setSelectedLessonId(null);
       setSelectedUnitId(null);
@@ -68,6 +72,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta }) {
 
         if (cancelled) return;
 
+        setOrigin(json.origin || 'atlas');
         resetAll();
         resetMedia();
         importData(json.data);
@@ -152,6 +157,30 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta }) {
     quizbank: questions.length,
   };
 
+  const remoteOnly = origin === 'remote';
+
+  const importRemoteSubject = async () => {
+    setImporting(true);
+    setImportError(null);
+    try {
+      const res = await fetch('/api/admin/remote-subjects/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subjectId }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error || 'فشل استيراد المادة');
+      }
+      setReloadKey((v) => v + 1);
+      onImported?.();
+    } catch (e) {
+      setImportError(e.message || 'فشل استيراد المادة');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div
       className="rounded-2xl border overflow-hidden"
@@ -166,7 +195,9 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta }) {
             <p className="text-[10px] font-mono text-ink-600 uppercase tracking-widest mb-1">Remote Content Workspace</p>
             <h3 className="font-arabic text-lg text-ink-100">{activeSubject?.nameAr || subjectId}</h3>
             <p className="text-[11px] font-arabic text-ink-500">
-              تم تحميل النسخة المعتمدة داخل المحرر لاختبار العرض والتعديل ثم النشر.
+              {remoteOnly
+                ? 'تم تحميل النسخة المنشورة من التخزين البعيد. استوردها إلى Atlas أولاً لتفعيل التعديل الفعلي.'
+                : 'تم تحميل النسخة المعتمدة داخل المحرر لاختبار العرض والتعديل ثم النشر.'}
             </p>
           </div>
 
@@ -197,12 +228,53 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta }) {
             );
           })}
         </div>
+
+        {remoteOnly && (
+          <div
+            className="mt-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-4"
+            style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}
+          >
+            <div>
+              <p className="font-arabic text-sm text-amber-300">هذه مادة منشورة عن بُعد فقط</p>
+              <p className="text-[11px] font-arabic text-amber-200/70">
+                الاستيراد سيحوّلها إلى بيانات Atlas محلية قابلة للتحرير ثم النشر من نفس المسار.
+              </p>
+              {importError && <p className="text-[11px] font-arabic text-red-400 mt-1">{importError}</p>}
+            </div>
+            <button
+              onClick={importRemoteSubject}
+              disabled={importing}
+              className="px-4 py-2 rounded-xl border text-sm font-arabic"
+              style={{
+                background: 'rgba(212,137,30,0.10)',
+                borderColor: 'rgba(212,137,30,0.28)',
+                color: 'var(--accent)',
+                opacity: importing ? 0.6 : 1,
+              }}
+            >
+              {importing ? 'جارٍ الاستيراد...' : 'استيراد للتحرير'}
+            </button>
+          </div>
+        )}
       </div>
 
       <SyncBar isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
 
       <div className="p-5">
-        {renderPage()}
+        {remoteOnly ? (
+          <div
+            className="rounded-xl border px-6 py-10 text-center"
+            style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.05)' }}
+          >
+            <p className="font-arabic text-base text-ink-200 mb-2">المادة جاهزة للاستيراد</p>
+            <p className="text-[12px] font-arabic text-ink-500 max-w-xl mx-auto">
+              هذه النسخة قادمة من الملف المنشور عن بُعد. بعد الاستيراد إلى Atlas سنفتح نفس المحرر الحالي
+              للدروس والمفاهيم والتغذية والأسئلة مع حفظ ونشر فعليين.
+            </p>
+          </div>
+        ) : (
+          renderPage()
+        )}
       </div>
     </div>
   );

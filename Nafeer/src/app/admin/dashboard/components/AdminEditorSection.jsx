@@ -534,7 +534,11 @@ export function AdminEditorSection() {
                     result={result}
                     onDismissResult={() => setResult(null)}
                   />
-                  <AdminEditorWorkspace subjectId={selectedSubject.id} subjectMeta={selectedSubject} />
+                  <AdminEditorWorkspace
+                    subjectId={selectedSubject.id}
+                    subjectMeta={selectedSubject}
+                    onImported={load}
+                  />
                 </div>
               ) : (
                 <EmptyPanel />
