@@ -102,7 +102,10 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
       setSelectedUnitId(null);
 
       try {
-        const res  = await fetch(`/api/export?subjectId=${encodeURIComponent(subjectId)}`);
+        // includeAll=true → returns draft + approved content.
+        // Without this, seeded lessons (status: 'draft') are silently excluded
+        // by the export route's default { status: 'approved' } filter.
+        const res  = await fetch(`/api/export?subjectId=${encodeURIComponent(subjectId)}&includeAll=true`);
         const json = await res.json();
 
         if (!res.ok || !json.ok) {
