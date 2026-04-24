@@ -10,6 +10,7 @@ import { Concept }         from '@/lib/models/Concept';
 import { FeedItem }        from '@/lib/models/FeedItem';
 import { Question }        from '@/lib/models/Question';
 import { bootstrapSubject } from '@/lib/api/subject';
+import { ensureSystemSeedContributor } from '@/lib/systemseedActor';
 import { SUBJECTS_CATALOG, buildSubjectScaffold } from '@/shared/curriculum';
 
 // ─── GET /api/admin/seed ──────────────────────────────────────────────────────
@@ -112,12 +113,13 @@ export async function POST(request) {
   const { action, subjectId } = body;
 
   await connectDB();
+  const seedContributorId = await ensureSystemSeedContributor();
 
   // ── bootstrap ──────────────────────────────────────────────────────────────
   if (action === 'bootstrap') {
     if (!subjectId) return NextResponse.json({ ok: false, error: 'subjectId مطلوب' }, { status: 400 });
     try {
-      const result = await bootstrapSubject(subjectId, 'admin-seed');
+      const result = await bootstrapSubject(subjectId, seedContributorId);
       return NextResponse.json({ ok: true, result });
     } catch (e) {
       return NextResponse.json({ ok: false, error: e.message }, { status: 400 });
@@ -174,7 +176,7 @@ export async function POST(request) {
     ]);
 
     try {
-      const result = await bootstrapSubject(subjectId, 'admin-reseed');
+      const result = await bootstrapSubject(subjectId, seedContributorId);
       return NextResponse.json({ ok: true, result });
     } catch (e) {
       return NextResponse.json({ ok: false, error: e.message }, { status: 400 });
@@ -218,7 +220,7 @@ export async function POST(request) {
     const results = [];
     for (const cat of SUBJECTS_CATALOG) {
       try {
-        const r = await bootstrapSubject(cat.id, 'admin-seed-all');
+        const r = await bootstrapSubject(cat.id, seedContributorId);
         results.push({ id: cat.id, ok: true, ...r });
       } catch (e) {
         results.push({ id: cat.id, ok: false, error: e.message });
