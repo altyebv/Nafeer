@@ -42,7 +42,7 @@ function typeBg(type) {
 
 export default function FeedItemsPage({ subjectId }) {
   const { feedItems, concepts, questions, units, lessons, addFeedItem, updateFeedItem, deleteFeedItem } = useDataStore();
-  const { syncFeedItem, submitForReview } = useAtlasSync();
+  const { syncFeedItem, submitForReview, deleteFeedItem: atlasDeleteFeedItem } = useAtlasSync();
 
   const [showModal,       setShowModal]       = useState(false);
   const [editingId,       setEditingId]       = useState(null);
@@ -122,6 +122,11 @@ export default function FeedItemsPage({ subjectId }) {
       priority:  concept.difficulty || 1,
     });
     setShowModal(true);
+  };
+
+  const handleDeleteFeedItem = (feedItemId) => {
+    deleteFeedItem(feedItemId);
+    if (subjectId) atlasDeleteFeedItem(feedItemId);
   };
 
   const getConceptTitle = (id) => concepts.find((c) => c.id === id)?.titleAr || '—';
@@ -306,7 +311,7 @@ export default function FeedItemsPage({ subjectId }) {
                 conceptTitle={getConceptTitle(conceptId)}
                 items={items}
                 onEdit={handleEdit}
-                onDelete={(id) => deleteFeedItem(id)}
+                onDelete={handleDeleteFeedItem}
                 onReview={(id) => submitForReview(id, 'feedItem').catch(() => {})}
                 onAddForConcept={() => concept && handleQuickCreate(concept)}
                 subjectId={subjectId}

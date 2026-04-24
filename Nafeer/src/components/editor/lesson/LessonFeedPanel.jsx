@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useAtlasSync } from '@/hooks/useAtlasSync';
 import {
   FEED_ITEM_TYPES, FEED_ITEM_TYPE_CONFIG,
   INTERACTION_TYPES, INTERACTION_TYPE_CONFIG,
@@ -19,8 +20,9 @@ const emptyForm = {
   interactionType: '', correctAnswer: '',
 };
 
-export default function LessonFeedPanel({ lessonId, unitId, lessonConceptIds, onOpenGlobal }) {
+export default function LessonFeedPanel({ lessonId, unitId, lessonConceptIds, onOpenGlobal, subjectId }) {
   const { feedItems, concepts, addFeedItem, deleteFeedItem } = useDataStore();
+  const { deleteFeedItem: atlasDeleteFeedItem } = useAtlasSync();
 
   // Feed items that belong to this lesson
   const lessonFeedItems = feedItems.filter((f) => f.lessonId === lessonId);
@@ -54,6 +56,11 @@ export default function LessonFeedPanel({ lessonId, unitId, lessonConceptIds, on
     });
     resetForm();
     setShowForm(false);
+  };
+
+  const handleDelete = (feedItemId) => {
+    deleteFeedItem(feedItemId);
+    if (subjectId) atlasDeleteFeedItem(feedItemId);
   };
 
   const canSubmit = form.contentAr.trim().length > 0;
@@ -105,7 +112,7 @@ export default function LessonFeedPanel({ lessonId, unitId, lessonConceptIds, on
                       </span>
                     )}
                     <button
-                      onClick={() => deleteFeedItem(item.id)}
+                      onClick={() => handleDelete(item.id)}
                       className="opacity-0 group-hover:opacity-100 text-ink-600 hover:text-red-500 transition-all p-0.5 shrink-0"
                     >
                       ✕

@@ -545,7 +545,13 @@ export default function QuizBankPage({ subjectId }) {
     addExam, updateExam, deleteExam,
     addQuestionToExam, removeQuestionFromExam,
   } = useDataStore();
-  const { syncQuestion, syncExam, submitForReview, deleteExam: atlasDeleteExam } = useAtlasSync();
+  const {
+    syncQuestion,
+    syncExam,
+    submitForReview,
+    deleteQuestion: atlasDeleteQuestion,
+    deleteExam: atlasDeleteExam,
+  } = useAtlasSync();
 
   const [tab,            setTab]            = useState('questions'); // 'questions' | 'exams'
   const [showQModal,     setShowQModal]     = useState(false);
@@ -635,6 +641,11 @@ export default function QuizBankPage({ subjectId }) {
       if (subjectId) syncExam(newId, subjectId).catch(() => {});
     }
     setShowExamModal(false);
+  };
+
+  const handleDeleteQuestion = (questionId) => {
+    deleteQuestion(questionId);
+    if (subjectId) atlasDeleteQuestion(questionId);
   };
 
   const filteredQuestions = questions.filter((q) => {
@@ -822,7 +833,7 @@ export default function QuizBankPage({ subjectId }) {
                       >
                         ✏
                       </button>
-                      <DeleteButton onDelete={() => deleteQuestion(q.id)} />
+                      <DeleteButton onDelete={() => handleDeleteQuestion(q.id)} />
                     </div>
                   </div>
                 );

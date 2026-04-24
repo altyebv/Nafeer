@@ -356,14 +356,14 @@ export default function LessonEditorPage({
         )}
         {activeTab === 2 && (
           <StepQuestions
-            lessonId={lessonId} unitId={unitId} lessonSections={lessonSections}
+            lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonSections={lessonSections}
             lessonQuestions={lessonQuestions} onOpenGlobal={onOpenGlobal}
             onPrev={() => setActiveTab(1)} onNext={() => setActiveTab(3)}
           />
         )}
         {activeTab === 3 && (
           <StepFeed
-            lessonId={lessonId} unitId={unitId} lessonConceptIds={lessonConceptIds}
+            lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonConceptIds={lessonConceptIds}
             lessonFeedItems={lessonFeedItems} prevLesson={prevLesson} nextLesson={nextLesson}
             units={units} onOpenGlobal={onOpenGlobal} onPrev={() => setActiveTab(2)}
             onNavigateLesson={onNavigateLesson} onBack={onBack}
@@ -693,7 +693,7 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSectio
 }
 
 // ─── Step 3: Questions ────────────────────────────────────────────────────────
-function StepQuestions({ lessonId, unitId, lessonSections, lessonQuestions, onOpenGlobal, onPrev, onNext }) {
+function StepQuestions({ lessonId, unitId, subjectId, lessonSections, lessonQuestions, onOpenGlobal, onPrev, onNext }) {
   const checkpoints = lessonQuestions.filter(q => q.isCheckpoint);
   const standalone  = lessonQuestions.filter(q => !q.isCheckpoint);
   return (
@@ -717,14 +717,14 @@ function StepQuestions({ lessonId, unitId, lessonSections, lessonQuestions, onOp
           )}
         </div>
       </Card>
-      <LessonQuestionsPanel lessonId={lessonId} unitId={unitId} onOpenGlobal={onOpenGlobal} />
+      <LessonQuestionsPanel lessonId={lessonId} unitId={unitId} subjectId={subjectId} onOpenGlobal={onOpenGlobal} />
       <StepFooter onPrev={onPrev} onNext={onNext} prevLabel="→ المحتوى" nextLabel="التغذية ←" />
     </div>
   );
 }
 
 // ─── Step 4: Feed ─────────────────────────────────────────────────────────────
-function StepFeed({ lessonId, unitId, lessonConceptIds, lessonFeedItems, prevLesson, nextLesson, units, onOpenGlobal, onPrev, onNavigateLesson, onBack }) {
+function StepFeed({ lessonId, unitId, subjectId, lessonConceptIds, lessonFeedItems, prevLesson, nextLesson, units, onOpenGlobal, onPrev, onNavigateLesson, onBack }) {
   return (
     <div className="space-y-4 max-w-2xl">
       <div className="pb-1">
@@ -747,7 +747,7 @@ function StepFeed({ lessonId, unitId, lessonConceptIds, lessonFeedItems, prevLes
           )}
         </div>
       </Card>
-      <LessonFeedPanel lessonId={lessonId} unitId={unitId} lessonConceptIds={lessonConceptIds} onOpenGlobal={onOpenGlobal} />
+      <LessonFeedPanel lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonConceptIds={lessonConceptIds} onOpenGlobal={onOpenGlobal} />
       <div className="flex items-center gap-3 mt-6 pt-5 border-t border-ink-800/50">
         <button onClick={onPrev} className="flex items-center gap-2 px-4 py-2.5 text-sm text-ink-500 hover:text-sand-400 border border-ink-800 hover:border-ink-700 rounded-xl transition-colors font-arabic hover:bg-ink-900/40">
           → الأسئلة

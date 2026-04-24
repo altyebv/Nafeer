@@ -75,7 +75,7 @@ function DifficultyDots({ n = 1, max = 5 }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ConceptsPage({ subjectId }) {
   const { concepts, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore();
-  const { syncConcept, submitForReview } = useAtlasSync();
+  const { syncConcept, submitForReview, deleteConcept: atlasDeleteConcept } = useAtlasSync();
 
   const [showModal,   setShowModal]   = useState(false);
   const [editingId,   setEditingId]   = useState(null);
@@ -129,6 +129,11 @@ export default function ConceptsPage({ subjectId }) {
     if (!newTagName.trim()) return;
     addTag({ nameAr: newTagName.trim() });
     setNewTagName('');
+  };
+
+  const handleDeleteConcept = (conceptId) => {
+    deleteConcept(conceptId);
+    if (subjectId) atlasDeleteConcept(conceptId);
   };
 
   const toggleTagInForm = (tagId) => {
@@ -380,7 +385,7 @@ export default function ConceptsPage({ subjectId }) {
                       </ActionBtn>
                     )}
                     <ActionBtn onClick={() => handleEdit(concept)} title="تعديل">✏</ActionBtn>
-                    <DeleteButton onDelete={() => deleteConcept(concept.id)} />
+                    <DeleteButton onDelete={() => handleDeleteConcept(concept.id)} />
                   </div>
                 </div>
               </div>

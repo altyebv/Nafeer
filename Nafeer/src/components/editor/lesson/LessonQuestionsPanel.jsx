@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useAtlasSync } from '@/hooks/useAtlasSync';
 import {
   QUESTION_TYPES, QUESTION_TYPE_CONFIG,
   COGNITIVE_LEVEL_CONFIG,
@@ -50,8 +51,9 @@ function MCQQuickForm({ options, correctIndex, onOptionsChange, onCorrectChange 
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal }) {
+export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, subjectId }) {
   const { questions, concepts, addQuestion, deleteQuestion } = useDataStore();
+  const { deleteQuestion: atlasDeleteQuestion } = useAtlasSync();
 
   const lessonQuestions = questions.filter((q) => q.lessonId === lessonId);
 
@@ -105,6 +107,11 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal })
     setShowForm(false);
   };
 
+  const handleDelete = (questionId) => {
+    deleteQuestion(questionId);
+    if (subjectId) atlasDeleteQuestion(questionId);
+  };
+
   const canSubmit = textAr.trim().length > 0 &&
     (type !== 'MCQ' || correctIndex >= 0);
 
@@ -154,7 +161,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal })
                       </span>
                     )}
                     <button
-                      onClick={() => deleteQuestion(q.id)}
+                      onClick={() => handleDelete(q.id)}
                       className="opacity-0 group-hover:opacity-100 text-ink-600 hover:text-red-500 transition-all p-0.5 shrink-0"
                     >
                       ✕
