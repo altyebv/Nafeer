@@ -13,6 +13,7 @@ import { CreateContributorModal } from './components/modals/CreateContributorMod
 import { SiteSettingsSection }   from './components/SiteSettingSection';
 import { SeedSection }           from './components/SeedSection';
 import { PublishSection }        from './components/PublishSection';  // ← NEW
+import { AdminEditorSection }        from './components/AdminEditorSection';  // ← NEWER + DEVVVVV
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -62,8 +63,9 @@ export default function AdminDashboard() {
             onUnauthorized={() => router.push('/admin/login')}
           />
         )}
+        {section === 'editor'        && <AdminEditorSection />}  {/*JUST TESTING */}
         {section === 'coverage'      && <CoverageSection />}
-        {section === 'publish'       && <PublishSection />}        {/* ← NEW */}
+        {section === 'publish'       && <PublishSection />}        
         {section === 'media'         && <MediaSection />}
         {section === 'admins'        && <AdminsSection />}
         {section === 'settings'      && <SiteSettingsSection />}

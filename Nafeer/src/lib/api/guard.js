@@ -1,25 +1,18 @@
 import { getCurrentUser } from '@/lib/auth';
+import { getAdminAsUser } from '@/lib/adminAuth';
 
-// ─── requireContributor ───────────────────────────────────────────────────────
 // Use at the top of any content API route handler.
-// Returns the contributor JWT payload, or throws a Response if unauthorized.
-//
-// Usage:
-//   const user = await requireContributor();
-//   // user.id, user.subject, user.role are available
-//
+// Returns the contributor/admin JWT payload, or throws a Response if unauthorized.
 export async function requireContributor() {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser() || await getAdminAsUser();
   if (!user) {
     throw Response.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
   }
   return user;
 }
 
-// ─── requireSubjectAccess ─────────────────────────────────────────────────────
-// Like requireContributor, but also checks the contributor is assigned
+// Like requireContributor, but also checks the user is assigned
 // to the requested subjectId (or is an admin).
-//
 export async function requireSubjectAccess(subjectId) {
   const user = await requireContributor();
 
@@ -36,9 +29,7 @@ export async function requireSubjectAccess(subjectId) {
   return user;
 }
 
-// ─── ok / err ─────────────────────────────────────────────────────────────────
-// Standard response helpers — keeps route handlers clean.
-
+// Standard response helpers - keeps route handlers clean.
 export const ok = (data, extra = {}) =>
   Response.json({ ok: true, ...extra, data });
 

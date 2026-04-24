@@ -110,25 +110,26 @@ export function useDataStore(selector) {
     importData: (data) => {
       const units = [], lessons = [], sections = [], blocks = [];
       (data.units || []).forEach((unit) => {
-        const { lessons: ul, ...ud } = unit; units.push(ud);
-        (ul || []).forEach((lesson) => {
-          const { sections: ls, ...ld } = lesson; lessons.push({ ...ld, unitId: unit.id });
-          (ls || []).forEach((section) => {
-            const { blocks: sb, ...sd } = section; sections.push({ ...sd, lessonId: lesson.id });
-            (sb || []).forEach((block) => blocks.push({ ...block, sectionId: section.id }));
+          const { lessons: ul, ...ud } = unit; units.push(ud);
+          (ul || []).forEach((lesson) => {
+            const { sections: ls, status: lessonStatus, ...ld } = lesson;
+            lessons.push({ ...ld, unitId: unit.id, atlasStatus: lessonStatus || ld.atlasStatus || 'draft' });
+            (ls || []).forEach((section) => {
+              const { blocks: sb, ...sd } = section; sections.push({ ...sd, lessonId: lesson.id });
+              (sb || []).forEach((block) => blocks.push({ ...block, sectionId: section.id }));
+            });
           });
-        });
       });
       subject.loadFromAtlas({ subject: data.subject || null, units, lessons });
       content.loadLessonContent({ sections, blocks });
       concepts.resetConcepts();
-      (data.concepts  || []).forEach((c) => concepts.addConcept(c));
+      (data.concepts  || []).forEach((c) => concepts.addConcept({ ...c, atlasStatus: c.status || c.atlasStatus || 'draft' }));
       (data.tags      || []).forEach((t) => concepts.addTag(t));
       feed.resetFeed();
-      (data.feedItems || []).forEach((f) => feed.addFeedItem(f));
+      (data.feedItems || []).forEach((f) => feed.addFeedItem({ ...f, atlasStatus: f.status || f.atlasStatus || 'draft' }));
       quiz.resetQuiz();
-      (data.questions || []).forEach((q) => quiz.addQuestion(q));
-      (data.exams     || []).forEach((e) => quiz.addExam(e));
+      (data.questions || []).forEach((q) => quiz.addQuestion({ ...q, atlasStatus: q.status || q.atlasStatus || 'draft' }));
+      (data.exams     || []).forEach((e) => quiz.addExam({ ...e, atlasStatus: e.status || e.atlasStatus || 'draft' }));
     },
 
     resetAll: () => {

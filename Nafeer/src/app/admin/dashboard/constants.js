@@ -20,6 +20,7 @@ export const SUBJECTS_CATALOG_REF = SUBJECTS_CATALOG;
 
 export const NAV = [
   { id: 'overview',      icon: '◈', label: 'نظرة عامة',     badgeKey: null          },
+  { id: 'editor',        icon: '✦', label: 'المحرر',        badgeKey: null          },
   { id: 'contributors',  icon: '◉', label: 'المساهمون',     badgeKey: 'pending'     },
   { id: 'roles',         icon: '◆', label: 'الأدوار',        badgeKey: null          },
   { id: 'review',        icon: '◎', label: 'طابور المراجعة', badgeKey: 'reviewTotal' },
