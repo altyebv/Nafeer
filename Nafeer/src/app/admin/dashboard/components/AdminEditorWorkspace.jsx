@@ -9,6 +9,11 @@ import FeedItemsPage from '@/components/editor/pages/FeedItemsPage';
 import QuizBankPage from '@/components/editor/pages/QuizBankPage';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { useDataStore } from '@/store/dataStore';
+import { useSubjectStore } from '@/store/subjectStore';
+import { useContentStore } from '@/store/contentStore';
+import { useConceptStore } from '@/store/conceptStore';
+import { useFeedStore } from '@/store/feedStore';
+import { useQuizStore } from '@/store/quizStore';
 import { useMediaStore } from '@/store/mediaStore';
 
 const NAV_ITEMS = [
@@ -29,14 +34,16 @@ function WorkspaceSpinner({ label }) {
 }
 
 export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
-  const importData = useDataStore((s) => s.importData);
-  const resetAll = useDataStore((s) => s.resetAll);
-  const storeSubject = useDataStore((s) => s.subject);
-  const lessons = useDataStore((s) => s.lessons);
-  const concepts = useDataStore((s) => s.concepts);
-  const feedItems = useDataStore((s) => s.feedItems);
-  const questions = useDataStore((s) => s.questions);
-  const resetMedia = useMediaStore((s) => s.resetMedia);
+  // useDataStore is a composite hook (not a real Zustand store) — it does not
+  // support selectors. Use individual domain stores directly so React correctly
+  // subscribes to each slice and re-renders when data arrives.
+  const { importData, resetAll } = useDataStore();
+  const storeSubject = useSubjectStore((s) => s.subject);
+  const lessons      = useSubjectStore((s) => s.lessons);
+  const concepts     = useConceptStore((s) => s.concepts);
+  const feedItems    = useFeedStore((s) => s.feedItems);
+  const questions    = useQuizStore((s) => s.questions);
+  const resetMedia   = useMediaStore((s) => s.resetMedia);
   const { isSyncing, syncError, lastSynced } = useAtlasSync();
 
   const [loading, setLoading] = useState(true);
