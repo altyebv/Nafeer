@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { versioningFields } from './versioning';
-import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Exam ─────────────────────────────────────────────────────────────────────
 // A collection of questions (a past exam paper or practice set).
@@ -20,7 +19,6 @@ const ExamSchema = new mongoose.Schema(
     subjectId: {
       type: String,
       required: true,
-      enum: SUBJECT_IDS,
       index: true,
     },
 

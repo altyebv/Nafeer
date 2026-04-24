@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { versioningFields } from './versioning';
-import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Subject ──────────────────────────────────────────────────────────────────
 // One document per subject in Atlas. Owned by one contributor.
@@ -14,7 +13,6 @@ const SubjectSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      enum: SUBJECT_IDS,
     },
 
     nameAr:  { type: String, required: true },

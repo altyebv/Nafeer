@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { versioningFields } from './versioning';
-import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Unit ─────────────────────────────────────────────────────────────────────
 // Belongs to a Subject. Has a stable contentId used by Android.
@@ -18,7 +17,6 @@ const UnitSchema = new mongoose.Schema(
     subjectId: {
       type:     String,
       required: true,
-      enum:     SUBJECT_IDS,
       index:    true,
     },
 

@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { versioningFields } from './versioning';
-import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Question ─────────────────────────────────────────────────────────────────
 // An exam/quiz question in Basheer's Question Bank.
@@ -31,7 +30,6 @@ const QuestionSchema = new mongoose.Schema(
     subjectId: {
       type: String,
       required: true,
-      enum: SUBJECT_IDS,
       index: true,
     },
 

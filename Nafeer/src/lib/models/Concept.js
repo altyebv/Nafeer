@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { versioningFields } from './versioning';
-import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Concept ──────────────────────────────────────────────────────────────────
 // A discrete knowledge atom. Heavily cross-referenced:
@@ -24,7 +23,6 @@ const ConceptSchema = new mongoose.Schema(
     subjectId: {
       type: String,
       required: true,
-      enum: SUBJECT_IDS,
       index: true,
     },
 

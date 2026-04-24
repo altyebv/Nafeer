@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { versioningFields } from './versioning';
-import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Lesson ───────────────────────────────────────────────────────────────────
 // Core content unit. Full versioning — lessons go through draft → review → approved.
@@ -20,7 +19,6 @@ const LessonSchema = new mongoose.Schema(
     subjectId: {
       type: String,
       required: true,
-      enum: SUBJECT_IDS,
       index: true,
     },
 

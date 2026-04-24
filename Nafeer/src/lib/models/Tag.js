@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { versioningFields } from './versioning';
-import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Tag ──────────────────────────────────────────────────────────────────────
 // Flat label attached to concepts. Concepts carry tagIds[].
@@ -17,7 +16,6 @@ const TagSchema = new mongoose.Schema(
     subjectId: {
       type: String,
       required: true,
-      enum: SUBJECT_IDS,
       index: true,
     },
 

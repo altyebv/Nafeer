@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { versioningFields } from './versioning';
-import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 // A named subdivision inside a lesson. Has learningType which drives
@@ -20,7 +19,6 @@ const SectionSchema = new mongoose.Schema(
     subjectId: {
       type: String,
       required: true,
-      enum: SUBJECT_IDS,
       index: true,
     },
 

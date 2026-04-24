@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { versioningFields } from './versioning';
-import { SUBJECT_IDS } from '@/shared/curriculum';
 
 // ─── Block ────────────────────────────────────────────────────────────────────
 // Atomic content unit inside a section. type matches Android BlockType enum.
@@ -23,7 +22,6 @@ const BlockSchema = new mongoose.Schema(
     subjectId: {
       type: String,
       required: true,
-      enum: SUBJECT_IDS,
       index: true,
     },
 
