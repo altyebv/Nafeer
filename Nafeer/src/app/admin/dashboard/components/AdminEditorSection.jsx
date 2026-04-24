@@ -398,7 +398,7 @@ function ContentPanel({ subject: s, onPublish, publishing, result, onDismissResu
 
       {/* ── Editor placeholder — Step 2 will embed EditorShell here ─────────── */}
       <div
-        className="rounded-xl border px-6 py-10 flex flex-col items-center gap-3 text-center"
+        className="hidden"
         style={{ background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.05)', borderStyle: 'dashed' }}
       >
         <span className="text-3xl text-ink-800">✎</span>
@@ -442,11 +442,14 @@ export function AdminEditorSection() {
       if (data.ok) {
         const list = data.subjects || [];
         setSubjects(list);
-        // Auto-select first subject with content if nothing selected yet
-        if (!selected) {
-          const first = list.find((s) => s.isPublishable) || list[0];
-          if (first) setSelected(first.id);
-        }
+        setSelected((prevSelected) => {
+          if (prevSelected && list.some((subject) => subject.id === prevSelected)) {
+            return prevSelected;
+          }
+
+          const first = list.find((subject) => subject.isPublishable) || list[0];
+          return first?.id || null;
+        });
       } else {
         setError(data.error || 'فشل تحميل البيانات');
       }
@@ -455,7 +458,7 @@ export function AdminEditorSection() {
     } finally {
       setLoading(false);
     }
-  }, []); // eslint-disable-line
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -489,7 +492,7 @@ export function AdminEditorSection() {
     <div>
       <SectionHeader
         title="محرر المشرف"
-        description="مراجعة المحتوى المعتمد ونشره إلى التطبيق — المرحلة الأولى: ربط مسار النشر"
+        description="استيراد المادة المنشورة عن بُعد إلى Atlas عند الحاجة، ثم تعديلها بالمحرر الحالي وإعادة نشرها للتطبيق"
       >
         <button
           onClick={load}
@@ -537,7 +540,10 @@ export function AdminEditorSection() {
                   <AdminEditorWorkspace
                     subjectId={selectedSubject.id}
                     subjectMeta={selectedSubject}
-                    onImported={load}
+                    onImported={() => {
+                      setResult(null);
+                      load();
+                    }}
                   />
                 </div>
               ) : (
