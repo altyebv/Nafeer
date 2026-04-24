@@ -10,7 +10,7 @@ import { Concept }         from '@/lib/models/Concept';
 import { FeedItem }        from '@/lib/models/FeedItem';
 import { Question }        from '@/lib/models/Question';
 import { bootstrapSubject } from '@/lib/api/subject';
-import { ensureSystemSeedContributor } from '@/lib/systemseedActor';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { SUBJECTS_CATALOG, buildSubjectScaffold } from '@/shared/curriculum';
 
 // ─── GET /api/admin/seed ──────────────────────────────────────────────────────
