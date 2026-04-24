@@ -9,6 +9,7 @@ const TRACK_META = {
   COMMON:   { label: 'مشترك', cls: 'border-sky-800/50 text-sky-400/80',      dot: 'bg-sky-500'     },
   SCIENCE:  { label: 'علمي',   cls: 'border-emerald-800/50 text-emerald-400/80', dot: 'bg-emerald-500' },
   LITERARY: { label: 'أدبي',   cls: 'border-purple-800/50 text-purple-400/80',   dot: 'bg-purple-500'  },
+  REMOTE:   { label: 'Remote', cls: 'border-amber-800/50 text-amber-400/80', dot: 'bg-amber-500' },
 };
 
 const TRACK_ORDER = ['COMMON', 'SCIENCE', 'LITERARY'];
@@ -70,7 +71,8 @@ function statusDot(s) {
 }
 
 function SubjectPicker({ subjects, selected, onSelect }) {
-  const grouped = TRACK_ORDER.map((track) => ({
+  const extraTracks = [...new Set(subjects.map((s) => s.track).filter((track) => !TRACK_ORDER.includes(track)))];
+  const grouped = [...TRACK_ORDER, ...extraTracks].map((track) => ({
     track,
     items: subjects.filter((s) => s.track === track),
   })).filter((g) => g.items.length > 0);
