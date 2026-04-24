@@ -10,6 +10,7 @@ import { Tag } from '@/lib/models/Tag';
 import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
+import { getManifest } from '@/lib/FirebaseAdmin';
 
 // GET /api/export?subjectId=PHYSICS[&includeAll=true]
 //
@@ -35,6 +36,8 @@ export async function GET(request) {
     await connectDB();
 
     const contentStatusFilter = canIncludeAll ? {} : { status: 'approved' };
+    const manifest = await getManifest().catch(() => null);
+    const manifestEntry = (manifest?.subjects || []).find((entry) => entry.id === subjectId) || null;
 
     const [
       subject,
@@ -60,7 +63,11 @@ export async function GET(request) {
       Exam.find({ subjectId, ...contentStatusFilter }).lean(),
     ]);
 
-    if (!subject) return err('المادة غير موجودة في قاعدة البيانات', 404);
+    if (!subject) {
+      const remoteData = await loadRemoteSubjectExport(manifestEntry?.downloadUrl);
+      if (remoteData) return ok(remoteData);
+      return err('المادة غير موجودة في قاعدة البيانات', 404);
+    }
 
     const approvedLessonIds = new Set(lessons.map((lesson) => lesson.contentId));
 
@@ -228,10 +235,37 @@ export async function GET(request) {
       })),
     };
 
+    if (
+      !canIncludeAll &&
+      manifestEntry?.downloadUrl &&
+      lessons.length === 0 &&
+      concepts.length === 0 &&
+      feedItems.length === 0 &&
+      questions.length === 0
+    ) {
+      const remoteData = await loadRemoteSubjectExport(manifestEntry.downloadUrl);
+      if (remoteData) return ok(remoteData);
+    }
+
     return ok(exportData);
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[GET /api/export]', e);
     return err('خطأ في الخادم', 500);
+  }
+}
+
+async function loadRemoteSubjectExport(downloadUrl) {
+  if (!downloadUrl) return null;
+
+  try {
+    const res = await fetch(downloadUrl, { cache: 'no-store' });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return data && typeof data === 'object' ? data : null;
+  } catch (e) {
+    console.warn('[GET /api/export] remote fallback failed:', e.message);
+    return null;
   }
 }
