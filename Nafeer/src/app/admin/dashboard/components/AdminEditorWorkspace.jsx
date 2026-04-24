@@ -36,7 +36,7 @@ function WorkspaceSpinner({ label }) {
   );
 }
 
-export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
+export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRemoteDeleted }) {
   // ── Reactive data: proper Zustand selectors ────────────────────────────────
   const storeSubject = useSubjectStore((s) => s.subject);
   const lessons      = useSubjectStore((s) => s.lessons);
@@ -69,6 +69,9 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
   const [importing,        setImporting]        = useState(false);
   const [importError,      setImportError]      = useState(null);
   const [importSuccess,    setImportSuccess]    = useState(false);
+  const [deleteRemotePending, setDeleteRemotePending] = useState(false);
+  const [deleteRemoteBusy, setDeleteRemoteBusy] = useState(false);
+  const [deleteRemoteError, setDeleteRemoteError] = useState(null);
   const [currentPage,      setCurrentPage]      = useState('lessons');
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [selectedUnitId,   setSelectedUnitId]   = useState(null);
@@ -86,6 +89,8 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
       setError(null);
       setImportError(null);
       setImportSuccess(false);
+      setDeleteRemotePending(false);
+      setDeleteRemoteError(null);
       setCurrentPage('lessons');
       setSelectedLessonId(null);
       setSelectedUnitId(null);
@@ -163,6 +168,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
   const syncFromRemote = async () => {
     setImporting(true);
     setImportError(null);
+    setDeleteRemoteError(null);
     setImportSuccess(false);
     try {
       const res  = await fetch('/api/admin/remote-subjects/import', {
@@ -179,6 +185,25 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
       setImportError(e.message || 'فشل استيراد المادة');
     } finally {
       setImporting(false);
+    }
+  };
+
+  const deleteRemoteSubject = async () => {
+    setDeleteRemoteBusy(true);
+    setDeleteRemoteError(null);
+    try {
+      const res = await fetch(`/api/admin/remote-subjects/${encodeURIComponent(subjectId)}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || 'فشل حذف النسخة البعيدة');
+
+      setDeleteRemotePending(false);
+      onRemoteDeleted?.();
+    } catch (e) {
+      setDeleteRemoteError(e.message || 'فشل حذف النسخة البعيدة');
+    } finally {
+      setDeleteRemoteBusy(false);
     }
   };
 
@@ -245,6 +270,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
   };
 
   const remoteOnly = origin === 'remote';
+  const hasRemoteVersion = remoteOnly || !!subjectMeta?.isPublished || !!subjectMeta?.downloadUrl;
 
   return (
     <div
@@ -338,21 +364,138 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported }) {
               </p>
               {importError   && <p className="text-[11px] font-arabic text-red-400 mt-0.5">{importError}</p>}
               {importSuccess && <p className="text-[11px] font-arabic text-green-400 mt-0.5">✓ تم الاستيراد — تم إعادة تحميل المحتوى</p>}
+              {deleteRemoteError && <p className="text-[11px] font-arabic text-red-400 mt-0.5">{deleteRemoteError}</p>}
             </div>
-            <button
-              onClick={syncFromRemote}
-              disabled={importing}
-              className="shrink-0 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all"
-              style={{
-                background:  importing ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)',
-                borderColor: 'rgba(255,255,255,0.10)',
-                color:       importing ? 'var(--ink-600)' : 'var(--ink-300)',
-              }}
-            >
-              {importing
-                ? <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" /> جارٍ المزامنة...</span>
-                : '↓ سحب من Remote'}
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {hasRemoteVersion && (
+                deleteRemotePending ? (
+                  <>
+                    <button
+                      onClick={deleteRemoteSubject}
+                      disabled={deleteRemoteBusy || importing}
+                      className="px-3 py-1.5 rounded-lg border text-xs font-arabic transition-all"
+                      style={{
+                        background: 'rgba(239,68,68,0.10)',
+                        borderColor: 'rgba(239,68,68,0.30)',
+                        color: '#f87171',
+                        opacity: deleteRemoteBusy || importing ? 0.6 : 1,
+                      }}
+                    >
+                      {deleteRemoteBusy ? 'جارٍ الحذف...' : 'تأكيد حذف Remote'}
+                    </button>
+                    <button
+                      onClick={() => setDeleteRemotePending(false)}
+                      disabled={deleteRemoteBusy}
+                      className="px-3 py-1.5 rounded-lg border text-xs font-arabic transition-all"
+                      style={{
+                        background: 'rgba(255,255,255,0.02)',
+                        borderColor: 'rgba(255,255,255,0.10)',
+                        color: 'var(--ink-400)',
+                        opacity: deleteRemoteBusy ? 0.6 : 1,
+                      }}
+                    >
+                      إلغاء
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setDeleteRemotePending(true);
+                      setDeleteRemoteError(null);
+                    }}
+                    disabled={deleteRemoteBusy || importing}
+                    className="px-3 py-1.5 rounded-lg border text-xs font-mono transition-all"
+                    style={{
+                      background: 'rgba(239,68,68,0.06)',
+                      borderColor: 'rgba(239,68,68,0.22)',
+                      color: '#f87171',
+                      opacity: deleteRemoteBusy || importing ? 0.6 : 1,
+                    }}
+                  >
+                    ✕ حذف من Remote
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={syncFromRemote}
+                disabled={importing || deleteRemoteBusy}
+                className="shrink-0 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all"
+                style={{
+                  background:  importing ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)',
+                  borderColor: 'rgba(255,255,255,0.10)',
+                  color:       importing ? 'var(--ink-600)' : 'var(--ink-300)',
+                }}
+              >
+                {importing
+                  ? <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" /> جارٍ المزامنة...</span>
+                  : '↓ سحب من Remote'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {remoteOnly && hasRemoteVersion && (
+          <div
+            className="mt-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-4"
+            style={{ background: 'rgba(239,68,68,0.04)', borderColor: 'rgba(239,68,68,0.18)' }}
+          >
+            <div>
+              <p className="font-arabic text-sm text-red-300">حذف هذه المادة من Remote</p>
+              <p className="text-[11px] font-arabic text-red-200/70">
+                يحذف سجل Firebase والملف المنشور من التخزين البعيد. هذا مناسب للمواد التجريبية.
+              </p>
+              {deleteRemoteError && <p className="text-[11px] font-arabic text-red-400 mt-1">{deleteRemoteError}</p>}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {deleteRemotePending ? (
+                <>
+                  <button
+                    onClick={deleteRemoteSubject}
+                    disabled={deleteRemoteBusy || importing}
+                    className="px-4 py-2 rounded-xl border text-sm font-arabic"
+                    style={{
+                      background: 'rgba(239,68,68,0.10)',
+                      borderColor: 'rgba(239,68,68,0.30)',
+                      color: '#f87171',
+                      opacity: deleteRemoteBusy || importing ? 0.6 : 1,
+                    }}
+                  >
+                    {deleteRemoteBusy ? 'جارٍ الحذف...' : 'تأكيد الحذف'}
+                  </button>
+                  <button
+                    onClick={() => setDeleteRemotePending(false)}
+                    disabled={deleteRemoteBusy}
+                    className="px-4 py-2 rounded-xl border text-sm font-arabic"
+                    style={{
+                      background: 'rgba(255,255,255,0.02)',
+                      borderColor: 'rgba(255,255,255,0.10)',
+                      color: 'var(--ink-400)',
+                      opacity: deleteRemoteBusy ? 0.6 : 1,
+                    }}
+                  >
+                    إلغاء
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setDeleteRemotePending(true);
+                    setDeleteRemoteError(null);
+                  }}
+                  disabled={deleteRemoteBusy || importing}
+                  className="px-4 py-2 rounded-xl border text-sm font-arabic"
+                  style={{
+                    background: 'rgba(239,68,68,0.10)',
+                    borderColor: 'rgba(239,68,68,0.28)',
+                    color: '#f87171',
+                    opacity: deleteRemoteBusy || importing ? 0.6 : 1,
+                  }}
+                >
+                  حذف من Remote
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
