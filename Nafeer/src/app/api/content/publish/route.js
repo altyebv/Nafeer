@@ -12,24 +12,36 @@ import { FeedItem }               from '@/lib/models/FeedItem';
 import { Question }               from '@/lib/models/Question';
 import { Exam }                   from '@/lib/models/Exam';
 import { uploadFile, getPublicUrl } from '@/lib/supabase';
-import { getManifest, upsertSubjectEntry } from '@/lib/FirebaseAdmin';
+import { getManifest, upsertDeltaSubjectEntry } from '@/lib/FirebaseAdmin';
+import { buildAndUploadDelta }    from '@/lib/deltaEngine';
 import crypto from 'crypto';
 
-// ── Supabase bucket for content exports (public, read-only for app) ───────────
 const EXPORTS_BUCKET = process.env.SUPABASE_EXPORTS_BUCKET || 'content-exports';
 
-// POST /api/content/publish
-// Body: { subjectId: "PHYSICS" }
-// Exports approved content → uploads to Supabase → updates Firestore manifest.
+// ── POST /api/content/publish ─────────────────────────────────────────────────
+//
+// Body: { subjectId: "PHYSICS", mode?: "delta" | "full" }
+//
+// mode defaults to "delta". Pass mode:"full" to force a legacy full-export
+// (e.g. when migrating a subject to delta for the first time, or recovering
+// from a suspected manifest corruption).
+//
+// Delta flow:
+//   DB query → assemble export DTOs → buildAndUploadDelta (diff + upload bundles)
+//   → upsertDeltaSubjectEntry (Firestore manifest update)
+//
+// Full flow (backwards-compat / forced):
+//   DB query → assemble BasheerExportData → upload single JSON → upsertSubjectEntry
+//
 // Admin only.
 
 export async function POST(request) {
   const authErr = await verifyAdminAuth();
   if (authErr) return authErr;
 
-  let subjectId;
+  let subjectId, mode;
   try {
-    ({ subjectId } = await request.json());
+    ({ subjectId, mode = 'delta' } = await request.json());
   } catch {
     return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
   }
@@ -37,20 +49,14 @@ export async function POST(request) {
   if (!subjectId) {
     return NextResponse.json({ ok: false, error: 'subjectId مطلوب' }, { status: 400 });
   }
+  if (!['delta', 'full'].includes(mode)) {
+    return NextResponse.json({ ok: false, error: 'mode must be "delta" or "full"' }, { status: 400 });
+  }
 
   try {
     await connectDB();
 
     // ── 1. Fetch all approved content for this subject ────────────────────────
-    //
-    // IMPORTANT: Only Lessons, Questions, Concepts, FeedItems, and Tags go through
-    // an explicit approval workflow (status: 'approved'). Sections and Blocks are
-    // "approved by association" — they belong to approved lessons and don't have
-    // their own review step. Their status stays at the 'draft' default from
-    // versioningFields, so filtering them by status: 'approved' drops ALL of them.
-    //
-    // Sections/Blocks are fetched by subjectId with status: { $ne: 'archived' }
-    // so only manually-archived items are excluded.
     const [
       subject, units, lessons, sections, blocks,
       concepts, tags, feedItems, questions, exams,
@@ -58,13 +64,8 @@ export async function POST(request) {
       Subject.findOne({ subjectId }).lean(),
       Unit.find({ subjectId }).sort({ order: 1 }).lean(),
       Lesson.find({ subjectId, status: 'approved' }).sort({ order: 1 }).lean(),
-
-      // ── FIX: no status: 'approved' filter — sections are approved by their lesson ──
       Section.find({ subjectId, status: { $ne: 'archived' } }).sort({ order: 1 }).lean(),
-
-      // ── FIX: same for blocks ───────────────────────────────────────────────
       Block.find({ subjectId, status: { $ne: 'archived' } }).sort({ order: 1 }).lean(),
-
       Concept.find({ subjectId, status: 'approved' }).lean(),
       Tag.find({ subjectId, status: 'approved' }).lean(),
       FeedItem.find({ subjectId, status: 'approved' }).sort({ order: 1 }).lean(),
@@ -75,7 +76,6 @@ export async function POST(request) {
     if (!subject) {
       return NextResponse.json({ ok: false, error: 'المادة غير موجودة' }, { status: 404 });
     }
-
     if (lessons.length === 0) {
       return NextResponse.json(
         { ok: false, error: 'لا يوجد دروس معتمدة لهذه المادة — لا يمكن النشر' },
@@ -83,222 +83,403 @@ export async function POST(request) {
       );
     }
 
-    // ── 2. Assemble BasheerExportData (mirrors /api/export shape) ────────────
+    // ── 2. Get current manifest entry ─────────────────────────────────────────
+    const manifest    = await getManifest().catch(() => null);
+    const prevEntry   = (manifest?.subjects || []).find((s) => s.id === subjectId) || null;
+
+    // contentVersion: increment the previous integer token, or start at "1"
+    const prevVersion   = parseInt(prevEntry?.contentVersion || prevEntry?.version || '0', 10);
+    const contentVersion = String(prevVersion + 1);
+    const publishedAt    = new Date().toISOString();
+
+    // ── 3. Build export DTOs (shared by both paths) ───────────────────────────
+    const approvedLessonIds = new Set(lessons.map((l) => l.contentId));
     const blocksBySection   = indexBy(blocks,   'sectionContentId');
     const sectionsByLesson  = indexBy(sections, 'lessonContentId');
-
-    // Only index sections that belong to an approved lesson (defensive filter).
-    // This ensures that if a lesson was un-approved after its sections were
-    // created, those orphaned sections don't sneak into a different lesson's slot.
-    const approvedLessonIds = new Set(lessons.map((l) => l.contentId));
     const lessonsByUnit     = indexBy(lessons,  'unitContentId');
 
-    const exportData = {
-      version:    '2.0',
-      exportedAt: new Date().toISOString(),
-      subject: {
-        id:       subject.subjectId,
-        nameAr:   subject.nameAr,
-        nameEn:   subject.nameEn   || null,
-        path:     subject.path,
-        isMajor:  subject.isMajor  || false,
-        order:    subject.order    || 0,
-        colorHex: subject.colorHex || null,
-      },
-      tags: tags.map((t) => ({
-        id:     t.contentId,
-        nameAr: t.nameAr,
-        nameEn: t.nameEn || null,
-      })),
-      concepts: concepts.map((c) => ({
-        id:              c.contentId,
-        type:            c.type,
-        titleAr:         c.titleAr,
-        titleEn:         c.titleEn         || null,
-        definition:      c.definition      || '',
-        shortDefinition: c.shortDefinition || null,
-        formula:         c.formula         || null,
-        imageUrl:        c.imageUrl        || null,
-        difficulty:      c.difficulty      || 1,
-        extraData:       coerceMixedToString(c.extraData),
-        tagIds:          c.tagIds          || [],
-      })),
-      units: units.map((unit) => ({
-        id:          unit.contentId,
-        title:       unit.title,
-        order:       unit.order,
-        description: unit.description || null,
-        bookId:      unit.bookId      || null,
-        bookTitle:   unit.bookTitle   || null,
-        lessons: (lessonsByUnit[unit.contentId] || []).map((lesson) => ({
-          id:               lesson.contentId,
-          title:            lesson.title,
-          order:            lesson.order,
-          estimatedMinutes: lesson.estimatedMinutes || 15,
-          summary:          lesson.summary          || null,
-          metadata:         lesson.metadata         || null,
-          parentLesson:     lesson.parentLesson     || null,
-          variationType:    lesson.variationType    || null,
-          variationNote:    lesson.variationNote    || null,
-          groupId:          lesson.groupId          || null,
-          groupTitle:       lesson.groupTitle       || null,
-          groupMetadata:    lesson.groupMetadata    || null,
-          sections: (sectionsByLesson[lesson.contentId] || [])
-            // Defensive: only include sections whose lesson is approved
-            .filter(() => approvedLessonIds.has(lesson.contentId))
-            .map((section) => ({
-              id:           section.contentId,
-              title:        section.title,
-              order:        section.order,
-              partIndex:    section.partIndex    ?? 0,
-              learningType: section.learningType || 'UNDERSTANDING',
-              conceptIds:   section.conceptIds   || [],
-              blocks: (blocksBySection[section.contentId] || []).map((block) => ({
-                id:         block.contentId,
-                type:       block.type,
-                content:    block.content    || '',
-                order:      block.order,
-                conceptRef: block.conceptRef || null,
-                caption:    block.caption    || null,
-                // ── FIX: Block.metadata is Mixed (could be a JS object).
-                // BlockJson.metadata on Android is String? — always stringify objects
-                // so kotlinx-serialization can parse it without a type mismatch crash.
-                metadata:   coerceMixedToString(block.metadata),
-              })),
-            })),
-        })),
-      })),
-      questions: questions.map((q) => ({
-        id:               q.contentId,
-        type:             q.type,
-        textAr:           q.textAr,
-        textEn:           q.textEn           || null,
-        correctAnswer:    q.correctAnswer,
-        options:          coerceMixedToString(q.options),
-        explanation:      q.explanation      || null,
-        imageUrl:         q.imageUrl         || null,
-        tableData:        coerceMixedToString(q.tableData),
-        difficulty:       q.difficulty       || 1,
-        points:           q.points           || 1,
-        estimatedSeconds: q.estimatedSeconds || 60,
-        cognitiveLevel:   q.cognitiveLevel   || 'RECALL',
-        source:           q.source           || 'ORIGINAL',
-        sourceExamId:     q.sourceExamContentId || null,
-        sourceDetails:    q.sourceDetails    || null,
-        sourceYear:       q.sourceYear       || null,
-        feedEligible:     q.feedEligible     || false,
-        unitId:           q.unitContentId    || null,
-        lessonId:         q.lessonContentId  || null,
-        sectionId:        q.sectionContentId || null,
-        isCheckpoint:     q.isCheckpoint     || false,
-        conceptIds:       q.conceptIds       || [],
-        markers:          q.markers          || [],
-      })),
-      exams: exams.map((e) => ({
-        id:           e.contentId,
-        titleAr:      e.titleAr,
-        titleEn:      e.titleEn      || null,
-        source:       e.source,
-        year:         e.year         || null,
-        schoolName:   e.schoolName   || null,
-        duration:     e.duration     || null,
-        totalPoints:  e.totalPoints  || null,
-        description:  e.description  || null,
-        examType:     e.examType     || null,
-        questionIds:  e.questionContentIds || [],
-        sectionsJson: coerceMixedToString(e.sectionsJson),
-      })),
-      feedItems: feedItems.map((item) => ({
-        id:              item.contentId,
-        conceptId:       item.conceptContentId,
-        type:            item.type,
-        contentAr:       item.contentAr       || '',
-        back:            item.back            || null,
-        contentEn:       item.contentEn       || null,
-        imageUrl:        item.imageUrl        || null,
-        interactionType: item.interactionType || null,
-        correctAnswer:   item.correctAnswer   || null,
-        options:         coerceMixedToString(item.options),
-        explanation:     item.explanation     || null,
-        questionId:      item.questionContentId || null,
-        priority:        item.priority        || 1,
-        order:           item.order           || 0,
-      })),
+    // ── Subject
+    const subjectExport = {
+      id:       subject.subjectId,
+      nameAr:   subject.nameAr,
+      nameEn:   subject.nameEn   || null,
+      path:     subject.path,
+      isMajor:  subject.isMajor  || false,
+      order:    subject.order    || 0,
+      colorHex: subject.colorHex || null,
     };
 
-    // ── 3. Determine next version ─────────────────────────────────────────────
-    const manifest      = await getManifest().catch(() => null);
-    const existingEntry = (manifest?.subjects || []).find((s) => s.id === subjectId);
-    const nextVersion   = String((parseInt(existingEntry?.version || '0', 10) + 1));
+    // ── Tags
+    const tagsExport = tags.map((t) => ({
+      id:     t.contentId,
+      nameAr: t.nameAr,
+      nameEn: t.nameEn || null,
+    }));
 
-    // ── 4. Upload to Supabase Storage ─────────────────────────────────────────
-    const fileName   = `${subjectId.toLowerCase()}_v${nextVersion}.json`;
-    const jsonBuffer = Buffer.from(JSON.stringify(exportData), 'utf-8');
-    const sha256     = crypto.createHash('sha256').update(jsonBuffer).digest('hex');
-    const size       = jsonBuffer.length;
+    // ── Concepts
+    const conceptsExport = concepts.map((c) => ({
+      id:              c.contentId,
+      type:            c.type,
+      titleAr:         c.titleAr,
+      titleEn:         c.titleEn         || null,
+      definition:      c.definition      || '',
+      shortDefinition: c.shortDefinition || null,
+      formula:         c.formula         || null,
+      imageUrl:        c.imageUrl        || null,
+      difficulty:      c.difficulty      || 1,
+      extraData:       coerceMixedToString(c.extraData),
+      tagIds:          c.tagIds          || [],
+    }));
 
-    await uploadFile(EXPORTS_BUCKET, fileName, jsonBuffer, 'application/json');
-    const downloadUrl = getPublicUrl(EXPORTS_BUCKET, fileName);
+    // ── Units (flat — no nested lessons; delta patches deliver lessons separately)
+    const unitsExport = units.map((unit) => ({
+      id:          unit.contentId,
+      title:       unit.title,
+      order:       unit.order,
+      description: unit.description || null,
+      bookId:      unit.bookId      || null,
+      bookTitle:   unit.bookTitle   || null,
+    }));
 
-    if (!downloadUrl) {
-      return NextResponse.json(
-        { ok: false, error: 'فشل الحصول على رابط التحميل من Supabase' },
-        { status: 500 }
-      );
+    // ── Lessons (flat — carry unitId FK for delta path)
+    const lessonsExport = lessons.map((lesson) => ({
+      id:               lesson.contentId,
+      unitId:           lesson.unitContentId,       // FK for delta patches
+      title:            lesson.title,
+      order:            lesson.order,
+      estimatedMinutes: lesson.estimatedMinutes || 15,
+      summary:          lesson.summary          || null,
+      metadata:         lesson.metadata         || null,
+      parentLesson:     lesson.parentLesson     || null,
+      variationType:    lesson.variationType    || null,
+      variationNote:    lesson.variationNote    || null,
+      groupId:          lesson.groupId          || null,
+      groupTitle:       lesson.groupTitle       || null,
+      groupMetadata:    lesson.groupMetadata    || null,
+    }));
+
+    // ── Sections (flat — carry lessonId FK)
+    const sectionsExport = sections
+      .filter((s) => approvedLessonIds.has(s.lessonContentId))
+      .map((section) => ({
+        id:           section.contentId,
+        lessonId:     section.lessonContentId,      // FK for delta patches
+        title:        section.title,
+        order:        section.order,
+        partIndex:    section.partIndex    ?? 0,
+        learningType: section.learningType || 'UNDERSTANDING',
+        conceptIds:   section.conceptIds   || [],
+      }));
+
+    // ── Blocks (flat — carry sectionId FK)
+    const approvedSectionIds = new Set(sectionsExport.map((s) => s.id));
+    const blocksExport = blocks
+      .filter((b) => approvedSectionIds.has(b.sectionContentId))
+      .map((block) => ({
+        id:         block.contentId,
+        sectionId:  block.sectionContentId,          // FK for delta patches
+        type:       block.type,
+        content:    block.content    || '',
+        order:      block.order,
+        conceptRef: block.conceptRef || null,
+        caption:    block.caption    || null,
+        metadata:   coerceMixedToString(block.metadata),
+      }));
+
+    // ── Questions
+    const questionsExport = questions.map((q) => ({
+      id:               q.contentId,
+      type:             q.type,
+      textAr:           q.textAr,
+      textEn:           q.textEn           || null,
+      correctAnswer:    q.correctAnswer,
+      options:          coerceMixedToString(q.options),
+      explanation:      q.explanation      || null,
+      imageUrl:         q.imageUrl         || null,
+      tableData:        coerceMixedToString(q.tableData),
+      difficulty:       q.difficulty       || 1,
+      points:           q.points           || 1,
+      estimatedSeconds: q.estimatedSeconds || 60,
+      cognitiveLevel:   q.cognitiveLevel   || 'RECALL',
+      source:           q.source           || 'ORIGINAL',
+      sourceExamId:     q.sourceExamContentId || null,
+      sourceDetails:    q.sourceDetails    || null,
+      sourceYear:       q.sourceYear       || null,
+      feedEligible:     q.feedEligible     || false,
+      unitId:           q.unitContentId    || null,
+      lessonId:         q.lessonContentId  || null,
+      sectionId:        q.sectionContentId || null,
+      isCheckpoint:     q.isCheckpoint     || false,
+      conceptIds:       q.conceptIds       || [],
+      markers:          q.markers          || [],
+    }));
+
+    // ── Exams
+    const examsExport = exams.map((e) => ({
+      id:           e.contentId,
+      titleAr:      e.titleAr,
+      titleEn:      e.titleEn      || null,
+      source:       e.source,
+      year:         e.year         || null,
+      schoolName:   e.schoolName   || null,
+      duration:     e.duration     || null,
+      totalPoints:  e.totalPoints  || null,
+      description:  e.description  || null,
+      examType:     e.examType     || null,
+      questionIds:  e.questionContentIds || [],
+      sectionsJson: coerceMixedToString(e.sectionsJson),
+    }));
+
+    // ── Feed items
+    const feedItemsExport = feedItems.map((item) => ({
+      id:              item.contentId,
+      conceptId:       item.conceptContentId,
+      type:            item.type,
+      contentAr:       item.contentAr       || '',
+      back:            item.back            || null,
+      contentEn:       item.contentEn       || null,
+      imageUrl:        item.imageUrl        || null,
+      interactionType: item.interactionType || null,
+      correctAnswer:   item.correctAnswer   || null,
+      options:         coerceMixedToString(item.options),
+      explanation:     item.explanation     || null,
+      questionId:      item.questionContentId || null,
+      priority:        item.priority        || 1,
+      order:           item.order           || 0,
+    }));
+
+    // ── Stat counters (shared by both paths) ──────────────────────────────────
+    const totalSections = sectionsExport.length;
+    const totalBlocks   = blocksExport.length;
+
+    // ── Dispatch to delta or full path ────────────────────────────────────────
+    if (mode === 'delta') {
+      return await handleDeltaPublish({
+        subjectId,
+        contentVersion,
+        publishedAt,
+        prevEntry,
+        snapshot: {
+          subject,
+          subjectExport,
+          tags,       tagsExport,
+          concepts,   conceptsExport,
+          units,      unitsExport,
+          lessons,    lessonsExport,
+          sections,   sectionsExport,
+          blocks,     blocksExport,
+          questions,  questionsExport,
+          exams,      examsExport,
+          feedItems,  feedItemsExport,
+        },
+        stats: {
+          lessons:   lessons.length,
+          sections:  totalSections,
+          blocks:    totalBlocks,
+          questions: questions.length,
+          feedItems: feedItems.length,
+          concepts:  concepts.length,
+          exams:     exams.length,
+        },
+        // Also assemble the full export for legacy fields (in case we need to
+        // keep legacyDownloadUrl alive while some app versions are still on v2)
+        legacyEntry: prevEntry?.legacyDownloadUrl
+          ? {
+              downloadUrl: prevEntry.legacyDownloadUrl,
+              sha256:      prevEntry.legacySha256,
+              size:        prevEntry.legacySize,
+            }
+          : null,
+      });
+    } else {
+      return await handleFullPublish({
+        subjectId,
+        contentVersion,
+        publishedAt,
+        prevEntry,
+        exportData: assembleFullExport({
+          subjectExport, tagsExport, conceptsExport,
+          unitsExport, lessonsExport: lessons, // full export uses nested shape
+          sectionsExport: sections, blocksExport: blocks,
+          questionsExport, examsExport, feedItemsExport,
+          lessonsByUnit, sectionsByLesson, blocksBySection,
+          approvedLessonIds,
+        }),
+        stats: {
+          lessons:   lessons.length,
+          sections:  totalSections,
+          blocks:    totalBlocks,
+          questions: questions.length,
+          feedItems: feedItems.length,
+          concepts:  concepts.length,
+          exams:     exams.length,
+        },
+      });
     }
 
-    // ── 5. Update Firestore manifest ──────────────────────────────────────────
-    const publishedAt = new Date().toISOString();
-
-    // Count sections and blocks for the status endpoint + dev screen comparison
-    const totalSections = sections.filter((s) => approvedLessonIds.has(s.lessonContentId)).length;
-    const totalBlocks   = blocks.filter((b) => {
-      // Block belongs to a section that belongs to an approved lesson
-      const section = sections.find((s) => s.contentId === b.sectionContentId);
-      return section && approvedLessonIds.has(section.lessonContentId);
-    }).length;
-
-    await upsertSubjectEntry({
-      id:                   subjectId,
-      version:              nextVersion,
-      downloadUrl,
-      enabled:              existingEntry?.enabled ?? true,
-      minAppVersion:        existingEntry?.minAppVersion || '1.0',
-      updatedAt:            publishedAt,
-      sha256,
-      size,
-      // Snapshot counts — shown in the dev SyncStatus screen for comparison
-      approvedLessonsCount: lessons.length,
-      approvedSectionsCount: totalSections,
-      approvedBlocksCount:   totalBlocks,
-    });
-
-    // ── 6. Return summary ─────────────────────────────────────────────────────
-    return NextResponse.json({
-      ok: true,
-      subjectId,
-      version:     nextVersion,
-      downloadUrl,
-      publishedAt,
-      stats: {
-        lessons:   lessons.length,
-        sections:  totalSections,
-        blocks:    totalBlocks,
-        questions: questions.length,
-        feedItems: feedItems.length,
-        concepts:  concepts.length,
-        exams:     exams.length,
-      },
-    });
   } catch (e) {
     console.error('[POST /api/content/publish]', e);
     return NextResponse.json({ ok: false, error: e.message || 'خطأ في الخادم' }, { status: 500 });
   }
 }
 
+// ── Delta publish path ────────────────────────────────────────────────────────
+
+async function handleDeltaPublish({
+  subjectId, contentVersion, publishedAt, prevEntry,
+  snapshot, stats, legacyEntry,
+}) {
+  const { entityIndex, patches, deletedByType, stats: deltaStats } =
+    await buildAndUploadDelta({
+      subjectId,
+      exportVersion: '2.0',
+      snapshot,
+      prevEntry,
+      contentVersion,
+    });
+
+  await upsertDeltaSubjectEntry({
+    subjectId,
+    contentVersion,
+    updatedAt:             publishedAt,
+    enabled:               prevEntry?.enabled ?? true,
+    minAppVersion:         prevEntry?.minAppVersion || '1.0',
+    entityIndex,
+    patches,
+    approvedLessonsCount:  stats.lessons,
+    approvedSectionsCount: stats.sections,
+    approvedBlocksCount:   stats.blocks,
+    // Preserve legacy URL while app versions that need it are still live
+    legacyDownloadUrl:     legacyEntry?.downloadUrl || null,
+    legacySha256:          legacyEntry?.sha256       || null,
+    legacySize:            legacyEntry?.size         || null,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    mode: 'delta',
+    subjectId,
+    contentVersion,
+    publishedAt,
+    delta: {
+      bundlesUploaded:  deltaStats.bundlesUploaded,
+      changedEntities:  deltaStats.changedEntities,
+      deletedEntities:  deltaStats.deletedEntities,
+      deletedByType,
+    },
+    stats,
+  });
+}
+
+// ── Full (legacy) publish path ────────────────────────────────────────────────
+
+async function handleFullPublish({
+  subjectId, contentVersion, publishedAt, prevEntry,
+  exportData, stats,
+}) {
+  const fileName   = `${subjectId.toLowerCase()}_v${contentVersion}.json`;
+  const jsonBuffer = Buffer.from(JSON.stringify(exportData), 'utf-8');
+  const sha256     = crypto.createHash('sha256').update(jsonBuffer).digest('hex');
+  const size       = jsonBuffer.length;
+
+  await uploadFile(EXPORTS_BUCKET, fileName, jsonBuffer, 'application/json');
+  const downloadUrl = getPublicUrl(EXPORTS_BUCKET, fileName);
+
+  if (!downloadUrl) {
+    return NextResponse.json(
+      { ok: false, error: 'فشل الحصول على رابط التحميل من Supabase' },
+      { status: 500 }
+    );
+  }
+
+  // Write as legacy entry (no entityIndex / patches) so old app builds keep working.
+  // Also sets contentVersion so the v3 app can do a coarse guard.
+  await upsertDeltaSubjectEntry({
+    subjectId,
+    contentVersion,
+    updatedAt:             publishedAt,
+    enabled:               prevEntry?.enabled ?? true,
+    minAppVersion:         prevEntry?.minAppVersion || '1.0',
+    entityIndex:           null,   // null → Android takes legacy path
+    patches:               [],
+    approvedLessonsCount:  stats.lessons,
+    approvedSectionsCount: stats.sections,
+    approvedBlocksCount:   stats.blocks,
+    legacyDownloadUrl:     downloadUrl,
+    legacySha256:          sha256,
+    legacySize:            size,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    mode: 'full',
+    subjectId,
+    contentVersion,
+    downloadUrl,
+    publishedAt,
+    stats,
+  });
+}
+
+// ── Full export assembler (legacy nested shape for mode:"full") ───────────────
+
+function assembleFullExport({
+  subjectExport, tagsExport, conceptsExport,
+  unitsExport, lessonsExport, sectionsExport, blocksExport,
+  questionsExport, examsExport, feedItemsExport,
+  lessonsByUnit, sectionsByLesson, blocksBySection,
+  approvedLessonIds,
+}) {
+  return {
+    version:    '2.0',
+    exportedAt: new Date().toISOString(),
+    subject:    subjectExport,
+    tags:       tagsExport,
+    concepts:   conceptsExport,
+    units: unitsExport.map((unit) => ({
+      ...unit,
+      lessons: (lessonsByUnit[unit.id] || []).map((lesson) => ({
+        id:               lesson.contentId,
+        title:            lesson.title,
+        order:            lesson.order,
+        estimatedMinutes: lesson.estimatedMinutes || 15,
+        summary:          lesson.summary          || null,
+        metadata:         lesson.metadata         || null,
+        parentLesson:     lesson.parentLesson     || null,
+        variationType:    lesson.variationType    || null,
+        variationNote:    lesson.variationNote    || null,
+        groupId:          lesson.groupId          || null,
+        groupTitle:       lesson.groupTitle       || null,
+        groupMetadata:    lesson.groupMetadata    || null,
+        sections: (sectionsByLesson[lesson.contentId] || [])
+          .filter(() => approvedLessonIds.has(lesson.contentId))
+          .map((section) => ({
+            id:           section.contentId,
+            title:        section.title,
+            order:        section.order,
+            partIndex:    section.partIndex    ?? 0,
+            learningType: section.learningType || 'UNDERSTANDING',
+            conceptIds:   section.conceptIds   || [],
+            blocks: (blocksBySection[section.contentId] || []).map((block) => ({
+              id:         block.contentId,
+              type:       block.type,
+              content:    block.content    || '',
+              order:      block.order,
+              conceptRef: block.conceptRef || null,
+              caption:    block.caption    || null,
+              metadata:   coerceMixedToString(block.metadata),
+            })),
+          })),
+      })),
+    })),
+    questions: questionsExport,
+    exams:     examsExport,
+    feedItems: feedItemsExport,
+  };
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
-/** Group an array of objects by a key into a map of arrays. */
 function indexBy(arr, key) {
   return arr.reduce((acc, item) => {
     const k = item[key];
@@ -307,14 +488,6 @@ function indexBy(arr, key) {
   }, {});
 }
 
-/**
- * Coerce a Mongoose Mixed value to String | null so Android String? fields
- * can always parse it without a type mismatch crash.
- *
- * - null / undefined → null
- * - already a string → pass through
- * - object / array   → JSON.stringify
- */
 function coerceMixedToString(value) {
   if (value == null) return null;
   if (typeof value === 'string') return value;
