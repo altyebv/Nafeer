@@ -20,18 +20,25 @@ const EXPORTS_BUCKET = process.env.SUPABASE_EXPORTS_BUCKET || 'content-exports';
 
 // ── POST /api/content/publish ─────────────────────────────────────────────────
 //
-// Body: { subjectId: "PHYSICS", mode?: "delta" | "full" }
+// Body: { subjectId: "PHYSICS", mode?: "delta" | "full", bump?: "major" }
 //
-// mode defaults to "delta". Pass mode:"full" to force a legacy full-export
-// (e.g. when migrating a subject to delta for the first time, or recovering
-// from a suspected manifest corruption).
+// mode    — defaults to "delta". Pass "full" to force a full re-export
+//           (migration baseline or manifest recovery).
 //
-// Delta flow:
-//   DB query → assemble export DTOs → buildAndUploadDelta (diff + upload bundles)
-//   → upsertDeltaSubjectEntry (Firestore manifest update)
+// bump    — omit for a normal patch publish (auto-increments MAJOR.patch).
+//           Pass "major" to cut a named release: increments MAJOR, resets patch
+//           to 0. Ignored when mode is "full" (full always resets patch to 0).
 //
-// Full flow (backwards-compat / forced):
-//   DB query → assemble BasheerExportData → upload single JSON → upsertSubjectEntry
+// ── Version scheme: MAJOR.patch ──────────────────────────────────────────────
+//
+//   contentVersion is a human-readable "MAJOR.patch" string, e.g. "1.3".
+//
+//   patch  — auto-increments when delta produces real bundles (content changed).
+//            Stays the same when nothing changed → no-op publish → no Firestore write.
+//   MAJOR  — manually bumped via bump:"major". Signals a significant release
+//            (new unit live, curriculum restructure, etc). Resets patch to 0.
+//
+//   A full publish always resets patch to 0: "MAJOR.0".
 //
 // Admin only.
 
@@ -39,9 +46,9 @@ export async function POST(request) {
   const authErr = await verifyAdminAuth();
   if (authErr) return authErr;
 
-  let subjectId, mode;
+  let subjectId, mode, bump;
   try {
-    ({ subjectId, mode = 'delta' } = await request.json());
+    ({ subjectId, mode = 'delta', bump = null } = await request.json());
   } catch {
     return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
   }
@@ -51,6 +58,9 @@ export async function POST(request) {
   }
   if (!['delta', 'full'].includes(mode)) {
     return NextResponse.json({ ok: false, error: 'mode must be "delta" or "full"' }, { status: 400 });
+  }
+  if (bump != null && bump !== 'major') {
+    return NextResponse.json({ ok: false, error: 'bump must be "major" or omitted' }, { status: 400 });
   }
 
   try {
@@ -84,13 +94,20 @@ export async function POST(request) {
     }
 
     // ── 2. Get current manifest entry ─────────────────────────────────────────
-    const manifest    = await getManifest().catch(() => null);
-    const prevEntry   = (manifest?.subjects || []).find((s) => s.id === subjectId) || null;
+    const manifest  = await getManifest().catch(() => null);
+    const prevEntry = (manifest?.subjects || []).find((s) => s.id === subjectId) || null;
 
-    // contentVersion: increment the previous integer token, or start at "1"
-    const prevVersion   = parseInt(prevEntry?.contentVersion || prevEntry?.version || '0', 10);
-    const contentVersion = String(prevVersion + 1);
-    const publishedAt    = new Date().toISOString();
+    // Parse the previous MAJOR.patch version (also handles legacy integer strings)
+    const prevContentVersion = prevEntry?.contentVersion || prevEntry?.version || null;
+    const { major: prevMajor, patch: prevPatch } = parseVersion(prevContentVersion);
+    const publishedAt = new Date().toISOString();
+    // contentVersion is computed after the delta runs — only bump when bundles exist.
+    // For full publish it is computed here since there is no delta step.
+    const fullContentVersion = mode === 'full'
+      ? bump === 'major'
+        ? `${prevMajor + 1}.0`
+        : `${prevMajor}.0`       // full publish always resets patch
+      : null;                    // delta path defers version computation
 
     // ── 3. Build export DTOs (shared by both paths) ───────────────────────────
     const approvedLessonIds = new Set(lessons.map((l) => l.contentId));
@@ -256,7 +273,9 @@ export async function POST(request) {
     if (mode === 'delta') {
       return await handleDeltaPublish({
         subjectId,
-        contentVersion,
+        prevMajor,
+        prevPatch,
+        bump,
         publishedAt,
         prevEntry,
         snapshot: {
@@ -294,7 +313,7 @@ export async function POST(request) {
     } else {
       return await handleFullPublish({
         subjectId,
-        contentVersion,
+        contentVersion: fullContentVersion,
         publishedAt,
         prevEntry,
         exportData: assembleFullExport({
