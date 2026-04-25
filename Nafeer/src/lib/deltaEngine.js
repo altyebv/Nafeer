@@ -78,8 +78,6 @@ const APPLY_ORDER = [
  * @param {string}  params.exportVersion      - Schema version string (e.g. "2.0")
  * @param {object}  params.snapshot           - Full content snapshot (all approved entities)
  * @param {object|null} params.prevEntry      - Previous Firestore manifest entry, or null for first publish
- * @param {string}  params.contentVersion     - The new coarse contentVersion token
- *
  * @returns {Promise<DeltaPublishResult>}
  */
 export async function buildAndUploadDelta({
@@ -87,7 +85,6 @@ export async function buildAndUploadDelta({
   exportVersion,
   snapshot,
   prevEntry,
-  contentVersion,
 }) {
   // ── 1. Build entity maps from current snapshot ────────────────────────────
   const currentEntities = snapshotToEntityMaps(snapshot, subjectId);
