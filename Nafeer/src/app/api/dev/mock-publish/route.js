@@ -85,6 +85,15 @@ export async function POST(request) {
     // ── 5. Upload to Supabase Storage ──────────────────────────────────────
     const fileName   = `mock_${manifestSubjectId.toLowerCase()}_v${nextVersion}.json`;
     const jsonBuffer = Buffer.from(JSON.stringify(enrichedPayload, null, 2), 'utf-8');
+    const lessonCount = payload.units?.flatMap((unit) => unit.lessons ?? []).length ?? 0;
+    const sectionCount = payload.units?.flatMap((unit) =>
+      (unit.lessons ?? []).flatMap((lesson) => lesson.sections ?? [])
+    ).length ?? 0;
+    const blockCount = payload.units?.flatMap((unit) =>
+      (unit.lessons ?? []).flatMap((lesson) =>
+        (lesson.sections ?? []).flatMap((section) => section.blocks ?? [])
+      )
+    ).length ?? 0;
 
     // Compute sha256 + size for Upgrade 6 compliance
     const sha256 = crypto.createHash('sha256').update(jsonBuffer).digest('hex');
@@ -106,12 +115,15 @@ export async function POST(request) {
       id:           manifestSubjectId,
       version:      nextVersion,
       downloadUrl,
-      enabled:      true,
-      minAppVersion: '1.0',
+      enabled:      existingEntry?.enabled ?? true,
+      minAppVersion: existingEntry?.minAppVersion || '1.0',
       updatedAt:    publishedAt,
       // Upgrade 6: include checksum so the app verifies the download
       sha256,
       size,
+      approvedLessonsCount: lessonCount,
+      approvedSectionsCount: sectionCount,
+      approvedBlocksCount: blockCount,
       // Mock marker — optional, ignored by the Android app (IgnoreExtraProperties)
       _isMock:      true,
     });
@@ -128,7 +140,9 @@ export async function POST(request) {
       fileName,
       stats: {
         units:     payload.units?.length     ?? 0,
-        lessons:   payload.units?.flatMap((u) => u.lessons ?? []).length ?? 0,
+        lessons:   lessonCount,
+        sections:  sectionCount,
+        blocks:    blockCount,
         questions: payload.questions?.length  ?? 0,
         feedItems: payload.feedItems?.length  ?? 0,
         concepts:  payload.concepts?.length   ?? 0,

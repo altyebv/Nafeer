@@ -13,6 +13,7 @@ import { Question }               from '@/lib/models/Question';
 import { Exam }                   from '@/lib/models/Exam';
 import { uploadFile, getPublicUrl } from '@/lib/supabase';
 import { getManifest, upsertSubjectEntry } from '@/lib/FirebaseAdmin';
+import crypto from 'crypto';
 
 // ── Supabase bucket for content exports (public, read-only for app) ───────────
 const EXPORTS_BUCKET = process.env.SUPABASE_EXPORTS_BUCKET || 'content-exports';
@@ -119,7 +120,7 @@ export async function POST(request) {
         formula:         c.formula         || null,
         imageUrl:        c.imageUrl        || null,
         difficulty:      c.difficulty      || 1,
-        extraData:       c.extraData       || null,
+        extraData:       coerceMixedToString(c.extraData),
         tagIds:          c.tagIds          || [],
       })),
       units: units.map((unit) => ({
@@ -173,10 +174,10 @@ export async function POST(request) {
         textAr:           q.textAr,
         textEn:           q.textEn           || null,
         correctAnswer:    q.correctAnswer,
-        options:          q.options          || null,
+        options:          coerceMixedToString(q.options),
         explanation:      q.explanation      || null,
         imageUrl:         q.imageUrl         || null,
-        tableData:        q.tableData        || null,
+        tableData:        coerceMixedToString(q.tableData),
         difficulty:       q.difficulty       || 1,
         points:           q.points           || 1,
         estimatedSeconds: q.estimatedSeconds || 60,
@@ -205,7 +206,7 @@ export async function POST(request) {
         description:  e.description  || null,
         examType:     e.examType     || null,
         questionIds:  e.questionContentIds || [],
-        sectionsJson: e.sectionsJson || null,
+        sectionsJson: coerceMixedToString(e.sectionsJson),
       })),
       feedItems: feedItems.map((item) => ({
         id:              item.contentId,
@@ -217,7 +218,7 @@ export async function POST(request) {
         imageUrl:        item.imageUrl        || null,
         interactionType: item.interactionType || null,
         correctAnswer:   item.correctAnswer   || null,
-        options:         item.options         || null,
+        options:         coerceMixedToString(item.options),
         explanation:     item.explanation     || null,
         questionId:      item.questionContentId || null,
         priority:        item.priority        || 1,
@@ -233,6 +234,8 @@ export async function POST(request) {
     // ── 4. Upload to Supabase Storage ─────────────────────────────────────────
     const fileName   = `${subjectId.toLowerCase()}_v${nextVersion}.json`;
     const jsonBuffer = Buffer.from(JSON.stringify(exportData), 'utf-8');
+    const sha256     = crypto.createHash('sha256').update(jsonBuffer).digest('hex');
+    const size       = jsonBuffer.length;
 
     await uploadFile(EXPORTS_BUCKET, fileName, jsonBuffer, 'application/json');
     const downloadUrl = getPublicUrl(EXPORTS_BUCKET, fileName);
@@ -259,9 +262,11 @@ export async function POST(request) {
       id:                   subjectId,
       version:              nextVersion,
       downloadUrl,
-      enabled:              true,
-      minAppVersion:        '1.0',
+      enabled:              existingEntry?.enabled ?? true,
+      minAppVersion:        existingEntry?.minAppVersion || '1.0',
       updatedAt:            publishedAt,
+      sha256,
+      size,
       // Snapshot counts — shown in the dev SyncStatus screen for comparison
       approvedLessonsCount: lessons.length,
       approvedSectionsCount: totalSections,
@@ -303,12 +308,12 @@ function indexBy(arr, key) {
 }
 
 /**
- * Coerce a Mongoose Mixed value to String | null so the Android BlockJson
- * field (String?) can always parse it without a type mismatch crash.
+ * Coerce a Mongoose Mixed value to String | null so Android String? fields
+ * can always parse it without a type mismatch crash.
  *
  * - null / undefined → null
  * - already a string → pass through
- * - object / array   → JSON.stringify (BlockEntity stores it as a JSON string)
+ * - object / array   → JSON.stringify
  */
 function coerceMixedToString(value) {
   if (value == null) return null;

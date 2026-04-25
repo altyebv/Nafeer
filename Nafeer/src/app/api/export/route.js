@@ -126,7 +126,7 @@ export async function GET(request) {
         formula: concept.formula || null,
         imageUrl: concept.imageUrl || null,
         difficulty: concept.difficulty || 1,
-        extraData: concept.extraData || null,
+        extraData: coerceMixedToString(concept.extraData),
         tagIds: concept.tagIds || [],
         status: concept.status || 'draft',
       })),
@@ -166,7 +166,7 @@ export async function GET(request) {
               order: block.order,
               conceptRef: block.conceptRef || null,
               caption: block.caption || null,
-              metadata: block.metadata || null,
+              metadata: coerceMixedToString(block.metadata),
               status: block.status || 'draft',
             })),
           })),
@@ -178,10 +178,10 @@ export async function GET(request) {
         textAr: question.textAr,
         textEn: question.textEn || null,
         correctAnswer: question.correctAnswer,
-        options: question.options || null,
+        options: coerceMixedToString(question.options),
         explanation: question.explanation || null,
         imageUrl: question.imageUrl || null,
-        tableData: question.tableData || null,
+        tableData: coerceMixedToString(question.tableData),
         difficulty: question.difficulty || 1,
         points: question.points || 1,
         estimatedSeconds: question.estimatedSeconds || 60,
@@ -211,7 +211,7 @@ export async function GET(request) {
         description: exam.description || null,
         examType: exam.examType || null,
         questionIds: exam.questionContentIds || [],
-        sectionsJson: exam.sectionsJson || null,
+        sectionsJson: coerceMixedToString(exam.sectionsJson),
         status: exam.status || 'draft',
       })),
       feedItems: feedItems.map((item) => ({
@@ -224,7 +224,7 @@ export async function GET(request) {
         imageUrl: item.imageUrl || null,
         interactionType: item.interactionType || null,
         correctAnswer: item.correctAnswer || null,
-        options: item.options || null,
+        options: coerceMixedToString(item.options),
         explanation: item.explanation || null,
         questionId: item.questionContentId || null,
         priority: item.priority || 1,
@@ -268,4 +268,10 @@ async function loadRemoteSubjectExport(downloadUrl) {
     console.warn('[GET /api/export] remote fallback failed:', e.message);
     return null;
   }
+}
+
+function coerceMixedToString(value) {
+  if (value == null) return null;
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
 }
