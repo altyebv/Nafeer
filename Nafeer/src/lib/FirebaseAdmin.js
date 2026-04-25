@@ -4,16 +4,6 @@ import { getFirestore } from 'firebase-admin/firestore';
 // ─── Firebase Admin singleton ─────────────────────────────────────────────────
 // Safe to call multiple times — getApps() guards against double-init in
 // Next.js hot-reload and serverless environments.
-//
-// Required env vars:
-//   FIREBASE_PROJECT_ID       — e.g. "basheer-xxxxx"
-//   FIREBASE_CLIENT_EMAIL     — service account client_email
-//   FIREBASE_PRIVATE_KEY      — service account private_key
-//                               Vercel stores newlines as literal \n — the
-//                               replace() below handles both raw and escaped forms.
-//
-// Service account: Firebase Console → Project Settings → Service Accounts →
-//   Generate new private key → copy the three fields above.
 
 function initAdmin() {
   if (getApps().length > 0) return getApps()[0];
@@ -41,7 +31,6 @@ export function getAdminFirestore() {
 const COLLECTION = 'content_config';
 const DOC        = 'manifest';
 
-/** Default flags — used when manifest doesn't exist yet. */
 const DEFAULT_FLAGS = {
   feedEnabled:        true,
   examModeEnabled:    true,
@@ -59,8 +48,15 @@ export async function getManifest() {
 }
 
 /**
- * Upsert one subject entry in the manifest.
- * All other fields (other subjects, featureFlags) are preserved via merge.
+ * Upsert one subject entry in the manifest (v3 schema).
+ *
+ * Accepts both legacy v2 entries (with `version` + `downloadUrl`) and
+ * v3 delta entries (with `contentVersion` + `entityIndex` + `patches`).
+ * The schemaVersion is bumped to "3.0" once any v3 field is written.
+ *
+ * All other subjects and featureFlags are preserved via read-modify-write.
+ *
+ * @param {object} entry - SubjectManifestEntry shape (see ContentManifest.kt)
  */
 export async function upsertSubjectEntry(entry) {
   const db       = getAdminFirestore();
@@ -68,25 +64,79 @@ export async function upsertSubjectEntry(entry) {
   const snap     = await ref.get();
   const existing = snap.exists ? snap.data() : { subjects: [], featureFlags: DEFAULT_FLAGS };
 
+  // Detect schema version: if the new entry carries v3 fields, upgrade the doc.
+  const hasV3Fields = entry.contentVersion != null || entry.entityIndex != null;
+  const schemaVersion = hasV3Fields ? '3.0' : (existing.schemaVersion || '2.0');
+
   const subjects = [
     ...(existing.subjects || []).filter((s) => s.id !== entry.id),
     entry,
   ];
 
-  // merge: true preserves featureFlags (and any future top-level fields) if
-  // updateFeatureFlags() runs concurrently. merge: false would silently
-  // overwrite the entire document, losing a flag change made milliseconds prior.
   await ref.set(
     {
-      schemaVersion: '2.0',
-      updatedAt:     new Date().toISOString(),
+      schemaVersion,
+      updatedAt:    new Date().toISOString(),
       subjects,
-      // Only write featureFlags when the document doesn't exist yet (bootstrap).
-      // After that, updateFeatureFlags() owns this field via its own merge:true write.
-      featureFlags:  existing.featureFlags || DEFAULT_FLAGS,
+      featureFlags: existing.featureFlags || DEFAULT_FLAGS,
     },
     { merge: true }
   );
+}
+
+/**
+ * Upsert a full v3 subject entry atomically.
+ *
+ * Use this from the delta publish route — it writes the entityIndex, patches
+ * array, and contentVersion in a single Firestore write, preserving all other
+ * subjects and featureFlags.
+ *
+ * @param {object} params
+ * @param {string}  params.subjectId
+ * @param {string}  params.contentVersion   - New coarse version token
+ * @param {string}  params.updatedAt        - ISO-8601 publish timestamp
+ * @param {boolean} params.enabled
+ * @param {string}  params.minAppVersion
+ * @param {object}  params.entityIndex      - { entityType: { id: versionToken } }
+ * @param {Array}   params.patches          - PatchBundleEntry[]
+ * @param {number}  params.approvedLessonsCount
+ * @param {number}  params.approvedSectionsCount
+ * @param {number}  params.approvedBlocksCount
+ * @param {string|null} params.legacyDownloadUrl  - Kept for legacy subjects
+ * @param {string|null} params.legacySha256
+ * @param {number|null} params.legacySize
+ */
+export async function upsertDeltaSubjectEntry({
+  subjectId,
+  contentVersion,
+  updatedAt,
+  enabled,
+  minAppVersion,
+  entityIndex,
+  patches,
+  approvedLessonsCount,
+  approvedSectionsCount,
+  approvedBlocksCount,
+  legacyDownloadUrl = null,
+  legacySha256      = null,
+  legacySize        = null,
+}) {
+  const entry = {
+    id:                   subjectId,
+    contentVersion,
+    updatedAt,
+    enabled:              enabled ?? true,
+    minAppVersion:        minAppVersion || '1.0',
+    entityIndex,
+    patches,
+    approvedLessonsCount,
+    approvedSectionsCount,
+    approvedBlocksCount,
+    // Legacy fields — kept so subjects mid-migration still work on old app builds
+    ...(legacyDownloadUrl ? { legacyDownloadUrl, legacySha256, legacySize } : {}),
+  };
+
+  return upsertSubjectEntry(entry);
 }
 
 /** Remove one subject entry from the manifest while preserving all other fields. */
@@ -100,7 +150,7 @@ export async function removeSubjectEntry(subjectId) {
 
   await ref.set(
     {
-      schemaVersion: '2.0',
+      schemaVersion: existing.schemaVersion || '3.0',
       updatedAt:     new Date().toISOString(),
       subjects,
       featureFlags:  existing.featureFlags || DEFAULT_FLAGS,
