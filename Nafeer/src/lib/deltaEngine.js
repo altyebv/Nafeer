@@ -114,7 +114,7 @@ export async function buildAndUploadDelta({
       snapshot,
     });
 
-    const bundleEntry = await uploadBundle({ subjectId, entityType, patch });
+    const bundleEntry = await uploadBundle({ subjectId, entityType, patch, entityIndex: newEntityIndex });
     patches.push(bundleEntry);
   }
 
@@ -297,7 +297,7 @@ function filterById(arr, ids, idField = 'id') {
  * path, so re-publishing without changes is idempotent (upsert: false will
  * fail silently on the second attempt, which is fine).
  */
-async function uploadBundle({ subjectId, entityType, patch }) {
+async function uploadBundle({ subjectId, entityType, patch, entityIndex }) {
   const jsonBuffer = Buffer.from(JSON.stringify(patch), 'utf-8');
   const sha256     = crypto.createHash('sha256').update(jsonBuffer).digest('hex');
   const bundleId   = sha256.slice(0, 12);
@@ -327,7 +327,7 @@ async function uploadBundle({ subjectId, entityType, patch }) {
   // All entities in a bundle get the same token (the bundle hash), which is
   // deterministic: re-publishing identical content produces the same hash →
   // same token → Android skips the bundle.
-  const entityVersions = buildEntityVersionsMap(patch, sha256);
+const entityVersions = buildEntityVersionsMap(patch, sha256, entityIndex);
 
   return {
     bundleId,
@@ -363,16 +363,22 @@ function getAllEntityIds(patch) {
  * Build the entityVersions map for a bundle — used by Android to stamp
  * per-entity version tokens after applying the bundle.
  *
- * We re-derive tokens from the export DTOs (which carry updatedAt) because
- * the patch payload is already serialised at this point.
- * For simplicity we set all entities in the bundle to the bundle's sha256
- * (first 16 chars) — the Android side only checks equality, so any stable
- * token per-entity-per-publish works.
+ * Tokens are read directly from the already-computed entityIndex (same source
+ * written to Firestore) so Android stamps the EXACT same token the manifest
+ * carries. This is critical — using any other token (e.g. bundle hash) causes
+ * getDirtyEntities() to always see mismatches and re-download every bundle.
  */
-function buildEntityVersionsMap(patch, bundleSha256) {
-  const token = bundleSha256.slice(0, 16);
-  const ids   = getAllEntityIds(patch);
-  return Object.fromEntries(ids.map((id) => [id, token]));
+function buildEntityVersionsMap(patch, _bundleSha256, entityIndex) {
+  const ids    = getAllEntityIds(patch);
+  const result = {};
+  for (const id of ids) {
+    // Walk all type maps in the index to find this entity's token.
+    // Each bundle contains only one entity type, so this loop exits quickly.
+    for (const typeMap of Object.values(entityIndex)) {
+      if (id in typeMap) { result[id] = typeMap[id]; break; }
+    }
+  }
+  return result;
 }
 
 /**
