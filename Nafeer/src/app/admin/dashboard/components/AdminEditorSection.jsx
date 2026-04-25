@@ -231,6 +231,20 @@ function PublishResult({ result, onDismiss }) {
   );
 
   const { data } = result;
+
+  // No-change publish — nothing was different from last publish
+  if (data.noChange) return (
+    <div
+      className="rounded-xl border p-4 flex items-center justify-between gap-3"
+      style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-ink-500">◎</span>
+        <p className="text-sm font-arabic text-ink-400">لا يوجد تغييرات منذ آخر نشر — لم يتم تحديث الإصدار</p>
+      </div>
+      <button onClick={onDismiss} className="text-ink-600 hover:text-ink-400 text-xs shrink-0">✕</button>
+    </div>
+  );
   const displayVersion = data.contentVersion || data.version || '—';
   const isDelta = data.mode === 'delta';
 
@@ -308,8 +322,9 @@ function relativeTime(iso) {
   return `منذ ${d} يوم`;
 }
 
-function ContentPanel({ subject: s, onPublish, onFullPublish, onDeleteSubject, publishing, result, onDismissResult }) {
+function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, onDeleteSubject, publishing, result, onDismissResult }) {
   const [showFullConfirm,   setShowFullConfirm]   = useState(false);
+  const [showMajorConfirm,  setShowMajorConfirm]  = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting,          setDeleting]          = useState(false);
   const [deleteError,       setDeleteError]       = useState(null);
@@ -450,7 +465,32 @@ function ContentPanel({ subject: s, onPublish, onFullPublish, onDeleteSubject, p
         </div>
 
         {s.isPublished && (
-          <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="border-t pt-3 flex flex-col gap-2" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+
+            {/* ── Major release ── */}
+            {showMajorConfirm ? (
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[11px] font-arabic text-sky-300/80 flex-1">
+                  سيرفع رقم الإصدار الرئيسي (مثلاً 1.4 ← 2.0). استخدمه عند إطلاق وحدة جديدة أو تغيير جوهري في المنهج.
+                </p>
+                <div className="flex gap-2">
+                  <SecondaryBtn onClick={() => { setShowMajorConfirm(false); onMajorPublish(); }} loading={publishing} disabled={!s.isPublishable}>
+                    تأكيد إصدار رئيسي
+                  </SecondaryBtn>
+                  <SecondaryBtn onClick={() => setShowMajorConfirm(false)}>إلغاء</SecondaryBtn>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowMajorConfirm(true)}
+                disabled={publishing || !s.isPublishable}
+                className="text-[10px] font-mono text-sky-600/70 hover:text-sky-400/80 transition-colors"
+              >
+                ★ نشر إصدار رئيسي (major bump)
+              </button>
+            )}
+
+            {/* ── Emergency full publish ── */}
             {showFullConfirm ? (
               <div className="flex items-center gap-3 flex-wrap">
                 <p className="text-[11px] font-arabic text-amber-300/80 flex-1">
@@ -576,7 +616,7 @@ export function AdminEditorSection() {
 
   // ── Publish helpers ───────────────────────────────────────────────────────
 
-  const doPublish = async (mode = 'delta') => {
+  const doPublish = async (mode = 'delta', bump = null) => {
     if (!selected) return;
     setPublishing(true);
     setResult(null);
@@ -584,7 +624,7 @@ export function AdminEditorSection() {
       const res  = await fetch('/api/content/publish', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ subjectId: selected, mode }),
+        body:    JSON.stringify({ subjectId: selected, mode, ...(bump ? { bump } : {}) }),
       });
       const data = await res.json();
       if (data.ok) {
@@ -600,8 +640,9 @@ export function AdminEditorSection() {
     }
   };
 
-  const publish     = () => doPublish('delta');
-  const fullPublish = () => doPublish('full');
+  const publish      = ()  => doPublish('delta');
+  const majorPublish = ()  => doPublish('delta', 'major');
+  const fullPublish  = ()  => doPublish('full');
 
   // Called after a test subject is created — auto-select it
   const handleTestSubjectCreated = async (newSubjectId) => {
@@ -667,6 +708,7 @@ export function AdminEditorSection() {
                   <ContentPanel
                     subject={selectedSubject}
                     onPublish={publish}
+                    onMajorPublish={majorPublish}
                     onFullPublish={fullPublish}
                     publishing={publishing}
                     result={result}
