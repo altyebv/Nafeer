@@ -497,6 +497,31 @@ export function useAtlasSync() {
     }
   }, [apiFetch, setLoading, setDone, setError, updateLesson, updateConcept, updateFeedItem, updateQuestion]);
 
+  // ── Admin: approve directly (bypasses review queue) ──────────────────────
+  // Saves all lesson content first, then PATCHes status → 'approved'.
+  // Only used in the admin editor variant — contributors still go through review.
+  //
+  const approveAndSync = useCallback(async (lessonId, subjectId) => {
+    try {
+      // 1. Persist all content to Atlas first
+      await syncAll(lessonId, subjectId);
+
+      // 2. Directly approve — no review queue needed for admin
+      setLoading();
+      await apiFetch(`/api/content/lessons/${lessonId}`, {
+        method: 'PATCH',
+        body:   JSON.stringify({ status: 'approved', note: 'اعتماد مباشر من لوحة المشرف' }),
+      });
+
+      // 3. Update store so UI reflects immediately
+      updateLesson(lessonId, { atlasStatus: 'approved' });
+      setDone();
+    } catch (e) {
+      setError(`فشل الاعتماد: ${e.message}`);
+      throw e;
+    }
+  }, [syncAll, apiFetch, setLoading, setDone, setError, updateLesson]);
+
   // ── Delete helpers ─────────────────────────────────────────────────────────
   // Fire-and-forget. Store is already updated optimistically.
   const deleteRemote = useCallback(async (url) => {
@@ -523,6 +548,7 @@ export function useAtlasSync() {
     syncQuestion,
     syncExam,
     submitForReview,
+    approveAndSync,
 
     // Delete helpers
     deleteSection:  (id) => deleteRemote(`/api/content/sections/${id}`),
