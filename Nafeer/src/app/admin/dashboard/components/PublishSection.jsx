@@ -290,23 +290,28 @@ function FlagsPanel({ flags, onFlagChange }) {
   );
 }
 
-function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEntryId }) {
-  const [query, setQuery] = useState('');
-  const [drafts, setDrafts] = useState({});
+function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEntryId, onDeleteEntry, deletingEntryId }) {
+  const [query,          setQuery]          = useState('');
+  const [drafts,         setDrafts]         = useState({});
+  const [showOrphans,    setShowOrphans]    = useState(false);
+  const [confirmDelete,  setConfirmDelete]  = useState(null); // id being confirmed
 
   const catalogMap = Object.fromEntries((subjects || []).map((subject) => [subject.id, subject]));
   const remoteOnlyEntries = (manifestEntries || []).filter((entry) => !catalogMap[entry.id]);
+  const orphanCount = remoteOnlyEntries.length;
+
   const rows = [
     ...(subjects || []).map((subject) => ({
       subject,
       entry: (manifestEntries || []).find((item) => item.id === subject.id) || null,
       key: subject.id,
     })),
-    ...remoteOnlyEntries.map((entry) => ({
+    // Orphans only shown when explicitly toggled — they're test artifacts
+    ...(showOrphans ? remoteOnlyEntries.map((entry) => ({
       subject: null,
       entry,
       key: entry.id,
-    })),
+    })) : []),
   ];
 
   useEffect(() => {
@@ -468,7 +473,8 @@ export function PublishSection() {
   const [toast,     setToast]     = useState(null);
   const [flagsDirty, setFlagsDirty] = useState(false);
   const [savingFlags, setSavingFlags] = useState(false);
-  const [savingManifestId, setSavingManifestId] = useState(null);
+  const [savingManifestId,  setSavingManifestId]  = useState(null);
+  const [deletingEntryId,   setDeletingEntryId]   = useState(null);
   const [filter,    setFilter]    = useState('all');
 
   const showToast = (msg, isErr = false) => {
@@ -574,6 +580,27 @@ export function PublishSection() {
       showToast('تعذّر الاتصال', true);
     } finally {
       setSavingManifestId(null);
+    }
+  };
+
+  // ── Delete orphan entry from Firestore manifest ──────────────────────────
+  const deleteManifestEntry = async (id) => {
+    setDeletingEntryId(id);
+    try {
+      const res  = await fetch(`/api/admin/remote-subjects/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(`✓ تم حذف "${id}" من Firebase`);
+        await load();
+      } else {
+        showToast(data.error || 'فشل الحذف', true);
+      }
+    } catch {
+      showToast('تعذّر الاتصال', true);
+    } finally {
+      setDeletingEntryId(null);
     }
   };
 
@@ -700,6 +727,8 @@ export function PublishSection() {
               manifestEntries={manifest?.subjects || []}
               onSaveEntry={saveManifestEntry}
               savingEntryId={savingManifestId}
+              onDeleteEntry={deleteManifestEntry}
+              deletingEntryId={deletingEntryId}
             />
           </>
         )}
