@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SectionHeader } from './ui/shared';
 import { AdminEditorWorkspace } from './AdminEditorWorkspace';
+import { CreateTestSubjectModal } from './modals/CreateTestSubjectModal';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -80,13 +81,13 @@ function SecondaryBtn({ onClick, loading, disabled, children }) {
 // ─── Subject Picker ───────────────────────────────────────────────────────────
 
 function statusDot(s) {
-  if (s.isPublished && !s.hasNewContent) return 'bg-sand-500/70';   // published, in sync
-  if (s.isPublished && s.hasNewContent)  return 'bg-amber-400/80';  // published but stale
-  if (s.isPublishable)                   return 'bg-green-500/70';  // ready, not yet published
-  return 'bg-ink-700/60';                                           // no approved content
+  if (s.isPublished && !s.hasNewContent) return 'bg-sand-500/70';
+  if (s.isPublished && s.hasNewContent)  return 'bg-amber-400/80';
+  if (s.isPublishable)                   return 'bg-green-500/70';
+  return 'bg-ink-700/60';
 }
 
-function SubjectPicker({ subjects, selected, onSelect }) {
+function SubjectPicker({ subjects, selected, onSelect, onCreateTest }) {
   const extraTracks = [...new Set(subjects.map((s) => s.track).filter((track) => !TRACK_ORDER.includes(track)))];
   const grouped = [...TRACK_ORDER, ...extraTracks].map((track) => ({
     track,
@@ -98,8 +99,16 @@ function SubjectPicker({ subjects, selected, onSelect }) {
       className="w-52 shrink-0 rounded-xl border overflow-hidden"
       style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.07)' }}
     >
-      <div className="px-3 py-2.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+      <div className="px-3 py-2.5 border-b flex items-center justify-between" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
         <p className="text-[10px] font-mono text-ink-600 uppercase tracking-widest">المواد</p>
+        {/* ── Create test subject button ── */}
+        <button
+          onClick={onCreateTest}
+          title="إنشاء مادة تجريبية"
+          className="text-[10px] font-mono text-ink-700 hover:text-sand-400 transition-colors px-1.5 py-0.5 rounded border border-ink-800/60 hover:border-sand-700/50"
+        >
+          + تجريبي
+        </button>
       </div>
 
       <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
@@ -114,15 +123,13 @@ function SubjectPicker({ subjects, selected, onSelect }) {
 
             {items.map((s) => {
               const isSelected = selected === s.id;
+              const isTest = s.id.startsWith('TEST_') || s.source === 'atlas';
               return (
                 <button
                   key={s.id}
                   onClick={() => onSelect(s.id)}
                   className={`w-full text-right flex items-center gap-2 px-3 py-2 transition-all
-                    ${isSelected
-                      ? 'text-sand-300'
-                      : 'text-ink-400 hover:text-ink-200'
-                    }`}
+                    ${isSelected ? 'text-sand-300' : 'text-ink-400 hover:text-ink-200'}`}
                   style={isSelected
                     ? { background: 'rgba(212,137,30,0.09)', borderRight: '2px solid rgba(212,137,30,0.5)' }
                     : { borderRight: '2px solid transparent' }
@@ -132,6 +139,10 @@ function SubjectPicker({ subjects, selected, onSelect }) {
                   <span className="font-arabic text-xs truncate">{s.nameAr}</span>
                   {s.isMajor && (
                     <span className="mr-auto text-[8px] font-mono text-ink-700 shrink-0">★</span>
+                  )}
+                  {/* Mark test/scratch subjects */}
+                  {isTest && !s.isMajor && (
+                    <span className="mr-auto text-[7px] font-mono text-ink-800 shrink-0">DEV</span>
                   )}
                 </button>
               );
@@ -189,7 +200,6 @@ function StatCard({ label, total, approved, icon, diffSincePublish }) {
         )}
       </div>
 
-      {/* Approval bar */}
       <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
         <div
           className="h-full rounded-full transition-all duration-700"
@@ -221,8 +231,6 @@ function PublishResult({ result, onDismiss }) {
   );
 
   const { data } = result;
-  // Route returns contentVersion (v3) for both delta and full modes.
-  // For full mode it also returns downloadUrl.
   const displayVersion = data.contentVersion || data.version || '—';
   const isDelta = data.mode === 'delta';
 
@@ -259,7 +267,6 @@ function PublishResult({ result, onDismiss }) {
         ))}
       </div>
 
-      {/* Delta publish summary */}
       {isDelta && data.delta && (
         <div className="mt-3 flex items-center gap-4 text-[10px] font-mono text-ink-500">
           <span>↑ {data.delta.bundlesUploaded} bundle</span>
@@ -270,7 +277,6 @@ function PublishResult({ result, onDismiss }) {
         </div>
       )}
 
-      {/* Full publish: show download URL */}
       {data.downloadUrl && (
         <div className="mt-3 flex items-center gap-2">
           <span className="text-[10px] font-mono text-ink-600">رابط التحميل:</span>
@@ -302,8 +308,31 @@ function relativeTime(iso) {
   return `منذ ${d} يوم`;
 }
 
-function ContentPanel({ subject: s, onPublish, onFullPublish, publishing, result, onDismissResult }) {
-  const [showFullConfirm, setShowFullConfirm] = useState(false);
+function ContentPanel({ subject: s, onPublish, onFullPublish, onDeleteSubject, publishing, result, onDismissResult }) {
+  const [showFullConfirm,   setShowFullConfirm]   = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting,          setDeleting]          = useState(false);
+  const [deleteError,       setDeleteError]       = useState(null);
+
+  // Only show the local-DB delete option for scratch/test subjects
+  // (those that aren't in SUBJECTS_CATALOG — source === 'atlas' and id starts TEST_)
+  const isTestSubject = s.source !== 'catalog' || s.id.startsWith('TEST_');
+
+  const handleDeleteLocal = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/admin/subjects?subjectId=${encodeURIComponent(s.id)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'فشل الحذف');
+      onDeleteSubject?.();
+    } catch (e) {
+      setDeleteError(e.message);
+      setDeleting(false);
+    }
+  };
 
   const lessonDiff =
     s.isPublished && s.remoteLessons != null
@@ -326,8 +355,10 @@ function ContentPanel({ subject: s, onPublish, onFullPublish, publishing, result
               {s.isMajor && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>
               )}
+              {isTestSubject && !s.isMajor && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-purple-800/40 text-purple-500/70">TEST</span>
+              )}
               <VersionBadge version={s.appVersion} />
-              {/* Show delta badge when published via v3 */}
               {s.contentVersion && s.patchCount != null && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sky-800/40 text-sky-500/70">
                   {s.patchCount} patch
@@ -341,9 +372,10 @@ function ContentPanel({ subject: s, onPublish, onFullPublish, publishing, result
                 <span dir="ltr" className="text-ink-700">{new Date(s.publishedAt).toLocaleDateString('ar-SA')}</span>
               </p>
             )}
+
+            <p className="text-[10px] font-mono text-ink-700 mt-1">{s.id}</p>
           </div>
 
-          {/* Readiness gate */}
           <div className="shrink-0 text-left">
             {s.isPublishable ? (
               s.hasNewContent ? (
@@ -375,27 +407,9 @@ function ContentPanel({ subject: s, onPublish, onFullPublish, publishing, result
 
       {/* Content stats */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard
-          label="الدروس"
-          icon="◈"
-          total={s.lessons.total}
-          approved={s.lessons.approved}
-          diffSincePublish={lessonDiff}
-        />
-        <StatCard
-          label="الأسئلة"
-          icon="◎"
-          total={s.questions.total}
-          approved={s.questions.approved}
-          diffSincePublish={null}
-        />
-        <StatCard
-          label="بطاقات التغذية"
-          icon="▣"
-          total={s.feedItems.total}
-          approved={s.feedItems.approved}
-          diffSincePublish={null}
-        />
+        <StatCard label="الدروس"    icon="◈" total={s.lessons.total}   approved={s.lessons.approved}   diffSincePublish={lessonDiff} />
+        <StatCard label="الأسئلة"   icon="◎" total={s.questions.total} approved={s.questions.approved} diffSincePublish={null} />
+        <StatCard label="بطاقات التغذية" icon="▣" total={s.feedItems.total} approved={s.feedItems.approved} diffSincePublish={null} />
       </div>
 
       {/* Last publish snapshot */}
@@ -430,16 +444,11 @@ function ContentPanel({ subject: s, onPublish, onFullPublish, publishing, result
             </p>
           </div>
 
-          <PrimaryBtn
-            onClick={onPublish}
-            loading={publishing}
-            disabled={!s.isPublishable}
-          >
+          <PrimaryBtn onClick={onPublish} loading={publishing} disabled={!s.isPublishable}>
             {publishing ? 'جارٍ النشر…' : s.isPublished ? 'نشر تحديث (delta) ⬆' : 'نشر للتطبيق ⬆'}
           </PrimaryBtn>
         </div>
 
-        {/* Force full publish — shown only after first publish (so delta exists to compare against) */}
         {s.isPublished && (
           <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             {showFullConfirm ? (
@@ -448,16 +457,10 @@ function ContentPanel({ subject: s, onPublish, onFullPublish, publishing, result
                   سيُعاد رفع ملف JSON كامل وتحديث manifest — استخدم هذا فقط عند الإصلاح الاضطراري أو الترحيل الأول.
                 </p>
                 <div className="flex gap-2">
-                  <SecondaryBtn
-                    onClick={() => { setShowFullConfirm(false); onFullPublish(); }}
-                    loading={publishing}
-                    disabled={!s.isPublishable}
-                  >
+                  <SecondaryBtn onClick={() => { setShowFullConfirm(false); onFullPublish(); }} loading={publishing} disabled={!s.isPublishable}>
                     تأكيد full publish
                   </SecondaryBtn>
-                  <SecondaryBtn onClick={() => setShowFullConfirm(false)}>
-                    إلغاء
-                  </SecondaryBtn>
+                  <SecondaryBtn onClick={() => setShowFullConfirm(false)}>إلغاء</SecondaryBtn>
                 </div>
               </div>
             ) : (
@@ -472,6 +475,50 @@ function ContentPanel({ subject: s, onPublish, onFullPublish, publishing, result
           </div>
         )}
       </div>
+
+      {/* ── Test subject: delete from local DB ────────────────────────────── */}
+      {isTestSubject && (
+        <div
+          className="rounded-xl border px-4 py-3"
+          style={{ background: 'rgba(239,68,68,0.03)', borderColor: 'rgba(239,68,68,0.12)' }}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-mono text-red-400/70">حذف المادة من قاعدة البيانات</p>
+              <p className="text-[10px] font-arabic text-ink-600">
+                يحذف المادة ووحداتها ودروسها من Atlas. استخدم زر حذف Remote في مكان آخر لمسح Firestore/Supabase.
+              </p>
+              {deleteError && <p className="text-[10px] text-red-400 mt-1">{deleteError}</p>}
+            </div>
+            {showDeleteConfirm ? (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleDeleteLocal}
+                  disabled={deleting}
+                  className="px-3 py-1.5 rounded-lg border text-xs font-arabic transition-all"
+                  style={{ background: 'rgba(239,68,68,0.10)', borderColor: 'rgba(239,68,68,0.30)', color: '#f87171', opacity: deleting ? 0.6 : 1 }}
+                >
+                  {deleting ? 'جارٍ الحذف...' : 'تأكيد الحذف'}
+                </button>
+                <button
+                  onClick={() => { setShowDeleteConfirm(false); setDeleteError(null); }}
+                  disabled={deleting}
+                  className="px-3 py-1.5 rounded-lg border text-xs font-arabic text-ink-500 border-ink-800/60"
+                >
+                  إلغاء
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="shrink-0 text-[10px] font-mono text-red-400/50 hover:text-red-400/80 transition-colors"
+              >
+                ✕ حذف من Atlas
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -491,12 +538,13 @@ function EmptyPanel() {
 // ─── Main Section ─────────────────────────────────────────────────────────────
 
 export function AdminEditorSection() {
-  const [subjects,   setSubjects]   = useState([]);
-  const [selected,   setSelected]   = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [publishing, setPublishing] = useState(false);
-  const [result,     setResult]     = useState(null);
-  const [error,      setError]      = useState(null);
+  const [subjects,        setSubjects]        = useState([]);
+  const [selected,        setSelected]        = useState(null);
+  const [loading,         setLoading]         = useState(true);
+  const [publishing,      setPublishing]      = useState(false);
+  const [result,          setResult]          = useState(null);
+  const [error,           setError]           = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -541,7 +589,7 @@ export function AdminEditorSection() {
       const data = await res.json();
       if (data.ok) {
         setResult({ ok: true, data });
-        load(); // refresh counts + isPublished
+        load();
       } else {
         setResult({ ok: false, error: data.error });
       }
@@ -555,6 +603,14 @@ export function AdminEditorSection() {
   const publish     = () => doPublish('delta');
   const fullPublish = () => doPublish('full');
 
+  // Called after a test subject is created — auto-select it
+  const handleTestSubjectCreated = async (newSubjectId) => {
+    setShowCreateModal(false);
+    await load();
+    setSelected(newSubjectId);
+    setResult(null);
+  };
+
   const selectedSubject = subjects.find((s) => s.id === selected) || null;
 
   return (
@@ -563,13 +619,21 @@ export function AdminEditorSection() {
         title="محرر المشرف"
         description="استيراد المادة المنشورة عن بُعد إلى Atlas عند الحاجة، ثم تعديلها بالمحرر الحالي وإعادة نشرها للتطبيق"
       >
-        <button
-          onClick={load}
-          disabled={loading}
-          className="text-xs font-mono text-ink-500 hover:text-ink-300 transition-colors px-3 py-1.5 rounded-lg border border-ink-800/60 hover:border-ink-700/60"
-        >
-          ↻ تحديث
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="text-xs font-mono text-sand-500/70 hover:text-sand-400 transition-colors px-3 py-1.5 rounded-lg border border-sand-800/40 hover:border-sand-700/50"
+          >
+            + مادة تجريبية
+          </button>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="text-xs font-mono text-ink-500 hover:text-ink-300 transition-colors px-3 py-1.5 rounded-lg border border-ink-800/60 hover:border-ink-700/60"
+          >
+            ↻ تحديث
+          </button>
+        </div>
       </SectionHeader>
 
       <div className="px-8 pb-8">
@@ -594,6 +658,7 @@ export function AdminEditorSection() {
               subjects={subjects}
               selected={selected}
               onSelect={(id) => { setSelected(id); setResult(null); }}
+              onCreateTest={() => setShowCreateModal(true)}
             />
 
             <div className="flex-1 min-w-0">
@@ -606,18 +671,13 @@ export function AdminEditorSection() {
                     publishing={publishing}
                     result={result}
                     onDismissResult={() => setResult(null)}
+                    onDeleteSubject={() => { setSelected(null); load(); }}
                   />
                   <AdminEditorWorkspace
                     subjectId={selectedSubject.id}
                     subjectMeta={selectedSubject}
-                    onImported={() => {
-                      setResult(null);
-                      load();
-                    }}
-                    onRemoteDeleted={() => {
-                      setResult(null);
-                      load();
-                    }}
+                    onImported={() => { setResult(null); load(); }}
+                    onRemoteDeleted={() => { setResult(null); load(); }}
                   />
                 </div>
               ) : (
@@ -627,6 +687,14 @@ export function AdminEditorSection() {
           </div>
         )}
       </div>
+
+      {/* Create test subject modal */}
+      {showCreateModal && (
+        <CreateTestSubjectModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={handleTestSubjectCreated}
+        />
+      )}
     </div>
   );
 }
