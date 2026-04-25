@@ -345,7 +345,7 @@ export async function POST(request) {
 // ── Delta publish path ────────────────────────────────────────────────────────
 
 async function handleDeltaPublish({
-  subjectId, contentVersion, publishedAt, prevEntry,
+  subjectId, prevMajor, prevPatch, bump, publishedAt, prevEntry,
   snapshot, stats, legacyEntry,
 }) {
   const { entityIndex, patches, deletedByType, stats: deltaStats } =
@@ -354,8 +354,31 @@ async function handleDeltaPublish({
       exportVersion: '2.0',
       snapshot,
       prevEntry,
-      contentVersion,
     });
+
+  // ── No-op guard ────────────────────────────────────────────────────────────
+  // If the delta engine found nothing changed, skip the Firestore write entirely.
+  // contentVersion stays the same — Android sees no change and skips the sync.
+  if (deltaStats.bundlesUploaded === 0 && deltaStats.deletedEntities === 0) {
+    const currentVersion = prevEntry?.contentVersion || prevEntry?.version || `${prevMajor}.0`;
+    return NextResponse.json({
+      ok: true,
+      mode: 'delta',
+      subjectId,
+      contentVersion: currentVersion,
+      publishedAt: prevEntry?.updatedAt || publishedAt,
+      noChange: true,
+      delta: { bundlesUploaded: 0, changedEntities: 0, deletedEntities: 0 },
+      stats,
+    });
+  }
+
+  // ── Compute new version ────────────────────────────────────────────────────
+  // bump:"major" → increment MAJOR, reset patch to 0.
+  // normal delta  → keep MAJOR, increment patch.
+  const contentVersion = bump === 'major'
+    ? `${prevMajor + 1}.0`
+    : `${prevMajor}.${prevPatch + 1}`;
 
   await upsertDeltaSubjectEntry({
     subjectId,
@@ -368,7 +391,6 @@ async function handleDeltaPublish({
     approvedLessonsCount:  stats.lessons,
     approvedSectionsCount: stats.sections,
     approvedBlocksCount:   stats.blocks,
-    // Preserve legacy URL while app versions that need it are still live
     legacyDownloadUrl:     legacyEntry?.downloadUrl || null,
     legacySha256:          legacyEntry?.sha256       || null,
     legacySize:            legacyEntry?.size         || null,
@@ -498,6 +520,28 @@ function assembleFullExport({
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
+
+/**
+ * Parse a "MAJOR.patch" version string into its components.
+ * Also handles legacy bare-integer strings ("47" → major:47, patch:0).
+ * Returns { major: number, patch: number }.
+ */
+function parseVersion(v) {
+  if (!v) return { major: 1, patch: 0 };
+  const str = String(v);
+  const dot = str.indexOf('.');
+  if (dot === -1) {
+    // Legacy integer — treat as MAJOR.0 so next publish is MAJOR.1
+    const n = parseInt(str, 10);
+    return { major: isNaN(n) ? 1 : n, patch: 0 };
+  }
+  const major = parseInt(str.slice(0, dot), 10);
+  const patch = parseInt(str.slice(dot + 1), 10);
+  return {
+    major: isNaN(major) ? 1 : major,
+    patch: isNaN(patch) ? 0 : patch,
+  };
+}
 
 function indexBy(arr, key) {
   return arr.reduce((acc, item) => {
