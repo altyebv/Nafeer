@@ -41,11 +41,12 @@ export default function LessonEditorPage({
     units, lessons, sections, blocks, questions, feedItems,
     updateLesson, addSection,
   } = useDataStore();
-  const { syncAll, submitForReview } = useAtlasSync();
+  const { syncAll, submitForReview, approveAndSync } = useAtlasSync();
 
   const [activeTab,     setActiveTab]     = useState(0);
   const [saveSuccess,   setSaveSuccess]   = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [approveSuccess, setApproveSuccess] = useState(false);
   const [showPreview,   setShowPreview]   = useState(false);
   const [showNotes,        setShowNotes]        = useState(false);
   const [showHistory,      setShowHistory]      = useState(false);
@@ -126,6 +127,15 @@ export default function LessonEditorPage({
       await submitForReview(lessonId, 'lesson');
       setReviewSuccess(true);
       setTimeout(() => setReviewSuccess(false), 3500);
+    } catch { /* SyncBar handles it */ }
+  };
+
+  const handleApprove = async () => {
+    if (!subjectId) return;
+    try {
+      await approveAndSync(lessonId, subjectId);
+      setApproveSuccess(true);
+      setTimeout(() => setApproveSuccess(false), 3500);
     } catch { /* SyncBar handles it */ }
   };
 
@@ -229,12 +239,32 @@ export default function LessonEditorPage({
           </div>
 
           {(!lesson.atlasStatus || lesson.atlasStatus === 'draft') && (
+            currentUser?.role === 'admin' ? (
+              <button
+                onClick={handleApprove}
+                disabled={isSyncing}
+                className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-green-400 text-xs font-semibold rounded-lg border border-green-800/50 bg-green-900/20 hover:bg-green-800/30 disabled:opacity-40 font-arabic transition-colors"
+              >
+                {approveSuccess ? '✓ تم الاعتماد' : '✓ اعتماد مباشر'}
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmitForReview}
+                disabled={isSyncing}
+                className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-amber-400 text-xs font-semibold rounded-lg border border-amber-800/50 bg-amber-900/20 hover:bg-amber-800/30 disabled:opacity-40 font-arabic transition-colors"
+              >
+                {reviewSuccess ? '✓ أُرسل' : '⇪ مراجعة'}
+              </button>
+            )
+          )}
+
+          {lesson.atlasStatus === 'approved' && currentUser?.role === 'admin' && (
             <button
-              onClick={handleSubmitForReview}
+              onClick={handleApprove}
               disabled={isSyncing}
-              className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-amber-400 text-xs font-semibold rounded-lg border border-amber-800/50 bg-amber-900/20 hover:bg-amber-800/30 disabled:opacity-40 font-arabic transition-colors"
+              className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-sand-400 text-xs font-semibold rounded-lg border border-sand-800/50 bg-sand-900/20 hover:bg-sand-800/30 disabled:opacity-40 font-arabic transition-colors"
             >
-              {reviewSuccess ? '✓ أُرسل' : '⇪ مراجعة'}
+              {approveSuccess ? '✓ تم الحفظ' : '↑ حفظ + اعتماد'}
             </button>
           )}
 
@@ -323,8 +353,8 @@ export default function LessonEditorPage({
         </div>
       </header>
 
-      {/* Approved warning */}
-      {lesson.atlasStatus === 'approved' && (
+      {/* Approved warning — only shown to contributors, not admins */}
+      {lesson.atlasStatus === 'approved' && currentUser?.role !== 'admin' && (
         <div className="max-w-4xl mx-auto w-full px-5 pt-4">
           <div className="px-4 py-3 bg-amber-900/10 border border-amber-800/30 rounded-xl flex items-start gap-3">
             <span className="text-amber-500 text-sm mt-0.5 shrink-0">⚠</span>
