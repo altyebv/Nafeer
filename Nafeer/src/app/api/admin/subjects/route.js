@@ -92,14 +92,15 @@ export async function POST(request) {
     // ── Create Subject ─────────────────────────────────────────────────────────
     const subject = await Subject.create({
       subjectId,
-      nameAr:    nameAr.trim(),
-      nameEn:    nameEn?.trim() || null,
-      path:      track,
-      isMajor:   false,
-      order:     9000, // put test subjects at the bottom
-      createdBy: contributorId,
-      status:    'approved',
-      changelog: initialChangelog(contributorId, `Test subject created via admin API`),
+      nameAr:      nameAr.trim(),
+      nameEn:      nameEn?.trim() || null,
+      path:        track,
+      isMajor:     false,
+      order:       9000, // put test subjects at the bottom
+      contributor: contributorId, // required by SubjectSchema
+      createdBy:   contributorId,
+      status:      'approved',
+      changelog:   initialChangelog(contributorId, `Test subject created via admin API`),
     });
 
     let seededUnits   = 0;
