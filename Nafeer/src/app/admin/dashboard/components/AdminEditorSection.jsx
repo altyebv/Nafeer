@@ -61,6 +61,22 @@ function PrimaryBtn({ onClick, loading, disabled, children }) {
   );
 }
 
+function SecondaryBtn({ onClick, loading, disabled, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading || disabled}
+      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono transition-all
+        border border-ink-700/60 text-ink-400 hover:border-ink-600 hover:text-ink-200
+        ${loading || disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+      style={{ background: 'rgba(255,255,255,0.02)' }}
+    >
+      {loading && <Spinner />}
+      {children}
+    </button>
+  );
+}
+
 // ─── Subject Picker ───────────────────────────────────────────────────────────
 
 function statusDot(s) {
@@ -89,7 +105,6 @@ function SubjectPicker({ subjects, selected, onSelect }) {
       <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
         {grouped.map(({ track, items }) => (
           <div key={track}>
-            {/* Track group header */}
             <div className="flex items-center gap-1.5 px-3 py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
               <span className={`w-1.5 h-1.5 rounded-full ${TRACK_META[track]?.dot || 'bg-ink-600'}`} />
               <span className="text-[9px] font-mono text-ink-700 uppercase tracking-widest">
@@ -142,7 +157,6 @@ function SubjectPicker({ subjects, selected, onSelect }) {
           </div>
         ))}
       </div>
-
     </div>
   );
 }
@@ -207,16 +221,25 @@ function PublishResult({ result, onDismiss }) {
   );
 
   const { data } = result;
+  // Route returns contentVersion (v3) for both delta and full modes.
+  // For full mode it also returns downloadUrl.
+  const displayVersion = data.contentVersion || data.version || '—';
+  const isDelta = data.mode === 'delta';
+
   return (
     <div
       className="rounded-xl border p-4"
       style={{ background: 'rgba(212,137,30,0.05)', borderColor: 'rgba(212,137,30,0.25)' }}
     >
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sand-400">✓</span>
           <span className="font-arabic text-sm text-sand-300">
-            تم النشر بنجاح — نسخة {data.version}
+            تم النشر بنجاح — نسخة {displayVersion}
+          </span>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border"
+            style={{ borderColor: 'rgba(212,137,30,0.3)', color: 'var(--accent)' }}>
+            {isDelta ? 'delta' : 'full'}
           </span>
         </div>
         <button onClick={onDismiss} className="text-ink-600 hover:text-ink-400 text-xs">✕</button>
@@ -236,6 +259,18 @@ function PublishResult({ result, onDismiss }) {
         ))}
       </div>
 
+      {/* Delta publish summary */}
+      {isDelta && data.delta && (
+        <div className="mt-3 flex items-center gap-4 text-[10px] font-mono text-ink-500">
+          <span>↑ {data.delta.bundlesUploaded} bundle</span>
+          <span>~ {data.delta.changedEntities} entity</span>
+          {data.delta.deletedEntities > 0 && (
+            <span className="text-red-400/70">− {data.delta.deletedEntities} محذوف</span>
+          )}
+        </div>
+      )}
+
+      {/* Full publish: show download URL */}
       {data.downloadUrl && (
         <div className="mt-3 flex items-center gap-2">
           <span className="text-[10px] font-mono text-ink-600">رابط التحميل:</span>
@@ -267,8 +302,9 @@ function relativeTime(iso) {
   return `منذ ${d} يوم`;
 }
 
-function ContentPanel({ subject: s, onPublish, publishing, result, onDismissResult }) {
-  // Compute diff vs last published snapshot
+function ContentPanel({ subject: s, onPublish, onFullPublish, publishing, result, onDismissResult }) {
+  const [showFullConfirm, setShowFullConfirm] = useState(false);
+
   const lessonDiff =
     s.isPublished && s.remoteLessons != null
       ? Math.max(0, s.lessons.approved - s.remoteLessons)
@@ -291,6 +327,12 @@ function ContentPanel({ subject: s, onPublish, publishing, result, onDismissResu
                 <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>
               )}
               <VersionBadge version={s.appVersion} />
+              {/* Show delta badge when published via v3 */}
+              {s.contentVersion && s.patchCount != null && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sky-800/40 text-sky-500/70">
+                  {s.patchCount} patch
+                </span>
+              )}
             </div>
 
             {s.isPublished && s.publishedAt && (
@@ -373,39 +415,62 @@ function ContentPanel({ subject: s, onPublish, publishing, result, onDismissResu
 
       {/* Publish action */}
       <div
-        className="rounded-xl border p-5 flex items-center justify-between gap-4"
+        className="rounded-xl border p-5"
         style={{ background: 'rgba(212,137,30,0.04)', borderColor: 'rgba(212,137,30,0.15)' }}
       >
-        <div>
-          <p className="font-arabic text-sm font-semibold text-ink-200 mb-0.5">
-            {s.isPublished ? 'نشر تحديث للتطبيق' : 'نشر للمرة الأولى'}
-          </p>
-          <p className="text-[11px] font-arabic text-ink-500">
-            {s.isPublishable
-              ? `سيتم نشر ${s.lessons.approved} درس معتمد إلى تطبيق بشير مباشرة`
-              : 'لا يوجد دروس معتمدة — أضف محتوى أولاً'}
-          </p>
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <div>
+            <p className="font-arabic text-sm font-semibold text-ink-200 mb-0.5">
+              {s.isPublished ? 'نشر تحديث للتطبيق' : 'نشر للمرة الأولى'}
+            </p>
+            <p className="text-[11px] font-arabic text-ink-500">
+              {s.isPublishable
+                ? `سيتم نشر ${s.lessons.approved} درس معتمد إلى تطبيق بشير مباشرة`
+                : 'لا يوجد دروس معتمدة — أضف محتوى أولاً'}
+            </p>
+          </div>
+
+          <PrimaryBtn
+            onClick={onPublish}
+            loading={publishing}
+            disabled={!s.isPublishable}
+          >
+            {publishing ? 'جارٍ النشر…' : s.isPublished ? 'نشر تحديث (delta) ⬆' : 'نشر للتطبيق ⬆'}
+          </PrimaryBtn>
         </div>
 
-        <PrimaryBtn
-          onClick={onPublish}
-          loading={publishing}
-          disabled={!s.isPublishable}
-        >
-          {publishing ? 'جارٍ النشر…' : s.isPublished ? 'نشر تحديث ⬆' : 'نشر للتطبيق ⬆'}
-        </PrimaryBtn>
-      </div>
-
-      {/* ── Editor placeholder — Step 2 will embed EditorShell here ─────────── */}
-      <div
-        className="hidden"
-        style={{ background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.05)', borderStyle: 'dashed' }}
-      >
-        <span className="text-3xl text-ink-800">✎</span>
-        <p className="font-arabic text-sm text-ink-600">محرر المحتوى</p>
-        <p className="text-[11px] font-mono text-ink-800 max-w-xs">
-          قريباً — تعديل الدروس والكتل والمفاهيم مباشرة من هنا قبل النشر
-        </p>
+        {/* Force full publish — shown only after first publish (so delta exists to compare against) */}
+        {s.isPublished && (
+          <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            {showFullConfirm ? (
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[11px] font-arabic text-amber-300/80 flex-1">
+                  سيُعاد رفع ملف JSON كامل وتحديث manifest — استخدم هذا فقط عند الإصلاح الاضطراري أو الترحيل الأول.
+                </p>
+                <div className="flex gap-2">
+                  <SecondaryBtn
+                    onClick={() => { setShowFullConfirm(false); onFullPublish(); }}
+                    loading={publishing}
+                    disabled={!s.isPublishable}
+                  >
+                    تأكيد full publish
+                  </SecondaryBtn>
+                  <SecondaryBtn onClick={() => setShowFullConfirm(false)}>
+                    إلغاء
+                  </SecondaryBtn>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowFullConfirm(true)}
+                disabled={publishing || !s.isPublishable}
+                className="text-[10px] font-mono text-ink-600 hover:text-amber-400/70 transition-colors"
+              >
+                ↻ نشر كامل اضطراري (mode: full)
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -446,7 +511,6 @@ export function AdminEditorSection() {
           if (prevSelected && list.some((subject) => subject.id === prevSelected)) {
             return prevSelected;
           }
-
           const first = list.find((subject) => subject.isPublishable) || list[0];
           return first?.id || null;
         });
@@ -462,7 +526,9 @@ export function AdminEditorSection() {
 
   useEffect(() => { load(); }, [load]);
 
-  const publish = async () => {
+  // ── Publish helpers ───────────────────────────────────────────────────────
+
+  const doPublish = async (mode = 'delta') => {
     if (!selected) return;
     setPublishing(true);
     setResult(null);
@@ -470,12 +536,12 @@ export function AdminEditorSection() {
       const res  = await fetch('/api/content/publish', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ subjectId: selected }),
+        body:    JSON.stringify({ subjectId: selected, mode }),
       });
       const data = await res.json();
       if (data.ok) {
         setResult({ ok: true, data });
-        load(); // refresh counts
+        load(); // refresh counts + isPublished
       } else {
         setResult({ ok: false, error: data.error });
       }
@@ -485,6 +551,9 @@ export function AdminEditorSection() {
       setPublishing(false);
     }
   };
+
+  const publish     = () => doPublish('delta');
+  const fullPublish = () => doPublish('full');
 
   const selectedSubject = subjects.find((s) => s.id === selected) || null;
 
@@ -533,6 +602,7 @@ export function AdminEditorSection() {
                   <ContentPanel
                     subject={selectedSubject}
                     onPublish={publish}
+                    onFullPublish={fullPublish}
                     publishing={publishing}
                     result={result}
                     onDismissResult={() => setResult(null)}
