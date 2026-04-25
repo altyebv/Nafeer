@@ -1,4 +1,5 @@
 import { requireContributor, ok, err } from '@/lib/api/guard';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { getLessonWithContent, updateLesson, updateLessonStatus } from '@/lib/api/lessons';
 import { connectDB } from '@/lib/db';
 import { Lesson } from '@/lib/models/Lesson';
@@ -28,6 +29,7 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const user = await requireContributor();
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, versionLabel, ...updates } = body;
 
@@ -41,7 +43,7 @@ export async function PUT(request, { params }) {
     const lesson = await updateLesson(
       (await params).id,
       safeUpdates,
-      user.id,
+      actorId,
       note || '',
       versionLabel || '',
       user.name || ''
@@ -61,6 +63,7 @@ export async function PUT(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const user = await requireContributor();
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note, versionLabel } = await request.json();
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) {
@@ -73,7 +76,7 @@ export async function PATCH(request, { params }) {
     }
 
     const lesson = await updateLessonStatus(
-      (await params).id, status, user.id, note || '', versionLabel || '', user.name || ''
+      (await params).id, status, actorId, note || '', versionLabel || '', user.name || ''
     );
     if (!lesson) return err('الدرس غير موجود', 404);
 

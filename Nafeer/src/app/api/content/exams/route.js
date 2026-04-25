@@ -1,4 +1,5 @@
 import { requireSubjectAccess, ok, err } from '@/lib/api/guard';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { getExamsForSubject, createExam } from '@/lib/api/questions';
 
 const generateId = (prefix) =>
@@ -29,10 +30,11 @@ export async function POST(request) {
     if (!subjectId || !titleAr) return err('الحقول المطلوبة: subjectId, titleAr');
 
     const user = await requireSubjectAccess(subjectId);
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
 
     const exam = await createExam(
       { ...body, contentId: body.contentId || generateId('exam') },
-      user.id
+      actorId
     );
 
     return ok(exam);

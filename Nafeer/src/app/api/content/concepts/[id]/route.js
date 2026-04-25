@@ -1,10 +1,12 @@
 import { requireContributor, ok, err } from '@/lib/api/guard';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateConcept, updateConceptStatus, deleteConcept } from '@/lib/api/concepts';
 
 // PUT /api/content/concepts/[id]
 export async function PUT(request, { params }) {
   try {
     const user = await requireContributor();
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
 
@@ -16,7 +18,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const concept = await updateConcept((await params).id, safeUpdates, user.id, note || '');
+    const concept = await updateConcept((await params).id, safeUpdates, actorId, note || '');
     if (!concept) return err('المفهوم غير موجود', 404);
 
     return ok(concept);
@@ -31,6 +33,7 @@ export async function PUT(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const user = await requireContributor();
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) {
@@ -40,7 +43,7 @@ export async function PATCH(request, { params }) {
       return err('الاعتماد متاح للمشرفين فقط', 403);
     }
 
-    const concept = await updateConceptStatus((await params).id, status, user.id, note || '');
+    const concept = await updateConceptStatus((await params).id, status, actorId, note || '');
     if (!concept) return err('المفهوم غير موجود', 404);
 
     return ok(concept);

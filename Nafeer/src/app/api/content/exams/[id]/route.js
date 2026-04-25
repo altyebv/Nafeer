@@ -1,10 +1,12 @@
 import { requireContributor, ok, err } from '@/lib/api/guard';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateExam, deleteExam } from '@/lib/api/questions';
 
 // PUT /api/content/exams/[id]
 export async function PUT(request, { params }) {
   try {
     const user = await requireContributor();
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
 
@@ -17,7 +19,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const exam = await updateExam((await params).id, safeUpdates, user.id);
+    const exam = await updateExam((await params).id, safeUpdates, actorId);
     if (!exam) return err('الامتحان غير موجود', 404);
 
     return ok(exam);

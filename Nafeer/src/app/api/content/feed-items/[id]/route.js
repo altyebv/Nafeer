@@ -1,4 +1,5 @@
 import { requireSubjectAccess, requireContributor, ok, err } from '@/lib/api/guard';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import {
   getFeedItemsForSubject, createFeedItem, updateFeedItem,
   updateFeedItemStatus, deleteFeedItem,
@@ -62,6 +63,7 @@ export async function POST(request) {
 export async function PUT(request, { params }) {
   try {
     const user = await requireContributor();
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
 
@@ -74,7 +76,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const item = await updateFeedItem((await params).id, safeUpdates, user.id, note || '');
+    const item = await updateFeedItem((await params).id, safeUpdates, actorId, note || '');
     if (!item) return err('عنصر التغذية غير موجود', 404);
 
     return ok(item);
@@ -89,12 +91,13 @@ export async function PUT(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const user = await requireContributor();
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
 
-    const item = await updateFeedItemStatus((await params).id, status, user.id, note || '');
+    const item = await updateFeedItemStatus((await params).id, status, actorId, note || '');
     if (!item) return err('عنصر التغذية غير موجود', 404);
 
     return ok(item);

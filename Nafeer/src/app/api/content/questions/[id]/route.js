@@ -1,10 +1,12 @@
 import { requireContributor, ok, err } from '@/lib/api/guard';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateQuestion, updateQuestionStatus, deleteQuestion } from '@/lib/api/questions';
 
 // PUT /api/content/questions/[id]
 export async function PUT(request, { params }) {
   try {
     const user = await requireContributor();
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
 
@@ -20,7 +22,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const question = await updateQuestion((await params).id, safeUpdates, user.id, note || '');
+    const question = await updateQuestion((await params).id, safeUpdates, actorId, note || '');
     if (!question) return err('السؤال غير موجود', 404);
 
     return ok(question);
@@ -35,12 +37,13 @@ export async function PUT(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const user = await requireContributor();
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
 
-    const question = await updateQuestionStatus((await params).id, status, user.id, note || '');
+    const question = await updateQuestionStatus((await params).id, status, actorId, note || '');
     if (!question) return err('السؤال غير موجود', 404);
 
     return ok(question);

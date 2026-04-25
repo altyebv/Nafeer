@@ -1,4 +1,5 @@
 import { requireSubjectAccess, requireContributor, ok, err } from '@/lib/api/guard';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import {
   getConceptsForSubject, createConcept, updateConcept,
   updateConceptStatus, deleteConcept,
@@ -40,10 +41,11 @@ export async function POST(request) {
     if (!subjectId || !type || !titleAr) return err('الحقول المطلوبة: subjectId, type, titleAr');
 
     const user = await requireSubjectAccess(subjectId);
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
 
     const concept = await createConcept(
       { ...body, contentId: body.contentId || generateId('concept') },
-      user.id
+      actorId
     );
 
     return ok(concept);

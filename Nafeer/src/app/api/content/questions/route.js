@@ -1,4 +1,5 @@
 import { requireSubjectAccess, ok, err } from '@/lib/api/guard';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import {
   getQuestionsForSubject, createQuestion,
 } from '@/lib/api/questions';
@@ -39,14 +40,15 @@ export async function POST(request) {
     }
 
     const user = await requireSubjectAccess(subjectId);
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
 
     const question = await createQuestion(
       { ...body, contentId: body.contentId || generateId('q') },
-      user.id
+      actorId
     );
 
     // Track stat — fire-and-forget
-    trackStat(user.id, 'questionsAdded');
+    trackStat(actorId, 'questionsAdded');
 
     return ok(question);
   } catch (e) {
