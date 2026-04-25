@@ -84,7 +84,8 @@ export async function GET() {
       const feed = feedMap[subjectId] || { total: 0, approved: 0 };
 
       const isPublishable = lessons.approved > 0;
-      const isPublished = !!manifestEntry?.version;
+      // Support both v2 (`version`) and v3 delta (`contentVersion`) manifest entries.
+      const isPublished = !!(manifestEntry?.version || manifestEntry?.contentVersion);
       const lastPublishedCount = manifestEntry?.approvedLessonsCount ?? null;
       const hasNewContent =
         isPublishable &&
@@ -101,7 +102,7 @@ export async function GET() {
         lessons: { total: lessons.total, approved: lessons.approved, draft: lessons.draft },
         questions: { total: questions.total, approved: questions.approved },
         feedItems: { total: feed.total, approved: feed.approved },
-        appVersion: manifestEntry?.version || null,
+        appVersion: manifestEntry?.contentVersion || manifestEntry?.version || null,
         publishedAt: manifestEntry?.updatedAt || null,
         downloadUrl: manifestEntry?.downloadUrl || null,
         enabled: manifestEntry?.enabled ?? true,

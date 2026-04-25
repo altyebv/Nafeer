@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/db';
 import { Lesson } from '@/lib/models/Lesson';
 import { initialChangelog } from '@/lib/models/versioning';
 import { trackStat } from '@/lib/trackStat';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 
 export async function GET(request) {
   try {
@@ -36,6 +37,11 @@ export async function POST(request) {
     }
 
     const user = await requireSubjectAccess(subjectId);
+    // Admins don't have a Contributor _id — substitute the system seed actor
+    // so that createdBy / changelog ObjectId fields pass Mongoose validation.
+    const actorId = user.role === 'admin'
+      ? await ensureSystemSeedContributor()
+      : user.id;
 
     await connectDB();
 
@@ -47,12 +53,12 @@ export async function POST(request) {
       order,
       estimatedMinutes: body.estimatedMinutes || 15,
       summary:          body.summary          || null,
-      createdBy:        user.id,
-      changelog:        initialChangelog(user.id),
+      createdBy:        actorId,
+      changelog:        initialChangelog(actorId),
     });
 
     // Track stat — fire-and-forget
-    trackStat(user.id, 'lessonsCreated');
+    trackStat(actorId, 'lessonsCreated');
 
     return ok(lesson, { status: 201 });
   } catch (e) {
