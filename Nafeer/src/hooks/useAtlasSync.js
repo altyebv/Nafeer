@@ -150,6 +150,8 @@ export function useAtlasSync() {
             subjectId,
             sections: lessonSections.map((s) => ({
               contentId:    s.id,
+              subjectId,
+              lessonContentId: lessonId,
               title:        s.title,
               order:        s.order,
               learningType: s.learningType || 'UNDERSTANDING',
@@ -169,6 +171,7 @@ export function useAtlasSync() {
               contentId:        b.id,
               sectionContentId: b.sectionId,
               type:             b.type,
+              subjectId,
               content:          b.content     || '',
               order:            b.order,
               conceptRef:       b.conceptRef  || null,
