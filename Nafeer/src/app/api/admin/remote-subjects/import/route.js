@@ -38,11 +38,11 @@ export async function POST(request) {
 
     const manifest = await getManifest().catch(() => null);
     const manifestEntry = (manifest?.subjects || []).find((entry) => entry.id === subjectId) || null;
-    if (!manifestEntry?.downloadUrl) {
-      return NextResponse.json({ ok: false, error: 'لا يوجد ملف منشور لهذه المادة' }, { status: 404 });
+    const downloadUrl = manifestEntry?.downloadUrl || manifestEntry?.legacyDownloadUrl;
+    if (!downloadUrl) {
+     return NextResponse.json({ ok: false, error: 'لا يوجد ملف منشور لهذه المادة' }, { status: 404 });
     }
-
-    const remoteData = await loadRemoteSubjectExport(manifestEntry.downloadUrl);
+    const remoteData = await loadRemoteSubjectExport(downloadUrl);
     if (!remoteData?.subject?.id) {
       return NextResponse.json({ ok: false, error: 'فشل تحميل بيانات المادة المنشورة' }, { status: 422 });
     }

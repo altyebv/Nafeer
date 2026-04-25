@@ -83,7 +83,11 @@ export async function bootstrapSubject(subjectId, contributorId) {
   await connectDB();
 
   const catalog = SUBJECTS_BY_ID[subjectId];
-  if (!catalog) throw new Error(`Unknown subjectId: ${subjectId}`);
+  if (!catalog) {
+    // Subject was created directly via admin API (test/scratch subject).
+    // It already has its own Subject + Units + Lessons in MongoDB — nothing to bootstrap.
+    return { subjectId, bootstrapped: false, existing: true };
+  }
 
   // Resolve the actor to a valid ObjectId.
   // The seed pipeline passes strings like 'admin-seed' / 'admin-reseed' which
