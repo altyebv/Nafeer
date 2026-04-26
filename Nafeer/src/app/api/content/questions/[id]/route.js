@@ -1,10 +1,13 @@
 import { requireContributor, ok, err } from '@/lib/api/guard';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateQuestion, updateQuestionStatus, deleteQuestion } from '@/lib/api/questions';
+import { connectDB } from '@/lib/db'
+
 
 // PUT /api/content/questions/[id]
 export async function PUT(request, { params }) {
   try {
+    await connectDB();
     const user = await requireContributor();
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
@@ -35,6 +38,7 @@ export async function PUT(request, { params }) {
 
 // PATCH /api/content/questions/[id]
 export async function PATCH(request, { params }) {
+  await connectDB();
   try {
     const user = await requireContributor();
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
@@ -57,6 +61,7 @@ export async function PATCH(request, { params }) {
 // DELETE /api/content/questions/[id]
 export async function DELETE(request, { params }) {
   try {
+    await connectDB();
     await requireContributor();
     await deleteQuestion((await params).id);
     return ok({ deleted: (await params).id });

@@ -1,10 +1,12 @@
 import { requireContributor, ok, err } from '@/lib/api/guard';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateConcept, updateConceptStatus, deleteConcept } from '@/lib/api/concepts';
+import { connectDB } from '@/lib/db';
 
 // PUT /api/content/concepts/[id]
 export async function PUT(request, { params }) {
   try {
+    await connectDB();
     const user = await requireContributor();
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
@@ -32,6 +34,7 @@ export async function PUT(request, { params }) {
 // PATCH /api/content/concepts/[id]
 export async function PATCH(request, { params }) {
   try {
+    await connectDB();
     const user = await requireContributor();
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
@@ -57,6 +60,7 @@ export async function PATCH(request, { params }) {
 // DELETE /api/content/concepts/[id]
 export async function DELETE(request, { params }) {
   try {
+    await connectDB();
     await requireContributor();
     await deleteConcept((await params).id);
     return ok({ deleted: (await params).id });

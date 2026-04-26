@@ -4,6 +4,8 @@ import {
   getFeedItemsForSubject, createFeedItem, updateFeedItem,
   updateFeedItemStatus, deleteFeedItem,
 } from '@/lib/api/feedItems';
+import { connectDB } from '@/lib/db'
+
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -62,6 +64,7 @@ export async function POST(request) {
 // PUT /api/content/feed-items/[id]
 export async function PUT(request, { params }) {
   try {
+    await connectDB();
     const user = await requireContributor();
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
@@ -91,6 +94,7 @@ export async function PUT(request, { params }) {
 // PATCH /api/content/feed-items/[id]
 export async function PATCH(request, { params }) {
   try {
+    await connectDB();
     const user = await requireContributor();
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
