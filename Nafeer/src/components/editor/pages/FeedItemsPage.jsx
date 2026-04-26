@@ -62,7 +62,7 @@ export default function FeedItemsPage({ subjectId }) {
   const resetForm = () => { setForm(emptyForm); setEditingId(null); };
 
   const handleSubmit = () => {
-    if (!form.lessonId || !form.contentAr.trim()) return;
+    if (!form.conceptId || !form.contentAr.trim()) return;
     const data = {
       ...form,
       unitId:          form.unitId          || null,
@@ -583,12 +583,12 @@ export default function FeedItemsPage({ subjectId }) {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleSubmit}
-              disabled={!form.lessonId || !form.contentAr.trim()}
+              disabled={!form.conceptId || !form.contentAr.trim()}
               className="flex-1 font-arabic font-semibold"
               style={{
                 padding: 10, borderRadius: 10, fontSize: 14, border: 'none', cursor: 'pointer',
-                background: (form.lessonId && form.contentAr.trim()) ? 'var(--accent)' : 'var(--border-mid)',
-                color: (form.lessonId && form.contentAr.trim()) ? '#fff' : 'var(--text-muted)',
+                background: (form.conceptId && form.contentAr.trim()) ? 'var(--accent)' : 'var(--border-mid)',
+                color: (form.conceptId && form.contentAr.trim()) ? '#fff' : 'var(--text-muted)',
               }}
             >
               {editingId ? 'حفظ التعديلات' : 'إضافة'}
