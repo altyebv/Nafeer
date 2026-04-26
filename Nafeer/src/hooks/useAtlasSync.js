@@ -175,15 +175,15 @@ export function useAtlasSync() {
             lessonContentId: lessonId,
             subjectId,
             sections: lessonSections.map((s) => ({
-              contentId:    s.id,
-              subjectId,
-              lessonContentId: lessonId,
-              title:        s.title,
-              order:        s.order,
-              learningType: s.learningType || 'UNDERSTANDING',
-              conceptIds:   s.conceptIds  || [],
-              partIndex:    s.partIndex   ?? 0,
-            })),
+              contentId:       s.id,
+              subjectId,                         // ← ADDED
+              lessonContentId: lessonId,         // ← ADDED
+              title:           s.title,
+              order:           s.order,
+              learningType:    s.learningType || 'UNDERSTANDING',
+              conceptIds:      s.conceptIds   || [],
+              partIndex:       s.partIndex    ?? 0,
+            }))
           }),
         });
       }
@@ -195,14 +195,14 @@ export function useAtlasSync() {
           body:   JSON.stringify({
             blocks: lessonBlocks.map((b) => ({
               contentId:        b.id,
+              subjectId,                         // ← ADDED
               sectionContentId: b.sectionId,
               type:             b.type,
-              subjectId,
-              content:          b.content     || '',
+              content:          b.content    || '',
               order:            b.order,
-              conceptRef:       b.conceptRef  || null,
-              caption:          b.caption     || null,
-              metadata:         b.metadata    || null,
+              conceptRef:       b.conceptRef || null,
+              caption:          b.caption    || null,
+              metadata:         b.metadata   || null,
             })),
           }),
         });

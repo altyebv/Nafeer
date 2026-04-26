@@ -263,6 +263,8 @@ export async function POST(request) {
       questionId:      item.questionContentId || null,
       priority:        item.priority        || 1,
       order:           item.order           || 0,
+      lessonId:        item.lessonContentId || null,   
+      unitId:          item.unitContentId   || null,   
     }));
 
     // ── Stat counters (shared by both paths) ──────────────────────────────────
