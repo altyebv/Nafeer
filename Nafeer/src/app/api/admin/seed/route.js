@@ -24,7 +24,6 @@ export async function GET() {
 
   await connectDB();
 
-  // Pull all units and lessons grouped by subjectId in one pass
   const [unitAgg, lessonAgg] = await Promise.all([
     Unit.aggregate([
       { $group: { _id: '$subjectId', count: { $sum: 1 }, ids: { $push: '$contentId' } } }
@@ -44,31 +43,26 @@ export async function GET() {
   const unitMap   = Object.fromEntries(unitAgg.map((r)   => [r._id, r]));
   const lessonMap = Object.fromEntries(lessonAgg.map((r) => [r._id, r]));
 
-  const subjects = SUBJECTS_CATALOG.map((cat) => {
-    // Build what the scaffold *should* produce
+  const catalogSubjects = SUBJECTS_CATALOG.map((cat) => {
     let scaffold;
     try { scaffold = buildSubjectScaffold(cat.id); }
     catch { scaffold = null; }
 
-    const expectedUnits = scaffold?.units.length ?? 0;
+    const expectedUnits   = scaffold?.units.length ?? 0;
     const expectedLessons = scaffold?.lessons.length ?? 0;
 
-    const dbUnits = unitMap[cat.id] ?? { count: 0, ids: [] };
+    const dbUnits   = unitMap[cat.id]   ?? { count: 0, ids: [] };
     const dbLessons = lessonMap[cat.id] ?? { count: 0, ids: [], approved: 0 };
 
-    // Stale = IDs in DB that are no longer in the catalog scaffold
-    const catalogUnitIds = new Set(scaffold?.units.map((u) => u.id) ?? []);
+    const catalogUnitIds   = new Set(scaffold?.units.map((u) => u.id)   ?? []);
     const catalogLessonIds = new Set(scaffold?.lessons.map((l) => l.id) ?? []);
-    const staleUnits = dbUnits.ids.filter((id) => !catalogUnitIds.has(id));
+    const staleUnits   = dbUnits.ids.filter((id)   => !catalogUnitIds.has(id));
     const staleLessons = dbLessons.ids.filter((id) => !catalogLessonIds.has(id));
 
-    // Missing = in catalog but not yet in DB
-    const dbUnitSet = new Set(dbUnits.ids);
+    const dbUnitSet   = new Set(dbUnits.ids);
     const dbLessonSet = new Set(dbLessons.ids);
-    const missingUnits = scaffold?.units.filter((u) => !dbUnitSet.has(u.id)) ?? [];
+    const missingUnits   = scaffold?.units.filter((u)   => !dbUnitSet.has(u.id))   ?? [];
     const missingLessons = scaffold?.lessons.filter((l) => !dbLessonSet.has(l.id)) ?? [];
-
-    const seeded = dbUnits.count > 0 || dbLessons.count > 0;
 
     return {
       id: cat.id,
@@ -76,62 +70,55 @@ export async function GET() {
       track: cat.track,
       isMajor: cat.isMajor,
       order: cat.order,
-      // Catalog targets
       expectedUnits,
       expectedLessons,
-      // DB state
       dbUnits: dbUnits.count,
       dbLessons: dbLessons.count,
       approvedLessons: dbLessons.approved,
-      // Health signals
-      seeded,
+      seeded: dbUnits.count > 0 || dbLessons.count > 0,
       missingUnits: missingUnits.length,
       missingLessons: missingLessons.length,
       staleUnits: staleUnits.length,
       staleLessons: staleLessons.length,
       staleUnitIds: staleUnits,
       staleLessonIds: staleLessons,
-      // Catalog error (duplicate orders, etc.)
       catalogError: scaffold === null ? 'خطأ في بناء المنهج — تحقق من الأوامر المكررة' : null,
     };
   });
 
-  return NextResponse.json({ ok: true, subjects });
-}
+  const catalogIdSet  = new Set(SUBJECTS_CATALOG.map((c) => c.id));
+  const atlasSubjects = await Subject.find({}).select('subjectId nameAr path isMajor order').lean();
+  const testRows = atlasSubjects
+    .filter((s) => !catalogIdSet.has(s.subjectId))
+    .map((s, i) => {
+      const dbUnits   = unitMap[s.subjectId]   ?? { count: 0, ids: [] };
+      const dbLessons = lessonMap[s.subjectId] ?? { count: 0, ids: [], approved: 0 };
+      return {
+        id:              s.subjectId,
+        nameAr:          s.nameAr,
+        track:           s.path || 'COMMON',
+        isMajor:         s.isMajor ?? false,
+        order:           s.order ?? 9000 + i,
+        source:          'atlas',
+        expectedUnits:   dbUnits.count,
+        expectedLessons: dbLessons.count,
+        dbUnits:         dbUnits.count,
+        dbLessons:       dbLessons.count,
+        approvedLessons: dbLessons.approved,
+        seeded:          dbUnits.count > 0 || dbLessons.count > 0,
+        missingUnits:    0,
+        missingLessons:  0,
+        staleUnits:      0,
+        staleLessons:    0,
+        staleUnitIds:    [],
+        staleLessonIds:  [],
+        catalogError:    null,
+      };
+    });
 
-const catalogIdSet = new Set(SUBJECTS_CATALOG.map((c) => c.id));
-const atlasSubjects = await Subject.find({}).select('subjectId nameAr path isMajor order').lean();
-const testRows = atlasSubjects
-  .filter((s) => !catalogIdSet.has(s.subjectId))
-  .map((s, i) => {
-    const dbUnits   = unitMap[s.subjectId]   ?? { count: 0, ids: [] };
-    const dbLessons = lessonMap[s.subjectId] ?? { count: 0, ids: [], approved: 0 };
-    return {
-      id:              s.subjectId,
-      nameAr:          s.nameAr,
-      track:           s.path || 'COMMON',
-      isMajor:         s.isMajor ?? false,
-      order:           s.order ?? 9000 + i,
-      source:          'atlas', // flag for the UI to show DEV badge
-      // No scaffold — treat DB count as both expected and actual
-      expectedUnits:   dbUnits.count,
-      expectedLessons: dbLessons.count,
-      dbUnits:         dbUnits.count,
-      dbLessons:       dbLessons.count,
-      approvedLessons: dbLessons.approved,
-      seeded:          dbUnits.count > 0 || dbLessons.count > 0,
-      missingUnits:    0,
-      missingLessons:  0,
-      staleUnits:      0,
-      staleLessons:    0,
-      staleUnitIds:    [],
-      staleLessonIds:  [],
-      catalogError:    null,
-    };
-  });
- 
-const subjects = [...catalogSubjects, ...testRows];
-return NextResponse.json({ ok: true, subjects });
+  const allSubjects = [...catalogSubjects, ...testRows];
+  return NextResponse.json({ ok: true, subjects: allSubjects });
+}
 
 // ─── POST /api/admin/seed ─────────────────────────────────────────────────────
 // Actions:
