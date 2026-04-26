@@ -29,6 +29,11 @@ function TrackBadge({ track }) {
     </span>
   );
 }
+  {s.source === 'atlas' && (
+    <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-purple-800/40 text-purple-500/70">
+      TEST
+    </span>
+  )}
 
 function Bar({ value, max }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
@@ -98,14 +103,17 @@ function SubjectRow({ s, onAction }) {
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {!s.seeded && !s.catalogError && (
+          {s.source !== 'atlas' && !s.seeded && !s.catalogError && (
             <ActionBtn variant="green" loading={busy === 'bootstrap'} onClick={() => run('bootstrap')}>بذر</ActionBtn>
           )}
-          {s.seeded && hasMissing && (
+          {s.source !== 'atlas' && s.seeded && hasMissing && (
             <ActionBtn variant="amber" loading={busy === 'bootstrap'} onClick={() => run('bootstrap')}>إكمال</ActionBtn>
           )}
-          {hasStale && (
+          {s.source !== 'atlas' && hasStale && (
             <ActionBtn variant="red" loading={busy === 'wipe_stale'} onClick={() => run('wipe_stale')}>حذف قديم</ActionBtn>
+          )}
+          {s.source === 'atlas' && (
+            <span className="text-[9px] px-2 py-0.5 rounded font-mono border border-purple-800/40 text-purple-500/70">DEV</span>
           )}
         </div>
       </div>
@@ -137,6 +145,13 @@ function SubjectRow({ s, onAction }) {
               {s.missingLessons > 0 && <p className="text-[11px] font-arabic text-amber-400/80">◎ {s.missingLessons} درس ناقص</p>}
               {s.staleUnits     > 0 && <p className="text-[11px] font-arabic text-red-400/80">✕ {s.staleUnits} وحدة قديمة</p>}
               {s.staleLessons   > 0 && <p className="text-[11px] font-arabic text-red-400/80">✕ {s.staleLessons} درس قديم</p>}
+              
+            </div>
+          )}
+          {s.source === 'atlas' && (
+            <div className="mb-4 rounded-lg px-3 py-2.5 text-[11px] font-arabic text-sky-400/80"
+              style={{ background: 'rgba(56,189,248,0.04)', border: '1px solid rgba(56,189,248,0.12)' }}>
+              مادة تجريبية — أضف وحدات ودروساً من قسم «إدارة المنهج» في لوحة التحكم.
             </div>
           )}
 

@@ -6,15 +6,15 @@ import { SUBJECTS_CATALOG_REF } from '../constants';
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 
 const TRACK_META = {
-  COMMON:   { label: 'مشترك', cls: 'border-sky-800/50 text-sky-400/80',          dot: 'bg-sky-500'     },
-  SCIENCE:  { label: 'علمي',   cls: 'border-emerald-800/50 text-emerald-400/80', dot: 'bg-emerald-500' },
-  LITERARY: { label: 'أدبي',   cls: 'border-purple-800/50 text-purple-400/80',   dot: 'bg-purple-500'  },
+  COMMON: { label: 'مشترك', cls: 'border-sky-800/50 text-sky-400/80', dot: 'bg-sky-500' },
+  SCIENCE: { label: 'علمي', cls: 'border-emerald-800/50 text-emerald-400/80', dot: 'bg-emerald-500' },
+  LITERARY: { label: 'أدبي', cls: 'border-purple-800/50 text-purple-400/80', dot: 'bg-purple-500' },
 };
 
 const STATUS_META = {
-  approved: { dot: 'bg-green-500/70',  label: 'معتمد' },
-  draft:    { dot: 'bg-ink-600/60',    label: 'مسودة' },
-  review:   { dot: 'bg-amber-400/70',  label: 'مراجعة' },
+  approved: { dot: 'bg-green-500/70', label: 'معتمد' },
+  draft: { dot: 'bg-ink-600/60', label: 'مسودة' },
+  review: { dot: 'bg-amber-400/70', label: 'مراجعة' },
 };
 
 const TRACK_ORDER = ['COMMON', 'SCIENCE', 'LITERARY'];
@@ -45,9 +45,9 @@ function StatusDot({ status }) {
 
 function InlineField({ value, onSave, placeholder, mono = false, dimmed = false, className = '' }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft]     = useState(value || '');
-  const [saving, setSaving]   = useState(false);
-  const [error, setError]     = useState(null);
+  const [draft, setDraft] = useState(value || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
   const inputRef = useRef(null);
 
   const start = () => {
@@ -80,7 +80,7 @@ function InlineField({ value, onSave, placeholder, mono = false, dimmed = false,
   };
 
   const onKey = (e) => {
-    if (e.key === 'Enter')  { e.preventDefault(); save(); }
+    if (e.key === 'Enter') { e.preventDefault(); save(); }
     if (e.key === 'Escape') { cancel(); }
   };
 
@@ -125,14 +125,14 @@ function InlineField({ value, onSave, placeholder, mono = false, dimmed = false,
 // ─── Lesson Row ────────────────────────────────────────────────────────────────
 
 function LessonRow({ lesson, onPatch, onDelete }) {
-  const [deleting,   setDeleting]  = useState(false);
-  const [confirmDel, setConfirm]   = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDel, setConfirm] = useState(false);
 
   const patch = async (fields) => {
-    const res  = await fetch(`/api/admin/curriculum/lessons/${lesson._id}`, {
-      method:  'PATCH',
+    const res = await fetch(`/api/admin/curriculum/lessons/${lesson._id}`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(fields),
+      body: JSON.stringify(fields),
     });
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'فشل الحفظ');
@@ -142,7 +142,7 @@ function LessonRow({ lesson, onPatch, onDelete }) {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const res  = await fetch(`/api/admin/curriculum/lessons/${lesson._id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/curriculum/lessons/${lesson._id}`, { method: 'DELETE' });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'فشل الحذف');
       onDelete(lesson._id);
@@ -236,9 +236,9 @@ function LessonRow({ lesson, onPatch, onDelete }) {
 // ─── Add Lesson Form ───────────────────────────────────────────────────────────
 
 function AddLessonForm({ unit, subjectId, onAdded, onCancel }) {
-  const [title,   setTitle]   = useState('');
-  const [saving,  setSaving]  = useState(false);
-  const [error,   setError]   = useState(null);
+  const [title, setTitle] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
   const inputRef = useRef(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
@@ -249,24 +249,24 @@ function AddLessonForm({ unit, subjectId, onAdded, onCancel }) {
 
   // contentId convention: SUBJECTID_UNITCONTENTID_L{order}
   // Strip the subjectId prefix from unitContentId to avoid double-prefix
-  const unitSuffix  = unit.contentId.startsWith(subjectId + '_')
+  const unitSuffix = unit.contentId.startsWith(subjectId + '_')
     ? unit.contentId.slice(subjectId.length + 1)
     : unit.contentId;
-  const contentId   = `${subjectId}_${unitSuffix}_L${nextOrder}`;
+  const contentId = `${subjectId}_${unitSuffix}_L${nextOrder}`;
 
   const save = async () => {
     if (!title.trim()) { setError('العنوان مطلوب'); return; }
     setSaving(true); setError(null);
     try {
-      const res  = await fetch('/api/admin/curriculum/lessons', {
-        method:  'POST',
+      const res = await fetch('/api/admin/curriculum/lessons', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
+        body: JSON.stringify({
           subjectId,
-          unitContentId:   unit.contentId,
+          unitContentId: unit.contentId,
           contentId,
-          title:           title.trim(),
-          order:           nextOrder,
+          title: title.trim(),
+          order: nextOrder,
           estimatedMinutes: 15,
         }),
       });
@@ -280,7 +280,7 @@ function AddLessonForm({ unit, subjectId, onAdded, onCancel }) {
   };
 
   const onKey = (e) => {
-    if (e.key === 'Enter')  { e.preventDefault(); save(); }
+    if (e.key === 'Enter') { e.preventDefault(); save(); }
     if (e.key === 'Escape') { onCancel(); }
   };
 
@@ -322,14 +322,14 @@ function AddLessonForm({ unit, subjectId, onAdded, onCancel }) {
 // ─── Unit Card ─────────────────────────────────────────────────────────────────
 
 function UnitCard({ unit, subjectId, onPatchUnit, onPatchLesson, onAddLesson, onDeleteLesson }) {
-  const [open,     setOpen]     = useState(false);
-  const [adding,   setAdding]   = useState(false);
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const patchUnit = async (fields) => {
-    const res  = await fetch(`/api/admin/curriculum/units/${unit._id}`, {
-      method:  'PATCH',
+    const res = await fetch(`/api/admin/curriculum/units/${unit._id}`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(fields),
+      body: JSON.stringify(fields),
     });
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'فشل الحفظ');
@@ -337,14 +337,14 @@ function UnitCard({ unit, subjectId, onPatchUnit, onPatchLesson, onAddLesson, on
   };
 
   const approvedCount = unit.lessons.filter((l) => l.status === 'approved').length;
-  const totalCount    = unit.lessons.length;
+  const totalCount = unit.lessons.length;
 
   return (
     <div
       className="rounded-xl border overflow-hidden transition-colors"
       style={{
-        background:   'rgba(255,255,255,0.018)',
-        borderColor:  open ? 'rgba(212,137,30,0.2)' : 'rgba(255,255,255,0.07)',
+        background: 'rgba(255,255,255,0.018)',
+        borderColor: open ? 'rgba(212,137,30,0.2)' : 'rgba(255,255,255,0.07)',
       }}
     >
       {/* Unit header */}
@@ -385,7 +385,7 @@ function UnitCard({ unit, subjectId, onPatchUnit, onPatchLesson, onAddLesson, on
             <div
               className="h-full rounded-full transition-all"
               style={{
-                width:      totalCount > 0 ? `${Math.round((approvedCount / totalCount) * 100)}%` : '0%',
+                width: totalCount > 0 ? `${Math.round((approvedCount / totalCount) * 100)}%` : '0%',
                 background: 'var(--accent)',
               }}
             />
@@ -519,16 +519,46 @@ function SubjectPicker({ selected, onSelect }) {
 // ─── Main Panel ────────────────────────────────────────────────────────────────
 
 function CurriculumPanel({ subjectId }) {
-  const [data,    setData]    = useState(null);   // { subject, units, counts }
+  const [data, setData] = useState(null);   // { subject, units, counts }
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
+  const [addingUnit, setAddingUnit] = useState(false);
+  const [addUnitTitle, setAddUnitTitle] = useState('');
+  const [addUnitSaving, setAddUnitSaving] = useState(false);
+  const [addUnitError, setAddUnitError] = useState(null);
+
+  const handleAddUnit = async () => {
+    if (!addUnitTitle.trim()) { setAddUnitError('العنوان مطلوب'); return; }
+    setAddUnitSaving(true);
+    setAddUnitError(null);
+    try {
+      const res = await fetch('/api/admin/curriculum/units', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subjectId, title: addUnitTitle.trim() }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'فشل إنشاء الوحدة');
+      setData((prev) => ({
+        ...prev,
+        units: [...prev.units, json.unit],
+        counts: { ...prev.counts, units: prev.counts.units + 1 },
+      }));
+      setAddUnitTitle('');
+      setAddingUnit(false);
+    } catch (e) {
+      setAddUnitError(e.message);
+    } finally {
+      setAddUnitSaving(false);
+    }
+  };
 
   const load = useCallback(async () => {
     if (!subjectId) return;
     setLoading(true);
     setError(null);
     try {
-      const res  = await fetch(`/api/admin/curriculum?subjectId=${encodeURIComponent(subjectId)}`);
+      const res = await fetch(`/api/admin/curriculum?subjectId=${encodeURIComponent(subjectId)}`);
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'فشل تحميل البيانات');
       setData(json);
@@ -558,11 +588,11 @@ function CurriculumPanel({ subjectId }) {
         String(u._id) !== String(unitId)
           ? u
           : {
-              ...u,
-              lessons: u.lessons.map((l) =>
-                String(l._id) === String(lessonId) ? { ...l, ...updatedFields } : l
-              ),
-            }
+            ...u,
+            lessons: u.lessons.map((l) =>
+              String(l._id) === String(lessonId) ? { ...l, ...updatedFields } : l
+            ),
+          }
       ),
     }));
   };
@@ -639,7 +669,7 @@ function CurriculumPanel({ subjectId }) {
         <div className="flex items-center gap-3 shrink-0">
           {[
             { label: 'وحدة', val: counts.units },
-            { label: 'درس',  val: counts.lessons },
+            { label: 'درس', val: counts.lessons },
             { label: 'معتمد', val: counts.approved },
           ].map(({ label, val }) => (
             <div key={label} className="text-center">
@@ -669,11 +699,14 @@ function CurriculumPanel({ subjectId }) {
       </div>
 
       {/* Units */}
+      {/* Units */}
       <div className="space-y-2">
-        {units.length === 0 ? (
-          <div className="py-16 text-center rounded-xl border" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-            <p className="font-arabic text-ink-600 text-sm mb-2">لا يوجد وحدات — تأكد من البذر أولاً</p>
-            <p className="text-[11px] font-mono text-ink-800">اذهب إلى «إدارة البذر» لإنشاء هيكل المادة</p>
+        {units.length === 0 && !addingUnit ? (
+          <div className="py-10 text-center rounded-xl border" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            <p className="font-arabic text-ink-600 text-sm mb-2">لا يوجد وحدات</p>
+            <p className="text-[11px] font-mono text-ink-800 mb-4">
+              استخدم «إضافة وحدة» أدناه أو اذهب إلى «إدارة البذر» للمواد الكاملة
+            </p>
           </div>
         ) : (
           units.map((unit) => (
@@ -688,15 +721,78 @@ function CurriculumPanel({ subjectId }) {
             />
           ))
         )}
+
+        {/* ── Add unit inline form ───────────────────────────────────────── */}
+        {addingUnit ? (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border"
+            style={{ background: 'rgba(212,137,30,0.04)', border: '1px dashed rgba(212,137,30,0.25)' }}
+          >
+            <input
+              autoFocus
+              dir="rtl"
+              value={addUnitTitle}
+              onChange={(e) => setAddUnitTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); handleAddUnit(); }
+                if (e.key === 'Escape') { setAddingUnit(false); setAddUnitTitle(''); setAddUnitError(null); }
+              }}
+              placeholder="عنوان الوحدة الجديدة"
+              className="flex-1 min-w-0 px-3 py-1.5 rounded-lg text-sm font-arabic bg-ink-800/80 border border-sand-700/50 focus:border-sand-600/70 focus:outline-none text-ink-200 placeholder-ink-700"
+            />
+            {addUnitError && <span className="text-[10px] text-red-400 shrink-0">{addUnitError}</span>}
+            <button
+              onClick={handleAddUnit}
+              disabled={addUnitSaving || !addUnitTitle.trim()}
+              className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-sand-700/50 text-sand-300 hover:border-sand-600/60 transition-colors disabled:opacity-40"
+            >
+              {addUnitSaving ? <Spinner /> : 'إضافة'}
+            </button>
+            <button
+              onClick={() => { setAddingUnit(false); setAddUnitTitle(''); setAddUnitError(null); }}
+              className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-ink-700/50 text-ink-500 hover:text-ink-300 transition-colors"
+            >
+              إلغاء
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setAddingUnit(true)}
+            className="w-full py-2.5 rounded-xl border text-[11px] font-arabic text-ink-700 hover:text-sand-400 hover:border-sand-800/50 transition-colors"
+            style={{ borderColor: 'rgba(255,255,255,0.05)', borderStyle: 'dashed' }}
+          >
+            + إضافة وحدة
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
 // ─── Section Root ──────────────────────────────────────────────────────────────
-
 export function CurriculumSection() {
-  const [selected, setSelected] = useState(SUBJECTS_CATALOG_REF[0]?.id || null);
+  const [subjects, setSubjects] = useState([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/content/publish/status');
+        const data = await res.json();
+        if (data.ok) {
+          // Include all: catalog + atlas (test) + remote-only subjects
+          const list = (data.subjects || []).filter((s) => s.source !== 'remote');
+          setSubjects(list.map((s) => ({ id: s.id, nameAr: s.nameAr, track: s.track, isMajor: s.isMajor, source: s.source })));
+          // Pre-select first catalog subject
+          const firstCatalog = list.find((s) => s.source === 'catalog') || list[0];
+          setSelected(firstCatalog?.id || null);
+        }
+      } catch { /* non-fatal */ } finally {
+        setSubjectsLoading(false);
+      }
+    })();
+  }, []);
 
   return (
     <div>
@@ -708,6 +804,8 @@ export function CurriculumSection() {
       <div className="px-8 pb-8">
         <div className="flex gap-5 items-start">
           <SubjectPicker
+            subjects={subjects}
+            loading={subjectsLoading}
             selected={selected}
             onSelect={(id) => setSelected(id)}
           />

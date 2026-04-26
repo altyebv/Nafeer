@@ -7,10 +7,10 @@ import { CreateTestSubjectModal } from './modals/CreateTestSubjectModal';
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const TRACK_META = {
-  COMMON:   { label: 'مشترك', cls: 'border-sky-800/50 text-sky-400/80',      dot: 'bg-sky-500'     },
-  SCIENCE:  { label: 'علمي',   cls: 'border-emerald-800/50 text-emerald-400/80', dot: 'bg-emerald-500' },
-  LITERARY: { label: 'أدبي',   cls: 'border-purple-800/50 text-purple-400/80',   dot: 'bg-purple-500'  },
-  REMOTE:   { label: 'Remote', cls: 'border-amber-800/50 text-amber-400/80', dot: 'bg-amber-500' },
+  COMMON: { label: 'مشترك', cls: 'border-sky-800/50 text-sky-400/80', dot: 'bg-sky-500' },
+  SCIENCE: { label: 'علمي', cls: 'border-emerald-800/50 text-emerald-400/80', dot: 'bg-emerald-500' },
+  LITERARY: { label: 'أدبي', cls: 'border-purple-800/50 text-purple-400/80', dot: 'bg-purple-500' },
+  REMOTE: { label: 'Remote', cls: 'border-amber-800/50 text-amber-400/80', dot: 'bg-amber-500' },
 };
 
 const TRACK_ORDER = ['COMMON', 'SCIENCE', 'LITERARY'];
@@ -82,8 +82,8 @@ function SecondaryBtn({ onClick, loading, disabled, children }) {
 
 function statusDot(s) {
   if (s.isPublished && !s.hasNewContent) return 'bg-sand-500/70';
-  if (s.isPublished && s.hasNewContent)  return 'bg-amber-400/80';
-  if (s.isPublishable)                   return 'bg-green-500/70';
+  if (s.isPublished && s.hasNewContent) return 'bg-amber-400/80';
+  if (s.isPublishable) return 'bg-green-500/70';
   return 'bg-ink-700/60';
 }
 
@@ -157,10 +157,10 @@ function SubjectPicker({ subjects, selected, onSelect, onCreateTest }) {
         style={{ borderColor: 'rgba(255,255,255,0.05)' }}
       >
         {[
-          { dot: 'bg-sand-500/70',  label: 'منشور' },
+          { dot: 'bg-sand-500/70', label: 'منشور' },
           { dot: 'bg-amber-400/80', label: 'يحتاج تحديث' },
           { dot: 'bg-green-500/70', label: 'جاهز للنشر' },
-          { dot: 'bg-ink-700/60',   label: 'لا يوجد محتوى' },
+          { dot: 'bg-ink-700/60', label: 'لا يوجد محتوى' },
         ].map(({ dot, label }) => (
           <div key={label} className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
@@ -269,10 +269,10 @@ function PublishResult({ result, onDismiss }) {
 
       <div className="grid grid-cols-4 gap-2">
         {[
-          ['دروس',    data.stats?.lessons   ?? 0],
-          ['أسئلة',   data.stats?.questions ?? 0],
-          ['تغذية',   data.stats?.feedItems ?? 0],
-          ['مفاهيم',  data.stats?.concepts  ?? 0],
+          ['دروس', data.stats?.lessons ?? 0],
+          ['أسئلة', data.stats?.questions ?? 0],
+          ['تغذية', data.stats?.feedItems ?? 0],
+          ['مفاهيم', data.stats?.concepts ?? 0],
         ].map(([label, val]) => (
           <div key={label} className="text-center">
             <p className="text-base font-mono font-bold text-sand-400">{val}</p>
@@ -314,20 +314,20 @@ function relativeTime(iso) {
   if (!iso) return null;
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)   return 'الآن';
-  if (m < 60)  return `منذ ${m} دقيقة`;
+  if (m < 1) return 'الآن';
+  if (m < 60) return `منذ ${m} دقيقة`;
   const h = Math.floor(m / 60);
-  if (h < 24)  return `منذ ${h} ساعة`;
+  if (h < 24) return `منذ ${h} ساعة`;
   const d = Math.floor(h / 24);
   return `منذ ${d} يوم`;
 }
 
 function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, onDeleteSubject, publishing, result, onDismissResult }) {
-  const [showFullConfirm,   setShowFullConfirm]   = useState(false);
-  const [showMajorConfirm,  setShowMajorConfirm]  = useState(false);
+  const [showFullConfirm, setShowFullConfirm] = useState(false);
+  const [showMajorConfirm, setShowMajorConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting,          setDeleting]          = useState(false);
-  const [deleteError,       setDeleteError]       = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   // Only show the local-DB delete option for scratch/test subjects
   // (those that aren't in SUBJECTS_CATALOG — source === 'atlas' and id starts TEST_)
@@ -422,8 +422,8 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
 
       {/* Content stats */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="الدروس"    icon="◈" total={s.lessons.total}   approved={s.lessons.approved}   diffSincePublish={lessonDiff} />
-        <StatCard label="الأسئلة"   icon="◎" total={s.questions.total} approved={s.questions.approved} diffSincePublish={null} />
+        <StatCard label="الدروس" icon="◈" total={s.lessons.total} approved={s.lessons.approved} diffSincePublish={lessonDiff} />
+        <StatCard label="الأسئلة" icon="◎" total={s.questions.total} approved={s.questions.approved} diffSincePublish={null} />
         <StatCard label="بطاقات التغذية" icon="▣" total={s.feedItems.total} approved={s.feedItems.approved} diffSincePublish={null} />
       </div>
 
@@ -435,9 +435,9 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
         >
           <p className="text-[10px] font-mono text-ink-600 uppercase tracking-widest mb-2">آخر نسخة منشورة</p>
           <div className="flex items-center gap-6 text-[11px] font-mono">
-            {s.remoteLessons  != null && <span><span className="text-sand-500">{s.remoteLessons}</span>  <span className="text-ink-700">درس</span></span>}
+            {s.remoteLessons != null && <span><span className="text-sand-500">{s.remoteLessons}</span>  <span className="text-ink-700">درس</span></span>}
             {s.remoteSections != null && <span><span className="text-sand-500">{s.remoteSections}</span> <span className="text-ink-700">قسم</span></span>}
-            {s.remoteBlocks   != null && <span><span className="text-sand-500">{s.remoteBlocks}</span>   <span className="text-ink-700">مقطع</span></span>}
+            {s.remoteBlocks != null && <span><span className="text-sand-500">{s.remoteBlocks}</span>   <span className="text-ink-700">مقطع</span></span>}
           </div>
         </div>
       )}
@@ -517,7 +517,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
       </div>
 
       {/* ── Test subject: delete from local DB ────────────────────────────── */}
-      {isTestSubject && (
+      {isTestSubject && s.source !== 'remote' && (
         <div
           className="rounded-xl border px-4 py-3"
           style={{ background: 'rgba(239,68,68,0.03)', borderColor: 'rgba(239,68,68,0.12)' }}
@@ -526,7 +526,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
             <div>
               <p className="text-[11px] font-mono text-red-400/70">حذف المادة من قاعدة البيانات</p>
               <p className="text-[10px] font-arabic text-ink-600">
-                يحذف المادة ووحداتها ودروسها من Atlas. استخدم زر حذف Remote في مكان آخر لمسح Firestore/Supabase.
+                يحذف المادة ووحداتها ودروسها من Atlas + Firestore + Supabase. لا يمكن التراجع.
               </p>
               {deleteError && <p className="text-[10px] text-red-400 mt-1">{deleteError}</p>}
             </div>
@@ -553,10 +553,23 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
                 onClick={() => setShowDeleteConfirm(true)}
                 className="shrink-0 text-[10px] font-mono text-red-400/50 hover:text-red-400/80 transition-colors"
               >
-                ✕ حذف من Atlas
+                ✕ حذف
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Remote-only subject: hint that delete is in the workspace below ── */}
+      {isTestSubject && s.source === 'remote' && (
+        <div
+          className="rounded-xl border px-4 py-2.5 flex items-center gap-3"
+          style={{ background: 'rgba(239,68,68,0.03)', borderColor: 'rgba(239,68,68,0.10)' }}
+        >
+          <span className="text-red-500/50 text-sm shrink-0">↓</span>
+          <p className="text-[11px] font-arabic text-ink-600">
+            هذه المادة موجودة في Firestore فقط. زر «حذف من Remote» متاح في منطقة العمل أدناه.
+          </p>
         </div>
       )}
     </div>
@@ -578,19 +591,19 @@ function EmptyPanel() {
 // ─── Main Section ─────────────────────────────────────────────────────────────
 
 export function AdminEditorSection() {
-  const [subjects,        setSubjects]        = useState([]);
-  const [selected,        setSelected]        = useState(null);
-  const [loading,         setLoading]         = useState(true);
-  const [publishing,      setPublishing]      = useState(false);
-  const [result,          setResult]          = useState(null);
-  const [error,           setError]           = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [publishing, setPublishing] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res  = await fetch('/api/content/publish/status');
+      const res = await fetch('/api/content/publish/status');
       const data = await res.json();
       if (data.ok) {
         const list = data.subjects || [];
@@ -621,10 +634,10 @@ export function AdminEditorSection() {
     setPublishing(true);
     setResult(null);
     try {
-      const res  = await fetch('/api/content/publish', {
-        method:  'POST',
+      const res = await fetch('/api/content/publish', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ subjectId: selected, mode, ...(bump ? { bump } : {}) }),
+        body: JSON.stringify({ subjectId: selected, mode, ...(bump ? { bump } : {}) }),
       });
       const data = await res.json();
       if (data.ok) {
@@ -640,9 +653,9 @@ export function AdminEditorSection() {
     }
   };
 
-  const publish      = ()  => doPublish('delta');
-  const majorPublish = ()  => doPublish('delta', 'major');
-  const fullPublish  = ()  => doPublish('full');
+  const publish = () => doPublish('delta');
+  const majorPublish = () => doPublish('delta', 'major');
+  const fullPublish = () => doPublish('full');
 
   // Called after a test subject is created — auto-select it
   const handleTestSubjectCreated = async (newSubjectId) => {
@@ -719,7 +732,13 @@ export function AdminEditorSection() {
                     subjectId={selectedSubject.id}
                     subjectMeta={selectedSubject}
                     onImported={() => { setResult(null); load(); }}
-                    onRemoteDeleted={() => { setResult(null); load(); }}
+                    onRemoteDeleted={() => {
+                    setResult(null);
+                    // If the deleted subject was remote-only (source=remote), deselect it
+                    const wasRemote = subjects.find((s) => s.id === selected)?.source === 'remote';
+                    if (wasRemote) setSelected(null);
+                    load();
+                  }}
                   />
                 </div>
               ) : (
