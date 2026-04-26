@@ -165,10 +165,20 @@ export async function POST(request) {
 
 // ─── DELETE /api/admin/subjects?subjectId=TEST_DELTA_01 ───────────────────────
 //
-// Hard-deletes a test subject and ALL its content from MongoDB.
-// Does NOT touch Firestore or Supabase — use the remote-subjects route for that.
+// Hard-deletes a test subject and ALL its content from MongoDB, Firestore,
+// and Supabase storage (patch bundles + legacy full export).
+//
+// Previously only wiped MongoDB, leaving the subject alive in Firestore and
+// Supabase — causing it to reappear in the admin panel after deletion (the
+// publish/status route unions catalog + DB + manifest, so manifest-only entries
+// still showed up as 'remote' subjects).
 //
 // DANGEROUS — use only for test subjects. Requires confirmation in the UI.
+
+import { getManifest, removeSubjectEntry } from '@/lib/FirebaseAdmin';
+import { listFiles, deleteFiles }          from '@/lib/supabase';
+
+const EXPORTS_BUCKET = process.env.SUPABASE_EXPORTS_BUCKET || 'content-exports';
 
 export async function DELETE(request) {
   const authErr = await verifyAdminAuth();
@@ -189,26 +199,79 @@ export async function DELETE(request) {
       return NextResponse.json({ ok: false, error: 'المادة غير موجودة' }, { status: 404 });
     }
 
-    // Delete in parallel — Room cascades handle FKs on Android side
+    // ── 1. Wipe MongoDB (all content collections) ─────────────────────────────
     const [
       { deletedCount: units },
       { deletedCount: lessons },
       { deletedCount: sections },
       { deletedCount: blocks },
+      { deletedCount: concepts },
+      { deletedCount: questions },
+      { deletedCount: feedItems },
     ] = await Promise.all([
       (await import('@/lib/models/Unit')).Unit.deleteMany({ subjectId }),
       (await import('@/lib/models/Lesson')).Lesson.deleteMany({ subjectId }),
       (await import('@/lib/models/Section')).Section.deleteMany({ subjectId }),
       (await import('@/lib/models/Block')).Block.deleteMany({ subjectId }),
+      (await import('@/lib/models/Concept')).Concept.deleteMany({ subjectId }),
+      (await import('@/lib/models/Question')).Question.deleteMany({ subjectId }),
+      (await import('@/lib/models/FeedItem')).FeedItem.deleteMany({ subjectId }),
     ]);
-
     await Subject.deleteOne({ subjectId });
+
+    // ── 2. Remove Firestore manifest entry ────────────────────────────────────
+    // This was the missing step — without it the subject reappeared in the
+    // admin panel after deletion (publish/status unions DB + manifest).
+    let manifestRemoved = false;
+    try {
+      await removeSubjectEntry(subjectId);
+      manifestRemoved = true;
+    } catch (manifestErr) {
+      // Non-fatal — log but don't fail the whole delete
+      console.warn('[DELETE /api/admin/subjects] Could not remove manifest entry:', manifestErr.message);
+    }
+
+    // ── 3. Delete Supabase storage objects ────────────────────────────────────
+    // Covers:
+    //   • Delta patch bundles: {subjectId}/patches/{entityType}/{bundleId}.json
+    //   • Legacy full exports: {subjectId.toLowerCase()}_v{n}.json (root level)
+    let storageRemoved = 0;
+    try {
+      // 3a. Recurse into patch bundle folder: {subjectId}/patches/{entityType}/
+      const entityFolders = await listFiles(EXPORTS_BUCKET, `${subjectId}/patches`);
+
+      for (const entry of entityFolders) {
+        if (entry.id) {
+          // Direct file under /patches (shouldn't normally exist, but clean up anyway)
+          await deleteFiles(EXPORTS_BUCKET, [`${subjectId}/patches/${entry.name}`]);
+          storageRemoved += 1;
+        } else {
+          // Subfolder — list and delete its contents
+          const bundleFiles = await listFiles(EXPORTS_BUCKET, `${subjectId}/patches/${entry.name}`);
+          const paths = bundleFiles.filter((f) => f.id).map((f) => `${subjectId}/patches/${entry.name}/${f.name}`);
+          storageRemoved += await deleteFiles(EXPORTS_BUCKET, paths);
+        }
+      }
+
+      // 3b. Delete legacy full exports at the root
+      const rootFiles = await listFiles(EXPORTS_BUCKET, '');
+      const legacyPaths = rootFiles
+        .filter((f) => f.id && f.name.startsWith(subjectId.toLowerCase()))
+        .map((f) => f.name);
+      storageRemoved += await deleteFiles(EXPORTS_BUCKET, legacyPaths);
+
+    } catch (storageErr) {
+      // Non-fatal — log but don't fail the whole delete
+      console.warn('[DELETE /api/admin/subjects] Could not remove storage objects:', storageErr.message);
+    }
 
     return NextResponse.json({
       ok: true,
       subjectId,
-      deleted: { subjects: 1, units, lessons, sections, blocks },
-      message: `تم حذف المادة "${subjectId}" وجميع محتواها من قاعدة البيانات`,
+      deleted: { subjects: 1, units, lessons, sections, blocks, concepts, questions, feedItems },
+      manifestRemoved,
+      storageRemoved,
+      message: `تم حذف المادة "${subjectId}" وجميع محتواها`,
     });
   } catch (e) {
     console.error('[DELETE /api/admin/subjects]', e);
