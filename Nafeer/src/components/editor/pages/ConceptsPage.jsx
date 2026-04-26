@@ -75,7 +75,7 @@ function DifficultyDots({ n = 1, max = 5 }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ConceptsPage({ subjectId }) {
   const { concepts, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore();
-  const { syncConcept, submitForReview, deleteConcept: atlasDeleteConcept } = useAtlasSync();
+  const { syncConcept, syncTag, submitForReview, deleteConcept: atlasDeleteConcept } = useAtlasSync();
 
   const [showModal,   setShowModal]   = useState(false);
   const [editingId,   setEditingId]   = useState(null);
@@ -95,6 +95,14 @@ export default function ConceptsPage({ subjectId }) {
     setEditingId(null);
     setNewTagName('');
   };
+
+  const handleAddTag = () => {
+  if (!newTagName.trim()) return;
+  const newId = `tag_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  addTag({ nameAr: newTagName.trim(), id: newId });
+  if (subjectId) syncTag(newId, subjectId).catch(() => {});
+  setNewTagName('');
+};
 
   const handleSubmit = () => {
     if (!form.titleAr.trim()) return;
@@ -125,11 +133,6 @@ export default function ConceptsPage({ subjectId }) {
     setShowModal(true);
   };
 
-  const handleAddTag = () => {
-    if (!newTagName.trim()) return;
-    addTag({ nameAr: newTagName.trim() });
-    setNewTagName('');
-  };
 
   const handleDeleteConcept = (conceptId) => {
     deleteConcept(conceptId);
