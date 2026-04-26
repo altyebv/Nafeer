@@ -582,6 +582,7 @@ export default function QuizBankPage({ subjectId }) {
 
   const [qForm,    setQForm]    = useState(emptyQuestion);
   const [examForm, setExamForm] = useState(emptyExam);
+  const isTestSubject = subjectId?.startsWith('TEST_');
 
   const openAddQuestion = () => { setQForm(emptyQuestion); setEditingQId(null); setShowQModal(true); };
   const openEditQuestion = (q) => {
@@ -616,7 +617,7 @@ export default function QuizBankPage({ subjectId }) {
   };
 
   const handleSaveQuestion = () => {
-    if (!qForm.textAr.trim() || !qForm.lessonId) return;
+    if (!qForm.textAr.trim() || (!qForm.lessonId && !isTestSubject)) return;
     // Strip UI-only fields before persisting
     const { _markersOpen, ...saveForm } = qForm;
     if (editingQId) {
@@ -1022,7 +1023,7 @@ export default function QuizBankPage({ subjectId }) {
           <div className="flex gap-3 pt-2 border-t border-ink-800 mt-5">
             <button
               onClick={handleSaveQuestion}
-              disabled={!qForm.textAr.trim() || !qForm.lessonId}
+              disabled={!qForm.textAr.trim() || (!qForm.lessonId && !isTestSubject)}
               className="flex-1 py-2.5 bg-sand-600 text-ink-950 rounded-lg hover:bg-sand-500 disabled:opacity-40 transition-colors font-semibold font-arabic"
             >
               {editingQId ? 'حفظ التعديلات' : 'إضافة السؤال'}

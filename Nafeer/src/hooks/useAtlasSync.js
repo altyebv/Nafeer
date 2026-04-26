@@ -11,19 +11,14 @@ import { useQuizStore }    from '@/store/quizStore';
 // Exposes explicit save functions for each content type.
 // Pattern: optimistic (store already updated) → API call → surface error if it fails
 //
-// Phase 3 additions:
-//   - bootstrapSubject now loads existing Atlas data back into stores
-//     (fixes the "returning contributor on new device starts empty" gap)
-//   - Each sync function updates atlasStatus in the store from the server response
-//   - submitForReview(contentId, type) — transitions status to 'review'
 //
 export function useAtlasSync() {
   const { setSyncStatus }                             = useEditorStore();
   const { lessons, updateLesson, loadFromAtlas }      = useSubjectStore();
   const { sections, blocks }                          = useContentStore();
-  const { concepts, updateConcept }                   = useConceptStore();
-  const { feedItems, updateFeedItem }                 = useFeedStore();
-  const { questions, exams, updateQuestion }              = useQuizStore();
+  const { updateConcept }                             = useConceptStore();
+  const { updateFeedItem }                            = useFeedStore();
+  const { exams, updateQuestion }                     = useQuizStore();
   const { isSyncing, syncError, lastSynced }          = useEditorStore();
 
   // ── Internal helpers ────────────────────────────────────────────────────────
@@ -51,22 +46,15 @@ export function useAtlasSync() {
   }, []);
 
   // ── Bootstrap + load from Atlas ─────────────────────────────────────────────
-  // Called on editor mount:
-  //   1) Ensures Subject + Units + Lessons scaffold exists in Atlas (safe to repeat)
-  //   2) Loads actual Atlas data (incl. atlasStatus) back into stores
-  //      — fixes "returning contributor on new device starts empty" gap
-  //
   const bootstrapSubject = useCallback(async (subjectId) => {
     try {
       setLoading();
 
-      // Step 1 — ensure scaffold
       await apiFetch('/api/content/subject', {
         method: 'POST',
         body:   JSON.stringify({ subjectId }),
       });
 
-      // Step 2 — load existing Atlas data into stores
       try {
         const atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`);
         if (atlasData?.units) {
@@ -99,14 +87,12 @@ export function useAtlasSync() {
           if (subject) loadFromAtlas({ subject, units, lessons: loadedLessons });
         }
       } catch (loadErr) {
-        // Non-fatal — editor can work with local cache
         console.warn('[bootstrapSubject] Could not load Atlas data:', loadErr.message);
       }
 
       setDone();
       return true;
     } catch (e) {
-      // Non-fatal — editor works offline if Atlas is unreachable
       console.warn('[bootstrapSubject] Atlas unreachable, working locally:', e.message);
       setSyncStatus({ isSyncing: false, syncError: null, lastSynced: null });
       return false;
@@ -114,9 +100,6 @@ export function useAtlasSync() {
   }, [apiFetch, setLoading, setDone, setSyncStatus, loadFromAtlas]);
 
   // ── Sync lesson meta + content (Save button) ────────────────────────────────
-  // Syncs: title, estimatedMinutes, summary → THEN sections → THEN blocks.
-  // Updates atlasStatus in store from server response.
-  //
   const syncAll = useCallback(async (lessonId, subjectId) => {
     const lesson = lessons.find((l) => l.id === lessonId);
     if (!lesson) return;
@@ -128,46 +111,18 @@ export function useAtlasSync() {
     try {
       setLoading();
 
-      // ── lesson meta — upsert: PUT first, POST on 404 ──
-      let lessonData;
-      {
-        const res  = await fetch(`/api/content/lessons/${lessonId}`, {
-          method:  'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({
-            title:            lesson.title,
-            estimatedMinutes: lesson.estimatedMinutes,
-            summary:          lesson.summary || null,
-          }),
-        });
-        const json = await res.json();
-
-        if (!json.ok && res.status === 404) {
-          // Lesson was created locally (e.g. via UnitCard) but never synced to Atlas.
-          // Create it now.
-          lessonData = await apiFetch('/api/content/lessons', {
-            method: 'POST',
-            body:   JSON.stringify({
-              contentId:        lessonId,
-              subjectId,
-              unitContentId:    lesson.unitId,
-              title:            lesson.title,
-              order:            lesson.order ?? 0,
-              estimatedMinutes: lesson.estimatedMinutes || 15,
-              summary:          lesson.summary          || null,
-            }),
-          });
-        } else if (!json.ok) {
-          throw new Error(json.error || 'فشل حفظ الدرس');
-        } else {
-          lessonData = json.data;
-        }
-      }
+      const lessonData = await apiFetch(`/api/content/lessons/${lessonId}`, {
+        method: 'PUT',
+        body:   JSON.stringify({
+          title:            lesson.title,
+          estimatedMinutes: lesson.estimatedMinutes,
+          summary:          lesson.summary || null,
+        }),
+      });
       if (lessonData?.status) {
         updateLesson(lessonId, { atlasStatus: lessonData.status });
       }
 
-      // ── sections ──
       if (lessonSections.length > 0) {
         await apiFetch('/api/content/sections', {
           method: 'POST',
@@ -177,32 +132,31 @@ export function useAtlasSync() {
             sections: lessonSections.map((s) => ({
               contentId:       s.id,
               subjectId,
-              lessonContentId: lessonId,         
+              lessonContentId: lessonId,
               title:           s.title,
               order:           s.order,
               learningType:    s.learningType || 'UNDERSTANDING',
-              conceptIds:      s.conceptIds   || [],
-              partIndex:       s.partIndex    ?? 0,
-            }))
+              conceptIds:      s.conceptIds  || [],
+              partIndex:       s.partIndex   ?? 0,
+            })),
           }),
         });
       }
 
-      // ── blocks ──
       if (lessonBlocks.length > 0) {
         await apiFetch('/api/content/blocks', {
           method: 'POST',
           body:   JSON.stringify({
             blocks: lessonBlocks.map((b) => ({
               contentId:        b.id,
-              subjectId,                         // ← ADDED
               sectionContentId: b.sectionId,
               type:             b.type,
-              content:          b.content    || '',
+              subjectId,
+              content:          b.content     || '',
               order:            b.order,
-              conceptRef:       b.conceptRef || null,
-              caption:          b.caption    || null,
-              metadata:         b.metadata   || null,
+              conceptRef:       b.conceptRef  || null,
+              caption:          b.caption     || null,
+              metadata:         b.metadata    || null,
             })),
           }),
         });
@@ -289,9 +243,13 @@ export function useAtlasSync() {
     }
   }, [sections, blocks, apiFetch, setLoading, setDone, setError]);
 
-  // ── Sync concept ──────────────────────────────────────────────────────────
-  const syncConcept = useCallback(async (conceptId, subjectId) => {
-    const concept = concepts.find((c) => c.id === conceptId);
+  // ── Sync concept ─────────────────────────────────────────────────────────────
+  // FIX: uses useConceptStore.getState() to bypass stale React closure.
+  // Without this, calling syncConcept immediately after addConcept in the same
+  // render cycle causes concepts.find() to return undefined → silent no-op.
+  const syncConcept = useCallback(async (conceptId, subjectId, approve = false) => {
+    // ↓ .getState() always returns current store state, bypassing closure staleness
+    const concept = useConceptStore.getState().concepts.find((c) => c.id === conceptId);
     if (!concept) return;
     try {
       setLoading();
@@ -327,18 +285,66 @@ export function useAtlasSync() {
       } else {
         atlasStatus = json.data?.status || 'draft';
       }
+
+      if (approve) {
+        await approveAtlasResource('concepts', conceptId);
+        atlasStatus = 'approved';
+      }
+
       updateConcept(conceptId, { atlasStatus });
       setDone();
     } catch (e) {
       setError(`فشل حفظ المفهوم: ${e.message}`);
       throw e;
     }
-  }, [concepts, apiFetch, setLoading, setDone, setError, updateConcept]);
+  }, [apiFetch, approveAtlasResource, setLoading, setDone, setError, updateConcept]);
+
+  // ── Sync tag ──────────────────────────────────────────────────────────────
+  // NEW in Session 5 — tags were never written to MongoDB.
+  // Uses .getState() for same stale-closure reason as syncConcept.
+  // Pattern mirrors syncConcept: PUT first, POST on 404.
+  const syncTag = useCallback(async (tagId, subjectId) => {
+    // ↓ .getState() bypasses closure — safe immediately after addTag()
+    const tag = useConceptStore.getState().tags.find((t) => t.id === tagId);
+    if (!tag) return;
+    try {
+      setLoading();
+
+      const res = await fetch(`/api/content/tags/${tagId}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ nameAr: tag.nameAr, nameEn: tag.nameEn || null }),
+      });
+      const json = await res.json();
+
+      if (!json.ok && res.status === 404) {
+        // Tag doesn't exist in MongoDB yet — create it
+        await apiFetch('/api/content/tags', {
+          method: 'POST',
+          body:   JSON.stringify({
+            contentId: tagId,
+            subjectId,
+            nameAr:    tag.nameAr,
+            nameEn:    tag.nameEn || null,
+          }),
+        });
+      } else if (!json.ok) {
+        throw new Error(json.error || 'خطأ غير معروف');
+      }
+
+      setDone();
+    } catch (e) {
+      setError(`فشل حفظ الوسم: ${e.message}`);
+      // Non-fatal — don't re-throw, tag errors shouldn't block concept flow
+    }
+  }, [apiFetch, setLoading, setDone, setError]);
 
   // ── Sync feed item ────────────────────────────────────────────────────────
-  const syncFeedItem = useCallback(async (feedItemId, subjectId) => {
+  // FIX: uses useFeedStore.getState() to bypass stale React closure.
+  const syncFeedItem = useCallback(async (feedItemId, subjectId, approve = false) => {
+    // ↓ .getState() always returns current store state, bypassing closure staleness
     const item = useFeedStore.getState().feedItems.find((f) => f.id === feedItemId);
-  if (!item) return;
+    if (!item) return;
     try {
       setLoading();
       const payload = {
@@ -371,7 +377,7 @@ export function useAtlasSync() {
             ...payload,
             contentId:        feedItemId,
             subjectId,
-            conceptContentId: item.conceptId,
+            conceptContentId: item.conceptId,   // local 'conceptId' → API 'conceptContentId'
             lessonContentId:  item.lessonId || null,
           }),
         });
@@ -381,18 +387,26 @@ export function useAtlasSync() {
       } else {
         atlasStatus = json.data?.status || 'draft';
       }
+
+      if (approve) {
+        await approveAtlasResource('feed-items', feedItemId);
+        atlasStatus = 'approved';
+      }
+
       updateFeedItem(feedItemId, { atlasStatus });
       setDone();
     } catch (e) {
       setError(`فشل حفظ عنصر التغذية: ${e.message}`);
       throw e;
     }
-  }, [apiFetch, setLoading, setDone, setError, updateFeedItem]);
+  }, [apiFetch, approveAtlasResource, setLoading, setDone, setError, updateFeedItem]);
 
   // ── Sync question ─────────────────────────────────────────────────────────
-  const syncQuestion = useCallback(async (questionId, subjectId) => {
+  // FIX: uses useQuizStore.getState() to bypass stale React closure.
+  const syncQuestion = useCallback(async (questionId, subjectId, approve = false) => {
+    // ↓ .getState() always returns current store state, bypassing closure staleness
     const question = useQuizStore.getState().questions.find((q) => q.id === questionId);
-  if (!question) return
+    if (!question) return;
     try {
       setLoading();
       const payload = {
@@ -439,18 +453,21 @@ export function useAtlasSync() {
       } else {
         atlasStatus = json.data?.status || 'draft';
       }
+
+      if (approve) {
+        await approveAtlasResource('questions', questionId);
+        atlasStatus = 'approved';
+      }
+
       updateQuestion(questionId, { atlasStatus });
       setDone();
     } catch (e) {
       setError(`فشل حفظ السؤال: ${e.message}`);
       throw e;
     }
-  }, [questions, apiFetch, setLoading, setDone, setError, updateQuestion]);
+  }, [apiFetch, approveAtlasResource, setLoading, setDone, setError, updateQuestion]);
 
   // ── Sync exam ────────────────────────────────────────────────────────────
-  // Upsert pattern: PUT first, create on 404.
-  // Note: exams are lightweight (no big status flow), so no atlasStatus tracking.
-  //
   const syncExam = useCallback(async (examId, subjectId) => {
     const exam = exams.find((e) => e.id === examId);
     if (!exam) return;
@@ -484,46 +501,12 @@ export function useAtlasSync() {
       } else if (!json.ok) {
         throw new Error(json.error || 'خطأ غير معروف');
       }
-      // Exams don't surface sync errors to SyncBar — fire-and-forget from callers
     } catch (e) {
       console.warn(`[syncExam] ${examId} failed:`, e.message);
     }
   }, [exams, apiFetch]);
 
-  // sync Tag 
-  // In useAtlasSync.js, add this function:
-const syncTag = useCallback(async (tagId, subjectId) => {
-  const tag = useConceptStore.getState().tags.find((t) => t.id === tagId);
-  if (!tag) return;
-  try {
-    setLoading();
-    const res = await fetch(`/api/content/tags/${tagId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nameAr: tag.nameAr, nameEn: tag.nameEn || null }),
-    });
-    const json = await res.json();
-    if (!json.ok && res.status === 404) {
-      await apiFetch('/api/content/tags', {
-        method: 'POST',
-        body: JSON.stringify({ contentId: tagId, subjectId, nameAr: tag.nameAr, nameEn: tag.nameEn || null }),
-      });
-    } else if (!json.ok) {
-      throw new Error(json.error);
-    }
-    setDone();
-  } catch (e) {
-    setError(`فشل حفظ الوسم: ${e.message}`);
-  }
-}, [apiFetch, setLoading, setDone, setError]);
-
   // ── Submit for review ─────────────────────────────────────────────────────
-  // Moves a content item from 'draft' → 'review'.
-  // Updates local atlasStatus optimistically so the UI reflects instantly.
-  //
-  // @param contentId  — stable string ID (lesson/concept/feedItem/question)
-  // @param type       — 'lesson' | 'concept' | 'feedItem' | 'question'
-  //
   const submitForReview = useCallback(async (contentId, type) => {
     const TYPE_TO_PATH = {
       lesson:   'lessons',
@@ -541,7 +524,6 @@ const syncTag = useCallback(async (tagId, subjectId) => {
         body:   JSON.stringify({ status: 'review', note: 'إرسال للمراجعة من المحرر' }),
       });
 
-      // Optimistic local update
       if (type === 'lesson')   updateLesson(contentId,   { atlasStatus: 'review' });
       if (type === 'concept')  updateConcept(contentId,  { atlasStatus: 'review' });
       if (type === 'feedItem') updateFeedItem(contentId, { atlasStatus: 'review' });
@@ -553,23 +535,17 @@ const syncTag = useCallback(async (tagId, subjectId) => {
     }
   }, [apiFetch, setLoading, setDone, setError, updateLesson, updateConcept, updateFeedItem, updateQuestion]);
 
-  // ── Admin: approve directly (bypasses review queue) ──────────────────────
-  // Saves all lesson content first, then PATCHes status → 'approved'.
-  // Only used in the admin editor variant — contributors still go through review.
-  //
+  // ── Admin: approve directly ───────────────────────────────────────────────
   const approveAndSync = useCallback(async (lessonId, subjectId) => {
     try {
-      // 1. Persist all content to Atlas first
       await syncAll(lessonId, subjectId);
 
-      // 2. Directly approve — no review queue needed for admin
       setLoading();
       await apiFetch(`/api/content/lessons/${lessonId}`, {
         method: 'PATCH',
         body:   JSON.stringify({ status: 'approved', note: 'اعتماد مباشر من لوحة المشرف' }),
       });
 
-      // 3. Update store so UI reflects immediately
       updateLesson(lessonId, { atlasStatus: 'approved' });
       setDone();
     } catch (e) {
@@ -579,7 +555,6 @@ const syncTag = useCallback(async (tagId, subjectId) => {
   }, [syncAll, apiFetch, setLoading, setDone, setError, updateLesson]);
 
   // ── Delete helpers ─────────────────────────────────────────────────────────
-  // Fire-and-forget. Store is already updated optimistically.
   const deleteRemote = useCallback(async (url) => {
     try {
       await apiFetch(url, { method: 'DELETE' });
@@ -600,10 +575,13 @@ const syncTag = useCallback(async (tagId, subjectId) => {
     syncLessonContent,
     syncAll,
     syncConcept,
+    syncConceptAndApprove: (conceptId, subjectId) => syncConcept(conceptId, subjectId, true),
+    syncTag,          // ← NEW
     syncFeedItem,
+    syncFeedItemAndApprove: (feedItemId, subjectId) => syncFeedItem(feedItemId, subjectId, true),
     syncQuestion,
+    syncQuestionAndApprove: (questionId, subjectId) => syncQuestion(questionId, subjectId, true),
     syncExam,
-    syncTag,
     submitForReview,
     approveAndSync,
 
@@ -611,6 +589,7 @@ const syncTag = useCallback(async (tagId, subjectId) => {
     deleteSection:  (id) => deleteRemote(`/api/content/sections/${id}`),
     deleteBlock:    (id) => deleteRemote(`/api/content/blocks/${id}`),
     deleteConcept:  (id) => deleteRemote(`/api/content/concepts/${id}`),
+    deleteTag:      (id) => deleteRemote(`/api/content/tags/${id}`),  // ← NEW
     deleteFeedItem: (id) => deleteRemote(`/api/content/feed-items/${id}`),
     deleteQuestion: (id) => deleteRemote(`/api/content/questions/${id}`),
     deleteExam:     (id) => deleteRemote(`/api/content/exams/${id}`),
