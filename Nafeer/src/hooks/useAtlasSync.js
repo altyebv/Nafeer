@@ -296,8 +296,9 @@ export function useAtlasSync() {
           method: 'POST',
           body: JSON.stringify({
             ...payload, contentId: feedItemId, subjectId,
-            conceptContentId: item.conceptId || null,   // null is valid for admin workspace
-            lessonContentId:  item.lessonId  || null,
+            conceptContentId: item.conceptId  || null,
+            lessonContentId:  item.lessonId   || null,
+            unitContentId:    item.unitId     || null,  // ← ADD
           }),
         });
         atlasStatus = created?.status || 'draft';

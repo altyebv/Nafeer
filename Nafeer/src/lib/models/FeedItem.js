@@ -54,6 +54,11 @@ const FeedItemSchema = new mongoose.Schema(
     correctAnswer:   { type: String, default: null },
     options:         { type: mongoose.Schema.Types.Mixed, default: null },
     explanation:     { type: String, default: null },
+    unitContentId: {
+      type: String,
+      default: null,
+      index: true,
+    },
 
     // Optional link to a Question document (contentId)
     questionContentId: { type: String, default: null },
@@ -69,6 +74,7 @@ const FeedItemSchema = new mongoose.Schema(
 FeedItemSchema.index({ subjectId: 1, conceptContentId: 1 });
 FeedItemSchema.index({ subjectId: 1, lessonContentId: 1 });
 FeedItemSchema.index({ subjectId: 1, status: 1 });
+FeedItemSchema.index({ subjectId: 1, unitContentId: 1 });
 
 export const FeedItem =
   mongoose.models.FeedItem || mongoose.model('FeedItem', FeedItemSchema);
