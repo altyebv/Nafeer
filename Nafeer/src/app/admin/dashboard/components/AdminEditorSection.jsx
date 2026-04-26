@@ -1,13 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { SectionHeader } from './ui/shared';
-import dynamic from 'next/dynamic';
+import { AdminEditorWorkspace } from './AdminEditorWorkspace';
 import { CreateTestSubjectModal } from './modals/CreateTestSubjectModal';
-
-const AdminEditorWorkspace = dynamic(
-  () => import('./AdminEditorWorkspace').then((m) => m.AdminEditorWorkspace),
-  { ssr: false }   // ← this is the key: skips SSR entirely
-);
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
