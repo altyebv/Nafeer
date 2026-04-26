@@ -699,7 +699,6 @@ function CurriculumPanel({ subjectId }) {
       </div>
 
       {/* Units */}
-      {/* Units */}
       <div className="space-y-2">
         {units.length === 0 && !addingUnit ? (
           <div className="py-10 text-center rounded-xl border" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
