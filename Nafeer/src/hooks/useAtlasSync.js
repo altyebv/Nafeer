@@ -128,15 +128,41 @@ export function useAtlasSync() {
     try {
       setLoading();
 
-      // ── lesson meta ──
-      const lessonData = await apiFetch(`/api/content/lessons/${lessonId}`, {
-        method: 'PUT',
-        body:   JSON.stringify({
-          title:            lesson.title,
-          estimatedMinutes: lesson.estimatedMinutes,
-          summary:          lesson.summary || null,
-        }),
-      });
+      // ── lesson meta — upsert: PUT first, POST on 404 ──
+      let lessonData;
+      {
+        const res  = await fetch(`/api/content/lessons/${lessonId}`, {
+          method:  'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            title:            lesson.title,
+            estimatedMinutes: lesson.estimatedMinutes,
+            summary:          lesson.summary || null,
+          }),
+        });
+        const json = await res.json();
+
+        if (!json.ok && res.status === 404) {
+          // Lesson was created locally (e.g. via UnitCard) but never synced to Atlas.
+          // Create it now.
+          lessonData = await apiFetch('/api/content/lessons', {
+            method: 'POST',
+            body:   JSON.stringify({
+              contentId:        lessonId,
+              subjectId,
+              unitContentId:    lesson.unitId,
+              title:            lesson.title,
+              order:            lesson.order ?? 0,
+              estimatedMinutes: lesson.estimatedMinutes || 15,
+              summary:          lesson.summary          || null,
+            }),
+          });
+        } else if (!json.ok) {
+          throw new Error(json.error || 'فشل حفظ الدرس');
+        } else {
+          lessonData = json.data;
+        }
+      }
       if (lessonData?.status) {
         updateLesson(lessonId, { atlasStatus: lessonData.status });
       }
