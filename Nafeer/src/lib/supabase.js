@@ -86,6 +86,34 @@ export async function deleteMedia(path) {
   return deleteFile(MEDIA_BUCKET, path);
 }
 
+// ─── listFiles ────────────────────────────────────────────────────────────────
+// Lists files in a bucket folder. Returns array of { name, id } objects.
+// Folders have no `id` field; files do.
+
+export async function listFiles(bucket, folder, { limit = 1000 } = {}) {
+  const { data, error } = await getClient()
+    .storage
+    .from(bucket)
+    .list(folder, { limit });
+
+  if (error) throw new Error(`Supabase list failed (${bucket}/${folder}): ${error.message}`);
+  return data || [];
+}
+
+// ─── deleteFiles ──────────────────────────────────────────────────────────────
+// Bulk-delete an array of paths from a bucket. Silently returns 0 on empty input.
+
+export async function deleteFiles(bucket, paths) {
+  if (!paths?.length) return 0;
+  const { error } = await getClient()
+    .storage
+    .from(bucket)
+    .remove(paths);
+
+  if (error) throw new Error(`Supabase bulk delete failed (${bucket}): ${error.message}`);
+  return paths.length;
+}
+
 // ─── getPublicUrl ─────────────────────────────────────────────────────────────
 
 export function getPublicUrl(bucket, path) {
