@@ -538,7 +538,9 @@ function QuestionForm({ form, setForm, concepts, units, lessons }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function QuizBankPage({ subjectId }) {
+// isAdmin — when true, lessonId is not required (already handled by isTestSubject
+// for TEST_ subjects, but real admin subjects also need this bypass).
+export default function QuizBankPage({ subjectId, isAdmin = false }) {
   const {
     questions, exams, concepts, units, lessons,
     addQuestion, updateQuestion, deleteQuestion,
@@ -582,7 +584,7 @@ export default function QuizBankPage({ subjectId }) {
 
   const [qForm,    setQForm]    = useState(emptyQuestion);
   const [examForm, setExamForm] = useState(emptyExam);
-  const isTestSubject = subjectId?.startsWith('TEST_');
+  const isTestSubject = isAdmin || subjectId?.startsWith('TEST_');
 
   const openAddQuestion = () => { setQForm(emptyQuestion); setEditingQId(null); setShowQModal(true); };
   const openEditQuestion = (q) => {
