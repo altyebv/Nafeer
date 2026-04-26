@@ -480,9 +480,9 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
             lastSynced={lastSynced}
           />
         );
-      case 'concepts':  return <ConceptsPage  subjectId={subjectId} />;
-      case 'feeds':     return <FeedItemsPage  subjectId={subjectId} />;
-      case 'quizbank':  return <QuizBankPage   subjectId={subjectId} />;
+      case 'concepts':  return <ConceptsPage  subjectId={subjectId} isAdmin />;
+      case 'feeds':     return <FeedItemsPage  subjectId={subjectId} isAdmin />;
+      case 'quizbank':  return <QuizBankPage   subjectId={subjectId} isAdmin />;
       case 'lessons':
       default:
         return <LessonsPage onEditLesson={(lessonId, unitId) => navigateTo('editor', { lessonId, unitId })} />;
