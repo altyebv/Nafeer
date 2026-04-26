@@ -29,11 +29,6 @@ function TrackBadge({ track }) {
     </span>
   );
 }
-  {s.source === 'atlas' && (
-    <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-purple-800/40 text-purple-500/70">
-      TEST
-    </span>
-  )}
 
 function Bar({ value, max }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
