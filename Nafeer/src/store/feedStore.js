@@ -12,8 +12,13 @@ export const useFeedStore = create(
     (set) => ({
       feedItems: [],
 
+      // ── Add a single new feed item (created locally in the editor) ─────────
       addFeedItem: (feedItem) =>
         set((state) => {
+          // Skip if this id already exists (idempotent load-from-atlas calls)
+          if (feedItem.id && state.feedItems.some((f) => f.id === feedItem.id)) {
+            return state;
+          }
           const conceptFeedItems = state.feedItems.filter((f) => f.conceptId === feedItem.conceptId);
           return {
             feedItems: [
@@ -21,10 +26,12 @@ export const useFeedStore = create(
               {
                 ...feedItem,
                 id:         feedItem.id || generateId('feed'),
-                order:      conceptFeedItems.length,
-                priority:   feedItem.priority  || 1,
-                back:       feedItem.back      || null,
-                questionId: feedItem.questionId || null,
+                order:      feedItem.order      ?? conceptFeedItems.length,
+                priority:   feedItem.priority   || 1,
+                back:       feedItem.back        || null,
+                questionId: feedItem.questionId  || null,
+                lessonId:   feedItem.lessonId    || null,
+                unitId:     feedItem.unitId      || null,
               },
             ],
           };
@@ -37,6 +44,11 @@ export const useFeedStore = create(
 
       deleteFeedItem: (id) =>
         set((state) => ({ feedItems: state.feedItems.filter((f) => f.id !== id) })),
+
+      // ── Bulk replace feed items for a subject (called after Atlas load) ────
+      // Replaces ALL feed items — used by AdminEditorWorkspace on workspace load.
+      loadFeedItems: (items) =>
+        set({ feedItems: items }),
 
       resetFeed: () => set({ feedItems: [] }),
     }),

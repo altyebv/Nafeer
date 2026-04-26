@@ -14,38 +14,46 @@ export const useQuizStore = create(
       exams:     [],
 
       // ── Questions ─────────────────────────────────────────────────────────
+
       addQuestion: (question) =>
-        set((state) => ({
-          questions: [
-            ...state.questions,
-            {
-              id:               generateId('q'),
-              type:             'MCQ',
-              textAr:           '',
-              textEn:           null,
-              correctAnswer:    '',
-              options:          null,
-              explanation:      null,
-              imageUrl:         null,
-              tableData:        null,
-              difficulty:       1,
-              points:           1,
-              estimatedSeconds: 60,
-              cognitiveLevel:   'RECALL',
-              source:           'ORIGINAL',
-              sourceExamId:     null,
-              sourceDetails:    null,
-              sourceYear:       null,
-              feedEligible:     false,
-              unitId:           null,
-              lessonId:         null,
-              sectionId:        null,
-              isCheckpoint:     false,
-              conceptIds:       [],
-              ...question,
-            },
-          ],
-        })),
+        set((state) => {
+          // Idempotent: skip if id already in store (Atlas load calls addQuestion per item)
+          if (question.id && state.questions.some((q) => q.id === question.id)) {
+            return state;
+          }
+          return {
+            questions: [
+              ...state.questions,
+              {
+                id:               generateId('q'),
+                type:             'MCQ',
+                textAr:           '',
+                textEn:           null,
+                correctAnswer:    '',
+                options:          null,
+                explanation:      null,
+                imageUrl:         null,
+                tableData:        null,
+                difficulty:       1,
+                points:           1,
+                estimatedSeconds: 60,
+                cognitiveLevel:   'RECALL',
+                source:           'ORIGINAL',
+                sourceExamId:     null,
+                sourceDetails:    null,
+                sourceYear:       null,
+                feedEligible:     false,
+                unitId:           null,
+                lessonId:         null,
+                sectionId:        null,
+                isCheckpoint:     false,
+                conceptIds:       [],
+                markers:          [],
+                ...question,
+              },
+            ],
+          };
+        }),
 
       updateQuestion: (id, updates) =>
         set((state) => ({
@@ -79,28 +87,36 @@ export const useQuizStore = create(
           }),
         })),
 
+      // ── Bulk replace questions/exams (called after Atlas load) ─────────────
+      loadQuestions: (questions) => set({ questions }),
+      loadExams:     (exams)     => set({ exams }),
+
       // ── Exams ─────────────────────────────────────────────────────────────
+
       addExam: (exam) =>
-        set((state) => ({
-          exams: [
-            ...state.exams,
-            {
-              id:           generateId('exam'),
-              titleAr:      '',
-              titleEn:      null,
-              source:       'MINISTRY',
-              year:         null,
-              schoolName:   null,
-              duration:     null,
-              totalPoints:  null,
-              description:  null,
-              examType:     null,
-              questionIds:  [],
-              sectionsJson: null,
-              ...exam,
-            },
-          ],
-        })),
+        set((state) => {
+          if (exam.id && state.exams.some((e) => e.id === exam.id)) return state;
+          return {
+            exams: [
+              ...state.exams,
+              {
+                id:           generateId('exam'),
+                titleAr:      '',
+                titleEn:      null,
+                source:       'MINISTRY',
+                year:         null,
+                schoolName:   null,
+                duration:     null,
+                totalPoints:  null,
+                description:  null,
+                examType:     null,
+                questionIds:  [],
+                sectionsJson: null,
+                ...exam,
+              },
+            ],
+          };
+        }),
 
       updateExam: (id, updates) =>
         set((state) => ({
