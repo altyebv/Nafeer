@@ -14,6 +14,7 @@ import { useConceptStore } from '@/store/conceptStore';
 import { useFeedStore } from '@/store/feedStore';
 import { useQuizStore } from '@/store/quizStore';
 import { useMediaStore } from '@/store/mediaStore';
+import { useDataStore } from '@/store/dataStore';
 
 // ─── PERSIST KEYS ─────────────────────────────────────────────────────────────
 // Must match the `name` field in each store's persist() config.
