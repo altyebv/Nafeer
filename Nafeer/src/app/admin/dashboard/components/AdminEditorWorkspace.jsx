@@ -8,79 +8,406 @@ import ConceptsPage from '@/components/editor/pages/ConceptsPage';
 import FeedItemsPage from '@/components/editor/pages/FeedItemsPage';
 import QuizBankPage from '@/components/editor/pages/QuizBankPage';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
+import { useDataStore } from '@/store';            // ← composite hook: importData lives here
 import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import { useConceptStore } from '@/store/conceptStore';
-import { useFeedStore } from '@/store/feedStore';
-import { useQuizStore } from '@/store/quizStore';
-import { useMediaStore } from '@/store/mediaStore';
-import { useDataStore } from '@/store/dataStore';
+import { useFeedStore }    from '@/store/feedStore';
+import { useQuizStore }    from '@/store/quizStore';
+import { useMediaStore }   from '@/store/mediaStore';
 
 // ─── PERSIST KEYS ─────────────────────────────────────────────────────────────
-// Must match the `name` field in each store's persist() config.
 const PERSIST_KEYS = ['basheer-subject', 'basheer-content', 'basheer-concepts', 'basheer-feed', 'basheer-quiz'];
 
 const NAV_ITEMS = [
-  { id: 'lessons',  label: 'الدروس',   hint: 'Lessons'  },
-  { id: 'concepts', label: 'المفاهيم', hint: 'Concepts' },
-  { id: 'feeds',    label: 'التغذية',  hint: 'Feed'     },
-  { id: 'quizbank', label: 'الأسئلة',  hint: 'Quiz'     },
+  { id: 'lessons',  labelAr: 'الدروس',   labelEn: 'Lessons',   icon: '📖' },
+  { id: 'concepts', labelAr: 'المفاهيم', labelEn: 'Concepts',  icon: '💡' },
+  { id: 'feeds',    labelAr: 'التغذية',  labelEn: 'Feed',      icon: '⚡' },
+  { id: 'quizbank', labelAr: 'الأسئلة',  labelEn: 'Quiz Bank', icon: '🎯' },
 ];
 
-function WorkspaceSpinner({ label }) {
+// ─── Primitives ───────────────────────────────────────────────────────────────
+
+function Spinner({ size = 4 }) {
   return (
-    <div className="rounded-xl border px-6 py-10 flex flex-col items-center gap-3 text-center"
-      style={{ background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.05)' }}>
-      <span className="inline-block w-5 h-5 border-2 border-sand-700 border-t-transparent rounded-full animate-spin" />
-      <p className="font-arabic text-sm text-ink-500">{label}</p>
+    <span
+      className={`inline-block w-${size} h-${size} rounded-full border-2 border-current border-t-transparent animate-spin`}
+      style={{ borderTopColor: 'transparent' }}
+    />
+  );
+}
+
+function StatPill({ label, value, accent }) {
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 rounded-lg border"
+      style={{
+        background:   accent ? 'rgba(212,137,30,0.08)' : 'rgba(255,255,255,0.03)',
+        borderColor:  accent ? 'rgba(212,137,30,0.22)' : 'rgba(255,255,255,0.08)',
+      }}
+    >
+      <span className="font-mono text-sm font-semibold" style={{ color: accent ? 'var(--accent, #d4891e)' : 'var(--ink-300, #ccc)' }}>
+        {value}
+      </span>
+      <span className="text-[10px] font-arabic" style={{ color: 'var(--ink-500, #888)' }}>
+        {label}
+      </span>
     </div>
   );
 }
 
+function Tag({ children, color = 'default' }) {
+  const colors = {
+    default: { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.10)', text: 'var(--ink-500, #888)' },
+    amber:   { bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.25)',  text: '#f59e0b' },
+    green:   { bg: 'rgba(34,197,94,0.07)',   border: 'rgba(34,197,94,0.22)',   text: '#4ade80' },
+    red:     { bg: 'rgba(239,68,68,0.07)',   border: 'rgba(239,68,68,0.22)',   text: '#f87171' },
+    blue:    { bg: 'rgba(99,102,241,0.08)',  border: 'rgba(99,102,241,0.22)',  text: '#818cf8' },
+  };
+  const c = colors[color] || colors.default;
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono border"
+      style={{ background: c.bg, borderColor: c.border, color: c.text }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function ActionBtn({ onClick, loading, disabled, variant = 'ghost', children }) {
+  const variants = {
+    primary: {
+      bg:     'rgba(212,137,30,0.10)',
+      border: 'rgba(212,137,30,0.30)',
+      color:  'var(--accent, #d4891e)',
+    },
+    danger: {
+      bg:     'rgba(239,68,68,0.08)',
+      border: 'rgba(239,68,68,0.28)',
+      color:  '#f87171',
+    },
+    dangerSolid: {
+      bg:     'rgba(239,68,68,0.14)',
+      border: 'rgba(239,68,68,0.40)',
+      color:  '#fca5a5',
+    },
+    ghost: {
+      bg:     'rgba(255,255,255,0.03)',
+      border: 'rgba(255,255,255,0.10)',
+      color:  'var(--ink-300, #ccc)',
+    },
+  };
+  const v = variants[variant] || variants.ghost;
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading || disabled}
+      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-arabic border transition-all"
+      style={{
+        background:  v.bg,
+        borderColor: v.border,
+        color:       v.color,
+        opacity:     (loading || disabled) ? 0.45 : 1,
+        cursor:      (loading || disabled) ? 'not-allowed' : 'pointer',
+      }}
+    >
+      {loading && <Spinner size={3} />}
+      {children}
+    </button>
+  );
+}
+
+// ─── Loading / Error states ───────────────────────────────────────────────────
+
+function WorkspaceLoading() {
+  return (
+    <div
+      className="rounded-2xl border overflow-hidden"
+      style={{ background: 'rgba(9,9,11,0.45)', borderColor: 'rgba(255,255,255,0.06)' }}
+    >
+      <div className="flex flex-col items-center justify-center gap-4 py-20 px-8">
+        <div className="relative">
+          <div className="w-10 h-10 rounded-full border-2 border-sand-800/60 animate-spin" style={{ borderTopColor: 'var(--accent, #d4891e)' }} />
+        </div>
+        <div className="text-center">
+          <p className="font-arabic text-sm text-ink-300">جارٍ تحميل محتوى المادة</p>
+          <p className="text-[11px] font-mono text-ink-600 mt-1">loading workspace…</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WorkspaceError({ message, onRetry }) {
+  return (
+    <div
+      className="rounded-2xl border overflow-hidden"
+      style={{ background: 'rgba(9,9,11,0.45)', borderColor: 'rgba(239,68,68,0.15)' }}
+    >
+      <div className="flex flex-col items-center justify-center gap-4 py-16 px-8 text-center">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)' }}
+        >
+          ✕
+        </div>
+        <div>
+          <p className="font-arabic text-sm text-red-400">{message}</p>
+          <p className="text-[11px] font-mono text-ink-600 mt-1">workspace failed to load</p>
+        </div>
+        <button
+          onClick={onRetry}
+          className="px-4 py-2 rounded-xl border text-xs font-mono transition-all hover:border-ink-600"
+          style={{
+            background:   'rgba(255,255,255,0.03)',
+            borderColor:  'rgba(255,255,255,0.10)',
+            color:        'var(--ink-400, #aaa)',
+          }}
+        >
+          ↺ إعادة المحاولة
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Remote-only: import / delete panel ──────────────────────────────────────
+
+function RemoteOnlyPanel({ subjectId, onImported, onRemoteDeleted }) {
+  const [importing,     setImporting]     = useState(false);
+  const [importError,   setImportError]   = useState(null);
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteBusy,    setDeleteBusy]    = useState(false);
+  const [deleteError,   setDeleteError]   = useState(null);
+
+  const doImport = async () => {
+    setImporting(true);
+    setImportError(null);
+    try {
+      const res  = await fetch('/api/admin/remote-subjects/import', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ subjectId, force: true }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || 'فشل الاستيراد');
+      onImported?.();
+    } catch (e) {
+      setImportError(e.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const doDelete = async () => {
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      const res  = await fetch(`/api/admin/remote-subjects/${encodeURIComponent(subjectId)}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || 'فشل الحذف');
+      onRemoteDeleted?.();
+    } catch (e) {
+      setDeleteError(e.message);
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Import card */}
+      <div
+        className="rounded-xl border p-4 flex items-center justify-between gap-4"
+        style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.18)' }}
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Tag color="amber">remote-only</Tag>
+            <span className="text-[11px] font-mono text-ink-600">not in Atlas</span>
+          </div>
+          <p className="font-arabic text-sm text-amber-300/90">استيراد للتحرير</p>
+          <p className="text-[11px] font-arabic text-ink-500 mt-0.5">
+            يحوّل هذه المادة إلى بيانات Atlas محلية قابلة للتعديل والنشر.
+          </p>
+          {importError && <p className="text-[11px] font-arabic text-red-400 mt-1">{importError}</p>}
+        </div>
+        <ActionBtn onClick={doImport} loading={importing} disabled={deleteBusy} variant="primary">
+          {importing ? 'جارٍ الاستيراد…' : 'استيراد'}
+        </ActionBtn>
+      </div>
+
+      {/* Delete card */}
+      <div
+        className="rounded-xl border p-4 flex items-center justify-between gap-4"
+        style={{ background: 'rgba(239,68,68,0.04)', borderColor: 'rgba(239,68,68,0.14)' }}
+      >
+        <div className="min-w-0">
+          <p className="font-arabic text-sm text-red-400/90">حذف من Remote</p>
+          <p className="text-[11px] font-arabic text-ink-500 mt-0.5">
+            يحذف سجل Firebase والملف المنشور من Supabase. مناسب للمواد التجريبية.
+          </p>
+          {deleteError && <p className="text-[11px] font-arabic text-red-400 mt-1">{deleteError}</p>}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {deletePending ? (
+            <>
+              <ActionBtn onClick={doDelete} loading={deleteBusy} disabled={importing} variant="dangerSolid">
+                {deleteBusy ? 'جارٍ الحذف…' : 'تأكيد'}
+              </ActionBtn>
+              <ActionBtn onClick={() => setDeletePending(false)} disabled={deleteBusy} variant="ghost">
+                إلغاء
+              </ActionBtn>
+            </>
+          ) : (
+            <ActionBtn
+              onClick={() => { setDeletePending(true); setDeleteError(null); }}
+              disabled={deleteBusy || importing}
+              variant="danger"
+            >
+              ✕ حذف
+            </ActionBtn>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Atlas mode: re-sync strip ────────────────────────────────────────────────
+
+function ReSyncStrip({ subjectId, hasRemote, onReloaded }) {
+  const [importing,     setImporting]     = useState(false);
+  const [importError,   setImportError]   = useState(null);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteBusy,    setDeleteBusy]    = useState(false);
+  const [deleteError,   setDeleteError]   = useState(null);
+
+  const doSync = async () => {
+    setImporting(true);
+    setImportError(null);
+    setImportSuccess(false);
+    try {
+      const res  = await fetch('/api/admin/remote-subjects/import', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ subjectId, force: true }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || 'فشل المزامنة');
+      setImportSuccess(true);
+      onReloaded?.();
+    } catch (e) {
+      setImportError(e.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const doDelete = async () => {
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      const res  = await fetch(`/api/admin/remote-subjects/${encodeURIComponent(subjectId)}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || 'فشل الحذف');
+      setDeletePending(false);
+    } catch (e) {
+      setDeleteError(e.message);
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="rounded-xl border px-4 py-2.5 flex items-center justify-between gap-3"
+      style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
+    >
+      <div className="min-w-0">
+        {importError   && <p className="text-[11px] font-arabic text-red-400">{importError}</p>}
+        {importSuccess && <p className="text-[11px] font-arabic text-green-400">✓ تم سحب آخر نسخة منشورة</p>}
+        {deleteError   && <p className="text-[11px] font-arabic text-red-400">{deleteError}</p>}
+        {!importError && !importSuccess && !deleteError && (
+          <p className="text-[10px] font-mono text-ink-600">remote sync — replaces Atlas with latest published</p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        {hasRemote && (
+          deletePending ? (
+            <>
+              <ActionBtn onClick={doDelete} loading={deleteBusy} disabled={importing} variant="dangerSolid">
+                {deleteBusy ? 'حذف…' : 'تأكيد الحذف'}
+              </ActionBtn>
+              <ActionBtn onClick={() => setDeletePending(false)} disabled={deleteBusy} variant="ghost">
+                إلغاء
+              </ActionBtn>
+            </>
+          ) : (
+            <ActionBtn
+              onClick={() => { setDeletePending(true); setDeleteError(null); }}
+              disabled={deleteBusy || importing}
+              variant="danger"
+            >
+              ✕ حذف Remote
+            </ActionBtn>
+          )
+        )}
+
+        <button
+          onClick={doSync}
+          disabled={importing || deleteBusy}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all"
+          style={{
+            background:  'rgba(255,255,255,0.03)',
+            borderColor: 'rgba(255,255,255,0.10)',
+            color:       importing ? 'var(--ink-600)' : 'var(--ink-300)',
+            opacity:     (importing || deleteBusy) ? 0.5 : 1,
+          }}
+        >
+          {importing ? <><Spinner size={3} /> مزامنة…</> : '↓ سحب Remote'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRemoteDeleted }) {
-  // ── Reactive data: proper Zustand selectors ────────────────────────────────
+
+  // ── Reactive data ────────────────────────────────────────────────────────
   const storeSubject = useSubjectStore((s) => s.subject);
   const lessons      = useSubjectStore((s) => s.lessons);
   const concepts     = useConceptStore((s) => s.concepts);
   const feedItems    = useFeedStore((s) => s.feedItems);
   const questions    = useQuizStore((s) => s.questions);
 
-  // ── Stable action refs (Zustand guarantees these never change reference) ───
-  const importData = useDataStore((s) => s.importData);
+  // ── Store actions ────────────────────────────────────────────────────────
+  // FIX: importData comes from useDataStore (composite hook in store/index.js).
+  // The old code referenced useDataStore but never imported it — runtime crash.
+  const importData    = useDataStore((s) => s.importData);
   const resetSubject  = useSubjectStore((s) => s.resetSubject);
-  const loadFromAtlas = useSubjectStore((s) => s.loadFromAtlas);
   const resetContent  = useContentStore((s) => s.resetContent);
-  const loadContent   = useContentStore((s) => s.loadLessonContent);
   const resetConcepts = useConceptStore((s) => s.resetConcepts);
-  const addConcept    = useConceptStore((s) => s.addConcept);
-  const addTag        = useConceptStore((s) => s.addTag);
   const resetFeed     = useFeedStore((s) => s.resetFeed);
-  const loadFeedItems = useFeedStore((s) => s.loadFeedItems);
   const resetQuiz     = useQuizStore((s) => s.resetQuiz);
-  const loadQuestions = useQuizStore((s) => s.loadQuestions);
-  const loadExams     = useQuizStore((s) => s.loadExams);
   const resetMedia    = useMediaStore((s) => s.resetMedia);
 
   const { isSyncing, syncError, lastSynced } = useAtlasSync();
 
-  const [loading,          setLoading]          = useState(true);
-  const [error,            setError]            = useState(null);
-  const [reloadKey,        setReloadKey]        = useState(0);
-  const [origin,           setOrigin]           = useState('atlas');
-  // importing = first-time import (remote-only state) OR re-sync (atlas state)
-  const [importing,        setImporting]        = useState(false);
-  const [importError,      setImportError]      = useState(null);
-  const [importSuccess,    setImportSuccess]    = useState(false);
-  const [deleteRemotePending, setDeleteRemotePending] = useState(false);
-  const [deleteRemoteBusy, setDeleteRemoteBusy] = useState(false);
-  const [deleteRemoteError, setDeleteRemoteError] = useState(null);
-  const [currentPage,      setCurrentPage]      = useState('lessons');
-  const [selectedLessonId, setSelectedLessonId] = useState(null);
-  const [selectedUnitId,   setSelectedUnitId]   = useState(null);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState(null);
+  const [reloadKey,      setReloadKey]      = useState(0);
+  const [origin,         setOrigin]         = useState('atlas');
+  const [currentPage,    setCurrentPage]    = useState('lessons');
+  const [selectedLesson, setSelectedLesson] = useState(null);
+  const [selectedUnit,   setSelectedUnit]   = useState(null);
 
-  // ── Load workspace ─────────────────────────────────────────────────────────
-  // deps: [subjectId, reloadKey] only — all store actions are stable Zustand
-  // selectors that never change reference, so they're safe to omit from deps.
+  // ── Load workspace ────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -89,28 +416,18 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
 
       setLoading(true);
       setError(null);
-      setImportError(null);
-      setImportSuccess(false);
-      setDeleteRemotePending(false);
-      setDeleteRemoteError(null);
       setCurrentPage('lessons');
-      setSelectedLessonId(null);
-      setSelectedUnitId(null);
+      setSelectedLesson(null);
+      setSelectedUnit(null);
 
       try {
-        // includeAll=true → returns draft + approved content so seeded
-        // lessons (status: 'draft') are not silently filtered out.
         const res  = await fetch(`/api/export?subjectId=${encodeURIComponent(subjectId)}&includeAll=true`);
         const json = await res.json();
 
-        if (!res.ok || !json.ok) {
-          throw new Error(json.error || 'فشل تحميل محتوى المادة');
-        }
-
+        if (!res.ok || !json.ok) throw new Error(json.error || 'فشل تحميل محتوى المادة');
         if (cancelled) return;
 
-        // Wipe stale localStorage so persist middleware hydration doesn't
-        // overwrite the fresh data we're about to load.
+        // Wipe stale localStorage so persist middleware doesn't overwrite fresh data
         PERSIST_KEYS.forEach((key) => {
           try { localStorage.removeItem(key); } catch { /* SSR */ }
         });
@@ -120,8 +437,11 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
         resetConcepts();
         resetFeed();
         resetQuiz();
-       const data = json.data;
-        importData(data);
+        resetMedia();
+
+        // FIX: single importData() call handles all field normalization + bulk loading
+        // (replaces the old manual forEach loops that duplicated store/index.js logic)
+        importData(json.data);
 
         setOrigin(json.origin || 'atlas');
       } catch (e) {
@@ -135,59 +455,11 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
     return () => { cancelled = true; };
   }, [subjectId, reloadKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Remote import / re-sync ────────────────────────────────────────────────
-  // Used for both the first-time import (remoteOnly) and re-syncing an already-
-  // imported subject from the latest published remote file (atlas mode).
-  // force: true is always sent — the admin is explicitly choosing to overwrite.
-  // Without force, a 409 is returned if the subject already exists in Atlas,
-  // which blocks every re-sync attempt after the first import.
-  const syncFromRemote = async () => {
-    setImporting(true);
-    setImportError(null);
-    setDeleteRemoteError(null);
-    setImportSuccess(false);
-    try {
-      const res  = await fetch('/api/admin/remote-subjects/import', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ subjectId, force: true }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || 'فشل استيراد المادة');
-      setImportSuccess(true);
-      setReloadKey((v) => v + 1); // re-fetch from Atlas (origin will flip to 'atlas')
-      onImported?.();
-    } catch (e) {
-      setImportError(e.message || 'فشل استيراد المادة');
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const deleteRemoteSubject = async () => {
-    setDeleteRemoteBusy(true);
-    setDeleteRemoteError(null);
-    try {
-      const res = await fetch(`/api/admin/remote-subjects/${encodeURIComponent(subjectId)}`, {
-        method: 'DELETE',
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || 'فشل حذف النسخة البعيدة');
-
-      setDeleteRemotePending(false);
-      onRemoteDeleted?.();
-    } catch (e) {
-      setDeleteRemoteError(e.message || 'فشل حذف النسخة البعيدة');
-    } finally {
-      setDeleteRemoteBusy(false);
-    }
-  };
-
   // ── Navigation ─────────────────────────────────────────────────────────────
   const navigateTo = (page, params = {}) => {
     setCurrentPage(page);
-    if (params.lessonId !== undefined) setSelectedLessonId(params.lessonId);
-    if (params.unitId   !== undefined) setSelectedUnitId(params.unitId);
+    if (params.lessonId !== undefined) setSelectedLesson(params.lessonId);
+    if (params.unitId   !== undefined) setSelectedUnit(params.unitId);
   };
 
   const renderPage = () => {
@@ -195,8 +467,8 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
       case 'editor':
         return (
           <LessonEditorPage
-            lessonId={selectedLessonId}
-            unitId={selectedUnitId}
+            lessonId={selectedLesson}
+            unitId={selectedUnit}
             subjectId={subjectId}
             currentUser={{ role: 'admin' }}
             onBack={() => navigateTo('lessons')}
@@ -218,24 +490,8 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
   };
 
   // ── Guards ─────────────────────────────────────────────────────────────────
-  if (loading) {
-    return <WorkspaceSpinner label="جارٍ تحميل محتوى المادة..." />;
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-xl border px-6 py-10 text-center"
-        style={{ background: 'rgba(239,68,68,0.04)', borderColor: 'rgba(239,68,68,0.18)' }}>
-        <p className="font-arabic text-sm text-red-400 mb-3">{error}</p>
-        <button
-          onClick={() => setReloadKey((v) => v + 1)}
-          className="text-xs font-mono text-ink-400 hover:text-ink-200 px-4 py-2 rounded-lg border border-ink-800/70"
-        >
-          إعادة المحاولة
-        </button>
-      </div>
-    );
-  }
+  if (loading) return <WorkspaceLoading />;
+  if (error)   return <WorkspaceError message={error} onRetry={() => setReloadKey((v) => v + 1)} />;
 
   const activeSubject = storeSubject || { id: subjectId, nameAr: subjectMeta?.nameAr };
   const counts = {
@@ -245,249 +501,142 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
     quizbank: questions.length,
   };
 
-  const remoteOnly = origin === 'remote';
-  const hasRemoteVersion = remoteOnly || !!subjectMeta?.isPublished || !!subjectMeta?.downloadUrl;
+  const remoteOnly  = origin === 'remote';
+  const hasRemote   = remoteOnly || !!subjectMeta?.isPublished || !!subjectMeta?.downloadUrl;
+  const isAtlas     = !remoteOnly;
 
   return (
     <div
-      className="rounded-2xl border overflow-hidden"
-      style={{ background: 'rgba(9,9,11,0.45)', borderColor: 'rgba(255,255,255,0.06)' }}
+      className="rounded-2xl border overflow-hidden flex flex-col"
+      style={{ background: 'rgba(9,9,11,0.50)', borderColor: 'rgba(255,255,255,0.07)' }}
     >
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ══ HEADER ════════════════════════════════════════════════════════════ */}
       <div
-        className="px-5 py-4 border-b"
-        style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}
+        className="px-5 pt-4 pb-0 border-b"
+        style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.015)' }}
       >
+        {/* ── Title row ──────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <p className="text-[10px] font-mono text-ink-600 uppercase tracking-widest mb-1">Remote Content Workspace</p>
-            <h3 className="font-arabic text-lg text-ink-100">{activeSubject?.nameAr || subjectId}</h3>
-            <p className="text-[11px] font-arabic text-ink-500">
-              {remoteOnly
-                ? 'تم تحميل النسخة المنشورة من التخزين البعيد. استوردها إلى Atlas أولاً لتفعيل التعديل الفعلي.'
-                : 'المحتوى محمّل من Atlas — يمكن تعديله ونشره، أو سحب آخر نسخة منشورة عن بُعد.'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 shrink-0 text-center">
-            <StatMini label="دروس"   value={counts.lessons}  />
-            <StatMini label="مفاهيم" value={counts.concepts} />
-            <StatMini label="تغذية"  value={counts.feeds}    />
-            <StatMini label="أسئلة"  value={counts.quizbank} />
-          </div>
-        </div>
-
-        {/* Nav tabs */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {NAV_ITEMS.map((item) => {
-            const active = currentPage === item.id || (currentPage === 'editor' && item.id === 'lessons');
-            return (
-              <button
-                key={item.id}
-                onClick={() => navigateTo(item.id)}
-                className="px-3 py-2 rounded-xl border text-right transition-all"
-                style={{
-                  background:  active ? 'rgba(212,137,30,0.10)' : 'rgba(255,255,255,0.02)',
-                  borderColor: active ? 'rgba(212,137,30,0.28)' : 'rgba(255,255,255,0.07)',
-                }}
-              >
-                <p className={`font-arabic text-sm ${active ? 'text-sand-300' : 'text-ink-300'}`}>{item.label}</p>
-                <p className="text-[10px] font-mono text-ink-600">{item.hint}</p>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ── Remote-only: first-time import banner ──────────────────────── */}
-        {remoteOnly && (
-          <div
-            className="mt-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-4"
-            style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}
-          >
-            <div>
-              <p className="font-arabic text-sm text-amber-300">هذه مادة منشورة عن بُعد فقط</p>
-              <p className="text-[11px] font-arabic text-amber-200/70">
-                الاستيراد سيحوّلها إلى بيانات Atlas محلية قابلة للتحرير ثم النشر من نفس المسار.
-              </p>
-              {importError && <p className="text-[11px] font-arabic text-red-400 mt-1">{importError}</p>}
+          <div className="min-w-0">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="text-[9px] font-mono text-ink-700 uppercase tracking-widest">Workspace</span>
+              <span className="text-[9px] text-ink-800">/</span>
+              <span className="text-[9px] font-mono text-ink-600 uppercase tracking-widest">{subjectId}</span>
             </div>
-            <button
-              onClick={syncFromRemote}
-              disabled={importing}
-              className="px-4 py-2 rounded-xl border text-sm font-arabic shrink-0"
-              style={{
-                background:  'rgba(212,137,30,0.10)',
-                borderColor: 'rgba(212,137,30,0.28)',
-                color:       'var(--accent)',
-                opacity:     importing ? 0.6 : 1,
-              }}
-            >
-              {importing ? 'جارٍ الاستيراد...' : 'استيراد للتحرير'}
-            </button>
-          </div>
-        )}
 
-        {/* ── Atlas mode: re-sync strip (always visible after import) ────── */}
-        {/* Lets you pull a fresh remote version to test the update sync flow */}
-        {!remoteOnly && (
-          <div
-            className="mt-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-3"
-            style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
-          >
-            <div className="min-w-0">
-              <p className="text-[11px] font-mono text-ink-500">
-                مزامنة من Remote — يستبدل محتوى Atlas الحالي بآخر نسخة منشورة
-              </p>
-              {importError   && <p className="text-[11px] font-arabic text-red-400 mt-0.5">{importError}</p>}
-              {importSuccess && <p className="text-[11px] font-arabic text-green-400 mt-0.5">✓ تم الاستيراد — تم إعادة تحميل المحتوى</p>}
-              {deleteRemoteError && <p className="text-[11px] font-arabic text-red-400 mt-0.5">{deleteRemoteError}</p>}
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {hasRemoteVersion && (
-                deleteRemotePending ? (
-                  <>
-                    <button
-                      onClick={deleteRemoteSubject}
-                      disabled={deleteRemoteBusy || importing}
-                      className="px-3 py-1.5 rounded-lg border text-xs font-arabic transition-all"
-                      style={{
-                        background: 'rgba(239,68,68,0.10)',
-                        borderColor: 'rgba(239,68,68,0.30)',
-                        color: '#f87171',
-                        opacity: deleteRemoteBusy || importing ? 0.6 : 1,
-                      }}
-                    >
-                      {deleteRemoteBusy ? 'جارٍ الحذف...' : 'تأكيد حذف Remote'}
-                    </button>
-                    <button
-                      onClick={() => setDeleteRemotePending(false)}
-                      disabled={deleteRemoteBusy}
-                      className="px-3 py-1.5 rounded-lg border text-xs font-arabic transition-all"
-                      style={{
-                        background: 'rgba(255,255,255,0.02)',
-                        borderColor: 'rgba(255,255,255,0.10)',
-                        color: 'var(--ink-400)',
-                        opacity: deleteRemoteBusy ? 0.6 : 1,
-                      }}
-                    >
-                      إلغاء
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setDeleteRemotePending(true);
-                      setDeleteRemoteError(null);
-                    }}
-                    disabled={deleteRemoteBusy || importing}
-                    className="px-3 py-1.5 rounded-lg border text-xs font-mono transition-all"
-                    style={{
-                      background: 'rgba(239,68,68,0.06)',
-                      borderColor: 'rgba(239,68,68,0.22)',
-                      color: '#f87171',
-                      opacity: deleteRemoteBusy || importing ? 0.6 : 1,
-                    }}
-                  >
-                    ✕ حذف من Remote
-                  </button>
-                )
-              )}
+            {/* Subject name */}
+            <h3 className="font-arabic text-xl text-ink-100 leading-snug truncate">
+              {activeSubject?.nameAr || subjectId}
+            </h3>
 
-              <button
-                onClick={syncFromRemote}
-                disabled={importing || deleteRemoteBusy}
-                className="shrink-0 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all"
-                style={{
-                  background:  importing ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)',
-                  borderColor: 'rgba(255,255,255,0.10)',
-                  color:       importing ? 'var(--ink-600)' : 'var(--ink-300)',
-                }}
-              >
-                {importing
-                  ? <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" /> جارٍ المزامنة...</span>
-                  : '↓ سحب من Remote'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {remoteOnly && hasRemoteVersion && (
-          <div
-            className="mt-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-4"
-            style={{ background: 'rgba(239,68,68,0.04)', borderColor: 'rgba(239,68,68,0.18)' }}
-          >
-            <div>
-              <p className="font-arabic text-sm text-red-300">حذف هذه المادة من Remote</p>
-              <p className="text-[11px] font-arabic text-red-200/70">
-                يحذف سجل Firebase والملف المنشور من التخزين البعيد. هذا مناسب للمواد التجريبية.
-              </p>
-              {deleteRemoteError && <p className="text-[11px] font-arabic text-red-400 mt-1">{deleteRemoteError}</p>}
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {deleteRemotePending ? (
-                <>
-                  <button
-                    onClick={deleteRemoteSubject}
-                    disabled={deleteRemoteBusy || importing}
-                    className="px-4 py-2 rounded-xl border text-sm font-arabic"
-                    style={{
-                      background: 'rgba(239,68,68,0.10)',
-                      borderColor: 'rgba(239,68,68,0.30)',
-                      color: '#f87171',
-                      opacity: deleteRemoteBusy || importing ? 0.6 : 1,
-                    }}
-                  >
-                    {deleteRemoteBusy ? 'جارٍ الحذف...' : 'تأكيد الحذف'}
-                  </button>
-                  <button
-                    onClick={() => setDeleteRemotePending(false)}
-                    disabled={deleteRemoteBusy}
-                    className="px-4 py-2 rounded-xl border text-sm font-arabic"
-                    style={{
-                      background: 'rgba(255,255,255,0.02)',
-                      borderColor: 'rgba(255,255,255,0.10)',
-                      color: 'var(--ink-400)',
-                      opacity: deleteRemoteBusy ? 0.6 : 1,
-                    }}
-                  >
-                    إلغاء
-                  </button>
-                </>
+            {/* Source badge row */}
+            <div className="flex items-center gap-2 mt-1.5">
+              {remoteOnly ? (
+                <Tag color="amber">remote-only</Tag>
               ) : (
+                <Tag color="green">atlas ✓</Tag>
+              )}
+              <span className="text-[10px] font-mono text-ink-700">
+                {remoteOnly
+                  ? 'published file — not yet in Atlas'
+                  : 'editable — changes sync to MongoDB'}
+              </span>
+            </div>
+          </div>
+
+          {/* Stats grid */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            <StatPill label="دروس"   value={counts.lessons}  accent={counts.lessons  > 0} />
+            <StatPill label="مفاهيم" value={counts.concepts} accent={counts.concepts > 0} />
+            <StatPill label="تغذية"  value={counts.feeds}    accent={counts.feeds    > 0} />
+            <StatPill label="أسئلة"  value={counts.quizbank} accent={counts.quizbank > 0} />
+          </div>
+        </div>
+
+        {/* ── Nav tabs ────────────────────────────────────────────────────── */}
+        {isAtlas && (
+          <div
+            className="flex items-center gap-1 pt-1"
+            style={{ marginBottom: '-1px' }}  // bleed into border so active tab "connects"
+          >
+            {NAV_ITEMS.map((item) => {
+              const active = currentPage === item.id || (currentPage === 'editor' && item.id === 'lessons');
+              return (
                 <button
-                  onClick={() => {
-                    setDeleteRemotePending(true);
-                    setDeleteRemoteError(null);
-                  }}
-                  disabled={deleteRemoteBusy || importing}
-                  className="px-4 py-2 rounded-xl border text-sm font-arabic"
+                  key={item.id}
+                  onClick={() => navigateTo(item.id)}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-t-xl border border-b-0 text-right transition-all"
                   style={{
-                    background: 'rgba(239,68,68,0.10)',
-                    borderColor: 'rgba(239,68,68,0.28)',
-                    color: '#f87171',
-                    opacity: deleteRemoteBusy || importing ? 0.6 : 1,
+                    background:  active
+                      ? 'rgba(9,9,11,0.50)'   // matches body bg → "tab selected" illusion
+                      : 'rgba(255,255,255,0.015)',
+                    borderColor: active
+                      ? 'rgba(255,255,255,0.08)'
+                      : 'rgba(255,255,255,0.04)',
+                    marginBottom: active ? '-1px' : '0',
+                    position:    'relative',
+                    zIndex:      active ? 2 : 1,
                   }}
                 >
-                  حذف من Remote
+                  <span className="text-sm">{item.icon}</span>
+                  <div className="text-right">
+                    <p className={`font-arabic text-xs leading-none ${active ? 'text-sand-300' : 'text-ink-400'}`}>
+                      {item.labelAr}
+                    </p>
+                    <p className="text-[8px] font-mono text-ink-700 mt-0.5">{item.labelEn}</p>
+                  </div>
+                  {active && (
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t"
+                      style={{ background: 'rgba(212,137,30,0.6)' }}
+                    />
+                  )}
                 </button>
-              )}
-            </div>
+              );
+            })}
           </div>
         )}
       </div>
 
+      {/* ══ SYNC BAR ══════════════════════════════════════════════════════════ */}
       <SyncBar isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
 
-      {/* ── Body ───────────────────────────────────────────────────────────── */}
+      {/* ══ ACTION STRIPS (contextual) ════════════════════════════════════════ */}
+      {(remoteOnly || (isAtlas && hasRemote)) && (
+        <div className="px-5 py-3 border-b space-y-2.5" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+          {remoteOnly ? (
+            <RemoteOnlyPanel
+              subjectId={subjectId}
+              onImported={() => { onImported?.(); setReloadKey((v) => v + 1); }}
+              onRemoteDeleted={onRemoteDeleted}
+            />
+          ) : (
+            <ReSyncStrip
+              subjectId={subjectId}
+              hasRemote={hasRemote}
+              onReloaded={() => setReloadKey((v) => v + 1)}
+            />
+          )}
+        </div>
+      )}
+
+      {/* ══ BODY ══════════════════════════════════════════════════════════════ */}
       <div className="p-5">
         {remoteOnly ? (
           <div
-            className="rounded-xl border px-6 py-10 text-center"
-            style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.05)' }}
+            className="rounded-xl border px-8 py-14 text-center"
+            style={{ background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.05)' }}
           >
-            <p className="font-arabic text-base text-ink-200 mb-2">المادة جاهزة للاستيراد</p>
-            <p className="text-[12px] font-arabic text-ink-500 max-w-xl mx-auto">
-              هذه النسخة قادمة من الملف المنشور عن بُعد. بعد الاستيراد إلى Atlas سنفتح نفس المحرر الحالي
+            <div
+              className="w-12 h-12 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl"
+              style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)' }}
+            >
+              ☁
+            </div>
+            <p className="font-arabic text-base text-ink-200 mb-1.5">استوردها للبدء بالتعديل</p>
+            <p className="text-[12px] font-arabic text-ink-500 max-w-sm mx-auto leading-relaxed">
+              هذه المادة متاحة من الملف المنشور فقط. بعد الاستيراد إلى Atlas ستُفتح نفس أدوات التحرير
               للدروس والمفاهيم والتغذية والأسئلة مع حفظ ونشر فعليين.
             </p>
           </div>
@@ -495,18 +644,6 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
           renderPage()
         )}
       </div>
-    </div>
-  );
-}
-
-function StatMini({ label, value }) {
-  return (
-    <div
-      className="rounded-lg border px-3 py-2 min-w-16"
-      style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
-    >
-      <p className="text-sm font-mono text-sand-400">{value}</p>
-      <p className="text-[10px] font-arabic text-ink-600">{label}</p>
     </div>
   );
 }
