@@ -60,6 +60,7 @@ export function useDataStore(selector) {
       content.deleteLessonContent(id, sectionIds);
     },
     bootstrapFromSubject: subject.bootstrapFromSubject,
+    loadFromAtlas:        subject.loadFromAtlas,
 
     // ── Content ──────────────────────────────────────────────────────────────
     addSection:               content.addSection,
@@ -70,6 +71,8 @@ export function useDataStore(selector) {
     addBlock:                 content.addBlock,
     updateBlock:              content.updateBlock,
     deleteBlock:              content.deleteBlock,
+    // Alias so AdminEditorWorkspace can call loadContent({ sections, blocks })
+    loadContent: content.loadLessonContent,
 
     // ── Concepts ─────────────────────────────────────────────────────────────
     addConcept:    concepts.addConcept,
@@ -82,16 +85,18 @@ export function useDataStore(selector) {
         }
       });
     },
-    linkTagToConcept:   concepts.linkTagToConcept,
+    linkTagToConcept:     concepts.linkTagToConcept,
     unlinkTagFromConcept: concepts.unlinkTagFromConcept,
-    addTag:             concepts.addTag,
-    updateTag:          concepts.updateTag,
-    deleteTag:          concepts.deleteTag,
+    addTag:               concepts.addTag,
+    updateTag:            concepts.updateTag,
+    deleteTag:            concepts.deleteTag,
 
     // ── Feed ─────────────────────────────────────────────────────────────────
     addFeedItem:    feed.addFeedItem,
     updateFeedItem: feed.updateFeedItem,
     deleteFeedItem: feed.deleteFeedItem,
+    // Bulk loader — replaces all feed items atomically (used by AdminEditorWorkspace)
+    loadFeedItems:  feed.loadFeedItems,
 
     // ── Quiz ─────────────────────────────────────────────────────────────────
     addQuestion:               quiz.addQuestion,
@@ -104,32 +109,73 @@ export function useDataStore(selector) {
     deleteExam:                quiz.deleteExam,
     addQuestionToExam:         quiz.addQuestionToExam,
     removeQuestionFromExam:    quiz.removeQuestionFromExam,
+    // Bulk loaders
+    loadQuestions: quiz.loadQuestions,
+    loadExams:     quiz.loadExams,
 
-    // ── Export / Import (Phase 1 fallback — Phase 2 uses /api/export) ────────
+    // ── Reset helpers ─────────────────────────────────────────────────────────
+    resetSubject:  subject.resetSubject,
+    resetContent:  content.resetContent,
+    resetConcepts: concepts.resetConcepts,
+    resetFeed:     feed.resetFeed,
+    resetQuiz:     quiz.resetQuiz,
+
+    // ── Export / Import ───────────────────────────────────────────────────────
     exportData: () => assembleExportData(merged),
+
+    // Full workspace load — called by AdminEditorWorkspace after fetching /api/export.
+    // Uses bulk loaders so each store is replaced atomically (no duplicate-add risk).
     importData: (data) => {
       const units = [], lessons = [], sections = [], blocks = [];
+
       (data.units || []).forEach((unit) => {
-          const { lessons: ul, ...ud } = unit; units.push(ud);
-          (ul || []).forEach((lesson) => {
-            const { sections: ls, status: lessonStatus, ...ld } = lesson;
-            lessons.push({ ...ld, unitId: unit.id, atlasStatus: lessonStatus || ld.atlasStatus || 'draft' });
-            (ls || []).forEach((section) => {
-              const { blocks: sb, ...sd } = section; sections.push({ ...sd, lessonId: lesson.id });
-              (sb || []).forEach((block) => blocks.push({ ...block, sectionId: section.id }));
-            });
+        const { lessons: ul, ...ud } = unit;
+        units.push(ud);
+        (ul || []).forEach((lesson) => {
+          const { sections: ls, status: lessonStatus, ...ld } = lesson;
+          lessons.push({ ...ld, unitId: unit.id, atlasStatus: lessonStatus || ld.atlasStatus || 'draft' });
+          (ls || []).forEach((section) => {
+            const { blocks: sb, ...sd } = section;
+            sections.push({ ...sd, lessonId: lesson.id });
+            (sb || []).forEach((block) => blocks.push({ ...block, sectionId: section.id }));
           });
+        });
       });
+
       subject.loadFromAtlas({ subject: data.subject || null, units, lessons });
       content.loadLessonContent({ sections, blocks });
+
+      // Concepts + tags — no bulk loader needed (small sets, addConcept is idempotent now)
       concepts.resetConcepts();
-      (data.concepts  || []).forEach((c) => concepts.addConcept({ ...c, atlasStatus: c.status || c.atlasStatus || 'draft' }));
-      (data.tags      || []).forEach((t) => concepts.addTag(t));
-      feed.resetFeed();
-      (data.feedItems || []).forEach((f) => feed.addFeedItem({ ...f, atlasStatus: f.status || f.atlasStatus || 'draft' }));
-      quiz.resetQuiz();
-      (data.questions || []).forEach((q) => quiz.addQuestion({ ...q, atlasStatus: q.status || q.atlasStatus || 'draft' }));
-      (data.exams     || []).forEach((e) => quiz.addExam({ ...e, atlasStatus: e.status || e.atlasStatus || 'draft' }));
+      (data.concepts || []).forEach((c) => concepts.addConcept({ ...c, atlasStatus: c.status || c.atlasStatus || 'draft' }));
+      (data.tags     || []).forEach((t) => concepts.addTag(t));
+
+      // Feed items — use bulk loader to avoid order miscalculation from addFeedItem
+      feed.loadFeedItems(
+        (data.feedItems || []).map((f) => ({
+          ...f,
+          atlasStatus: f.status || f.atlasStatus || 'draft',
+          // Ensure local field names match what the editor & sync hook expect
+          lessonId:   f.lessonId   || f.lessonContentId   || null,
+          unitId:     f.unitId     || f.unitContentId      || null,
+          questionId: f.questionId || f.questionContentId  || null,
+        }))
+      );
+
+      // Questions + exams — use bulk loaders
+      quiz.loadQuestions(
+        (data.questions || []).map((q) => ({
+          ...q,
+          atlasStatus: q.status || q.atlasStatus || 'draft',
+          markers: q.markers || [],
+        }))
+      );
+      quiz.loadExams(
+        (data.exams || []).map((e) => ({
+          ...e,
+          atlasStatus: e.status || e.atlasStatus || 'draft',
+        }))
+      );
     },
 
     resetAll: () => {
@@ -147,14 +193,14 @@ export function useDataStore(selector) {
 // ─── assembleExportData ───────────────────────────────────────────────────────
 function assembleExportData(s) {
   return {
-    version: '1.0',
+    version: '2.0',
     subject: s.subject ? {
       id: s.subject.id, nameAr: s.subject.nameAr, nameEn: s.subject.nameEn || null,
       path: s.subject.path, isMajor: s.subject.isMajor || false,
       order: s.subject.order || 0, colorHex: s.subject.colorHex || null,
     } : null,
-    tags:      s.tags.map((t) => ({ id: t.id, nameAr: t.nameAr, nameEn: t.nameEn || null })),
-    concepts:  s.concepts.map((c) => ({
+    tags:     s.tags.map((t) => ({ id: t.id, nameAr: t.nameAr, nameEn: t.nameEn || null })),
+    concepts: s.concepts.map((c) => ({
       id: c.id, type: c.type, titleAr: c.titleAr, titleEn: c.titleEn || null,
       definition: c.definition || '', shortDefinition: c.shortDefinition || null,
       formula: c.formula || null, imageUrl: c.imageUrl || null,
@@ -168,7 +214,7 @@ function assembleExportData(s) {
         .map((lesson) => ({
           id: lesson.id, title: lesson.title, order: lesson.order,
           estimatedMinutes: lesson.estimatedMinutes || 15, summary: lesson.summary || null,
-          metadata: lesson.metadata || null,
+          metadata:      lesson.metadata      || null,
           parentLesson:  lesson.parentLesson  || null,
           variationType: lesson.variationType || null,
           variationNote: lesson.variationNote || null,
@@ -197,7 +243,8 @@ function assembleExportData(s) {
       cognitiveLevel: q.cognitiveLevel || 'RECALL', source: q.source || 'ORIGINAL',
       sourceExamId: q.sourceExamId || null, sourceDetails: q.sourceDetails || null,
       sourceYear: q.sourceYear || null, feedEligible: q.feedEligible || false,
-      unitId: q.unitId || null, lessonId: q.lessonId || null, conceptIds: q.conceptIds || [],
+      unitId: q.unitId || null, lessonId: q.lessonId || null, sectionId: q.sectionId || null,
+      isCheckpoint: q.isCheckpoint || false, conceptIds: q.conceptIds || [],
       markers: q.markers || [],
     })),
     exams: s.exams.map((e) => ({
@@ -212,6 +259,7 @@ function assembleExportData(s) {
       interactionType: item.interactionType || null, correctAnswer: item.correctAnswer || null,
       options: item.options || null, explanation: item.explanation || null,
       questionId: item.questionId || null, priority: item.priority || 1, order: item.order || 0,
+      lessonId: item.lessonId || null, unitId: item.unitId || null,
     })),
   };
 }
