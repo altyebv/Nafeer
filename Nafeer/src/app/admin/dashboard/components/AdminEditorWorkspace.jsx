@@ -53,10 +53,10 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
   const addConcept    = useConceptStore((s) => s.addConcept);
   const addTag        = useConceptStore((s) => s.addTag);
   const resetFeed     = useFeedStore((s) => s.resetFeed);
-  const addFeedItem   = useFeedStore((s) => s.addFeedItem);
+  const loadFeedItems = useFeedStore((s) => s.loadFeedItems);
   const resetQuiz     = useQuizStore((s) => s.resetQuiz);
-  const addQuestion   = useQuizStore((s) => s.addQuestion);
-  const addExam       = useQuizStore((s) => s.addExam);
+  const loadQuestions = useQuizStore((s) => s.loadQuestions);
+  const loadExams     = useQuizStore((s) => s.loadExams);
   const resetMedia    = useMediaStore((s) => s.resetMedia);
 
   const { isSyncing, syncError, lastSynced } = useAtlasSync();
@@ -143,9 +143,31 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
 
         (data.concepts  || []).forEach((c) => addConcept({ ...c,  atlasStatus: c.status  || c.atlasStatus  || 'draft' }));
         (data.tags      || []).forEach((t) => addTag(t));
-        (data.feedItems || []).forEach((f) => addFeedItem({ ...f, atlasStatus: f.status  || f.atlasStatus  || 'draft' }));
-        (data.questions || []).forEach((q) => addQuestion({ ...q, atlasStatus: q.status  || q.atlasStatus  || 'draft' }));
-        (data.exams     || []).forEach((e) => addExam({ ...e,     atlasStatus: e.status  || e.atlasStatus  || 'draft' }));
+
+        // Use bulk loaders — avoids order miscalculation and duplicate-add risk
+        // that occurred when the old addFeedItem/addQuestion were called per-item.
+        loadFeedItems(
+          (data.feedItems || []).map((f) => ({
+            ...f,
+            atlasStatus: f.status || f.atlasStatus || 'draft',
+            lessonId:   f.lessonId   || f.lessonContentId   || null,
+            unitId:     f.unitId     || f.unitContentId      || null,
+            questionId: f.questionId || f.questionContentId  || null,
+          }))
+        );
+        loadQuestions(
+          (data.questions || []).map((q) => ({
+            ...q,
+            atlasStatus: q.status || q.atlasStatus || 'draft',
+            markers: q.markers || [],
+          }))
+        );
+        loadExams(
+          (data.exams || []).map((e) => ({
+            ...e,
+            atlasStatus: e.status || e.atlasStatus || 'draft',
+          }))
+        );
 
         setOrigin(json.origin || 'atlas');
       } catch (e) {
