@@ -45,6 +45,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
   const questions    = useQuizStore((s) => s.questions);
 
   // ── Stable action refs (Zustand guarantees these never change reference) ───
+  const importData = useDataStore((s) => s.importData);
   const resetSubject  = useSubjectStore((s) => s.resetSubject);
   const loadFromAtlas = useSubjectStore((s) => s.loadFromAtlas);
   const resetContent  = useContentStore((s) => s.resetContent);
@@ -110,64 +111,16 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
         // Wipe stale localStorage so persist middleware hydration doesn't
         // overwrite the fresh data we're about to load.
         PERSIST_KEYS.forEach((key) => {
-          try { localStorage.removeItem(key); } catch { /* SSR / private browsing */ }
+          try { localStorage.removeItem(key); } catch { /* SSR */ }
         });
 
-        // Reset all stores then load fresh data.
         resetSubject();
         resetContent();
         resetConcepts();
         resetFeed();
         resetQuiz();
-        resetMedia();
-
-        const data = json.data;
-        const units = [], lessons = [], sections = [], blocks = [];
-
-        (data.units || []).forEach((unit) => {
-          const { lessons: ul, ...ud } = unit;
-          units.push(ud);
-          (ul || []).forEach((lesson) => {
-            const { sections: ls, status: lessonStatus, ...ld } = lesson;
-            lessons.push({ ...ld, unitId: unit.id, atlasStatus: lessonStatus || ld.atlasStatus || 'draft' });
-            (ls || []).forEach((section) => {
-              const { blocks: sb, ...sd } = section;
-              sections.push({ ...sd, lessonId: lesson.id });
-              (sb || []).forEach((block) => blocks.push({ ...block, sectionId: section.id }));
-            });
-          });
-        });
-
-        loadFromAtlas({ subject: data.subject || null, units, lessons });
-        loadContent({ sections, blocks });
-
-        (data.concepts  || []).forEach((c) => addConcept({ ...c,  atlasStatus: c.status  || c.atlasStatus  || 'draft' }));
-        (data.tags      || []).forEach((t) => addTag(t));
-
-        // Use bulk loaders — avoids order miscalculation and duplicate-add risk
-        // that occurred when the old addFeedItem/addQuestion were called per-item.
-        loadFeedItems(
-          (data.feedItems || []).map((f) => ({
-            ...f,
-            atlasStatus: f.status || f.atlasStatus || 'draft',
-            lessonId:   f.lessonId   || f.lessonContentId   || null,
-            unitId:     f.unitId     || f.unitContentId      || null,
-            questionId: f.questionId || f.questionContentId  || null,
-          }))
-        );
-        loadQuestions(
-          (data.questions || []).map((q) => ({
-            ...q,
-            atlasStatus: q.status || q.atlasStatus || 'draft',
-            markers: q.markers || [],
-          }))
-        );
-        loadExams(
-          (data.exams || []).map((e) => ({
-            ...e,
-            atlasStatus: e.status || e.atlasStatus || 'draft',
-          }))
-        );
+       const data = json.data;
+        importData(data);
 
         setOrigin(json.origin || 'atlas');
       } catch (e) {
