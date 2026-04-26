@@ -174,22 +174,37 @@ function SubjectPicker({ subjects, selected, onSelect, onCreateTest }) {
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+
+const STAT_ACCENT = {
+  '◈': { fg: 'rgba(212,137,30,0.9)', glow: 'rgba(212,137,30,0.08)', border: 'rgba(212,137,30,0.18)' },
+  '◎': { fg: 'rgba(99,102,241,0.9)', glow: 'rgba(99,102,241,0.07)', border: 'rgba(99,102,241,0.16)' },
+  '▣': { fg: 'rgba(16,185,129,0.9)', glow: 'rgba(16,185,129,0.07)', border: 'rgba(16,185,129,0.16)' },
+};
+
 function StatCard({ label, total, approved, icon, diffSincePublish }) {
   const approvalRate = total > 0 ? Math.round((approved / total) * 100) : 0;
   const hasNew = diffSincePublish != null && diffSincePublish > 0;
+  const accent = STAT_ACCENT[icon] || STAT_ACCENT['◈'];
 
   return (
     <div
-      className="rounded-xl border p-4 flex flex-col gap-2"
-      style={{ background: 'rgba(255,255,255,0.025)', borderColor: 'rgba(255,255,255,0.07)' }}
+      className="rounded-xl border p-4 flex flex-col gap-2.5 relative overflow-hidden"
+      style={{ background: accent.glow, borderColor: accent.border }}
     >
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-arabic text-ink-500">{label}</span>
-        <span className="text-[11px] font-mono text-ink-700">{icon}</span>
+      {/* Decorative top-right glow blob */}
+      <div
+        className="absolute top-0 right-0 w-16 h-16 rounded-full pointer-events-none"
+        style={{ background: accent.glow, filter: 'blur(16px)', transform: 'translate(30%, -30%)' }}
+      />
+
+      <div className="flex items-center justify-between relative">
+        <span className="text-[10px] font-arabic text-ink-400 tracking-wide">{label}</span>
+        <span className="text-[13px] font-mono" style={{ color: accent.fg }}>{icon}</span>
       </div>
 
-      <div className="flex items-end gap-2">
-        <span className="text-2xl font-bold font-mono" style={{ color: 'var(--accent)' }}>
+      <div className="flex items-end gap-2 relative">
+        <span className="text-3xl font-bold font-mono leading-none" style={{ color: accent.fg }}>
           {approved}
         </span>
         <span className="text-sm font-mono text-ink-600 mb-0.5">/ {total}</span>
@@ -200,14 +215,14 @@ function StatCard({ label, total, approved, icon, diffSincePublish }) {
         )}
       </div>
 
-      <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+      <div className="h-1 w-full rounded-full overflow-hidden relative" style={{ background: 'rgba(255,255,255,0.06)' }}>
         <div
           className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${approvalRate}%`, background: 'var(--accent)' }}
+          style={{ width: `${approvalRate}%`, background: accent.fg }}
         />
       </div>
 
-      <p className="text-[9px] font-mono text-ink-700">{approvalRate}% معتمد</p>
+      <p className="text-[9px] font-mono text-ink-700 relative">{approvalRate}% معتمد</p>
     </div>
   );
 }
@@ -357,15 +372,25 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
   return (
     <div className="flex flex-col gap-5">
 
-      {/* Subject header */}
+      {/* ── Subject header ──────────────────────────────────────────────── */}
       <div
-        className="rounded-xl border p-5"
+        className="rounded-xl border p-5 relative overflow-hidden"
         style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
       >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h2 className="font-arabic text-xl font-bold text-ink-100">{s.nameAr}</h2>
+        {/* subtle ambient glow behind the title */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: s.isPublishable
+              ? 'radial-gradient(ellipse at 80% 0%, rgba(212,137,30,0.06) 0%, transparent 60%)'
+              : 'radial-gradient(ellipse at 80% 0%, rgba(255,255,255,0.02) 0%, transparent 60%)',
+          }}
+        />
+
+        <div className="flex items-start justify-between gap-4 relative">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <h2 className="font-arabic text-xl font-bold text-ink-100 truncate">{s.nameAr}</h2>
               <TrackBadge track={s.track} />
               {s.isMajor && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>
@@ -388,27 +413,34 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
               </p>
             )}
 
-            <p className="text-[10px] font-mono text-ink-700 mt-1">{s.id}</p>
+            <p className="text-[10px] font-mono text-ink-700 mt-1 tracking-widest">{s.id}</p>
           </div>
 
-          <div className="shrink-0 text-left">
+          {/* Status pill — right side */}
+          <div className="shrink-0">
             {s.isPublishable ? (
               s.hasNewContent ? (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-                  style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)' }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                <div
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
+                  style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)' }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 animate-pulse" />
                   <span className="text-[11px] font-arabic text-amber-300">يوجد محتوى جديد</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-                  style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}>
+                <div
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
+                  style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
                   <span className="text-[11px] font-arabic text-green-300">محدّث</span>
                 </div>
               )
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
                 <span className="w-1.5 h-1.5 rounded-full bg-ink-700 shrink-0" />
                 <span className="text-[11px] font-arabic text-ink-600">لا يوجد محتوى معتمد</span>
               </div>
@@ -442,17 +474,23 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
         </div>
       )}
 
-      {/* Publish action */}
+      {/* ── Publish action ───────────────────────────────────────────────── */}
       <div
-        className="rounded-xl border p-5"
-        style={{ background: 'rgba(212,137,30,0.04)', borderColor: 'rgba(212,137,30,0.15)' }}
+        className="rounded-xl border p-5 relative overflow-hidden"
+        style={{ background: 'rgba(212,137,30,0.04)', borderColor: 'rgba(212,137,30,0.18)' }}
       >
-        <div className="flex items-center justify-between gap-4 mb-3">
+        {/* Corner accent */}
+        <div
+          className="absolute top-0 left-0 w-24 h-24 pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(212,137,30,0.09) 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }}
+        />
+
+        <div className="flex items-start justify-between gap-4 mb-4 relative">
           <div>
-            <p className="font-arabic text-sm font-semibold text-ink-200 mb-0.5">
+            <p className="font-arabic text-sm font-semibold text-ink-200 mb-1">
               {s.isPublished ? 'نشر تحديث للتطبيق' : 'نشر للمرة الأولى'}
             </p>
-            <p className="text-[11px] font-arabic text-ink-500">
+            <p className="text-[11px] font-arabic text-ink-500 leading-relaxed">
               {s.isPublishable
                 ? `سيتم نشر ${s.lessons.approved} درس معتمد إلى تطبيق بشير مباشرة`
                 : 'لا يوجد دروس معتمدة — أضف محتوى أولاً'}
@@ -460,12 +498,12 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
           </div>
 
           <PrimaryBtn onClick={onPublish} loading={publishing} disabled={!s.isPublishable}>
-            {publishing ? 'جارٍ النشر…' : s.isPublished ? 'نشر تحديث (delta) ⬆' : 'نشر للتطبيق ⬆'}
+            {publishing ? 'جارٍ النشر…' : s.isPublished ? '⬆ نشر تحديث (delta)' : '⬆ نشر للتطبيق'}
           </PrimaryBtn>
         </div>
 
         {s.isPublished && (
-          <div className="border-t pt-3 flex flex-col gap-2" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="border-t pt-3.5 flex flex-col gap-2.5 relative" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
 
             {/* ── Major release ── */}
             {showMajorConfirm ? (
@@ -484,7 +522,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
               <button
                 onClick={() => setShowMajorConfirm(true)}
                 disabled={publishing || !s.isPublishable}
-                className="text-[10px] font-mono text-sky-600/70 hover:text-sky-400/80 transition-colors"
+                className="text-[10px] font-mono text-sky-600/70 hover:text-sky-400/80 transition-colors text-right"
               >
                 ★ نشر إصدار رئيسي (major bump)
               </button>
@@ -507,7 +545,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
               <button
                 onClick={() => setShowFullConfirm(true)}
                 disabled={publishing || !s.isPublishable}
-                className="text-[10px] font-mono text-ink-600 hover:text-amber-400/70 transition-colors"
+                className="text-[10px] font-mono text-ink-600 hover:text-amber-400/70 transition-colors text-right"
               >
                 ↻ نشر كامل اضطراري (mode: full)
               </button>
