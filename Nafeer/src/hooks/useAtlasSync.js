@@ -176,8 +176,8 @@ export function useAtlasSync() {
             subjectId,
             sections: lessonSections.map((s) => ({
               contentId:       s.id,
-              subjectId,                         // ← ADDED
-              lessonContentId: lessonId,         // ← ADDED
+              subjectId,
+              lessonContentId: lessonId,         
               title:           s.title,
               order:           s.order,
               learningType:    s.learningType || 'UNDERSTANDING',
