@@ -337,8 +337,8 @@ export function useAtlasSync() {
 
   // ── Sync feed item ────────────────────────────────────────────────────────
   const syncFeedItem = useCallback(async (feedItemId, subjectId) => {
-    const item = feedItems.find((f) => f.id === feedItemId);
-    if (!item) return;
+    const item = useFeedStore.getState().feedItems.find((f) => f.id === feedItemId);
+  if (!item) return;
     try {
       setLoading();
       const payload = {
@@ -387,12 +387,12 @@ export function useAtlasSync() {
       setError(`فشل حفظ عنصر التغذية: ${e.message}`);
       throw e;
     }
-  }, [feedItems, apiFetch, setLoading, setDone, setError, updateFeedItem]);
+  }, [apiFetch, setLoading, setDone, setError, updateFeedItem]);
 
   // ── Sync question ─────────────────────────────────────────────────────────
   const syncQuestion = useCallback(async (questionId, subjectId) => {
-    const question = questions.find((q) => q.id === questionId);
-    if (!question) return;
+    const question = useQuizStore.getState().questions.find((q) => q.id === questionId);
+  if (!question) return
     try {
       setLoading();
       const payload = {
@@ -490,6 +490,33 @@ export function useAtlasSync() {
     }
   }, [exams, apiFetch]);
 
+  // sync Tag 
+  // In useAtlasSync.js, add this function:
+const syncTag = useCallback(async (tagId, subjectId) => {
+  const tag = useConceptStore.getState().tags.find((t) => t.id === tagId);
+  if (!tag) return;
+  try {
+    setLoading();
+    const res = await fetch(`/api/content/tags/${tagId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nameAr: tag.nameAr, nameEn: tag.nameEn || null }),
+    });
+    const json = await res.json();
+    if (!json.ok && res.status === 404) {
+      await apiFetch('/api/content/tags', {
+        method: 'POST',
+        body: JSON.stringify({ contentId: tagId, subjectId, nameAr: tag.nameAr, nameEn: tag.nameEn || null }),
+      });
+    } else if (!json.ok) {
+      throw new Error(json.error);
+    }
+    setDone();
+  } catch (e) {
+    setError(`فشل حفظ الوسم: ${e.message}`);
+  }
+}, [apiFetch, setLoading, setDone, setError]);
+
   // ── Submit for review ─────────────────────────────────────────────────────
   // Moves a content item from 'draft' → 'review'.
   // Updates local atlasStatus optimistically so the UI reflects instantly.
@@ -576,6 +603,7 @@ export function useAtlasSync() {
     syncFeedItem,
     syncQuestion,
     syncExam,
+    syncTag,
     submitForReview,
     approveAndSync,
 
