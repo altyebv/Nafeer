@@ -23,15 +23,15 @@ export async function createFeedItem(data, contributorId) {
 }
 
 // ─── updateFeedItem ───────────────────────────────────────────────────────────
+// ─── updateFeedItem ───────────────────────────────────────────────────────────
 export async function updateFeedItem(contentId, updates, contributorId, note = '', skipRedraft = false) {
   await connectDB();
 
   const current = await FeedItem.findOne({ contentId });
   if (!current) return null;
 
-  
-  const { updates: bumpedUpdates } = applyVersionBump(
-    { ...updates }, current, contributorId, 'edited', note, skipRedraft
+  const { updates: bumpedUpdates } = applyVersionBump(   // ← destructure
+    { ...updates }, current, contributorId, 'edited', note, '', skipRedraft
   );
 
   return FeedItem.findOneAndUpdate(
