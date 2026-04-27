@@ -65,9 +65,10 @@ export async function POST(request) {
       title:       title.trim(),
       order:       nextOrder,
       description: description?.trim() || null,
+      status:      'approved', 
       createdBy:   actorId,
       changelog:   initialChangelog(actorId, 'unit created via admin curriculum panel'),
-    });
+});
 
     return NextResponse.json({
       ok: true,

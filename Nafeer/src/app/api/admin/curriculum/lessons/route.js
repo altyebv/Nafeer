@@ -61,8 +61,8 @@ export async function POST(request) {
       title:            title.trim(),
       order,
       estimatedMinutes,
-      status:           'draft',
-      changelog:        initialChangelog(actorId, 'seed', `درس جديد أضافه المشرف`),
+      status:           'approved',  
+      changelog:        initialChangelog(actorId, `درس جديد أضافه المشرف`),
       createdBy:        actorId,
     });
 
