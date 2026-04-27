@@ -66,6 +66,7 @@ export async function POST(request) {
 // ─── Single item ──────────────────────────────────────────────────────────────
 
 // PUT /api/content/feed-items/[id]
+// PUT /api/content/feed-items/[id]
 export async function PUT(request, { params }) {
   try {
     await connectDB();
@@ -75,22 +76,23 @@ export async function PUT(request, { params }) {
     const { note, ...updates } = body;
 
     const allowed = [
-  'type', 'contentAr', 'contentEn', 'back', 'imageUrl',
-  'interactionType', 'correctAnswer', 'options', 'explanation',
-  'questionContentId', 'priority', 'order',
-  'lessonContentId', 'unitContentId', 'subjectId', 'conceptContentId',
-];
+      'type', 'contentAr', 'contentEn', 'back', 'imageUrl',
+      'interactionType', 'correctAnswer', 'options', 'explanation',
+      'questionContentId', 'priority', 'order',
+      'lessonContentId', 'unitContentId', 'subjectId', 'conceptContentId',
+    ];
     const safeUpdates = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const item = await createFeedItem(
-      { ...body,
-        contentId: body.contentId || generateId('feed'),
-        status: user.role === 'admin' ? 'approved' : undefined,
-      },
-      actorId
+    const item = await updateFeedItem(      // ← was createFeedItem
+      (await params).id,
+      safeUpdates,
+      actorId,
+      note || '',
+      user.role === 'admin'               // skipRedraft
     );
+    if (!item) return err('عنصر التغذية غير موجود', 404);
 
     return ok(item);
   } catch (e) {
