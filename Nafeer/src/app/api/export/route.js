@@ -98,7 +98,7 @@ export async function GET(request) {
     }, {});
 
     const exportData = {
-      version: '2.0',
+      version: '1.0',
       exportedAt: new Date().toISOString(),
       exportedBy: user.email,
       subject: {

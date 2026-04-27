@@ -353,7 +353,7 @@ async function handleDeltaPublish({
   const { entityIndex, patches, deletedByType, stats: deltaStats } =
     await buildAndUploadDelta({
       subjectId,
-      exportVersion: '2.0',
+      exportVersion: '1.0',
       snapshot,
       prevEntry,
     });

@@ -38,7 +38,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       manifest: {
-        schemaVersion: manifest?.schemaVersion || '2.0',
+        schemaVersion: manifest?.schemaVersion || '1.0',
         updatedAt: manifest?.updatedAt || null,
         featureFlags: manifest?.featureFlags || null,
         subjects: manifest?.subjects || [],
