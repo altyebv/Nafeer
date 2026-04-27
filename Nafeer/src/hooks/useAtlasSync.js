@@ -1,11 +1,11 @@
 'use client';
 import { useCallback } from 'react';
-import { useEditorStore }  from '@/store/editorStore';
+import { useEditorStore } from '@/store/editorStore';
 import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import { useConceptStore } from '@/store/conceptStore';
-import { useFeedStore }    from '@/store/feedStore';
-import { useQuizStore }    from '@/store/quizStore';
+import { useFeedStore } from '@/store/feedStore';
+import { useQuizStore } from '@/store/quizStore';
 
 // ─── useAtlasSync ─────────────────────────────────────────────────────────────
 // Exposes explicit save functions for each content type.
@@ -15,27 +15,27 @@ import { useQuizStore }    from '@/store/quizStore';
 // ReferenceError that silently killed every create/update for those three types.
 //
 export function useAtlasSync() {
-  const { setSyncStatus }                             = useEditorStore();
-  const { lessons, updateLesson, loadFromAtlas }      = useSubjectStore();
-  const { sections, blocks }                          = useContentStore();
-  const { updateConcept }                             = useConceptStore();
-  const { updateFeedItem }                            = useFeedStore();
-  const { exams, updateQuestion }                     = useQuizStore();
-  const { isSyncing, syncError, lastSynced }          = useEditorStore();
+  const { setSyncStatus } = useEditorStore();
+  const { lessons, updateLesson, loadFromAtlas } = useSubjectStore();
+  const { sections, blocks } = useContentStore();
+  const { updateConcept } = useConceptStore();
+  const { updateFeedItem } = useFeedStore();
+  const { exams, updateQuestion } = useQuizStore();
+  const { isSyncing, syncError, lastSynced } = useEditorStore();
 
   // ── Internal helpers ────────────────────────────────────────────────────────
 
   const setLoading = useCallback(() =>
     setSyncStatus({ isSyncing: true, syncError: null, lastSynced: null }),
-  [setSyncStatus]);
+    [setSyncStatus]);
 
   const setDone = useCallback(() =>
     setSyncStatus({ isSyncing: false, syncError: null, lastSynced: new Date().toISOString() }),
-  [setSyncStatus]);
+    [setSyncStatus]);
 
   const setError = useCallback((msg) =>
     setSyncStatus({ isSyncing: false, syncError: msg, lastSynced: null }),
-  [setSyncStatus]);
+    [setSyncStatus]);
 
   const apiFetch = useCallback(async (url, options = {}) => {
     const res = await fetch(url, {
@@ -53,7 +53,7 @@ export function useAtlasSync() {
   const approveAtlasResource = useCallback(async (resourcePath, contentId) => {
     await apiFetch(`/api/content/${resourcePath}/${contentId}`, {
       method: 'PATCH',
-      body:   JSON.stringify({ status: 'approved', note: 'اعتماد مباشر من لوحة المشرف' }),
+      body: JSON.stringify({ status: 'approved', note: 'اعتماد مباشر من لوحة المشرف' }),
     });
   }, [apiFetch]);
 
@@ -63,25 +63,25 @@ export function useAtlasSync() {
       setLoading();
       await apiFetch('/api/content/subject', {
         method: 'POST',
-        body:   JSON.stringify({ subjectId }),
+        body: JSON.stringify({ subjectId }),
       });
       try {
         const atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`);
         if (atlasData?.units) {
           const units = atlasData.units.map((u) => ({
-            id:    u.contentId,
+            id: u.contentId,
             title: u.title,
             order: u.order,
           }));
           const loadedLessons = atlasData.units.flatMap((u) =>
             (u.lessons || []).map((l) => ({
-              id:               l.contentId,
-              unitId:           u.contentId,
-              title:            l.title,
-              order:            l.order,
+              id: l.contentId,
+              unitId: u.contentId,
+              title: l.title,
+              order: l.order,
               estimatedMinutes: l.estimatedMinutes || 15,
-              summary:          l.summary          || null,
-              atlasStatus:      l.status           || 'draft',
+              summary: l.summary || null,
+              atlasStatus: l.status || 'draft',
             }))
           );
           const subject = atlasData.subject
@@ -106,19 +106,44 @@ export function useAtlasSync() {
     const lesson = lessons.find((l) => l.id === lessonId);
     if (!lesson) return;
     const lessonSections = sections.filter((s) => s.lessonId === lessonId);
-    const sectionIds     = lessonSections.map((s) => s.id);
-    const lessonBlocks   = blocks.filter((b) => sectionIds.includes(b.sectionId));
+    const sectionIds = lessonSections.map((s) => s.id);
+    const lessonBlocks = blocks.filter((b) => sectionIds.includes(b.sectionId));
     try {
       setLoading();
-      const lessonData = await apiFetch(`/api/content/lessons/${lessonId}`, {
+      // ── Upsert: PUT first, POST if lesson doesn't exist yet in DB ──────────
+      const lessonRes = await fetch(`/api/content/lessons/${lessonId}`, {
         method: 'PUT',
-        body:   JSON.stringify({ title: lesson.title, estimatedMinutes: lesson.estimatedMinutes, summary: lesson.summary || null }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: lesson.title, estimatedMinutes: lesson.estimatedMinutes,
+          summary: lesson.summary || null,
+        }),
       });
-      if (lessonData?.status) updateLesson(lessonId, { atlasStatus: lessonData.status });
+      const lessonJson = await lessonRes.json();
+
+      if (!lessonJson.ok && lessonRes.status === 404) {
+        const created = await apiFetch('/api/content/lessons', {
+          method: 'POST',
+          body: JSON.stringify({
+            contentId: lessonId,
+            subjectId,
+            unitContentId: lesson.unitId,
+            title: lesson.title,
+            order: lesson.order,
+            estimatedMinutes: lesson.estimatedMinutes || 15,
+            summary: lesson.summary || null,
+          }),
+        });
+        if (created?.status) updateLesson(lessonId, { atlasStatus: created.status });
+      } else if (!lessonJson.ok) {
+        throw new Error(lessonJson.error || 'خطأ غير معروف');
+      } else {
+        if (lessonJson.data?.status) updateLesson(lessonId, { atlasStatus: lessonJson.data.status });
+      }
       if (lessonSections.length > 0) {
         await apiFetch('/api/content/sections', {
           method: 'POST',
-          body:   JSON.stringify({
+          body: JSON.stringify({
             lessonContentId: lessonId,
             subjectId,
             sections: lessonSections.map((s) => ({
@@ -132,7 +157,7 @@ export function useAtlasSync() {
       if (lessonBlocks.length > 0) {
         await apiFetch('/api/content/blocks', {
           method: 'POST',
-          body:   JSON.stringify({
+          body: JSON.stringify({
             blocks: lessonBlocks.map((b) => ({
               contentId: b.id, sectionContentId: b.sectionId, type: b.type, subjectId,
               content: b.content || '', order: b.order, conceptRef: b.conceptRef || null,
@@ -148,40 +173,61 @@ export function useAtlasSync() {
     }
   }, [lessons, sections, blocks, apiFetch, setLoading, setDone, setError, updateLesson]);
 
-  // ── Sync lesson meta only ──────────────────────────────────────────────────
-  const syncLesson = useCallback(async (lessonId) => {
-    const lesson = lessons.find((l) => l.id === lessonId);
-    if (!lesson) return;
-    try {
-      setLoading();
-      const data = await apiFetch(`/api/content/lessons/${lessonId}`, {
-        method: 'PUT',
-        body:   JSON.stringify({
-          title: lesson.title, estimatedMinutes: lesson.estimatedMinutes,
-          summary: lesson.summary || null, metadata: lesson.metadata || null,
-          parentLesson: lesson.parentLesson || null, variationType: lesson.variationType || null,
-          variationNote: lesson.variationNote || null,
+ // ── syncLesson ───────────────────────────────────────────────────────────────
+const syncLesson = useCallback(async (lessonId, subjectId) => {
+  const lesson = lessons.find((l) => l.id === lessonId);
+  if (!lesson) return;
+  try {
+    setLoading();
+    const res  = await fetch(`/api/content/lessons/${lessonId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: lesson.title, estimatedMinutes: lesson.estimatedMinutes,
+        summary: lesson.summary || null, metadata: lesson.metadata || null,
+        parentLesson: lesson.parentLesson || null, variationType: lesson.variationType || null,
+        variationNote: lesson.variationNote || null,
+      }),
+    });
+    const json = await res.json();
+
+    if (!json.ok && res.status === 404) {
+      const created = await apiFetch('/api/content/lessons', {
+        method: 'POST',
+        body: JSON.stringify({
+          contentId:        lessonId,
+          subjectId,
+          unitContentId:    lesson.unitId,
+          title:            lesson.title,
+          order:            lesson.order,
+          estimatedMinutes: lesson.estimatedMinutes || 15,
+          summary:          lesson.summary || null,
         }),
       });
-      if (data?.status) updateLesson(lessonId, { atlasStatus: data.status });
-      setDone();
-    } catch (e) {
-      setError(`فشل حفظ الدرس: ${e.message}`);
-      throw e;
+      if (created?.status) updateLesson(lessonId, { atlasStatus: created.status });
+    } else if (!json.ok) {
+      throw new Error(json.error || 'خطأ غير معروف');
+    } else {
+      if (json.data?.status) updateLesson(lessonId, { atlasStatus: json.data.status });
     }
-  }, [lessons, apiFetch, setLoading, setDone, setError, updateLesson]);
+    setDone();
+  } catch (e) {
+    setError(`فشل حفظ الدرس: ${e.message}`);
+    throw e;
+  }
+}, [lessons, apiFetch, setLoading, setDone, setError, updateLesson]);
 
   // ── Sync sections + blocks ────────────────────────────────────────────────
   const syncLessonContent = useCallback(async (lessonId, subjectId) => {
     const lessonSections = sections.filter((s) => s.lessonId === lessonId);
-    const sectionIds     = lessonSections.map((s) => s.id);
-    const lessonBlocks   = blocks.filter((b) => sectionIds.includes(b.sectionId));
+    const sectionIds = lessonSections.map((s) => s.id);
+    const lessonBlocks = blocks.filter((b) => sectionIds.includes(b.sectionId));
     try {
       setLoading();
       if (lessonSections.length > 0) {
         await apiFetch('/api/content/sections', {
           method: 'POST',
-          body:   JSON.stringify({
+          body: JSON.stringify({
             lessonContentId: lessonId, subjectId,
             sections: lessonSections.map((s) => ({
               contentId: s.id, title: s.title, order: s.order,
@@ -194,7 +240,7 @@ export function useAtlasSync() {
       if (lessonBlocks.length > 0) {
         await apiFetch('/api/content/blocks', {
           method: 'POST',
-          body:   JSON.stringify({
+          body: JSON.stringify({
             blocks: lessonBlocks.map((b) => ({
               contentId: b.id, sectionContentId: b.sectionId, type: b.type,
               content: b.content || '', order: b.order,
@@ -223,7 +269,7 @@ export function useAtlasSync() {
         difficulty: concept.difficulty || 1, extraData: concept.extraData || null,
         tagIds: concept.tagIds || [],
       };
-      const res  = await fetch(`/api/content/concepts/${conceptId}`, {
+      const res = await fetch(`/api/content/concepts/${conceptId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const json = await res.json();
@@ -286,7 +332,7 @@ export function useAtlasSync() {
         options: item.options || null, explanation: item.explanation || null,
         questionContentId: item.questionId || null, priority: item.priority || 1, order: item.order || 0,
       };
-      const res  = await fetch(`/api/content/feed-items/${feedItemId}`, {
+      const res = await fetch(`/api/content/feed-items/${feedItemId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const json = await res.json();
@@ -296,9 +342,9 @@ export function useAtlasSync() {
           method: 'POST',
           body: JSON.stringify({
             ...payload, contentId: feedItemId, subjectId,
-            conceptContentId: item.conceptId  || null,
-            lessonContentId:  item.lessonId   || null,
-            unitContentId:    item.unitId     || null,  // ← ADD
+            conceptContentId: item.conceptId || null,
+            lessonContentId: item.lessonId || null,
+            unitContentId: item.unitId || null,  // ← ADD
           }),
         });
         atlasStatus = created?.status || 'draft';
@@ -335,7 +381,7 @@ export function useAtlasSync() {
         sectionContentId: question.sectionId || null, isCheckpoint: question.isCheckpoint || false,
         conceptIds: question.conceptIds || [],
       };
-      const res  = await fetch(`/api/content/questions/${questionId}`, {
+      const res = await fetch(`/api/content/questions/${questionId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const json = await res.json();
@@ -372,7 +418,7 @@ export function useAtlasSync() {
         examType: exam.examType || null, questionContentIds: exam.questionIds || [],
         sectionsJson: exam.sectionsJson || null,
       };
-      const res  = await fetch(`/api/content/exams/${examId}`, {
+      const res = await fetch(`/api/content/exams/${examId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const json = await res.json();
@@ -398,8 +444,8 @@ export function useAtlasSync() {
       await apiFetch(`/api/content/${path}/${contentId}`, {
         method: 'PATCH', body: JSON.stringify({ status: 'review', note: 'إرسال للمراجعة من المحرر' }),
       });
-      if (type === 'lesson')   updateLesson(contentId,   { atlasStatus: 'review' });
-      if (type === 'concept')  updateConcept(contentId,  { atlasStatus: 'review' });
+      if (type === 'lesson') updateLesson(contentId, { atlasStatus: 'review' });
+      if (type === 'concept') updateConcept(contentId, { atlasStatus: 'review' });
       if (type === 'feedItem') updateFeedItem(contentId, { atlasStatus: 'review' });
       if (type === 'question') updateQuestion(contentId, { atlasStatus: 'review' });
       setDone();
@@ -441,12 +487,12 @@ export function useAtlasSync() {
     syncQuestion,
     syncQuestionAndApprove: (questionId, subjectId) => syncQuestion(questionId, subjectId, true),
     syncExam, submitForReview, approveAndSync,
-    deleteSection:  (id) => deleteRemote(`/api/content/sections/${id}`),
-    deleteBlock:    (id) => deleteRemote(`/api/content/blocks/${id}`),
-    deleteConcept:  (id) => deleteRemote(`/api/content/concepts/${id}`),
-    deleteTag:      (id) => deleteRemote(`/api/content/tags/${id}`),
+    deleteSection: (id) => deleteRemote(`/api/content/sections/${id}`),
+    deleteBlock: (id) => deleteRemote(`/api/content/blocks/${id}`),
+    deleteConcept: (id) => deleteRemote(`/api/content/concepts/${id}`),
+    deleteTag: (id) => deleteRemote(`/api/content/tags/${id}`),
     deleteFeedItem: (id) => deleteRemote(`/api/content/feed-items/${id}`),
     deleteQuestion: (id) => deleteRemote(`/api/content/questions/${id}`),
-    deleteExam:     (id) => deleteRemote(`/api/content/exams/${id}`),
+    deleteExam: (id) => deleteRemote(`/api/content/exams/${id}`),
   };
 }
