@@ -29,7 +29,7 @@ export async function updateConcept(contentId, updates, contributorId, note = ''
   const current = await Concept.findOne({ contentId });
   if (!current) return null;
 
-  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note);
+  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, isAdminActor);
 
   return Concept.findOneAndUpdate(
     { contentId },

@@ -31,7 +31,7 @@ export async function updateQuestion(contentId, updates, contributorId, note = '
   const current = await Question.findOne({ contentId });
   if (!current) return null;
 
-  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note);
+  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, isAdminActor);
 
   return Question.findOneAndUpdate(
     { contentId },
