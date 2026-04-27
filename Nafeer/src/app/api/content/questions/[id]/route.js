@@ -47,7 +47,13 @@ export async function PATCH(request, { params }) {
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
 
-    const question = await updateQuestionStatus((await params).id, status, actorId, note || '');
+     const question = await createQuestion(
+      { 
+        ...body, contentId: body.contentId || generateId('q'),
+        status: user.role === 'admin' ? 'approved' : undefined,
+      },
+      actorId
+    );
     if (!question) return err('السؤال غير موجود', 404);
 
     return ok(question);

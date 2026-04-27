@@ -45,9 +45,13 @@ export async function POST(request) {
     }
 
     const user = await requireSubjectAccess(subjectId);
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const item = await createFeedItem(
-      { ...body, contentId: body.contentId || generateId('feed') },
-      user.id
+      { ...body,
+        contentId: body.contentId || generateId('feed'),
+        status: user.role === 'admin' ? 'approved' : undefined,
+      },
+      actorId
     );
 
     return ok(item);
@@ -80,8 +84,13 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const item = await updateFeedItem((await params).id, safeUpdates, actorId, note || '');
-    if (!item) return err('عنصر التغذية غير موجود', 404);
+    const item = await createFeedItem(
+      { ...body,
+        contentId: body.contentId || generateId('feed'),
+        status: user.role === 'admin' ? 'approved' : undefined,
+      },
+      actorId
+    );
 
     return ok(item);
   } catch (e) {

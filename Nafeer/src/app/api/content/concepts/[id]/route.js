@@ -46,7 +46,15 @@ export async function PATCH(request, { params }) {
       return err('الاعتماد متاح للمشرفين فقط', 403);
     }
 
-    const concept = await updateConceptStatus((await params).id, status, actorId, note || '');
+    const concept = await createConcept(
+    {
+        ...body,
+        contentId: body.contentId || generateId('concept'),
+        status: user.role === 'admin' ? 'approved' : undefined, // admins skip review
+    },
+    actorId
+    );
+    
     if (!concept) return err('المفهوم غير موجود', 404);
 
     return ok(concept);
