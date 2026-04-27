@@ -55,6 +55,7 @@ export async function POST(request) {
       summary:          body.summary          || null,
       createdBy:        actorId,
       changelog:        initialChangelog(actorId),
+      status: user.role === 'admin' ? 'approved' : undefined, 
     });
 
     // Track stat — fire-and-forget
