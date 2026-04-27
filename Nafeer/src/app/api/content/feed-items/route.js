@@ -46,7 +46,10 @@ export async function POST(request) {
     const user = await requireSubjectAccess(subjectId);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const item = await createFeedItem(
-      { ...body, contentId: body.contentId || generateId('feed') },
+      { ...body,
+        contentId: body.contentId || generateId('feed'),
+        status: user.role === 'admin' ? 'approved' : undefined,
+      },
       actorId
     );
 

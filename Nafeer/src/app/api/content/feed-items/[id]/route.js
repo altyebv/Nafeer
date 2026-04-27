@@ -94,13 +94,21 @@ export async function PUT(request, { params }) {
 // PATCH /api/content/feed-items/[id]
 export async function PATCH(request, { params }) {
   try {
-    await connectDB();
     const user = await requireContributor();
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
+
+    // ── Validate concept linkage BEFORE writing anything ──────────────────────
+    if (status === 'approved') {
+      const feedItem = await getFeedItemById((await params).id); // or FeedItem.findOne(...)
+      const concept  = feedItem && await Concept.findOne({ contentId: feedItem.conceptContentId }).lean();
+      if (!concept || concept.status !== 'approved') {
+        return err('يجب اعتماد المفهوم المرتبط أولاً قبل اعتماد عنصر التغذية', 422);
+      }
+    }
 
     const item = await updateFeedItemStatus((await params).id, status, actorId, note || '');
     if (!item) return err('عنصر التغذية غير موجود', 404);

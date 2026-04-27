@@ -43,7 +43,10 @@ export async function POST(request) {
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
 
     const question = await createQuestion(
-      { ...body, contentId: body.contentId || generateId('q') },
+      { 
+        ...body, contentId: body.contentId || generateId('q'),
+        status: user.role === 'admin' ? 'approved' : undefined,
+      },
       actorId
     );
 
