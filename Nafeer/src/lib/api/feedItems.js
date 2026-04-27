@@ -23,13 +23,13 @@ export async function createFeedItem(data, contributorId) {
 }
 
 // ─── updateFeedItem ───────────────────────────────────────────────────────────
-export async function updateFeedItem(contentId, updates, contributorId, note = '') {
+export async function updateFeedItem(contentId, updates, contributorId, note = '', skipRedraft = false) {
   await connectDB();
 
   const current = await FeedItem.findOne({ contentId });
   if (!current) return null;
 
-  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, isAdminActor);
+  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, skipRedraft);
 
   return FeedItem.findOneAndUpdate(
     { contentId },

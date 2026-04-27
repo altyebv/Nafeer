@@ -23,13 +23,15 @@ export async function createConcept(data, contributorId) {
 }
 
 // ─── updateConcept ────────────────────────────────────────────────────────────
-export async function updateConcept(contentId, updates, contributorId, note = '') {
+export async function updateConcept(contentId, updates, contributorId, note = '', skipRedraft = false) {
   await connectDB();
 
   const current = await Concept.findOne({ contentId });
   if (!current) return null;
 
-  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, isAdminActor);
+  // Note: applyVersionBump returns { updates, diff } — destructure accordingly.
+  // skipRedraft goes in the 7th slot; versionLabel (6th) is unused for concepts.
+  const { updates: bumpedUpdates } = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, '', skipRedraft);
 
   return Concept.findOneAndUpdate(
     { contentId },

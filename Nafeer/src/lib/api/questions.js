@@ -25,13 +25,13 @@ export async function createQuestion(data, contributorId) {
   });
 }
 
-export async function updateQuestion(contentId, updates, contributorId, note = '') {
+export async function updateQuestion(contentId, updates, contributorId, note = '', skipRedraft = false) {
   await connectDB();
 
   const current = await Question.findOne({ contentId });
   if (!current) return null;
 
-  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, isAdminActor);
+  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, skipRedraft);
 
   return Question.findOneAndUpdate(
     { contentId },
@@ -40,7 +40,7 @@ export async function updateQuestion(contentId, updates, contributorId, note = '
   ).lean();
 }
 
-export async function updateQuestionStatus(contentId, newStatus, contributorId, note = '') {
+export async function updateQuestionStatus(contentId, newStatus, contributorId, note = '',) {
   await connectDB();
 
   const current = await Question.findOne({ contentId });

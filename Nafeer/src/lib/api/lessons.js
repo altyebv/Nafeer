@@ -103,8 +103,10 @@ export async function getLessonWithContent(contentId) {
 
 // ─── updateLesson ─────────────────────────────────────────────────────────────
 // Updates lesson with versioning + writes a LessonHistory record with diff.
+// Pass skipRedraft=true when the actor is an admin so approved test lessons
+// don't silently reset to draft on every admin edit.
 export async function updateLesson(
-  contentId, updates, contributorId, note = '', versionLabel = '', contributorName = ''
+  contentId, updates, contributorId, note = '', versionLabel = '', contributorName = '', skipRedraft = false
 ) {
   await connectDB();
 
@@ -117,7 +119,8 @@ export async function updateLesson(
     contributorId,
     'edited',
     note,
-    versionLabel
+    versionLabel,
+    skipRedraft
   );
 
   const updated = await Lesson.findOneAndUpdate(
