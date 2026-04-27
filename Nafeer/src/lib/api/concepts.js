@@ -102,7 +102,9 @@ export async function updateTag(contentId, updates, contributorId) {
   await connectDB();
   const current = await Tag.findOne({ contentId });
   if (!current) return null;
-  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited');
+  const { updates: bumpedUpdates } = applyVersionBump(
+  { ...updates }, current, contributorId, 'edited'
+  );
   return Tag.findOneAndUpdate({ contentId }, { $set: bumpedUpdates }, { new: true }).lean();
 }
 
