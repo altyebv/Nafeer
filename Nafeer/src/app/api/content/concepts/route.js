@@ -44,9 +44,13 @@ export async function POST(request) {
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
 
     const concept = await createConcept(
-      { ...body, contentId: body.contentId || generateId('concept') },
-      actorId
-    );
+    {
+        ...body,
+        contentId: body.contentId || generateId('concept'),
+        status: user.role === 'admin' ? 'approved' : undefined, // admins skip review
+    },
+    actorId
+);
 
     return ok(concept);
   } catch (e) {
