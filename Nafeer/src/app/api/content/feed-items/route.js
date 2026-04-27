@@ -84,7 +84,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const item = await updateFeedItem(params.id, safeUpdates, actorId, note || '');
+    const item = await updateFeedItem(params.id, safeUpdates, actorId, note || '',user.role === 'admin');
     if (!item) return err('عنصر التغذية غير موجود', 404);
 
     return ok(item);

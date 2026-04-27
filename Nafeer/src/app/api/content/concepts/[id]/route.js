@@ -20,7 +20,7 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
-    const concept = await updateConcept((await params).id, safeUpdates, actorId, note || '');
+    const concept = await updateConcept((await params).id, safeUpdates, actorId, note || '',user.role === 'admin');
     if (!concept) return err('المفهوم غير موجود', 404);
 
     return ok(concept);

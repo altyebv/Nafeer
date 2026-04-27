@@ -47,7 +47,7 @@ export async function PUT(request, { params }) {
       note || '',
       versionLabel || '',
       user.name || '',
-      user.role === 'admin'   // skipRedraft: admins editing test lessons must not reset to draft
+      user.role === 'admin'   
     );
     if (!lesson) return err('الدرس غير موجود', 404);
 

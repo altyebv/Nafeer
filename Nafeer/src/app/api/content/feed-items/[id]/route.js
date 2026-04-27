@@ -119,7 +119,7 @@ export async function PATCH(request, { params }) {
       }
     }
 
-    const item = await updateFeedItemStatus((await params).id, status, actorId, note || '');
+    const item = await updateFeedItemStatus((await params).id, status, actorId, note || '',user.role === 'admin');
     if (!item) return err('عنصر التغذية غير موجود', 404);
 
     return ok(item);
