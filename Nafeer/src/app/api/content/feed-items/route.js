@@ -78,7 +78,7 @@ export async function PUT(request, { params }) {
     const allowed = [
       'type', 'contentAr', 'contentEn', 'back', 'imageUrl',
       'interactionType', 'correctAnswer', 'options', 'explanation',
-      'questionContentId', 'priority', 'order',
+      'questionContentId', 'priority', 'order','conceptContentId', 'lessonContentId', 'unitContentId', 'subjectId',
     ];
     const safeUpdates = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
