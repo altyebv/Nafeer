@@ -29,7 +29,10 @@ export async function updateFeedItem(contentId, updates, contributorId, note = '
   const current = await FeedItem.findOne({ contentId });
   if (!current) return null;
 
-  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, skipRedraft);
+  
+  const { updates: bumpedUpdates } = applyVersionBump(
+    { ...updates }, current, contributorId, 'edited', note, skipRedraft
+  );
 
   return FeedItem.findOneAndUpdate(
     { contentId },

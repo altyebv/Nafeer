@@ -27,11 +27,12 @@ export async function createQuestion(data, contributorId) {
 
 export async function updateQuestion(contentId, updates, contributorId, note = '', skipRedraft = false) {
   await connectDB();
-
   const current = await Question.findOne({ contentId });
   if (!current) return null;
 
-  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited', note, skipRedraft);
+  const { updates: bumpedUpdates } = applyVersionBump(
+    { ...updates }, current, contributorId, 'edited', note, '', skipRedraft
+  );
 
   return Question.findOneAndUpdate(
     { contentId },
@@ -95,7 +96,7 @@ export async function updateExam(contentId, updates, contributorId) {
   await connectDB();
   const current = await Exam.findOne({ contentId });
   if (!current) return null;
-  const bumpedUpdates = applyVersionBump({ ...updates }, current, contributorId, 'edited');
+  const { updates: bumpedUpdates }  = applyVersionBump({ ...updates }, current, contributorId, 'edited');
   return Exam.findOneAndUpdate({ contentId }, { $set: bumpedUpdates }, { new: true }).lean();
 }
 
