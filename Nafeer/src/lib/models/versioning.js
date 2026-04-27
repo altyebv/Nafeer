@@ -125,14 +125,15 @@ export function applyVersionBump(
   contributorId,
   action = 'edited',
   note = '',
-  versionLabel = ''
+  versionLabel = '',
+  skipRedraft = false
 ) {
   const newVersion = (currentDoc.version || 1) + 1;
 
   updates.version   = newVersion;
   updates.updatedBy = contributorId;
 
-  if (currentDoc.status === 'approved') {
+  if (currentDoc.status === 'approved' && !skipRedraft) { // guard reom redrafting
     updates.status = 'draft';
   }
 
