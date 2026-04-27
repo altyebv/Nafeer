@@ -63,12 +63,12 @@ export async function POST(request) {
       contentId,
       subjectId,
       title:       title.trim(),
-      order:       nextOrder,
+      order:       orderCandidate,
       description: description?.trim() || null,
       status:      'approved', 
       createdBy:   actorId,
       changelog:   initialChangelog(actorId, 'unit created via admin curriculum panel'),
-});
+    });
 
     return NextResponse.json({
       ok: true,

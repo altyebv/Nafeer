@@ -45,6 +45,11 @@ export async function POST(request) {
 
     await connectDB();
 
+    // Test subjects should behave like seeded test content: new lessons
+    // are created approved so the delta/publish flow stays consistent.
+    const isTestSubject = subjectId.startsWith('TEST_');
+    const shouldAutoApprove = user.role === 'admin' || isTestSubject;
+
     const lesson = await Lesson.create({
       contentId,
       subjectId,
@@ -54,8 +59,8 @@ export async function POST(request) {
       estimatedMinutes: body.estimatedMinutes || 15,
       summary:          body.summary          || null,
       createdBy:        actorId,
-      changelog:        initialChangelog(actorId),
-      status: user.role === 'admin' ? 'approved' : undefined, 
+      changelog:        initialChangelog(actorId, shouldAutoApprove ? 'Lesson created and auto-approved for test subject' : ''),
+      status: shouldAutoApprove ? 'approved' : undefined,
     });
 
     // Track stat — fire-and-forget
