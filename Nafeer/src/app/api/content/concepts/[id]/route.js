@@ -32,7 +32,6 @@ export async function PUT(request, { params }) {
 }
 
 // PATCH /api/content/concepts/[id]
-// PATCH /api/content/concepts/[id]
 export async function PATCH(request, { params }) {
   try {
     await connectDB();
