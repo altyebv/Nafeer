@@ -23,7 +23,6 @@ export async function createFeedItem(data, contributorId) {
 }
 
 // ─── updateFeedItem ───────────────────────────────────────────────────────────
-// ─── updateFeedItem ───────────────────────────────────────────────────────────
 export async function updateFeedItem(contentId, updates, contributorId, note = '', skipRedraft = false) {
   await connectDB();
 
@@ -76,4 +75,9 @@ export async function updateFeedItemStatus(contentId, newStatus, contributorId, 
 export async function deleteFeedItem(contentId) {
   await connectDB();
   return FeedItem.deleteOne({ contentId });
+}
+
+export async function getFeedItemById(contentId) {
+  await connectDB();
+  return FeedItem.findOne({ contentId }).lean();
 }
