@@ -1,3 +1,4 @@
+import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 
 const SYSTEM_CONTRIBUTOR = {
@@ -7,6 +8,11 @@ const SYSTEM_CONTRIBUTOR = {
 };
 
 export async function ensureSystemSeedContributor() {
+  // Must connect before any Mongoose query — callers may run before connectDB()
+  // (cold-start serverless: this fires in the route before the lib function
+  // that owns the connectDB call, causing a "no connection" crash → 500).
+  await connectDB();
+
   let contributor = await Contributor.findOne({ email: SYSTEM_CONTRIBUTOR.email }).select('_id');
   if (contributor) return contributor._id.toString();
 
