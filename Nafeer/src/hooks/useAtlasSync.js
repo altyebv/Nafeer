@@ -75,13 +75,20 @@ export function useAtlasSync() {
           }));
           const loadedLessons = atlasData.units.flatMap((u) =>
             (u.lessons || []).map((l) => ({
-              id: l.contentId,
-              unitId: u.contentId,
-              title: l.title,
-              order: l.order,
-              estimatedMinutes: l.estimatedMinutes || 15,
-              summary: l.summary || null,
-              atlasStatus: l.status || 'draft',
+              id:               l.contentId,
+              unitId:           u.contentId,
+              title:            l.title,
+              order:            l.order,
+              estimatedMinutes: l.estimatedMinutes  || 15,
+              summary:          l.summary           || null,
+              metadata:         l.metadata          || null,
+              parentLesson:     l.parentLesson       || null,
+              variationType:    l.variationType      || null,
+              variationNote:    l.variationNote      || null,
+              groupId:          l.groupId            || null,
+              groupTitle:       l.groupTitle         || null,
+              groupMetadata:    l.groupMetadata      || null,
+              atlasStatus:      l.status             || 'draft',
             }))
           );
           const subject = atlasData.subject
@@ -115,8 +122,16 @@ export function useAtlasSync() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: lesson.title, estimatedMinutes: lesson.estimatedMinutes,
-          summary: lesson.summary || null,
+          title:            lesson.title,
+          estimatedMinutes: lesson.estimatedMinutes,
+          summary:          lesson.summary          || null,
+          metadata:         lesson.metadata         || null,
+          parentLesson:     lesson.parentLesson      || null,
+          variationType:    lesson.variationType     || null,
+          variationNote:    lesson.variationNote     || null,
+          groupId:          lesson.groupId           || null,
+          groupTitle:       lesson.groupTitle        || null,
+          groupMetadata:    lesson.groupMetadata     || null,
         }),
       });
       const lessonJson = await lessonRes.json();
@@ -125,13 +140,20 @@ export function useAtlasSync() {
         const created = await apiFetch('/api/content/lessons', {
           method: 'POST',
           body: JSON.stringify({
-            contentId: lessonId,
+            contentId:        lessonId,
             subjectId,
-            unitContentId: lesson.unitId,
-            title: lesson.title,
-            order: lesson.order,
+            unitContentId:    lesson.unitId,
+            title:            lesson.title,
+            order:            lesson.order,
             estimatedMinutes: lesson.estimatedMinutes || 15,
-            summary: lesson.summary || null,
+            summary:          lesson.summary          || null,
+            metadata:         lesson.metadata         || null,
+            parentLesson:     lesson.parentLesson      || null,
+            variationType:    lesson.variationType     || null,
+            variationNote:    lesson.variationNote     || null,
+            groupId:          lesson.groupId           || null,
+            groupTitle:       lesson.groupTitle        || null,
+            groupMetadata:    lesson.groupMetadata     || null,
           }),
         });
         if (created?.status) updateLesson(lessonId, { atlasStatus: created.status });
@@ -183,10 +205,16 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: lesson.title, estimatedMinutes: lesson.estimatedMinutes,
-        summary: lesson.summary || null, metadata: lesson.metadata || null,
-        parentLesson: lesson.parentLesson || null, variationType: lesson.variationType || null,
-        variationNote: lesson.variationNote || null,
+        title:            lesson.title,
+        estimatedMinutes: lesson.estimatedMinutes,
+        summary:          lesson.summary       || null,
+        metadata:         lesson.metadata      || null,
+        parentLesson:     lesson.parentLesson   || null,
+        variationType:    lesson.variationType  || null,
+        variationNote:    lesson.variationNote  || null,
+        groupId:          lesson.groupId        || null,
+        groupTitle:       lesson.groupTitle     || null,
+        groupMetadata:    lesson.groupMetadata  || null,
       }),
     });
     const json = await res.json();
@@ -201,7 +229,14 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
           title:            lesson.title,
           order:            lesson.order,
           estimatedMinutes: lesson.estimatedMinutes || 15,
-          summary:          lesson.summary || null,
+          summary:          lesson.summary       || null,
+          metadata:         lesson.metadata      || null,
+          parentLesson:     lesson.parentLesson   || null,
+          variationType:    lesson.variationType  || null,
+          variationNote:    lesson.variationNote  || null,
+          groupId:          lesson.groupId        || null,
+          groupTitle:       lesson.groupTitle     || null,
+          groupMetadata:    lesson.groupMetadata  || null,
         }),
       });
       if (created?.status) updateLesson(lessonId, { atlasStatus: created.status });
