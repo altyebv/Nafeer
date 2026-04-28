@@ -61,5 +61,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/editor/:path*', '/signin', '/join', '/prejoin', '/interview', '/onboard', '/onboard/:path*', '/admin', '/admin/:path*'],
+  matcher: ['/editor', '/editor/:path*', '/signin', '/join', '/prejoin', '/interview', '/onboard', '/onboard/:path*', '/admin', '/admin/:path*'],
 };
