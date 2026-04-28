@@ -4,14 +4,19 @@ import { SUBJECTS_CATALOG_REF } from '../../constants';
 import { Modal } from '../ui/modal';
 
 const FIELDS = [
-  { key: 'name',       label: 'الاسم الكامل',      placeholder: 'أحمد محمد',        required: true  },
-  { key: 'email',      label: 'البريد الإلكتروني', placeholder: 'user@example.com', required: true,  dir: 'ltr' },
-  { key: 'background', label: 'الخلفية',            placeholder: 'طالب / أستاذ...',  required: false },
-  { key: 'password',   label: 'كلمة المرور',        placeholder: '••••••••',         required: true,  type: 'password', dir: 'ltr' },
+  { key: 'name',      label: 'الاسم الكامل',      placeholder: 'أحمد محمد',        required: true },
+  { key: 'username',  label: 'اسم المستخدم',      placeholder: 'ahmad123',         required: true, dir: 'ltr' },
+  { key: 'email',     label: 'البريد الإلكتروني', placeholder: 'user@example.com', required: true, type: 'email', dir: 'ltr' },
+  { key: 'password',  label: 'كلمة المرور',       placeholder: '••••••••',         required: true, type: 'password', dir: 'ltr' },
+];
+
+const GENDERS = [
+  { value: 'male', label: 'ذكر' },
+  { value: 'female', label: 'أنثى' },
 ];
 
 export function CreateContributorModal({ onClose, onCreated }) {
-  const [form, setForm]       = useState({ name: '', email: '', subject: '', background: '', password: '' });
+  const [form, setForm]       = useState({ name: '', username: '', email: '', gender: '', subject: '', password: '' });
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -49,6 +54,22 @@ export function CreateContributorModal({ onClose, onCreated }) {
             />
           </div>
         ))}
+
+        <div>
+          <label className="block text-xs text-ink-500 mb-1.5 font-mono">الجنس</label>
+          <select
+            required
+            value={form.gender}
+            onChange={(e) => setForm({ ...form, gender: e.target.value })}
+            className="w-full px-4 py-2.5 rounded-xl bg-ink-800 border border-ink-700/60 text-sand-100 focus:outline-none focus:border-sand-700 text-sm transition-all font-arabic"
+          >
+            <option value="" disabled>اختر الجنس...</option>
+            {GENDERS.map((gender) => (
+              <option key={gender.value} value={gender.value}>{gender.label}</option>
+            ))}
+          </select>
+        </div>
+
         <div>
           <label className="block text-xs text-ink-500 mb-1.5 font-mono">المادة</label>
           <select
@@ -61,7 +82,9 @@ export function CreateContributorModal({ onClose, onCreated }) {
             {['COMMON', 'SCIENCE', 'LITERARY'].map((track) => (
               <optgroup key={track} label={track === 'COMMON' ? 'مشترك' : track === 'SCIENCE' ? 'علمي' : 'أدبي'}>
                 {SUBJECTS_CATALOG_REF.filter((s) => s.track === track).map((s) => (
-                  <option key={s.id} value={s.id}>{s.nameAr}{s.isMajor ? ' (تخصص)' : ''}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.nameAr}{s.isMajor ? ' (تخصص)' : ''}
+                  </option>
                 ))}
               </optgroup>
             ))}
