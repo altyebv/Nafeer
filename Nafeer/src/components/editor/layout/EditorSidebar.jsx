@@ -13,13 +13,13 @@ const COLLAPSED_W = 52;
 const EXPANDED_W  = 240;
 
 const NAV = [
-  {id: 'dashboard', icon: '⌂', label: 'الرئيسية', sub: 'Dashboard' },
-  { id: 'lessons',  icon: '◈', label: 'الدروس',   sub: 'Lessons'   },
-  { id: 'feeds',    icon: '▣', label: 'التغذية',   sub: 'Feed'      },
-  { id: 'quizbank', icon: '◎', label: 'الأسئلة',   sub: 'Quiz Bank' },
-  { id: 'concepts', icon: '✦', label: 'المفاهيم',  sub: 'Concepts'  },
-  { id: 'media',    icon: '⬜', label: 'الوسائط',   sub: 'Media'     },
-  { id: 'export',   icon: '↑', label: 'تصدير',     sub: 'Export'    },
+  { id: 'dashboard', icon: '⌂', label: 'الرئيسية',    sub: 'Dashboard' },
+  { id: 'lessons',   icon: '◈', label: 'الدروس',   sub: 'Lessons'   },
+  { id: 'feeds',     icon: '▣', label: 'التغذية',   sub: 'Feed'      },
+  { id: 'quizbank',  icon: '◎', label: 'الأسئلة',   sub: 'Quiz Bank' },
+  { id: 'concepts',  icon: '✦', label: 'المفاهيم',  sub: 'Concepts'  },
+  { id: 'media',     icon: '⬜', label: 'الوسائط',   sub: 'Media'     },
+  { id: 'export',    icon: '↑', label: 'تصدير',     sub: 'Export'    },
 ];
 
 // ── Theme hook ────────────────────────────────────────────────────────────────
@@ -150,6 +150,15 @@ export default function EditorSidebar({
   const { media }  = useMediaStore();
   const router     = useRouter();
   const { theme, toggle: toggleTheme } = useTheme();
+  const [annoCount, setAnnoCount] = useState(0);
+
+  // Fetch announcement count for dashboard badge
+  useEffect(() => {
+    fetch('/api/contributors/announcements')
+      .then((r) => r.json())
+      .then((d) => { if (d.ok) setAnnoCount(d.data.length); })
+      .catch(() => {});
+  }, []);
 
   const expanded = isOpen;
   const w        = expanded ? EXPANDED_W : COLLAPSED_W;
@@ -171,6 +180,7 @@ export default function EditorSidebar({
   const activeAccent = '#d4891e';
 
   const counts = {
+    dashboard: annoCount,
     lessons:  lessons.length,
     feeds:    feedItems.length,
     quizbank: questions.length,

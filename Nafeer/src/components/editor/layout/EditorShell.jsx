@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useDataStore }   from '@/store/dataStore';
 import { useAtlasSync }   from '@/hooks/useAtlasSync';
 import EditorSidebar    from '@/components/editor/layout/EditorSidebar';
+import DashboardPage   from '@/components/editor/pages/DashboardPage';
 import LessonsPage      from '@/components/editor/pages/LessonsPage';
 import LessonEditorPage from '@/components/editor/lesson/LessonEditorPage';
 import ConceptsPage     from '@/components/editor/pages/ConceptsPage';
@@ -10,7 +11,6 @@ import FeedItemsPage    from '@/components/editor/pages/FeedItemsPage';
 import QuizBankPage     from '@/components/editor/pages/QuizBankPage';
 import ExportPage       from '@/components/editor/pages/ExportPage';
 import MediaPage        from '@/components/editor/pages/MediaPage';
-import DashboardPage    from '@/components/editor/pages/DashboardPage';
 
 const SIDEBAR_COLLAPSED = 52;
 const SIDEBAR_EXPANDED  = 240;
@@ -19,7 +19,7 @@ export default function EditorShell({ contributor }) {
   const bootstrapFromSubject = useDataStore((s) => s.bootstrapFromSubject);
   const { bootstrapSubject, isSyncing, syncError, lastSynced } = useAtlasSync();
 
-  const [currentPage,      setCurrentPage]      = useState('lessons');
+  const [currentPage,      setCurrentPage]      = useState('dashboard');
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [selectedUnitId,   setSelectedUnitId]   = useState(null);
   const [atlasReady,       setAtlasReady]        = useState(false);
@@ -40,6 +40,7 @@ export default function EditorShell({ contributor }) {
 
   const renderPage = () => {
     switch (currentPage) {
+      case 'dashboard': return <DashboardPage contributor={contributor} />;
       case 'lessons':
         return <LessonsPage onEditLesson={(lessonId, unitId) => navigateTo('editor', { lessonId, unitId })} />;
       case 'editor':
@@ -62,8 +63,7 @@ export default function EditorShell({ contributor }) {
       case 'quizbank':  return <QuizBankPage  subjectId={contributor?.subject} />;
       case 'media':     return <MediaPage     subjectId={contributor?.subject} contributor={contributor} />;
       case 'export':    return <ExportPage    subjectId={contributor?.subject} />;
-      case 'dashboard': return <DashboardPage />;
-      default:          return <LessonsPage   onEditLesson={(lessonId, unitId) => navigateTo('editor', { lessonId, unitId })} />;
+      default:          return <DashboardPage contributor={contributor} />;
     }
   };
 
