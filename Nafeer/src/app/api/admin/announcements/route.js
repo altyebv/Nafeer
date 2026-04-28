@@ -1,7 +1,7 @@
 import { NextResponse }    from 'next/server';
 import { getAdminSession } from '@/lib/adminAuth';
 import { connectDB }       from '@/lib/db';
-import { Announcement }    from '@/lib/models/Announcement';
+import { Announcement }    from '@/lib/models/announcement';
 
 // ─── GET /api/admin/announcements ─────────────────────────────────────────────
 export async function GET() {

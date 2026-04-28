@@ -1,7 +1,7 @@
 import { NextResponse }   from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { connectDB }      from '@/lib/db';
-import { Announcement }   from '@/lib/models/Announcement';
+import { Announcement }   from '@/lib/models/announcement';
 
 // ─── GET /api/contributors/announcements ──────────────────────────────────────
 // Returns active announcements for the current contributor.
