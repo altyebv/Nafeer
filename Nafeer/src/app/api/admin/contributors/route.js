@@ -83,6 +83,9 @@ export async function PATCH(request) {
   const { id, action, password } = await request.json();
   if (!id || !action) return NextResponse.json({ message: 'Missing id or action' }, { status: 400 });
 
+  // Client-side refresh trigger — no server action needed
+  if (action === '_noop') return NextResponse.json({ success: true });
+
   await connectDB();
 
   const contributor = await Contributor.findById(id);
