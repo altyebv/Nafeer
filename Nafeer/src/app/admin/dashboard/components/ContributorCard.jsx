@@ -1,7 +1,126 @@
 'use client';
 import { useState } from 'react';
-import { CONTRIBUTOR_STATUS, SUBJECT_MAP, TRACK_CONFIG, SUBJECTS_CATALOG_REF, getPipelineStage } from '../constants';
+import {
+  CONTRIBUTOR_STATUS, SUBJECT_MAP, TRACK_CONFIG,
+  SUBJECTS_CATALOG_REF, getPipelineStage,
+} from '../constants';
 import { Btn } from './ui/Btn';
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+
+const COMMITMENT_LABELS = {
+  occasional: 'بشكل متقطع',
+  '2-3h':     '٢–٣ ساعات / أسبوع',
+  '5h+':      '٥ ساعات أو أكثر',
+};
+
+const AI_TOOL_LABELS = {
+  chatgpt:    'ChatGPT',
+  gemini:     'Gemini',
+  notebooklm: 'NotebookLM',
+  claude:     'Claude',
+  other:      'أدوات أخرى',
+};
+
+const AGE_LABELS = {
+  'under-18': 'أقل من 18',
+  '18-22':    '18 – 22',
+  '23-28':    '23 – 28',
+  '29-35':    '29 – 35',
+  '36+':      '36+',
+};
+
+function relativeTime(d) {
+  if (!d) return '—';
+  const diff  = Date.now() - new Date(d).getTime();
+  const days  = Math.floor(diff / 86400000);
+  if (days < 1)   return 'اليوم';
+  if (days === 1) return 'أمس';
+  if (days < 30)  return `منذ ${days} يوماً`;
+  const months = Math.floor(days / 30);
+  return `منذ ${months} شهر`;
+}
+
+function shortDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function Initials({ name, size = 38, colorClass = 'from-sand-700 to-sand-900' }) {
+  const letters = (name || '؟').split(' ').slice(0, 2).map((w) => w[0]).join('');
+  return (
+    <div
+      className={`rounded-full shrink-0 flex items-center justify-center font-bold font-arabic bg-gradient-to-br ${colorClass}`}
+      style={{ width: size, height: size, fontSize: size * 0.38, color: '#e8d5a8', border: '1.5px solid rgba(212,137,30,0.2)' }}
+    >
+      {letters}
+    </div>
+  );
+}
+
+function InfoPill({ label, value }) {
+  if (value === null || value === undefined || value === '') return null;
+  const display = typeof value === 'boolean' ? (value ? 'نعم ✓' : 'لا ✗') : value;
+  const isBool  = typeof value === 'boolean';
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[9px] font-mono text-ink-700 uppercase tracking-wider">{label}</span>
+      <span
+        className="text-[11px] font-arabic"
+        style={{ color: isBool ? (value ? '#34d399' : '#f87171') : 'rgba(255,255,255,0.5)' }}
+      >
+        {display}
+      </span>
+    </div>
+  );
+}
+
+function StatBadge({ icon, count, label }) {
+  if (!count) return null;
+  return (
+    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(212,137,30,0.05)', border: '1px solid rgba(212,137,30,0.1)' }}>
+      <span className="text-[11px]">{icon}</span>
+      <span className="text-sm font-bold font-mono tabular-nums" style={{ color: 'var(--accent)' }}>{count}</span>
+      <span className="text-[10px] text-ink-600 font-arabic">{label}</span>
+    </div>
+  );
+}
+
+function InlineLinkBox({ link, label, expiry }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(212,137,30,0.04)', border: '1px solid rgba(212,137,30,0.18)' }}>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] font-mono" style={{ color: 'var(--accent)' }}>{label}</span>
+        {expiry && <span className="text-[9px] text-ink-700 font-arabic">{expiry}</span>}
+      </div>
+      <div className="flex items-center gap-2">
+        <p dir="ltr" className="flex-1 text-[10px] font-mono text-ink-500 break-all truncate select-all">
+          {link}
+        </p>
+        <button
+          onClick={copy}
+          className="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-arabic font-semibold transition-all"
+          style={{
+            background: copied ? 'rgba(52,211,153,0.15)' : 'rgba(212,137,30,0.12)',
+            color:      copied ? '#34d399' : 'var(--accent)',
+            border:     copied ? '1px solid rgba(52,211,153,0.3)' : '1px solid rgba(212,137,30,0.25)',
+          }}
+        >
+          {copied ? '✓ تم' : 'نسخ'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── REQUEST CARD ─────────────────────────────────────────────────────────────
 
 const INTERVIEW_FIELDS = [
   { label: 'لماذا تريد المساهمة؟',      key: 'motivation'        },
@@ -11,270 +130,390 @@ const INTERVIEW_FIELDS = [
   { label: 'المهمة الصغيرة',             key: 'microTask'         },
 ];
 
-const COMMITMENT_LABELS = {
-  occasional: 'بشكل متقطع',
-  '2-3h':     '٢–٣ ساعات أسبوعياً',
-  '5h+':      '٥ ساعات أو أكثر',
-};
-
-export function ContributorCard({ c, actionLoading, onAct, onDelete, onSetPassword }) {
-  const [interviewOpen, setInterviewOpen] = useState(false);
+export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }) {
+  const [openSection,   setOpenSection]   = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [activeLink,    setActiveLink]    = useState(null);
+  const [localLoading,  setLocalLoading]  = useState(null);
 
-  const st      = CONTRIBUTOR_STATUS[c.status] || CONTRIBUTOR_STATUS.pending;
-  const subj    = SUBJECT_MAP[c.subject];
-  const stage   = getPipelineStage(c);
-  const hasAnswers        = !!c.interviewAnswers?.submittedAt;
-  const hasDynamicAnswers = !!c.dynamicAnswersSubmittedAt;
+  const stage         = getPipelineStage(c);
+  const hasAnswers    = !!c.interviewAnswers?.submittedAt;
+  const hasDynAnswers = !!c.dynamicAnswersSubmittedAt;
+  const hasAnyAnswers = hasAnswers || hasDynAnswers;
+  const subj          = SUBJECT_MAP[c.subject];
+  const st            = CONTRIBUTOR_STATUS[c.status] || CONTRIBUTOR_STATUS.pending;
+
+  const toggleSection = (s) => setOpenSection((v) => v === s ? null : s);
+
+  const avatarGradient = c.status === 'rejected'
+    ? 'from-red-900 to-red-950'
+    : hasAnyAnswers
+    ? 'from-green-900 to-green-950'
+    : c.interviewToken
+    ? 'from-blue-900 to-blue-950'
+    : 'from-sand-800 to-ink-900';
+
+  const sendInterviewLink = async () => {
+    setLocalLoading('send_interview');
+    try {
+      const res  = await fetch('/api/admin/contributors', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ id: c._id, action: 'send_interview' }),
+      });
+      const data = await res.json();
+      if (data.interviewLink) {
+        setActiveLink({ link: data.interviewLink, label: 'رابط المقابلة', expiry: 'صالح 14 يوماً' });
+      }
+      onAct(c._id, '_noop');
+    } finally {
+      setLocalLoading(null);
+    }
+  };
+
+  const BORDER = 'rgba(255,255,255,0.05)';
 
   return (
-    <div className="bg-ink-900/60 rounded-xl border border-ink-800/50 hover:border-ink-700/50 transition-all">
-      <div className="p-5 flex items-start gap-4">
-
-        {/* Avatar initial */}
-        <div className="shrink-0 w-10 h-10 rounded-full bg-sand-900/60 border border-sand-800/50 flex items-center justify-center text-sand-400 font-bold font-arabic text-base">
-          {(c.name || '؟').charAt(0)}
-        </div>
-
-        {/* Info column */}
+    <div
+      className="rounded-2xl overflow-hidden transition-all duration-200"
+      style={{ background: '#0d0b08', border: '1px solid rgba(255,255,255,0.06)' }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+    >
+      {/* Header */}
+      <div className="p-4 flex items-start gap-3">
+        <Initials name={c.name} size={40} colorClass={avatarGradient} />
         <div className="flex-1 min-w-0">
-
-          {/* Name + status badges */}
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h3 className="font-bold text-sand-200 font-arabic">{c.name}</h3>
-
-            <span className={`text-[11px] px-2 py-0.5 rounded-full border font-arabic flex items-center gap-1.5 ${st.badge}`}>
-              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot}`} />
-              {st.label}
-            </span>
-
-            {/* Pipeline stage chip — only for pending */}
+          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+            <span className="font-bold text-sand-200 font-arabic text-sm">{c.name}</span>
+            {c.gender === 'female' && <span className="text-[9px] text-ink-700 font-arabic">أنثى</span>}
+            {c.gender === 'male'   && <span className="text-[9px] text-ink-700 font-arabic">ذكر</span>}
+          </div>
+          <p dir="ltr" className="text-[11px] font-mono text-ink-500 mb-1.5">{c.email}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
             {stage && (
               <span className={`text-[10px] px-2 py-0.5 rounded-full border font-arabic ${stage.color}`}>
                 {stage.label}
               </span>
             )}
-
-            {c.onboarded && c.status === 'approved' && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full border border-green-900/50 bg-green-950/30 text-green-500 font-arabic">
-                مكتمل
-              </span>
+            {c.status === 'rejected' && (
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-arabic ${st.badge}`}>مرفوض</span>
             )}
-            {!c.onboarded && c.status === 'approved' && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full border border-amber-900/50 bg-amber-950/30 text-amber-500 font-arabic">
-                ينتظر التأهيل
-              </span>
-            )}
-          </div>
-
-          {/* Email + username */}
-          <p className="text-xs font-mono text-ink-500 mb-1" dir="ltr">{c.email}</p>
-          {c.username && (
-            <p className="text-xs font-mono text-sand-600/70 mb-2" dir="ltr">@{c.username}</p>
-          )}
-
-          {/* Role badge */}
-          {c.roleId?.name && (
-            <div className="flex items-center gap-1.5 mb-2">
+            {c.roleId?.name && (
               <span className="text-[10px] px-2 py-0.5 rounded-full border border-sand-800/40 bg-sand-900/20 text-sand-500 font-arabic">
                 ◆ {c.roleId.name}
               </span>
-              {c.roleId.subcategory && (
-                <span className="text-[10px] text-ink-700 font-arabic">{c.roleId.subcategory}</span>
-              )}
-            </div>
-          )}
-
-          {/* Subject + background */}
-          <div className="flex items-center gap-2 flex-wrap mb-2">
-            {subj ? (
-              <span className={`text-[11px] px-2.5 py-1 rounded-lg border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
+            )}
+            {c.subjectsOfInterest?.length > 0 && !c.subject && c.subjectsOfInterest.map((sid) => {
+              const name = SUBJECTS_CATALOG_REF.find((s) => s.id === sid)?.nameAr || sid;
+              return (
+                <span key={sid} className="text-[10px] px-2 py-0.5 rounded-full font-arabic"
+                  style={{ background: 'rgba(212,137,30,0.07)', color: 'var(--accent)', border: '1px solid rgba(212,137,30,0.18)' }}>
+                  {name}
+                </span>
+              );
+            })}
+            {subj && (
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
                 {subj.nameAr}
               </span>
-            ) : c.subject ? (
-              <span className="text-[11px] px-2.5 py-1 rounded-lg border border-ink-700/40 text-ink-500 font-mono">
-                {c.subject}
-              </span>
-            ) : null}
-            {c.background && (
-              <span className="text-[11px] text-ink-600 font-arabic truncate max-w-xs">{c.background}</span>
-            )}
-            {c.fieldOfStudy && !c.background && (
-              <span className="text-[11px] text-ink-600 font-arabic truncate max-w-xs">{c.fieldOfStudy}</span>
             )}
           </div>
-
-          {/* Subjects of interest — shown when no assigned subject yet */}
-          {c.subjectsOfInterest?.length > 0 && !c.subject && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {c.subjectsOfInterest.map((sid) => {
-                const name = SUBJECTS_CATALOG_REF.find((s) => s.id === sid)?.nameAr || sid;
-                return (
-                  <span
-                    key={sid}
-                    className="text-[10px] px-2 py-0.5 rounded-full font-arabic"
-                    style={{ background: 'rgba(212,137,30,0.08)', color: 'var(--accent)', border: '1px solid rgba(212,137,30,0.2)' }}
-                  >
-                    {name}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Dynamic interview answers (role-based) */}
-          {hasDynamicAnswers && (
-            <div className="mt-2">
-              <button
-                onClick={() => setInterviewOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-[11px] font-mono transition-colors"
-                style={{ color: 'var(--accent)' }}
-              >
-                <span>{interviewOpen ? '▾' : '▸'}</span>
-                <span>إجابات المقابلة</span>
-                <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: 'rgba(212,137,30,0.12)', color: 'var(--accent)' }}>
-                  {new Date(c.dynamicAnswersSubmittedAt).toLocaleDateString('en-GB')}
-                </span>
-              </button>
-
-              {interviewOpen && (
-                <div className="mt-3 space-y-3 pr-3 border-r-2 border-ink-800">
-                  {(c.dynamicAnswers || []).map((a, i) => (
-                    <div key={i}>
-                      <p className="text-[10px] font-arabic text-ink-600 mb-1">{a.question}</p>
-                      <p className="text-[11px] text-ink-400 leading-relaxed font-arabic whitespace-pre-wrap">{a.answer}</p>
-                    </div>
-                  ))}
-                  {c.dynamicMicroTask && (
-                    <div>
-                      <p className="text-[10px] font-mono text-ink-600 mb-1">المهمة التطبيقية</p>
-                      <p className="text-[11px] text-ink-400 leading-relaxed font-arabic whitespace-pre-wrap">{c.dynamicMicroTask}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Legacy interview answers */}
-          {hasAnswers && (
-            <div className="mt-2">
-              <button
-                onClick={() => setInterviewOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-[11px] font-mono transition-colors"
-                style={{ color: 'var(--accent)' }}
-              >
-                <span>{interviewOpen ? '▾' : '▸'}</span>
-                <span>إجابات المقابلة</span>
-                <span
-                  className="px-1.5 py-0.5 rounded text-[10px]"
-                  style={{ background: 'rgba(212,137,30,0.12)', color: 'var(--accent)' }}
-                >
-                  {new Date(c.interviewAnswers.submittedAt).toLocaleDateString('en-GB')}
-                </span>
-              </button>
-
-              {interviewOpen && (
-                <div className="mt-3 space-y-3 pr-3 border-r-2 border-ink-800">
-                  {INTERVIEW_FIELDS.map(({ label, key }) => {
-                    const val = c.interviewAnswers[key];
-                    if (!val) return null;
-                    const display = key === 'weeklyCommitment' ? (COMMITMENT_LABELS[val] || val) : val;
-                    return (
-                      <div key={key}>
-                        <p className="text-[10px] font-mono text-ink-600 mb-1">{label}</p>
-                        <p className="text-[11px] text-ink-400 leading-relaxed font-arabic whitespace-pre-wrap">
-                          {display}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Timestamp */}
-          <p className="text-[10px] font-mono text-ink-800 mt-2.5">
-            {new Date(c.createdAt).toLocaleDateString('en-GB')}
-          </p>
         </div>
+        <div className="shrink-0 text-left">
+          <p className="text-[10px] font-mono text-ink-700">{relativeTime(c.createdAt)}</p>
+          <p className="text-[9px] font-mono text-ink-800">{shortDate(c.createdAt)}</p>
+        </div>
+      </div>
 
-        {/* Actions column */}
-        <div className="shrink-0 flex flex-col gap-1.5 min-w-[140px]">
+      {/* Section tabs */}
+      <div className="flex" style={{ borderTop: `1px solid ${BORDER}` }}>
+        {[
+          { key: 'profile',   icon: '◉', label: 'بيانات الطلب',       always: true  },
+          { key: 'interview', icon: hasAnyAnswers ? '✦' : '◌',
+            label: hasAnyAnswers ? 'إجابات المقابلة' : 'لم تُكمل المقابلة', always: true },
+        ].map(({ key, icon, label }, i) => (
+          <button
+            key={key}
+            onClick={() => toggleSection(key)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors"
+            style={{
+              borderLeft:  i === 0 ? `1px solid ${BORDER}` : 'none',
+              background:  openSection === key ? 'rgba(212,137,30,0.06)' : 'transparent',
+              color:       openSection === key
+                ? 'var(--accent)'
+                : (key === 'interview' && hasAnyAnswers)
+                ? 'rgba(52,211,153,0.65)'
+                : 'rgba(255,255,255,0.25)',
+            }}
+          >
+            <span className="text-[10px]">{icon}</span>
+            <span className="text-[10px] font-arabic">{label}</span>
+          </button>
+        ))}
+      </div>
 
-          {c.status === 'pending' && (
-            <>
-              {hasAnswers ? (
-                <>
-                  <Btn variant="green" onClick={() => onSetPassword(c._id, c.name)}>
-                    اعتماد + مرور
-                  </Btn>
-                  <Btn variant="ghost" loading={actionLoading === c._id + 'approve'} onClick={() => onAct(c._id, 'approve')}>
-                    اعتماد فقط
-                  </Btn>
-                </>
-              ) : (
-                <Btn
-                  variant="sand"
-                  loading={actionLoading === c._id + 'send_interview'}
-                  onClick={() => onAct(c._id, 'send_interview')}
-                >
-                  {c.interviewToken ? 'إعادة إرسال الرابط' : 'إرسال رابط المقابلة'}
-                </Btn>
+      {/* Profile panel */}
+      {openSection === 'profile' && (
+        <div className="px-4 py-4" style={{ background: 'rgba(0,0,0,0.2)', borderTop: `1px solid ${BORDER}` }}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 mb-4">
+            <InfoPill label="الخلفية"           value={c.background || c.fieldOfStudy} />
+            <InfoPill label="الفئة العمرية"     value={AGE_LABELS[c.age] || c.age}    />
+            <InfoPill label="المدينة"            value={c.town}                         />
+            <InfoPill label="حاسب / لوحي"       value={c.hasPcOrTablet}               />
+            <InfoPill label="إنترنت مستقر"      value={c.hasStableInternet}            />
+            <InfoPill label="يستخدم أدوات AI"   value={c.usesAiTools}                 />
+          </div>
+          {c.aiToolsList?.length > 0 && (
+            <div className="mb-3">
+              <p className="text-[9px] font-mono text-ink-700 uppercase tracking-wider mb-1.5">أدوات الذكاء الاصطناعي</p>
+              <div className="flex flex-wrap gap-1">
+                {c.aiToolsList.map((t) => (
+                  <span key={t} className="text-[10px] px-2 py-0.5 rounded-full font-mono"
+                    style={{ background: 'rgba(107,159,212,0.08)', color: '#6b9fd4', border: '1px solid rgba(107,159,212,0.2)' }}>
+                    {AI_TOOL_LABELS[t] || t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {c.portfolioUrl && (
+            <div>
+              <p className="text-[9px] font-mono text-ink-700 uppercase tracking-wider mb-1">Portfolio</p>
+              <a href={c.portfolioUrl} target="_blank" rel="noreferrer" dir="ltr"
+                className="text-[11px] font-mono hover:underline truncate block max-w-xs" style={{ color: 'var(--accent)' }}>
+                {c.portfolioUrl}
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Interview panel */}
+      {openSection === 'interview' && (
+        <div className="px-4 py-4" style={{ background: 'rgba(0,0,0,0.2)', borderTop: `1px solid ${BORDER}` }}>
+          {!hasAnyAnswers ? (
+            <p className="text-xs text-ink-700 font-arabic text-center py-4">لم يُكمل المتقدم المقابلة بعد.</p>
+          ) : hasDynAnswers ? (
+            <div className="space-y-4">
+              {(c.dynamicAnswers || []).map((a, i) => (
+                <div key={i} className="pr-3 border-r-2" style={{ borderColor: 'rgba(212,137,30,0.2)' }}>
+                  <p className="text-[10px] font-mono text-ink-600 mb-1 leading-snug">{a.question}</p>
+                  <p className="text-xs text-ink-400 leading-loose font-arabic whitespace-pre-wrap">{a.answer}</p>
+                </div>
+              ))}
+              {c.dynamicMicroTask && (
+                <div className="pr-3 border-r-2" style={{ borderColor: 'rgba(212,137,30,0.2)' }}>
+                  <p className="text-[10px] font-mono text-ink-600 mb-1">المهمة التطبيقية</p>
+                  <p className="text-xs text-ink-400 leading-loose font-arabic whitespace-pre-wrap">{c.dynamicMicroTask}</p>
+                </div>
               )}
-              <Btn variant="red" loading={actionLoading === c._id + 'reject'} onClick={() => onAct(c._id, 'reject')}>
-                رفض
-              </Btn>
-            </>
-          )}
-
-          {c.status === 'approved' && (
-            <>
-              <Btn variant="sand" onClick={() => onSetPassword(c._id, c.name)}>
-                {c.passwordHash ? 'تغيير المرور' : 'تعيين مرور'}
-              </Btn>
-              {!c.onboarded && (
-                <Btn
-                  variant="ghost"
-                  loading={actionLoading === c._id + 'generate_onboard_link'}
-                  onClick={() => onAct(c._id, 'generate_onboard_link')}
-                >
-                  رابط التأهيل
-                </Btn>
-              )}
-            </>
-          )}
-
-          {c.status === 'rejected' && (
-            <Btn
-              variant="ghost"
-              loading={actionLoading === c._id + 'reset_to_pending'}
-              onClick={() => onAct(c._id, 'reset_to_pending')}
-            >
-              إعادة للانتظار
-            </Btn>
-          )}
-
-          {/* Delete — inline confirm */}
-          {deleteConfirm ? (
-            <div className="flex flex-col gap-1 mt-1 pt-2 border-t border-ink-800">
-              <p className="text-[10px] text-red-400 font-arabic text-center">تأكيد الحذف؟</p>
-              <Btn variant="red" loading={actionLoading === c._id + 'delete'} onClick={() => onDelete(c._id)}>
-                حذف نهائي
-              </Btn>
-              <Btn variant="ghost" onClick={() => setDeleteConfirm(false)}>إلغاء</Btn>
+              <p className="text-[9px] font-mono text-ink-800">أُرسلت: {shortDate(c.dynamicAnswersSubmittedAt)}</p>
             </div>
           ) : (
-            <button
-              onClick={() => setDeleteConfirm(true)}
-              className="text-[11px] font-mono text-ink-700 hover:text-red-500 transition-colors mt-1 text-center py-1"
-            >
-              حذف
-            </button>
+            <div className="space-y-4">
+              {INTERVIEW_FIELDS.map(({ label, key }) => {
+                const val = c.interviewAnswers[key];
+                if (!val) return null;
+                const display = key === 'weeklyCommitment' ? (COMMITMENT_LABELS[val] || val) : val;
+                return (
+                  <div key={key} className="pr-3 border-r-2" style={{ borderColor: 'rgba(212,137,30,0.2)' }}>
+                    <p className="text-[10px] font-mono text-ink-600 mb-1">{label}</p>
+                    <p className="text-xs text-ink-400 leading-loose font-arabic whitespace-pre-wrap">{display}</p>
+                  </div>
+                );
+              })}
+              <p className="text-[9px] font-mono text-ink-800">أُرسلت: {shortDate(c.interviewAnswers?.submittedAt)}</p>
+            </div>
           )}
         </div>
+      )}
+
+      {/* Inline link */}
+      {activeLink && (
+        <div className="px-4 pb-3">
+          <InlineLinkBox {...activeLink} />
+        </div>
+      )}
+
+      {/* Actions footer */}
+      <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap"
+        style={{ background: 'rgba(0,0,0,0.15)', borderTop: `1px solid ${BORDER}` }}>
+        {c.status === 'pending' && (
+          <>
+            {!hasAnyAnswers && (
+              <Btn small variant="sand" loading={localLoading === 'send_interview'} onClick={sendInterviewLink}>
+                {c.interviewToken ? 'تجديد رابط المقابلة' : 'إرسال رابط المقابلة'}
+              </Btn>
+            )}
+            {hasAnyAnswers && (
+              <>
+                <Btn small variant="green" onClick={() => onSetPassword(c._id, c.name)}>اعتماد + كلمة مرور</Btn>
+                <Btn small variant="ghost" loading={actionLoading === c._id + 'approve'}
+                  onClick={() => onAct(c._id, 'approve')}>اعتماد فقط</Btn>
+              </>
+            )}
+            <Btn small variant="red" loading={actionLoading === c._id + 'reject'}
+              onClick={() => onAct(c._id, 'reject')}>رفض</Btn>
+          </>
+        )}
+        {c.status === 'rejected' && (
+          <Btn small variant="ghost" loading={actionLoading === c._id + 'reset_to_pending'}
+            onClick={() => onAct(c._id, 'reset_to_pending')}>إعادة للانتظار</Btn>
+        )}
+        <div className="flex-1" />
+        {deleteConfirm ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-red-400 font-arabic">تأكيد؟</span>
+            <Btn small variant="red" loading={actionLoading === c._id + 'delete'} onClick={() => onDelete(c._id)}>حذف</Btn>
+            <Btn small variant="ghost" onClick={() => setDeleteConfirm(false)}>لا</Btn>
+          </div>
+        ) : (
+          <button onClick={() => setDeleteConfirm(true)}
+            className="text-[10px] font-mono text-ink-800 hover:text-red-500 transition-colors px-1">حذف</button>
+        )}
       </div>
     </div>
   );
+}
+
+// ─── ACTIVE CARD ──────────────────────────────────────────────────────────────
+
+export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword }) {
+  const [activeLink,    setActiveLink]    = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [localLoading,  setLocalLoading]  = useState(null);
+
+  const subj        = SUBJECT_MAP[c.subject];
+  const stats       = c.stats || {};
+  const hasStats    = (stats.lessonsCreated || 0) + (stats.questionsAdded || 0)
+                    + (stats.feedItemsCreated || 0) + (stats.blocksAdded || 0) > 0;
+  const BORDER = 'rgba(255,255,255,0.05)';
+
+  const handleOnboardLink = async () => {
+    setLocalLoading('onboard');
+    try {
+      const res  = await fetch('/api/admin/contributors', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ id: c._id, action: 'generate_onboard_link' }),
+      });
+      const data = await res.json();
+      if (data.onboardingLink) {
+        setActiveLink({ link: data.onboardingLink, label: 'رابط التأهيل', expiry: 'صالح 7 أيام' });
+      }
+      onAct(c._id, '_noop');
+    } finally {
+      setLocalLoading(null);
+    }
+  };
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden transition-all duration-200"
+      style={{ background: '#0d0b08', border: '1px solid rgba(255,255,255,0.06)' }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+    >
+      {/* Header */}
+      <div className="p-4 flex items-start gap-3">
+        {c.avatarUrl ? (
+          <img src={c.avatarUrl} alt={c.name} className="rounded-full object-cover shrink-0"
+            style={{ width: 40, height: 40, border: '1.5px solid rgba(212,137,30,0.35)' }} />
+        ) : (
+          <Initials name={c.name} size={40} colorClass="from-sand-700 to-sand-900" />
+        )}
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+            <span className="font-bold text-sand-200 font-arabic text-sm">{c.name}</span>
+            {c.onboarded
+              ? <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-green-900/50 bg-green-950/30 text-green-500 font-arabic">مكتمل</span>
+              : <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-amber-900/50 bg-amber-950/30 text-amber-500 font-arabic">ينتظر التأهيل</span>
+            }
+            {subj && (
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
+                {subj.nameAr}
+              </span>
+            )}
+            {c.roleId?.name && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-sand-800/40 bg-sand-900/20 text-sand-500 font-arabic">
+                ◆ {c.roleId.name}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p dir="ltr" className="text-[11px] font-mono text-ink-500">{c.email}</p>
+            {c.username && <p dir="ltr" className="text-[11px] font-mono text-sand-700">@{c.username}</p>}
+          </div>
+        </div>
+
+        <div className="shrink-0 text-left">
+          {stats.lastActiveAt ? (
+            <>
+              <p className="text-[9px] font-mono text-ink-800 mb-0.5">آخر نشاط</p>
+              <p className="text-[10px] font-mono text-ink-600">{relativeTime(stats.lastActiveAt)}</p>
+            </>
+          ) : (
+            <p className="text-[10px] font-mono text-ink-800">لم ينشط</p>
+          )}
+          {c.username && (
+            <a href={`/contributors/${c.username}`} target="_blank" rel="noreferrer"
+              className="text-[9px] font-mono mt-1 block transition-colors"
+              style={{ color: 'rgba(212,137,30,0.45)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(212,137,30,0.45)'; }}>
+              ↗ ملفه
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* Stats row */}
+      {hasStats && (
+        <div className="px-4 pb-3 flex flex-wrap gap-2" style={{ paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
+          <StatBadge icon="📖" count={stats.lessonsCreated}   label="درس"   />
+          <StatBadge icon="❓" count={stats.questionsAdded}   label="سؤال"  />
+          <StatBadge icon="📡" count={stats.feedItemsCreated} label="بطاقة" />
+          <StatBadge icon="🌍" count={stats.publishedLessons} label="منشور" />
+        </div>
+      )}
+
+      {/* Inline link */}
+      {activeLink && (
+        <div className="px-4 pb-3">
+          <InlineLinkBox {...activeLink} />
+        </div>
+      )}
+
+      {/* Actions footer */}
+      <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap"
+        style={{ background: 'rgba(0,0,0,0.15)', borderTop: `1px solid ${BORDER}` }}>
+        <Btn small variant="sand" onClick={() => onSetPassword(c._id, c.name)}>
+          {c.passwordHash ? 'تغيير المرور' : 'تعيين مرور'}
+        </Btn>
+        <Btn small variant="ghost" loading={localLoading === 'onboard'} onClick={handleOnboardLink}>
+          {c.onboarded ? '↺ تجديد رابط التأهيل' : 'رابط التأهيل'}
+        </Btn>
+        <div className="flex-1" />
+        {deleteConfirm ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-red-400 font-arabic">تأكيد؟</span>
+            <Btn small variant="red" loading={actionLoading === c._id + 'delete'} onClick={() => onDelete(c._id)}>حذف</Btn>
+            <Btn small variant="ghost" onClick={() => setDeleteConfirm(false)}>لا</Btn>
+          </div>
+        ) : (
+          <button onClick={() => setDeleteConfirm(true)}
+            className="text-[10px] font-mono text-ink-800 hover:text-red-500 transition-colors px-1">حذف</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Legacy default export ────────────────────────────────────────────────────
+export function ContributorCard(props) {
+  return props.c?.status === 'approved'
+    ? <ActiveCard {...props} />
+    : <RequestCard {...props} />;
 }
