@@ -10,6 +10,7 @@ import FeedItemsPage    from '@/components/editor/pages/FeedItemsPage';
 import QuizBankPage     from '@/components/editor/pages/QuizBankPage';
 import ExportPage       from '@/components/editor/pages/ExportPage';
 import MediaPage        from '@/components/editor/pages/MediaPage';
+import DashboardPage    from '@/components/editor/pages/DashboardPage';
 
 const SIDEBAR_COLLAPSED = 52;
 const SIDEBAR_EXPANDED  = 240;
@@ -61,6 +62,7 @@ export default function EditorShell({ contributor }) {
       case 'quizbank':  return <QuizBankPage  subjectId={contributor?.subject} />;
       case 'media':     return <MediaPage     subjectId={contributor?.subject} contributor={contributor} />;
       case 'export':    return <ExportPage    subjectId={contributor?.subject} />;
+      case 'dashboard': return <DashboardPage />;
       default:          return <LessonsPage   onEditLesson={(lessonId, unitId) => navigateTo('editor', { lessonId, unitId })} />;
     }
   };

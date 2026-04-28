@@ -13,6 +13,7 @@ const COLLAPSED_W = 52;
 const EXPANDED_W  = 240;
 
 const NAV = [
+  {id: 'dashboard', icon: '⌂', label: 'الرئيسية', sub: 'Dashboard' },
   { id: 'lessons',  icon: '◈', label: 'الدروس',   sub: 'Lessons'   },
   { id: 'feeds',    icon: '▣', label: 'التغذية',   sub: 'Feed'      },
   { id: 'quizbank', icon: '◎', label: 'الأسئلة',   sub: 'Quiz Bank' },
