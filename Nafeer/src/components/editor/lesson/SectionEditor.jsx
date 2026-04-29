@@ -34,7 +34,9 @@ export default function SectionEditor({ section, maxPart = 0, subjectId }) {
   const { blocks, concepts, updateSection, deleteSection, addBlock } = useDataStore();
   const { deleteSection: atlasDeleteSection } = useAtlasSync();
 
-  const [isEditingTitle,    setIsEditingTitle]    = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(
+  !section.title || /^قسم \d+$/.test(section.title.trim())
+);
   const [showAddBlock,      setShowAddBlock]       = useState(false);
   const [showConceptLinker, setShowConceptLinker]  = useState(false);
   const [collapsed,         setCollapsed]          = useState(false);
