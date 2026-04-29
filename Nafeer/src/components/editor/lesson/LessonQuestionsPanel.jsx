@@ -9,6 +9,8 @@ import {
 
 // Quick-add supports the 5 most common question types.
 // Full editing for all 11 types lives in the global QuizBankPage.
+// NOTE: checkpoint questions (isCheckpoint=true) are NOT created here —
+// they belong in the section body as QUESTION blocks.
 const QUICK_TYPES = ['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER', 'FILL_BLANK', 'EXPLAIN'];
 
 const inputClass =
@@ -16,7 +18,6 @@ const inputClass =
   'focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
 
 // ─── Compact MCQ builder ─────────────────────────────────────────────────────
-// Uses index-based correct answer selection to avoid the text-equality bug.
 function MCQQuickForm({ options, correctIndex, onOptionsChange, onCorrectChange }) {
   const opts = options.length ? options : ['', '', '', ''];
 
@@ -52,10 +53,14 @@ function MCQQuickForm({ options, correctIndex, onOptionsChange, onCorrectChange 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, subjectId }) {
-  const { questions, concepts, addQuestion, deleteQuestion } = useDataStore();
+  const { questions, sections, concepts, addQuestion, deleteQuestion } = useDataStore();
   const { deleteQuestion: atlasDeleteQuestion } = useAtlasSync();
 
   const lessonQuestions = questions.filter((q) => q.lessonId === lessonId);
+
+  // Separate: practice questions (quizbank) vs checkpoint questions (in-body gates)
+  const practiceQuestions   = lessonQuestions.filter((q) => !q.isCheckpoint);
+  const checkpointQuestions = lessonQuestions.filter((q) =>  q.isCheckpoint);
 
   const [isOpen,        setIsOpen]        = useState(false);
   const [showForm,      setShowForm]      = useState(false);
@@ -93,7 +98,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
       options:       finalOptions,
       lessonId,
       unitId,
-      // Sensible defaults — contributor can refine in QuizBankPage
+      isCheckpoint:     false,   // ← always false here; checkpoints live in section blocks
       difficulty:       1,
       points:           1,
       estimatedSeconds: 60,
@@ -136,12 +141,49 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
       </button>
 
       {isOpen && (
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-4">
 
-          {/* ── Existing questions ────────────────────────────────── */}
-          {lessonQuestions.length > 0 && (
-            <div className="space-y-1.5">
-              {lessonQuestions.map((q) => {
+          {/* ── Checkpoint questions (read-only reference) ─────────── */}
+          {checkpointQuestions.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs text-amber-600/80 font-arabic font-semibold mb-1.5">
+                ◎ نقاط تحقق ({checkpointQuestions.length}) — تُعدَّل من داخل القسم
+              </p>
+              {checkpointQuestions.map((q) => {
+                const cfg    = QUESTION_TYPE_CONFIG[q.type];
+                const sec    = sections.find((s) => s.id === q.sectionId);
+                return (
+                  <div
+                    key={q.id}
+                    className="flex items-center gap-3 px-3 py-2 bg-amber-950/20 rounded-lg border border-amber-900/30"
+                  >
+                    <span className="text-xs font-mono text-amber-600/70 w-5 text-center shrink-0">
+                      {cfg?.icon}
+                    </span>
+                    <span className="flex-1 text-sm text-ink-300 line-clamp-1 font-arabic">
+                      {q.textAr}
+                    </span>
+                    {sec && (
+                      <span className="text-xs text-ink-500 font-arabic shrink-0 hidden sm:block truncate max-w-[100px]">
+                        {sec.title}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-amber-700/60 font-arabic shrink-0">تحقق</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Practice / quizbank questions ─────────────────────── */}
+          {practiceQuestions.length > 0 && (
+            <div className="space-y-1">
+              {checkpointQuestions.length > 0 && (
+                <p className="text-xs text-ink-500 font-arabic font-semibold mb-1.5">
+                  أسئلة التدريب ({practiceQuestions.length})
+                </p>
+              )}
+              {practiceQuestions.map((q) => {
                 const cfg    = QUESTION_TYPE_CONFIG[q.type];
                 const cogCfg = COGNITIVE_LEVEL_CONFIG[q.cognitiveLevel];
                 return (
@@ -169,6 +211,17 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {lessonQuestions.length === 0 && (
+            <div className="py-6 text-center border border-dashed border-ink-800/50 rounded-xl">
+              <p className="text-2xl mb-2">🎯</p>
+              <p className="text-sm text-ink-500 font-arabic">لا توجد أسئلة تدريب لهذا الدرس</p>
+              <p className="text-xs text-ink-600 font-arabic mt-1">
+                نقاط التحقق تُضاف من داخل أقسام المحتوى
+              </p>
             </div>
           )}
 
@@ -269,7 +322,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                 onClick={() => setShowForm(true)}
                 className="flex-1 py-2.5 border border-dashed border-ink-700 rounded-lg text-ink-500 hover:border-sand-700 hover:text-sand-400 hover:bg-sand-900/10 transition-colors text-sm font-arabic"
               >
-                + إضافة سؤال
+                + إضافة سؤال تدريب
               </button>
               {onOpenGlobal && (
                 <button
