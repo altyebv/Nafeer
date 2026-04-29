@@ -54,7 +54,7 @@ function MCQQuickForm({ options, correctIndex, onOptionsChange, onCorrectChange 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, subjectId }) {
   const { questions, sections, concepts, addQuestion, deleteQuestion } = useDataStore();
-  const { deleteQuestion: atlasDeleteQuestion } = useAtlasSync();
+  const { deleteQuestion: atlasDeleteQuestion, syncQuestion } = useAtlasSync();
 
   const lessonQuestions = questions.filter((q) => q.lessonId === lessonId);
 
@@ -91,7 +91,11 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
       finalAnswer    = correctIndex >= 0 ? mcqOptions[correctIndex] : '';
     }
 
+    // Generate a stable id upfront so we can reference it for the Atlas sync below
+    const newId = `q_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
     addQuestion({
+      id:   newId,
       type,
       textAr,
       correctAnswer: finalAnswer,
@@ -107,6 +111,9 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
       feedEligible:     type === 'MCQ' || type === 'TRUE_FALSE',
       conceptIds:       [],
     });
+
+    // Push to Atlas immediately (same pattern as QuizBankPage)
+    if (subjectId) syncQuestion(newId, subjectId).catch(() => {});
 
     resetForm();
     setShowForm(false);
