@@ -15,9 +15,39 @@ const TYPE_ACCENT = {
   TABLE:         { bg: 'hover:bg-cyan-900/30',       icon: 'text-cyan-400'   },
   QUOTE:         { bg: 'hover:bg-ink-800',           icon: 'text-ink-400'    },
   DIVIDER:       { bg: 'hover:bg-ink-800',           icon: 'text-ink-600'    },
+  QUESTION:      { bg: 'hover:bg-amber-900/30',      icon: 'text-amber-500'  },
 };
 
+// Block types that are "interactive" — shown in a separate section
+const CHECKPOINT_TYPES = new Set(['QUESTION']);
+
 export default function AddBlockMenu({ onSelect, onClose }) {
+  const contentTypes    = Object.entries(BLOCK_TYPES).filter(([k]) => !CHECKPOINT_TYPES.has(k));
+  const checkpointTypes = Object.entries(BLOCK_TYPES).filter(([k]) =>  CHECKPOINT_TYPES.has(k));
+
+  const renderButton = ([key, value]) => {
+    const cfg    = BLOCK_TYPE_CONFIG[key];
+    const accent = TYPE_ACCENT[key] || TYPE_ACCENT.TEXT;
+    return (
+      <button
+        key={key}
+        onClick={() => onSelect(value)}
+        className={`
+          flex flex-col items-center gap-1.5 px-2 py-3
+          bg-ink-900 transition-all group
+          ${accent.bg}
+        `}
+      >
+        <span className={`text-base font-mono leading-none transition-colors ${accent.icon}`}>
+          {cfg.icon}
+        </span>
+        <span className="text-[10px] text-ink-600 group-hover:text-ink-300 font-arabic leading-none text-center transition-colors">
+          {cfg.label}
+        </span>
+      </button>
+    );
+  };
+
   return (
     <div className="rounded-xl border border-ink-800 overflow-hidden bg-ink-900/80 backdrop-blur-sm">
       {/* Header */}
@@ -33,31 +63,25 @@ export default function AddBlockMenu({ onSelect, onClose }) {
         </button>
       </div>
 
-      {/* Grid */}
+      {/* Content blocks grid */}
       <div className="grid grid-cols-6 gap-px bg-ink-800/40 p-px">
-        {Object.entries(BLOCK_TYPES).map(([key, value]) => {
-          const cfg    = BLOCK_TYPE_CONFIG[key];
-          const accent = TYPE_ACCENT[key] || TYPE_ACCENT.TEXT;
-          return (
-            <button
-              key={key}
-              onClick={() => onSelect(value)}
-              className={`
-                flex flex-col items-center gap-1.5 px-2 py-3
-                bg-ink-900 transition-all group
-                ${accent.bg}
-              `}
-            >
-              <span className={`text-base font-mono leading-none transition-colors ${accent.icon}`}>
-                {cfg.icon}
-              </span>
-              <span className="text-[10px] text-ink-600 group-hover:text-ink-300 font-arabic leading-none text-center transition-colors">
-                {cfg.label}
-              </span>
-            </button>
-          );
-        })}
+        {contentTypes.map(renderButton)}
       </div>
+
+      {/* Checkpoint separator */}
+      {checkpointTypes.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 px-4 py-2 border-t border-ink-800/60 bg-ink-900/40">
+            <span className="text-[10px] text-amber-700/80 font-arabic tracking-wide">
+              تفاعلي
+            </span>
+            <div className="flex-1 h-px bg-amber-900/20" />
+          </div>
+          <div className="grid grid-cols-6 gap-px bg-ink-800/40 p-px">
+            {checkpointTypes.map(renderButton)}
+          </div>
+        </>
+      )}
     </div>
   );
 }

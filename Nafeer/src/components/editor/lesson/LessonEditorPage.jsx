@@ -724,25 +724,47 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSectio
 
 // ─── Step 3: Questions ────────────────────────────────────────────────────────
 function StepQuestions({ lessonId, unitId, subjectId, lessonSections, lessonQuestions, onOpenGlobal, onPrev, onNext }) {
-  const checkpoints = lessonQuestions.filter(q => q.isCheckpoint);
+  const checkpoints = lessonQuestions.filter(q =>  q.isCheckpoint);
   const standalone  = lessonQuestions.filter(q => !q.isCheckpoint);
   return (
     <div className="space-y-4 max-w-2xl">
       <div className="pb-1">
         <h2 className="text-base font-semibold text-sand-200 font-arabic">الأسئلة</h2>
-        <p className="text-sm text-ink-400 font-arabic mt-0.5">نقاط تحقق وأسئلة تدريب مرتبطة بهذا الدرس</p>
+        <p className="text-sm text-ink-400 font-arabic mt-0.5">
+          نقاط التحقق تُضاف من داخل أقسام المحتوى · أسئلة التدريب تُضاف هنا
+        </p>
       </div>
       <Card>
         <CardHeader icon="◎" title="نظرة عامة" />
         <div className="p-5">
           <div className="grid grid-cols-2 gap-3">
-            <StatCard label="نقاط تحقق" sublabel="مدمجة في الدرس" value={checkpoints.length} />
-            <StatCard label="أسئلة تدريب" sublabel="مستقلة" value={standalone.length} />
+            <StatCard
+              label="نقاط تحقق"
+              sublabel="مدمجة في الأقسام"
+              value={checkpoints.length}
+              note={checkpoints.length > 0 ? `في ${[...new Set(checkpoints.map(q => q.sectionId).filter(Boolean))].length} قسم` : null}
+            />
+            <StatCard label="أسئلة تدريب" sublabel="بنك أسئلة الدرس" value={standalone.length} />
           </div>
+          {checkpoints.length > 0 && (
+            <div className="mt-4 space-y-1.5">
+              {checkpoints.map((q) => {
+                const sec = lessonSections.find((s) => s.id === q.sectionId);
+                return (
+                  <div key={q.id} className="flex items-center gap-2 text-xs font-arabic px-3 py-1.5 bg-amber-950/15 border border-amber-900/25 rounded-lg text-ink-400">
+                    <span className="text-amber-600/70">◎</span>
+                    <span className="flex-1 truncate">{q.textAr}</span>
+                    {sec && <span className="text-ink-600 truncate max-w-[100px]">{sec.title}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {lessonQuestions.length === 0 && (
             <div className="mt-4 py-6 text-center border border-dashed border-ink-800/50 rounded-xl">
               <p className="text-2xl mb-2">🎯</p>
               <p className="text-sm text-ink-400 font-arabic">لا توجد أسئلة مرتبطة بهذا الدرس</p>
+              <p className="text-xs text-ink-600 font-arabic mt-1">أضف نقاط تحقق من تبويب المحتوى</p>
             </div>
           )}
         </div>
@@ -973,12 +995,12 @@ function Stat({ label, val }) {
   );
 }
 
-function StatCard({ label, sublabel, value }) {
+function StatCard({ label, sublabel, value, note }) {
   return (
     <div className="bg-ink-800/30 rounded-xl border border-ink-800/70 p-4 text-center">
       <p className="text-2xl font-mono text-sand-400 leading-none">{value}</p>
       <p className="text-sm text-ink-400 font-arabic mt-1.5">{label}</p>
-      <p className="text-sm text-ink-500 font-arabic mt-0.5">{sublabel}</p>
+      <p className="text-sm text-ink-500 font-arabic mt-0.5">{note || sublabel}</p>
     </div>
   );
 }

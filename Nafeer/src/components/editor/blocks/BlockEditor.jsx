@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { useDataStore }     from '@/store/dataStore';
 import { useAtlasSync }     from '@/hooks/useAtlasSync';
-import { BLOCK_TYPE_CONFIG, HIGHLIGHT_STYLES, HEADING_LEVELS } from '@/shared/constants';
+import { useQuizStore }     from '@/store/quizStore';
+import { BLOCK_TYPE_CONFIG, HIGHLIGHT_STYLES, HEADING_LEVELS, QUESTION_TYPE_CONFIG } from '@/shared/constants';
 import { LessonTableEditor } from '@/components/editor/blocks/TableEditor';
 import DeleteButton          from '@/components/editor/shared/DeleteButton';
 import MediaPicker           from '@/components/editor/media/MediaPicker';
@@ -89,6 +90,7 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
     case 'TEXT':
       return (
         <textarea
+          autoFocus
           value={block.content}
           onChange={(e) => update({ content: e.target.value })}
           className={`${ta} min-h-[100px]`}
@@ -119,6 +121,7 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
             </span>
           </div>
           <input
+            autoFocus
             type="text"
             value={block.content}
             onChange={(e) => update({ content: e.target.value })}
@@ -188,6 +191,7 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
               onChange={(e) => update({ content: e.target.value })}
               className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-sand-200 text-sm font-arabic placeholder-ink-800"
               placeholder="النص المهم الذي تريد إبرازه…"
+              autoFocus
             />
           </div>
         </div>
@@ -249,6 +253,7 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
                 onChange={(e) => update({ content: e.target.value })}
                 className="w-full bg-transparent border-none resize-y min-h-[88px] focus:outline-none text-teal-100 text-sm font-arabic placeholder-teal-900"
                 placeholder="اكتب المثال كاملاً هنا…"
+                autoFocus
               />
             </div>
           ) : (
@@ -263,6 +268,7 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
                     onChange={(e) => updateStep(i, e.target.value)}
                     className={`${ta} flex-1 min-h-[60px]`}
                     placeholder={`الخطوة ${i + 1}…`}
+                    autoFocus
                   />
                   <button
                     onClick={() => removeStep(i)}
@@ -323,6 +329,7 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
             onChange={(e) => update({ content: e.target.value })}
             className={`${ta} min-h-[100px]`}
             placeholder="كل سطر = عنصر في القائمة…"
+            autoFocus 
           />
           <p className="text-[11px] text-ink-700 font-arabic">كل سطر سيظهر كعنصر منفصل</p>
         </div>
@@ -347,6 +354,7 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
             onChange={(e) => update({ content: e.target.value })}
             className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-ink-300 text-sm italic font-arabic placeholder-ink-800"
             placeholder="الاقتباس…"
+            autoFocus 
           />
         </div>
       );
@@ -359,6 +367,11 @@ function BlockBodyEditor({ block, update, patchMeta, ta, subjectId }) {
           <span className="text-ink-700 text-xs font-mono select-none">— فاصل —</span>
           <div className="flex-1 h-px bg-ink-800" />
         </div>
+      );
+
+    case 'QUESTION':
+      return (
+        <CheckpointBlockEditor block={block} update={update} />
       );
 
     default:
@@ -571,5 +584,283 @@ function MediaBlockEditor({ block, update, subjectId, ta }) {
         />
       )}
     </>
+  );
+}
+// ─── CheckpointBlockEditor ────────────────────────────────────────────────────
+// Renders an inline checkpoint question gate inside a section.
+// block.content holds the questionId. The question record in quizStore carries
+// isCheckpoint=true and sectionId=section.id.
+//
+// Three states:
+//   1. Empty  — no question linked yet → show create form
+//   2. Linked — question exists → show summary + edit affordance
+//   3. Editing — inline MCQ/TF quick form to amend the linked question
+
+const CHECKPOINT_TYPES = ['MCQ', 'TRUE_FALSE'];
+
+function CheckpointBlockEditor({ block, update }) {
+  const { questions, addQuestion, updateQuestion, deleteQuestion } = useDataStore();
+  const { syncQuestion } = useAtlasSync();
+
+  const linked = questions.find((q) => q.id === block.content && q.isCheckpoint);
+
+  const [editing,      setEditing]      = useState(!block.content);
+  const [type,         setType]         = useState('MCQ');
+  const [textAr,       setTextAr]       = useState(linked?.textAr || '');
+  const [explanation,  setExplanation]  = useState(linked?.explanation || '');
+  const [mcqOptions,   setMcqOptions]   = useState(() => {
+    if (linked?.options) { try { return JSON.parse(linked.options); } catch { /**/ } }
+    return ['', '', '', ''];
+  });
+  const [correctIndex, setCorrectIndex] = useState(() => {
+    if (linked?.type === 'MCQ' && linked?.correctAnswer && linked?.options) {
+      try {
+        const opts = JSON.parse(linked.options);
+        const idx  = opts.indexOf(linked.correctAnswer);
+        return idx >= 0 ? idx : -1;
+      } catch { return -1; }
+    }
+    return -1;
+  });
+  const [tfAnswer, setTfAnswer] = useState(linked?.correctAnswer || '');
+
+  const resetForm = () => {
+    setTextAr(linked?.textAr || '');
+    setExplanation(linked?.explanation || '');
+    setMcqOptions(linked?.options ? (() => { try { return JSON.parse(linked.options); } catch { return ['','','','']; } })() : ['','','','']);
+    setCorrectIndex(-1);
+    setTfAnswer(linked?.correctAnswer || '');
+    setType(linked?.type || 'MCQ');
+  };
+
+  const canSubmit = textAr.trim().length > 0 &&
+    (type !== 'MCQ' || correctIndex >= 0) &&
+    (type !== 'TRUE_FALSE' || tfAnswer !== '');
+
+  const handleSave = () => {
+    let finalAnswer  = tfAnswer;
+    let finalOptions = null;
+
+    if (type === 'MCQ') {
+      const filtered = mcqOptions.filter((o) => o.trim());
+      finalOptions   = JSON.stringify(filtered);
+      finalAnswer    = correctIndex >= 0 ? mcqOptions[correctIndex] : '';
+    }
+
+    if (linked) {
+      // Update existing checkpoint question
+      updateQuestion(linked.id, {
+        type, textAr, explanation: explanation || null,
+        correctAnswer: finalAnswer, options: finalOptions,
+      });
+    } else {
+      // Create new checkpoint question; link block.content to its id
+      const newId = `q_cp_${block.id}`;
+      addQuestion({
+        id:               newId,
+        type,
+        textAr,
+        correctAnswer:    finalAnswer,
+        options:          finalOptions,
+        explanation:      explanation || null,
+        lessonId:         block._lessonId || null,   // injected by SectionEditor (see below)
+        unitId:           block._unitId   || null,
+        sectionId:        block.sectionId || null,
+        isCheckpoint:     true,
+        difficulty:       1,
+        points:           1,
+        estimatedSeconds: 45,
+        cognitiveLevel:   'RECALL',
+        source:           'ORIGINAL',
+        feedEligible:     false,
+        conceptIds:       [],
+      });
+      update({ content: newId });
+    }
+    setEditing(false);
+  };
+
+  const handleUnlink = () => {
+    if (linked) deleteQuestion(linked.id);
+    update({ content: '' });
+    setEditing(true);
+    setTextAr(''); setExplanation('');
+    setMcqOptions(['','','','']); setCorrectIndex(-1); setTfAnswer('');
+  };
+
+  const inputCls =
+    'w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm ' +
+    'focus:ring-1 focus:ring-sand-500 focus:border-sand-500 focus:outline-none font-arabic placeholder-ink-600';
+
+  // ── Linked (read) mode ───────────────────────────────────────────────────────
+  if (linked && !editing) {
+    const cfg = QUESTION_TYPE_CONFIG[linked.type];
+    return (
+      <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/20 p-4 space-y-3">
+        {/* Header */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-emerald-600">◎</span>
+          <span className="text-xs font-arabic text-emerald-500 font-semibold">نقطة تحقق</span>
+          {cfg && (
+            <span className="text-xs font-arabic text-ink-500 px-1.5 py-0.5 bg-ink-800/60 rounded border border-ink-700">
+              {cfg.icon} {cfg.label}
+            </span>
+          )}
+          <div className="flex-1" />
+          <button
+            onClick={() => { resetForm(); setEditing(true); }}
+            className="text-xs text-ink-500 hover:text-sand-400 px-2 py-1 rounded hover:bg-ink-800 transition-colors font-arabic"
+          >
+            تعديل
+          </button>
+          <button
+            onClick={handleUnlink}
+            className="text-xs text-ink-600 hover:text-red-500 px-2 py-1 rounded hover:bg-red-950/30 transition-colors font-arabic"
+          >
+            ✕ حذف
+          </button>
+        </div>
+        {/* Question text */}
+        <p className="text-sm font-arabic text-ink-100 leading-relaxed">{linked.textAr}</p>
+        {/* Answer preview */}
+        {linked.type === 'MCQ' && linked.options && (() => {
+          let opts = [];
+          try { opts = JSON.parse(linked.options); } catch { return null; }
+          return (
+            <div className="space-y-1">
+              {opts.map((opt, i) => (
+                <div key={i} className={`flex items-center gap-2 text-sm font-arabic px-2 py-1 rounded-lg
+                  ${opt === linked.correctAnswer ? 'text-emerald-400 bg-emerald-900/20' : 'text-ink-400'}`}>
+                  <span className={`w-4 h-4 rounded-full border-2 shrink-0
+                    ${opt === linked.correctAnswer ? 'border-emerald-500 bg-emerald-500/30' : 'border-ink-600'}`} />
+                  {opt}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+        {linked.type === 'TRUE_FALSE' && (
+          <div className="flex gap-2 text-sm font-arabic">
+            {[['true','✓ صح'],['false','✕ خطأ']].map(([v,l]) => (
+              <span key={v} className={`px-3 py-1 rounded-lg border text-xs
+                ${linked.correctAnswer === v
+                  ? (v === 'true' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-700' : 'bg-red-900/30 text-red-400 border-red-700')
+                  : 'bg-ink-800/30 text-ink-500 border-ink-700'}`}>
+                {l}
+              </span>
+            ))}
+          </div>
+        )}
+        {linked.explanation && (
+          <p className="text-xs text-ink-500 font-arabic border-t border-ink-800/50 pt-2 mt-1">
+            💡 {linked.explanation}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ── Create / Edit form ───────────────────────────────────────────────────────
+  return (
+    <div className="rounded-xl border border-amber-900/30 bg-amber-950/10 p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-xs font-mono text-amber-600">◎</span>
+        <span className="text-xs font-arabic text-amber-500 font-semibold">
+          {linked ? 'تعديل نقطة التحقق' : 'إنشاء نقطة تحقق'}
+        </span>
+        <div className="flex-1" />
+        {linked && (
+          <button
+            onClick={() => { resetForm(); setEditing(false); }}
+            className="text-xs text-ink-500 hover:text-ink-300 px-2 py-1 rounded hover:bg-ink-800 transition-colors font-arabic"
+          >
+            إلغاء
+          </button>
+        )}
+      </div>
+
+      {/* Type selector — checkpoint only supports MCQ and TRUE_FALSE */}
+      <div className="flex gap-1.5">
+        {CHECKPOINT_TYPES.map((t) => {
+          const cfg = QUESTION_TYPE_CONFIG[t];
+          return (
+            <button key={t} onClick={() => setType(t)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border font-arabic transition-colors
+                ${type === t
+                  ? 'bg-sand-900/50 text-sand-300 border-sand-700'
+                  : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'}`}
+            >
+              <span className="font-mono">{cfg.icon}</span>
+              <span>{cfg.label}</span>
+            </button>
+          );
+        })}
+        <span className="text-xs text-ink-600 font-arabic self-center mr-1">
+          (نقاط التحقق: اختر واحداً أو صح/خطأ)
+        </span>
+      </div>
+
+      {/* Question text */}
+      <textarea
+        value={textAr}
+        onChange={(e) => setTextAr(e.target.value)}
+        className={`${inputCls} resize-none min-h-[68px]`}
+        placeholder="اكتب السؤال هنا…"
+        autoFocus
+      />
+
+      {/* MCQ options */}
+      {type === 'MCQ' && (
+        <div className="space-y-1.5">
+          {mcqOptions.map((opt, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <button
+                onClick={() => setCorrectIndex(i)}
+                className={`w-5 h-5 rounded-full border-2 shrink-0 transition-colors
+                  ${correctIndex === i ? 'border-emerald-500 bg-emerald-500/20' : 'border-ink-600 hover:border-ink-400'}`}
+                title="تحديد الإجابة الصحيحة"
+              />
+              <input
+                type="text" value={opt}
+                onChange={(e) => { const n = [...mcqOptions]; n[i] = e.target.value; setMcqOptions(n); }}
+                className="flex-1 px-2.5 py-1.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:outline-none font-arabic placeholder-ink-600"
+                placeholder={`الخيار ${i + 1}`}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* TRUE_FALSE selector */}
+      {type === 'TRUE_FALSE' && (
+        <div className="flex gap-2">
+          {[['true','✓ صح'],['false','✕ خطأ']].map(([val,lbl]) => (
+            <button key={val} onClick={() => setTfAnswer(val)}
+              className={`flex-1 py-2 rounded-lg text-sm border font-arabic transition-colors
+                ${tfAnswer === val
+                  ? (val === 'true' ? 'bg-emerald-900/40 text-emerald-400 border-emerald-700' : 'bg-red-900/40 text-red-400 border-red-700')
+                  : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'}`}
+            >{lbl}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Explanation / hint */}
+      <input
+        type="text" value={explanation}
+        onChange={(e) => setExplanation(e.target.value)}
+        className={inputCls}
+        placeholder="تلميح يظهر عند الإجابة الخاطئة (اختياري)…"
+      />
+
+      {/* Save */}
+      <button
+        onClick={handleSave}
+        disabled={!canSubmit}
+        className="w-full py-2 bg-amber-700/80 text-ink-950 rounded-lg hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-semibold text-sm font-arabic"
+      >
+        {linked ? 'حفظ التعديل' : 'إنشاء نقطة التحقق'}
+      </button>
+    </div>
   );
 }
