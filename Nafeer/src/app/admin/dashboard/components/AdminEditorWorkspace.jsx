@@ -9,6 +9,7 @@ import FeedItemsPage from '@/components/editor/pages/FeedItemsPage';
 import QuizBankPage from '@/components/editor/pages/QuizBankPage';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { useDataStore } from '@/store';            // ← composite hook: importData lives here
+import { useEditorStore } from '@/store/editorStore';
 import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import { useConceptStore } from '@/store/conceptStore';
@@ -120,20 +121,56 @@ function ActionBtn({ onClick, loading, disabled, variant = 'ghost', children }) 
 
 // ─── Loading / Error states ───────────────────────────────────────────────────
 
+function SkeletonBlock({ className = '', style = {} }) {
+  return (
+    <div
+      className={`animate-pulse rounded-lg ${className}`}
+      style={{
+        background: 'linear-gradient(90deg, rgba(255,255,255,0.045), rgba(255,255,255,0.085), rgba(255,255,255,0.045))',
+        ...style,
+      }}
+    />
+  );
+}
+
 function WorkspaceLoading() {
   return (
     <div
       className="rounded-2xl border overflow-hidden"
       style={{ background: 'rgba(9,9,11,0.45)', borderColor: 'rgba(255,255,255,0.06)' }}
     >
-      <div className="flex flex-col items-center justify-center gap-4 py-20 px-8">
-        <div className="relative">
-          <div className="w-10 h-10 rounded-full border-2 border-sand-800/60 animate-spin" style={{ borderTopColor: 'var(--accent, #d4891e)' }} />
+      <div className="px-5 py-4 border-b space-y-4" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-3 flex-1">
+            <SkeletonBlock className="h-2 w-40" />
+            <SkeletonBlock className="h-6 w-64 max-w-full" />
+            <SkeletonBlock className="h-4 w-48" />
+          </div>
+          <div className="flex items-center gap-2">
+            {[0, 1, 2, 3].map((item) => <SkeletonBlock key={item} className="h-8 w-20 rounded-lg" />)}
+          </div>
         </div>
-        <div className="text-center">
-          <p className="font-arabic text-sm text-ink-300">جارٍ تحميل محتوى المادة</p>
-          <p className="text-[11px] font-mono text-ink-600 mt-1">loading workspace…</p>
+        <div className="flex items-center gap-1">
+          {[0, 1, 2, 3].map((item) => <SkeletonBlock key={item} className="h-10 w-24 rounded-t-xl" />)}
         </div>
+      </div>
+      <div className="p-5 space-y-4">
+        <div className="flex items-center gap-2 text-sand-400">
+          <Spinner size={3} />
+          <span className="text-[11px] font-mono text-ink-500">loading workspace...</span>
+        </div>
+        <SkeletonBlock className="h-8 w-48" />
+        {[0, 1, 2].map((item) => (
+          <div
+            key={item}
+            className="rounded-xl border p-4 space-y-3"
+            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+          >
+            <SkeletonBlock className="h-4 w-56 max-w-full" />
+            <SkeletonBlock className="h-3 w-full" />
+            <SkeletonBlock className="h-3 w-2/3" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -173,6 +210,49 @@ function WorkspaceError({ message, onRetry }) {
 }
 
 // ─── Remote-only: import / delete panel ──────────────────────────────────────
+
+function WorkspaceRefreshBanner({ refreshing, error, onRetry, onDismiss }) {
+  if (!refreshing && !error) return null;
+
+  return (
+    <div
+      className="px-5 py-2.5 border-b flex items-center justify-between gap-3"
+      style={{
+        background: error ? 'rgba(239,68,68,0.05)' : 'rgba(212,137,30,0.05)',
+        borderColor: error ? 'rgba(239,68,68,0.14)' : 'rgba(212,137,30,0.16)',
+      }}
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        {refreshing ? (
+          <Spinner size={3} />
+        ) : (
+          <span className="text-red-400 text-xs">!</span>
+        )}
+        <span className={`text-[11px] font-arabic truncate ${error ? 'text-red-300' : 'text-sand-300'}`}>
+          {error || 'جار تحديث مساحة العمل في الخلفية...'}
+        </span>
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        {error && (
+          <button
+            onClick={onRetry}
+            className="text-[10px] font-mono text-red-300/80 hover:text-red-200 transition-colors"
+          >
+            retry
+          </button>
+        )}
+        {error && (
+          <button
+            onClick={onDismiss}
+            className="text-[10px] font-mono text-ink-600 hover:text-ink-400 transition-colors"
+          >
+            dismiss
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function RemoteOnlyPanel({ subjectId, onImported, onRemoteDeleted }) {
   const [importing,     setImporting]     = useState(false);
@@ -277,7 +357,7 @@ function RemoteOnlyPanel({ subjectId, onImported, onRemoteDeleted }) {
 
 // ─── Atlas mode: re-sync strip ────────────────────────────────────────────────
 
-function ReSyncStrip({ subjectId, hasRemote, onReloaded }) {
+function ReSyncStrip({ subjectId, hasRemote, onReloaded, onRemoteDeleted }) {
   const [importing,     setImporting]     = useState(false);
   const [importError,   setImportError]   = useState(null);
   const [importSuccess, setImportSuccess] = useState(false);
@@ -314,6 +394,7 @@ function ReSyncStrip({ subjectId, hasRemote, onReloaded }) {
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || 'فشل الحذف');
       setDeletePending(false);
+      onRemoteDeleted?.();
     } catch (e) {
       setDeleteError(e.message);
     } finally {
@@ -399,13 +480,17 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
 
   const { isSyncing, syncError, lastSynced } = useAtlasSync();
 
-  const [loading,        setLoading]        = useState(true);
+  const [loading,        setLoading]        = useState(() => useSubjectStore.getState().subject?.id !== subjectId);
+  const [refreshing,     setRefreshing]     = useState(false);
   const [error,          setError]          = useState(null);
+  const [refreshError,   setRefreshError]   = useState(null);
   const [reloadKey,      setReloadKey]      = useState(0);
-  const [origin,         setOrigin]         = useState('atlas');
-  const [currentPage,    setCurrentPage]    = useState('lessons');
-  const [selectedLesson, setSelectedLesson] = useState(null);
-  const [selectedUnit,   setSelectedUnit]   = useState(null);
+  const [origin,         setOrigin]         = useState(() => subjectMeta?.source === 'remote' ? 'remote' : 'atlas');
+  const currentPage      = useEditorStore((s) => s.activePage);
+  const selectedLesson   = useEditorStore((s) => s.selectedLessonId);
+  const selectedUnit     = useEditorStore((s) => s.selectedUnitId);
+  const setEditorRoute   = useEditorStore((s) => s.setEditorRoute);
+  const resetNavigation  = useEditorStore((s) => s.resetNavigation);
 
   // ── Load workspace ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -414,11 +499,19 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
     async function loadWorkspace() {
       if (!subjectId) return;
 
-      setLoading(true);
+      const sameSubject = useSubjectStore.getState().subject?.id === subjectId;
+
+      if (sameSubject) {
+        setLoading(false);
+        setRefreshing(true);
+        setRefreshError(null);
+      } else {
+        setLoading(true);
+        setRefreshing(false);
+        resetNavigation();
+      }
       setError(null);
-      setCurrentPage('lessons');
-      setSelectedLesson(null);
-      setSelectedUnit(null);
+      setRefreshError(null);
 
       try {
         const res  = await fetch(`/api/export?subjectId=${encodeURIComponent(subjectId)}&includeAll=true`);
@@ -445,9 +538,16 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
 
         setOrigin(json.origin || 'atlas');
       } catch (e) {
-        if (!cancelled) setError(e.message || 'تعذّر تحميل محتوى المادة');
+        if (!cancelled) {
+          const message = e.message || 'تعذّر تحميل محتوى المادة';
+          if (sameSubject) setRefreshError(message);
+          else setError(message);
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     }
 
@@ -457,9 +557,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   const navigateTo = (page, params = {}) => {
-    setCurrentPage(page);
-    if (params.lessonId !== undefined) setSelectedLesson(params.lessonId);
-    if (params.unitId   !== undefined) setSelectedUnit(params.unitId);
+    setEditorRoute(page, params);
   };
 
   const renderPage = () => {
@@ -508,6 +606,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
   return (
     <div
       className="rounded-2xl border overflow-hidden flex flex-col"
+      aria-busy={refreshing || isSyncing}
       style={{ background: 'rgba(9,9,11,0.50)', borderColor: 'rgba(255,255,255,0.07)' }}
     >
       {/* ══ HEADER ════════════════════════════════════════════════════════════ */}
@@ -601,6 +700,12 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
 
       {/* ══ SYNC BAR ══════════════════════════════════════════════════════════ */}
       <SyncBar isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
+      <WorkspaceRefreshBanner
+        refreshing={refreshing}
+        error={refreshError}
+        onRetry={() => setReloadKey((v) => v + 1)}
+        onDismiss={() => setRefreshError(null)}
+      />
 
       {/* ══ ACTION STRIPS (contextual) ════════════════════════════════════════ */}
       {(remoteOnly || (isAtlas && hasRemote)) && (
@@ -616,6 +721,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
               subjectId={subjectId}
               hasRemote={hasRemote}
               onReloaded={() => setReloadKey((v) => v + 1)}
+              onRemoteDeleted={onRemoteDeleted}
             />
           )}
         </div>

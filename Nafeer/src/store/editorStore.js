@@ -6,7 +6,7 @@ import { create } from 'zustand';
 
 export const useEditorStore = create((set) => ({
   // Current view
-  activePage:        'lessons',   // 'lessons' | 'feed' | 'quiz' | 'concepts' | 'export' | 'overview'
+  activePage:        'lessons',   // 'lessons' | 'editor' | 'feeds' | 'quizbank' | 'concepts' | 'export' | 'overview'
   selectedLessonId:  null,        // contentId of the lesson being edited
   selectedUnitId:    null,        // contentId of the active unit filter
   selectedConceptId: null,        // contentId of the concept being edited
@@ -21,9 +21,32 @@ export const useEditorStore = create((set) => ({
   lastSynced: null,
 
   // ── Actions ─────────────────────────────────────────────────────────────
-  setActivePage: (page) => set({ activePage: page, selectedLessonId: null }),
+  setActivePage: (page) => set({ activePage: page, selectedLessonId: null, selectedUnitId: null }),
 
-  setSelectedLesson: (lessonId) => set({ selectedLessonId: lessonId, activePage: 'lessons' }),
+  setEditorRoute: (page, params = {}) => set((state) => {
+    const hasLesson = Object.prototype.hasOwnProperty.call(params, 'lessonId');
+    const hasUnit   = Object.prototype.hasOwnProperty.call(params, 'unitId');
+
+    return {
+      activePage: page,
+      selectedLessonId: page === 'editor'
+        ? (hasLesson ? params.lessonId : state.selectedLessonId)
+        : null,
+      selectedUnitId: page === 'editor'
+        ? (hasUnit ? params.unitId : state.selectedUnitId)
+        : null,
+    };
+  }),
+
+  resetNavigation: () => set({
+    activePage:        'lessons',
+    selectedLessonId:  null,
+    selectedUnitId:    null,
+    selectedConceptId: null,
+    activeModal:       null,
+  }),
+
+  setSelectedLesson: (lessonId) => set({ selectedLessonId: lessonId, activePage: 'editor' }),
 
   setSelectedUnit: (unitId) => set({ selectedUnitId: unitId }),
 

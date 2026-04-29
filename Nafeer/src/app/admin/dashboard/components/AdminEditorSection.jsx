@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { SectionHeader } from './ui/shared';
 import { AdminEditorWorkspace } from './AdminEditorWorkspace';
 import { CreateTestSubjectModal } from './modals/CreateTestSubjectModal';
@@ -14,6 +14,12 @@ const TRACK_META = {
 };
 
 const TRACK_ORDER = ['COMMON', 'SCIENCE', 'LITERARY'];
+const SELECTED_SUBJECT_KEY = 'nafeer-admin-editor-selected-subject';
+
+function readStoredSelectedSubject() {
+  try { return sessionStorage.getItem(SELECTED_SUBJECT_KEY) || null; }
+  catch { return null; }
+}
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -79,6 +85,166 @@ function SecondaryBtn({ onClick, loading, disabled, children }) {
 }
 
 // ─── Subject Picker ───────────────────────────────────────────────────────────
+
+function SkeletonBlock({ className = '', style = {} }) {
+  return (
+    <div
+      className={`animate-pulse rounded-lg ${className}`}
+      style={{
+        background: 'linear-gradient(90deg, rgba(255,255,255,0.045), rgba(255,255,255,0.085), rgba(255,255,255,0.045))',
+        ...style,
+      }}
+    />
+  );
+}
+
+function SubjectPickerSkeleton() {
+  return (
+    <div
+      className="w-52 shrink-0 rounded-xl border overflow-hidden"
+      style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.07)' }}
+    >
+      <div className="px-3 py-3 border-b flex items-center justify-between" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        <SkeletonBlock className="h-3 w-16" />
+        <SkeletonBlock className="h-5 w-14 rounded-md" />
+      </div>
+      <div className="p-3 space-y-3">
+        {[0, 1, 2].map((group) => (
+          <div key={group} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <SkeletonBlock className="h-1.5 w-1.5 rounded-full" />
+              <SkeletonBlock className="h-2 w-14" />
+            </div>
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="flex items-center gap-2 py-1">
+                <SkeletonBlock className="h-1.5 w-1.5 rounded-full shrink-0" />
+                <SkeletonBlock className="h-3 flex-1" />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ContentPanelSkeleton() {
+  return (
+    <div className="flex flex-col gap-5">
+      <div
+        className="rounded-xl border p-5"
+        style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-3 flex-1">
+            <SkeletonBlock className="h-3 w-24" />
+            <SkeletonBlock className="h-7 w-56" />
+            <SkeletonBlock className="h-3 w-72 max-w-full" />
+          </div>
+          <SkeletonBlock className="h-9 w-32 rounded-xl" />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {[0, 1, 2].map((item) => (
+          <div
+            key={item}
+            className="rounded-xl border p-4 space-y-3"
+            style={{ background: 'rgba(255,255,255,0.018)', borderColor: 'rgba(255,255,255,0.07)' }}
+          >
+            <div className="flex items-center justify-between">
+              <SkeletonBlock className="h-3 w-16" />
+              <SkeletonBlock className="h-4 w-4 rounded-full" />
+            </div>
+            <SkeletonBlock className="h-8 w-20" />
+            <SkeletonBlock className="h-1 w-full rounded-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WorkspaceShellSkeleton() {
+  return (
+    <div
+      className="rounded-2xl border overflow-hidden"
+      style={{ background: 'rgba(9,9,11,0.50)', borderColor: 'rgba(255,255,255,0.07)' }}
+    >
+      <div className="px-5 py-4 border-b space-y-4" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-3 flex-1">
+            <SkeletonBlock className="h-2 w-40" />
+            <SkeletonBlock className="h-6 w-64 max-w-full" />
+            <SkeletonBlock className="h-4 w-48" />
+          </div>
+          <div className="flex items-center gap-2">
+            {[0, 1, 2, 3].map((item) => <SkeletonBlock key={item} className="h-8 w-20 rounded-lg" />)}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          {[0, 1, 2, 3].map((item) => <SkeletonBlock key={item} className="h-10 w-24 rounded-t-xl" />)}
+        </div>
+      </div>
+      <div className="p-5 space-y-4">
+        <SkeletonBlock className="h-8 w-48" />
+        {[0, 1, 2].map((item) => (
+          <div
+            key={item}
+            className="rounded-xl border p-4 space-y-3"
+            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+          >
+            <SkeletonBlock className="h-4 w-56 max-w-full" />
+            <SkeletonBlock className="h-3 w-full" />
+            <SkeletonBlock className="h-3 w-2/3" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminEditorSkeleton() {
+  return (
+    <div className="flex gap-5 items-start">
+      <SubjectPickerSkeleton />
+      <div className="flex-1 min-w-0 space-y-5">
+        <ContentPanelSkeleton />
+        <WorkspaceShellSkeleton />
+      </div>
+    </div>
+  );
+}
+
+function RefreshStatus({ refreshing }) {
+  if (!refreshing) return null;
+  return (
+    <div
+      className="mb-4 rounded-xl border px-4 py-2.5 flex items-center gap-2"
+      style={{ background: 'rgba(212,137,30,0.05)', borderColor: 'rgba(212,137,30,0.18)' }}
+    >
+      <Spinner />
+      <span className="text-[11px] font-arabic text-sand-300">جار تحديث بيانات المحرر بدون إغلاق مساحة العمل...</span>
+    </div>
+  );
+}
+
+function InlineRefreshError({ message, onRetry }) {
+  if (!message) return null;
+  return (
+    <div
+      className="mb-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-3"
+      style={{ background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.18)' }}
+    >
+      <span className="text-[12px] font-arabic text-red-300">{message}</span>
+      <button
+        onClick={onRetry}
+        className="text-[10px] font-mono text-red-300/80 hover:text-red-200 transition-colors"
+      >
+        retry
+      </button>
+    </div>
+  );
+}
 
 function statusDot(s) {
   if (s.isPublished && !s.hasNewContent) return 'bg-sand-500/70';
@@ -632,38 +798,73 @@ export function AdminEditorSection() {
   const [subjects, setSubjects] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const requestIdRef = useRef(0);
+  const hasLoadedRef = useRef(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const selectSubject = useCallback((id) => {
+    setSelected(id);
+    try {
+      if (id) sessionStorage.setItem(SELECTED_SUBJECT_KEY, id);
+      else sessionStorage.removeItem(SELECTED_SUBJECT_KEY);
+    } catch { /* ignore storage errors */ }
+  }, []);
+
+  const load = useCallback(async ({ silent = false } = {}) => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
+    const backgroundRefresh = silent || hasLoadedRef.current;
+    if (backgroundRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/content/publish/status');
       const data = await res.json();
+      if (requestId !== requestIdRef.current) return null;
       if (data.ok) {
         const list = data.subjects || [];
         setSubjects(list);
         setSelected((prevSelected) => {
-          if (prevSelected && list.some((subject) => subject.id === prevSelected)) {
-            return prevSelected;
+          const preferred = prevSelected || readStoredSelectedSubject();
+          if (preferred && list.some((subject) => subject.id === preferred)) {
+            return preferred;
           }
           const first = list.find((subject) => subject.isPublishable) || list[0];
           return first?.id || null;
         });
+        return list;
       } else {
         setError(data.error || 'فشل تحميل البيانات');
       }
     } catch {
-      setError('تعذّر الاتصال بالخادم');
+      if (requestId === requestIdRef.current) {
+        setError('تعذّر الاتصال بالخادم');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+        setHasLoaded(true);
+        hasLoadedRef.current = true;
+      }
     }
+    return null;
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    try {
+      if (selected) sessionStorage.setItem(SELECTED_SUBJECT_KEY, selected);
+      else sessionStorage.removeItem(SELECTED_SUBJECT_KEY);
+    } catch { /* ignore storage errors */ }
+  }, [selected]);
 
   // ── Publish helpers ───────────────────────────────────────────────────────
 
@@ -680,7 +881,7 @@ export function AdminEditorSection() {
       const data = await res.json();
       if (data.ok) {
         setResult({ ok: true, data });
-        load();
+        await load({ silent: true });
       } else {
         setResult({ ok: false, error: data.error });
       }
@@ -698,12 +899,13 @@ export function AdminEditorSection() {
   // Called after a test subject is created — auto-select it
   const handleTestSubjectCreated = async (newSubjectId) => {
     setShowCreateModal(false);
-    await load();
-    setSelected(newSubjectId);
+    await load({ silent: true });
+    selectSubject(newSubjectId);
     setResult(null);
   };
 
   const selectedSubject = subjects.find((s) => s.id === selected) || null;
+  const initialLoading = loading && !hasLoaded;
 
   return (
     <div>
@@ -719,71 +921,73 @@ export function AdminEditorSection() {
             + مادة تجريبية
           </button>
           <button
-            onClick={load}
-            disabled={loading}
-            className="text-xs font-mono text-ink-500 hover:text-ink-300 transition-colors px-3 py-1.5 rounded-lg border border-ink-800/60 hover:border-ink-700/60"
+            onClick={() => load({ silent: true })}
+            disabled={loading || refreshing}
+            className="text-xs font-mono text-ink-500 hover:text-ink-300 transition-colors px-3 py-1.5 rounded-lg border border-ink-800/60 hover:border-ink-700/60 flex items-center gap-2"
           >
+            {refreshing && <Spinner />}
             ↻ تحديث
           </button>
         </div>
       </SectionHeader>
 
       <div className="px-8 pb-8">
-        {loading ? (
-          <div className="flex items-center gap-3 text-ink-500 py-16">
-            <Spinner size="md" />
-            <span className="font-arabic text-sm">جارٍ التحميل…</span>
-          </div>
-        ) : error ? (
+        {initialLoading ? (
+          <AdminEditorSkeleton />
+        ) : error && !subjects.length ? (
           <div className="py-12 text-center">
             <p className="text-red-400 font-arabic text-sm mb-4">{error}</p>
             <button
-              onClick={load}
+              onClick={() => load()}
               className="text-xs font-mono text-ink-500 hover:text-ink-300 px-4 py-2 rounded-lg border border-ink-800"
             >
               إعادة المحاولة
             </button>
           </div>
         ) : (
-          <div className="flex gap-5 items-start">
-            <SubjectPicker
-              subjects={subjects}
-              selected={selected}
-              onSelect={(id) => { setSelected(id); setResult(null); }}
-              onCreateTest={() => setShowCreateModal(true)}
-            />
+          <>
+            <RefreshStatus refreshing={refreshing} />
+            <InlineRefreshError message={error} onRetry={() => load({ silent: true })} />
+            <div className="flex gap-5 items-start">
+              <SubjectPicker
+                subjects={subjects}
+                selected={selected}
+                onSelect={(id) => { selectSubject(id); setResult(null); }}
+                onCreateTest={() => setShowCreateModal(true)}
+              />
 
-            <div className="flex-1 min-w-0">
-              {selectedSubject ? (
-                <div className="flex flex-col gap-5">
-                  <ContentPanel
-                    subject={selectedSubject}
-                    onPublish={publish}
-                    onMajorPublish={majorPublish}
-                    onFullPublish={fullPublish}
-                    publishing={publishing}
-                    result={result}
-                    onDismissResult={() => setResult(null)}
-                    onDeleteSubject={() => { setSelected(null); load(); }}
-                  />
-                  <AdminEditorWorkspace
-                    subjectId={selectedSubject.id}
-                    subjectMeta={selectedSubject}
-                    onImported={() => { setResult(null); load(); }}
-                    onRemoteDeleted={() => {
-                    setResult(null);
-                    // If the deleted subject was remote-only (source=remote), deselect it
-                    const wasRemote = subjects.find((s) => s.id === selected)?.source === 'remote';
-                    if (wasRemote) setSelected(null);
-                    load();
-                  }}
-                  />
-                </div>
-              ) : (
-                <EmptyPanel />
-              )}
+              <div className="flex-1 min-w-0">
+                {selectedSubject ? (
+                  <div className="flex flex-col gap-5">
+                    <ContentPanel
+                      subject={selectedSubject}
+                      onPublish={publish}
+                      onMajorPublish={majorPublish}
+                      onFullPublish={fullPublish}
+                      publishing={publishing}
+                      result={result}
+                      onDismissResult={() => setResult(null)}
+                      onDeleteSubject={() => { selectSubject(null); load({ silent: true }); }}
+                    />
+                    <AdminEditorWorkspace
+                      subjectId={selectedSubject.id}
+                      subjectMeta={selectedSubject}
+                      onImported={() => { setResult(null); load({ silent: true }); }}
+                      onRemoteDeleted={() => {
+                        setResult(null);
+                        // If the deleted subject was remote-only (source=remote), deselect it
+                        const wasRemote = subjects.find((s) => s.id === selected)?.source === 'remote';
+                        if (wasRemote) selectSubject(null);
+                        load({ silent: true });
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <EmptyPanel />
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
