@@ -155,7 +155,8 @@ export function useDataStore(selector) {
         (data.feedItems || []).map((f) => ({
           ...f,
           atlasStatus: f.status || f.atlasStatus || 'draft',
-          // Ensure local field names match what the editor & sync hook expect
+          // Remap Atlas DB field names → local store field names
+          conceptId:  f.conceptId  || f.conceptContentId  || null,
           lessonId:   f.lessonId   || f.lessonContentId   || null,
           unitId:     f.unitId     || f.unitContentId      || null,
           questionId: f.questionId || f.questionContentId  || null,
@@ -167,7 +168,12 @@ export function useDataStore(selector) {
         (data.questions || []).map((q) => ({
           ...q,
           atlasStatus: q.status || q.atlasStatus || 'draft',
-          markers: q.markers || [],
+          markers:     q.markers || [],
+          // Remap Atlas DB field names → local store field names
+          // (mirrors the same pattern used for feed items above)
+          lessonId:  q.lessonId  || q.lessonContentId  || null,
+          unitId:    q.unitId    || q.unitContentId    || null,
+          sectionId: q.sectionId || q.sectionContentId || null,
         }))
       );
       quiz.loadExams(
