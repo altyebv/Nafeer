@@ -1,5 +1,21 @@
 'use client';
 import { useState } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 import { useDataStore } from '@/store/dataStore';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { LEARNING_TYPES, LEARNING_TYPE_CONFIG } from '@/shared/constants';
@@ -8,44 +24,89 @@ import AddBlockMenu   from '@/components/editor/blocks/AddBlockMenu';
 import ConceptLinker  from '@/components/editor/shared/ConceptLinker';
 import DeleteButton   from '@/components/editor/shared/DeleteButton';
 
-// Learning-type colour system — right-border accent (RTL leading edge)
+// ─── Learning-type colour system ──────────────────────────────────────────────
 const LT_STYLE = {
   UNDERSTANDING: {
-    border:  'border-r-blue-600/70',
-    dot:     'bg-blue-500',
-    label:   'text-blue-400',
-    pill:    'bg-blue-900/20 border-blue-800/40 text-blue-400',
+    border: 'border-r-blue-600/70',
+    dot:    'bg-blue-500',
+    label:  'text-blue-400',
+    pill:   'bg-blue-900/20 border-blue-800/40 text-blue-400',
   },
   MEMORIZATION: {
-    border:  'border-r-amber-600/70',
-    dot:     'bg-amber-500',
-    label:   'text-amber-400',
-    pill:    'bg-amber-900/20 border-amber-800/40 text-amber-400',
+    border: 'border-r-amber-600/70',
+    dot:    'bg-amber-500',
+    label:  'text-amber-400',
+    pill:   'bg-amber-900/20 border-amber-800/40 text-amber-400',
   },
   HYBRID: {
-    border:  'border-r-violet-600/70',
-    dot:     'bg-violet-500',
-    label:   'text-violet-400',
-    pill:    'bg-violet-900/20 border-violet-800/40 text-violet-400',
+    border: 'border-r-violet-600/70',
+    dot:    'bg-violet-500',
+    label:  'text-violet-400',
+    pill:   'bg-violet-900/20 border-violet-800/40 text-violet-400',
   },
 };
 
+// ─── SortableBlockItem ────────────────────────────────────────────────────────
+// Thin wrapper that owns the useSortable hook and passes the handle down.
+function SortableBlockItem({ block, subjectId, isDraggingOver }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id });
+
+  const style = {
+    transform:  CSS.Transform.toString(transform),
+    transition,
+    // Keep the slot visible (faded) while the overlay is being dragged
+    opacity:    isDragging ? 0.35 : 1,
+    // Prevent the block from visually lifting via z-index fight with the overlay
+    position:   'relative',
+    zIndex:     isDragging ? 0 : 'auto',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <BlockEditor
+        block={block}
+        subjectId={subjectId}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
+// ─── SectionEditor ────────────────────────────────────────────────────────────
 export default function SectionEditor({ section, maxPart = 0, subjectId }) {
-  const { blocks, concepts, updateSection, deleteSection, addBlock } = useDataStore();
+  const { blocks, concepts, updateSection, deleteSection, addBlock, reorderBlocks } = useDataStore();
   const { deleteSection: atlasDeleteSection } = useAtlasSync();
 
-  const [isEditingTitle, setIsEditingTitle] = useState(
-  !section.title || /^قسم \d+$/.test(section.title.trim())
-);
+  const [isEditingTitle,    setIsEditingTitle]    = useState(
+    !section.title || /^قسم \d+$/.test(section.title.trim())
+  );
   const [showAddBlock,      setShowAddBlock]       = useState(false);
   const [showConceptLinker, setShowConceptLinker]  = useState(false);
   const [collapsed,         setCollapsed]          = useState(false);
 
-  const sectionBlocks  = blocks.filter((b) => b.sectionId === section.id).sort((a, b) => a.order - b.order);
+  // Track which block id is actively being dragged (for the overlay)
+  const [activeBlockId, setActiveBlockId] = useState(null);
+
+  const sectionBlocks  = blocks
+    .filter((b) => b.sectionId === section.id)
+    .sort((a, b) => a.order - b.order);
+
   const linkedConcepts = concepts.filter((c) => section.conceptIds?.includes(c.id));
-  const ltCfg          = LEARNING_TYPE_CONFIG[section.learningType] || LEARNING_TYPE_CONFIG.UNDERSTANDING;
   const ltStyle        = LT_STYLE[section.learningType] || LT_STYLE.UNDERSTANDING;
   const partIndex      = section.partIndex ?? 0;
+
+  // PointerSensor with a small distance threshold so clicking a handle
+  // doesn't accidentally start a drag; 8px of movement required.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   const handleDelete = () => {
     deleteSection(section.id);
@@ -62,13 +123,38 @@ export default function SectionEditor({ section, maxPart = 0, subjectId }) {
     updateSection(section.id, { partIndex: next });
   };
 
+  // ── dnd-kit handlers ────────────────────────────────────────────────────────
+  const handleDragStart = ({ active }) => {
+    setActiveBlockId(active.id);
+  };
+
+  const handleDragEnd = ({ active, over }) => {
+    setActiveBlockId(null);
+    if (!over || active.id === over.id) return;
+
+    const ids     = sectionBlocks.map((b) => b.id);
+    const oldIdx  = ids.indexOf(active.id);
+    const newIdx  = ids.indexOf(over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+
+    const reordered = arrayMove(ids, oldIdx, newIdx);
+    reorderBlocks(section.id, reordered);
+  };
+
+  const handleDragCancel = () => setActiveBlockId(null);
+
+  // The block being dragged — used to render the overlay
+  const activeBlock = activeBlockId
+    ? sectionBlocks.find((b) => b.id === activeBlockId)
+    : null;
+
   return (
     <div className={`bg-ink-900/60 rounded-xl border border-ink-800/80 border-r-4 ${ltStyle.border} overflow-hidden transition-all`}>
 
       {/* ── Section header ──────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2.5 px-4 py-3 bg-ink-800/20">
 
-        {/* Drag handle */}
+        {/* Drag handle (for section reorder — wired by parent) */}
         <span className="text-ink-700 cursor-grab text-xs select-none leading-none">⋮⋮</span>
 
         {/* Collapse toggle */}
@@ -104,7 +190,7 @@ export default function SectionEditor({ section, maxPart = 0, subjectId }) {
           <span className="text-[10px] font-mono text-ink-700 shrink-0">{sectionBlocks.length}</span>
         )}
 
-        {/* Learning type selector — compact icon pills */}
+        {/* Learning type selector */}
         <div className="flex items-center gap-0.5 shrink-0 border border-ink-700/60 rounded-lg p-0.5 bg-ink-900/40">
           {Object.entries(LEARNING_TYPES).map(([key]) => {
             const cfg    = LEARNING_TYPE_CONFIG[key];
@@ -170,16 +256,49 @@ export default function SectionEditor({ section, maxPart = 0, subjectId }) {
             <ConceptLinker sectionId={section.id} linkedConceptIds={section.conceptIds || []} />
           )}
 
-          {/* Blocks */}
+          {/* Empty state */}
           {sectionBlocks.length === 0 && !showAddBlock && (
             <div className="py-5 text-center text-xs text-ink-800 font-arabic border border-dashed border-ink-800/40 rounded-lg">
               لا يوجد محتوى — أضف عنصراً
             </div>
           )}
 
-          {sectionBlocks.map((block) => (
-            <BlockEditor key={block.id} block={block} subjectId={subjectId} />
-          ))}
+          {/* ── Sortable block list ─────────────────────────────────────────── */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <SortableContext
+              items={sectionBlocks.map((b) => b.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3">
+                {sectionBlocks.map((block) => (
+                  <SortableBlockItem
+                    key={block.id}
+                    block={block}
+                    subjectId={subjectId}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+
+            {/* Drag overlay — follows the cursor, shows a faint copy of the block */}
+            <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
+              {activeBlock && (
+                <div className="opacity-90 scale-[1.01] shadow-2xl shadow-black/40 rounded-xl ring-1 ring-sand-700/40 pointer-events-none">
+                  <BlockEditor
+                    block={activeBlock}
+                    subjectId={subjectId}
+                    dragHandleProps={{}}   // handle is inert in the overlay
+                  />
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
 
           {/* Add block */}
           {showAddBlock ? (
