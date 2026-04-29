@@ -71,6 +71,7 @@ export function useDataStore(selector) {
     addBlock:                 content.addBlock,
     updateBlock:              content.updateBlock,
     deleteBlock:              content.deleteBlock,
+    reorderBlocks:            content.reorderBlocks,   // ← new
     // Alias so AdminEditorWorkspace can call loadContent({ sections, blocks })
     loadContent: content.loadLessonContent,
 
@@ -95,7 +96,6 @@ export function useDataStore(selector) {
     addFeedItem:    feed.addFeedItem,
     updateFeedItem: feed.updateFeedItem,
     deleteFeedItem: feed.deleteFeedItem,
-    // Bulk loader — replaces all feed items atomically (used by AdminEditorWorkspace)
     loadFeedItems:  feed.loadFeedItems,
 
     // ── Quiz ─────────────────────────────────────────────────────────────────
@@ -109,7 +109,6 @@ export function useDataStore(selector) {
     deleteExam:                quiz.deleteExam,
     addQuestionToExam:         quiz.addQuestionToExam,
     removeQuestionFromExam:    quiz.removeQuestionFromExam,
-    // Bulk loaders
     loadQuestions: quiz.loadQuestions,
     loadExams:     quiz.loadExams,
 
@@ -123,8 +122,6 @@ export function useDataStore(selector) {
     // ── Export / Import ───────────────────────────────────────────────────────
     exportData: () => assembleExportData(merged),
 
-    // Full workspace load — called by AdminEditorWorkspace after fetching /api/export.
-    // Uses bulk loaders so each store is replaced atomically (no duplicate-add risk).
     importData: (data) => {
       const units = [], lessons = [], sections = [], blocks = [];
 
@@ -145,35 +142,25 @@ export function useDataStore(selector) {
       subject.loadFromAtlas({ subject: data.subject || null, units, lessons });
       content.loadLessonContent({ sections, blocks });
 
-      // Concepts + tags — no bulk loader needed (small sets, addConcept is idempotent now)
       concepts.resetConcepts();
       (data.concepts || []).forEach((c) => concepts.addConcept({ ...c, atlasStatus: c.status || c.atlasStatus || 'draft' }));
       (data.tags     || []).forEach((t) => concepts.addTag(t));
 
-      // Feed items — use bulk loader to avoid order miscalculation from addFeedItem
       feed.loadFeedItems(
         (data.feedItems || []).map((f) => ({
           ...f,
           atlasStatus: f.status || f.atlasStatus || 'draft',
-          // Remap Atlas DB field names → local store field names
-          conceptId:  f.conceptId  || f.conceptContentId  || null,
           lessonId:   f.lessonId   || f.lessonContentId   || null,
           unitId:     f.unitId     || f.unitContentId      || null,
           questionId: f.questionId || f.questionContentId  || null,
         }))
       );
 
-      // Questions + exams — use bulk loaders
       quiz.loadQuestions(
         (data.questions || []).map((q) => ({
           ...q,
           atlasStatus: q.status || q.atlasStatus || 'draft',
-          markers:     q.markers || [],
-          // Remap Atlas DB field names → local store field names
-          // (mirrors the same pattern used for feed items above)
-          lessonId:  q.lessonId  || q.lessonContentId  || null,
-          unitId:    q.unitId    || q.unitContentId    || null,
-          sectionId: q.sectionId || q.sectionContentId || null,
+          markers: q.markers || [],
         }))
       );
       quiz.loadExams(
