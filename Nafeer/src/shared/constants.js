@@ -12,6 +12,7 @@ export const BLOCK_TYPES = {
   TABLE: 'TABLE',
   QUOTE: 'QUOTE',
   DIVIDER: 'DIVIDER',
+  QUESTION: 'QUESTION',  // interactive checkpoint question
 };
 
 export const BLOCK_TYPE_CONFIG = {
@@ -33,6 +34,8 @@ export const BLOCK_TYPE_CONFIG = {
   TABLE:         { label: 'جدول',          icon: '⊞',  color: 'cyan' },
   QUOTE:         { label: 'اقتباس',        icon: '❝',  color: 'slate' },
   DIVIDER:       { label: 'فاصل',          icon: '—',  color: 'stone' },
+  QUESTION:      { label: 'نقطة تحقق',     icon: '◎',  color: 'amber', defaultMeta: null },
+
 };
 
 // Highlight box styles (matches Android HighlightStyle enum)
