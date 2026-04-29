@@ -89,11 +89,22 @@ export const useContentStore = create(
       deleteBlock: (id) =>
         set((state) => ({ blocks: state.blocks.filter((b) => b.id !== id) })),
 
+      // ── reorderBlocks ──────────────────────────────────────────────────────
+      // Accepts the final ordered array of block IDs for a section and writes
+      // new `order` values in one atomic set() call — avoids N re-renders.
+      reorderBlocks: (sectionId, orderedIds) =>
+        set((state) => ({
+          blocks: state.blocks.map((b) => {
+            if (b.sectionId !== sectionId) return b;
+            const idx = orderedIds.indexOf(b.id);
+            return idx >= 0 ? { ...b, order: idx + 1 } : b;
+          }),
+        })),
+
       // ── Bulk operations (for lesson load/cascade delete) ──────────────────
       loadLessonContent: ({ sections, blocks }) => {
         set((state) => {
-          // Remove existing sections/blocks for these lessons, add new
-          const existingSectionIds = new Set(sections.map((s) => s.id));
+          const existingSectionIds      = new Set(sections.map((s) => s.id));
           const existingBlockSectionIds = new Set(sections.map((s) => s.id));
 
           return {
