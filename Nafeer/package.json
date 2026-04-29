@@ -11,6 +11,9 @@
     "seed:admin": "node --env-file=.env.local scripts/seed.js --admin-only"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.49.4",
     "bcryptjs": "^2.4.3",
     "firebase-admin": "^13.8.0",
