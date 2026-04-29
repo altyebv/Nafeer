@@ -91,7 +91,7 @@ export function computeDiff(currentDoc, updates) {
     if (isNested) {
       if (field in updates) {
         updatedVal = updates[field];
-      } else if (parts[0] in updates && typeof updates[parts[0]] === 'object') {
+      } else if (parts[0] in updates && typeof updates[parts[0]] === 'object' && updates[parts[0]] !== null) {
         updatedVal = updates[parts[0]][parts[1]] ?? null;
       } else {
         continue;
