@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMediaStore } from '@/store/mediaStore';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
+import { Check, Copy, ExternalLink, Image as ImageIcon, TriangleAlert, Upload, X } from 'lucide-react';
 
 const ACCEPT = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml';
 
@@ -141,7 +142,7 @@ export default function MediaPage({ subjectId, contributor }) {
       {isAdmin && (
         <div className="rounded-xl border border-ink-800 overflow-hidden">
           <div className="px-4 py-3 bg-ink-900/60 border-b border-ink-800 flex items-center gap-2">
-            <span className="text-sand-500 text-sm font-mono">↑</span>
+            <Upload size={15} strokeWidth={1.9} className="text-sand-500" />
             <span className="text-sm text-sand-300 font-semibold">رفع ملفات جديدة</span>
           </div>
 
@@ -199,7 +200,7 @@ export default function MediaPage({ subjectId, contributor }) {
                 </>
               ) : (
                 <>
-                  <span className="text-2xl text-ink-600">⬆</span>
+                  <Upload size={28} strokeWidth={1.6} className="text-ink-600" />
                   <span className="text-ink-400 text-sm">اسحب الملفات هنا أو اضغط للتصفح</span>
                   <span className="text-ink-700 text-xs">JPEG · PNG · GIF · WebP · SVG — حتى 10 ميغابايت</span>
                 </>
@@ -217,7 +218,7 @@ export default function MediaPage({ subjectId, contributor }) {
 
             {uploadError && (
               <p className="text-red-400 text-xs bg-red-900/20 border border-red-900/40 rounded-lg px-3 py-2">
-                ⚠ {uploadError}
+                <TriangleAlert size={13} strokeWidth={1.9} className="inline ml-1" /> {uploadError}
               </p>
             )}
           </div>
@@ -269,7 +270,7 @@ export default function MediaPage({ subjectId, contributor }) {
       {/* ── Error / loading states ────────────────────────────────────────── */}
       {mediaError && (
         <div className="flex items-center gap-2 px-4 py-3 bg-red-900/20 border border-red-900/40 rounded-xl text-red-400 text-sm">
-          <span>⚠</span><span>{mediaError}</span>
+          <TriangleAlert size={16} strokeWidth={1.9} /><span>{mediaError}</span>
           <button onClick={fetchMedia} className="mr-auto text-xs underline hover:no-underline">إعادة المحاولة</button>
         </div>
       )}
@@ -285,7 +286,7 @@ export default function MediaPage({ subjectId, contributor }) {
         <>
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-ink-600">
-              <span className="text-4xl">🖼</span>
+              <ImageIcon size={42} strokeWidth={1.5} />
               <p className="text-sm font-arabic">
                 {media.length === 0
                   ? (isAdmin ? 'لا توجد ملفات بعد — ارفع أول صورة أعلاه' : 'لا توجد وسائط لهذه المادة بعد')
@@ -350,7 +351,7 @@ export default function MediaPage({ subjectId, contributor }) {
                           isCopied ? 'text-emerald-400' : 'text-ink-600 hover:text-ink-300'
                         }`}
                       >
-                        {isCopied ? '✓' : '⎘'}
+                        {isCopied ? <Check size={14} strokeWidth={2.1} /> : <Copy size={14} strokeWidth={1.9} />}
                       </button>
 
                       {/* Open in new tab */}
@@ -361,7 +362,7 @@ export default function MediaPage({ subjectId, contributor }) {
                         title="فتح في تبويب جديد"
                         className="flex-1 flex items-center justify-center py-1.5 text-xs text-ink-600 hover:text-ink-300 transition-colors"
                       >
-                        ↗
+                        <ExternalLink size={14} strokeWidth={1.9} />
                       </a>
 
                       {/* Delete (admin only) */}
@@ -388,7 +389,7 @@ export default function MediaPage({ subjectId, contributor }) {
                             title="حذف"
                             className="flex-1 flex items-center justify-center py-1.5 text-xs text-ink-700 hover:text-red-500 transition-colors"
                           >
-                            ✕
+                            <X size={14} strokeWidth={1.9} />
                           </button>
                         )
                       )}

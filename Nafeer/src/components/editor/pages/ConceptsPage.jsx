@@ -5,6 +5,22 @@ import { CONCEPT_TYPES, CONCEPT_TYPE_CONFIG }  from '@/shared/constants';
 import Modal from '@/components/editor/shared/Modal';
 import DeleteButton from '@/components/editor/shared/DeleteButton';
 import StatusBadge from '@/components/editor/shared/StatusBadge';
+import {
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  Lightbulb,
+  Link2,
+  MapPin,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Scale,
+  Search,
+  Send,
+  Sigma,
+  UserRound,
+} from 'lucide-react';
 
 // ─── Themed primitives ────────────────────────────────────────────────────────
 const FIELD = {
@@ -34,9 +50,23 @@ const TYPE_HUE = {
   CAUSE_EFFECT: '#f97316',
 };
 
+const CONCEPT_ICONS = {
+  DEFINITION: BookOpen,
+  FORMULA: Sigma,
+  DATE: CalendarDays,
+  PERSON: UserRound,
+  LAW: Scale,
+  FACT: CheckCircle2,
+  PROCESS: RefreshCw,
+  COMPARISON: Scale,
+  PLACE: MapPin,
+  CAUSE_EFFECT: Link2,
+};
+
 function TypePill({ type }) {
   const cfg   = CONCEPT_TYPE_CONFIG[type] || {};
   const color = TYPE_HUE[type] || 'var(--accent)';
+  const Icon  = CONCEPT_ICONS[type] || Lightbulb;
   return (
     <span
       className="inline-flex items-center gap-1 font-arabic"
@@ -50,7 +80,7 @@ function TypePill({ type }) {
         lineHeight: '18px',
       }}
     >
-      <span style={{ fontSize: 10 }}>{cfg.icon}</span>
+      <Icon size={12} strokeWidth={1.9} />
       {cfg.label}
     </span>
   );
@@ -189,7 +219,7 @@ export default function ConceptsPage({ subjectId }) {
           onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-hover)'}
           onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
         >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> مفهوم جديد
+          <Plus size={16} strokeWidth={2.1} /> مفهوم جديد
         </button>
       </div>
 
@@ -220,7 +250,8 @@ export default function ConceptsPage({ subjectId }) {
               key={key}
               active={filterType === key}
               onClick={() => setFilterType(filterType === key ? '' : key)}
-              label={`${cfg.icon} ${cfg.label}`}
+              icon={CONCEPT_ICONS[key] || Lightbulb}
+              label={cfg.label}
               count={count}
               color={TYPE_HUE[key]}
             />
@@ -230,15 +261,15 @@ export default function ConceptsPage({ subjectId }) {
 
       {/* ── Search ─────────────────────────────────────────────────────────── */}
       <div className="relative mb-6">
-        <span
+        <Search
+          size={15}
+          strokeWidth={1.9}
           className="absolute"
           style={{
             right: 12, top: '50%', transform: 'translateY(-50%)',
-            color: 'var(--text-muted)', fontSize: 14, pointerEvents: 'none',
+            color: 'var(--text-muted)', pointerEvents: 'none',
           }}
-        >
-          🔍
-        </span>
+        />
         <input
           type="text"
           value={search}
@@ -285,7 +316,7 @@ export default function ConceptsPage({ subjectId }) {
       {/* ── Concepts list ──────────────────────────────────────────────────── */}
       {filtered.length === 0 ? (
         <EmptyState
-          icon="💡"
+          icon={<Lightbulb size={38} strokeWidth={1.7} />}
           title={subjectConcepts.length === 0 ? 'لا توجد مفاهيم بعد' : 'لا توجد نتائج'}
           action={subjectConcepts.length === 0 ? (
             <button
@@ -304,9 +335,9 @@ export default function ConceptsPage({ subjectId }) {
       ) : (
         <div className="space-y-2">
           {filtered.map((concept) => {
-            const cfg         = CONCEPT_TYPE_CONFIG[concept.type];
             const conceptTags = tags.filter((t) => concept.tagIds?.includes(t.id));
             const accentColor = TYPE_HUE[concept.type] || 'var(--accent)';
+            const ConceptIcon = CONCEPT_ICONS[concept.type] || Lightbulb;
             return (
               <div
                 key={concept.id}
@@ -341,7 +372,7 @@ export default function ConceptsPage({ subjectId }) {
                       fontSize: 16,
                     }}
                   >
-                    {cfg?.icon}
+                    <ConceptIcon size={17} strokeWidth={1.9} color={accentColor} />
                   </div>
 
                   {/* Main text */}
@@ -391,10 +422,12 @@ export default function ConceptsPage({ subjectId }) {
                         title="إرسال للمراجعة"
                         color="#f59e0b"
                       >
-                        ⇪
+                        <Send size={13} strokeWidth={1.9} />
                       </ActionBtn>
                     )}
-                    <ActionBtn onClick={() => handleEdit(concept)} title="تعديل">✏</ActionBtn>
+                    <ActionBtn onClick={() => handleEdit(concept)} title="تعديل">
+                      <Pencil size={13} strokeWidth={1.9} />
+                    </ActionBtn>
                     <DeleteButton onDelete={() => handleDeleteConcept(concept.id)} />
                   </div>
                 </div>
@@ -616,7 +649,7 @@ function StatItem({ n, label, color }) {
   );
 }
 
-function FilterPill({ active, onClick, label, count, color }) {
+function FilterPill({ active, onClick, label, count, color, icon: Icon }) {
   return (
     <button
       onClick={onClick}
@@ -633,6 +666,7 @@ function FilterPill({ active, onClick, label, count, color }) {
         display: 'inline-flex', alignItems: 'center', gap: 5,
       }}
     >
+      {Icon && <Icon size={12} strokeWidth={1.9} />}
       {label}
       {count != null && (
         <span style={{ fontSize: 10, opacity: 0.7 }}>({count})</span>
@@ -685,7 +719,7 @@ function EmptyState({ icon, title, action }) {
         borderRadius: 16,
       }}
     >
-      <div style={{ fontSize: 36, marginBottom: 12 }}>{icon}</div>
+      <div className="flex justify-center mb-3" style={{ color: 'var(--text-muted)' }}>{icon}</div>
       <p className="font-arabic" style={{ fontSize: 14, color: 'var(--text-muted)' }}>{title}</p>
       {action}
     </div>

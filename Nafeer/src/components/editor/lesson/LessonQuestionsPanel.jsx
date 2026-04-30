@@ -6,12 +6,21 @@ import {
   QUESTION_TYPES, QUESTION_TYPE_CONFIG,
   COGNITIVE_LEVEL_CONFIG,
 } from '@/shared/constants';
+import { Check, ChevronLeft, CircleDot, ListChecks, MessageCircle, PencilLine, Target, TextCursorInput, ToggleRight, X } from 'lucide-react';
 
 // Quick-add supports the 5 most common question types.
 // Full editing for all 11 types lives in the global QuizBankPage.
 // NOTE: checkpoint questions (isCheckpoint=true) are NOT created here —
 // they belong in the section body as QUESTION blocks.
 const QUICK_TYPES = ['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER', 'FILL_BLANK', 'EXPLAIN'];
+
+const QUESTION_ICONS = {
+  MCQ: ListChecks,
+  TRUE_FALSE: ToggleRight,
+  SHORT_ANSWER: PencilLine,
+  FILL_BLANK: TextCursorInput,
+  EXPLAIN: MessageCircle,
+};
 
 const inputClass =
   'w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm ' +
@@ -135,16 +144,14 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-3 px-4 py-3 bg-ink-800/40 hover:bg-ink-800/70 transition-colors text-right"
       >
-        <span className="text-base">🎯</span>
+        <Target size={17} strokeWidth={1.9} className="text-sand-500" />
         <span className="flex-1 text-sm font-semibold text-ink-200 font-arabic">أسئلة الدرس</span>
         {lessonQuestions.length > 0 && (
           <span className="text-xs font-mono px-2 py-0.5 rounded border bg-sand-900/40 text-sand-400 border-sand-700/40">
             {lessonQuestions.length}
           </span>
         )}
-        <span className={`text-ink-600 text-xs transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}>
-          ▶
-        </span>
+        <ChevronLeft size={14} strokeWidth={2} className={`text-ink-600 transition-transform duration-200 ${isOpen ? '-rotate-90' : ''}`} />
       </button>
 
       {isOpen && (
@@ -158,6 +165,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
               </p>
               {checkpointQuestions.map((q) => {
                 const cfg    = QUESTION_TYPE_CONFIG[q.type];
+                const Icon   = QUESTION_ICONS[q.type] || CircleDot;
                 const sec    = sections.find((s) => s.id === q.sectionId);
                 return (
                   <div
@@ -165,7 +173,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                     className="flex items-center gap-3 px-3 py-2 bg-amber-950/20 rounded-lg border border-amber-900/30"
                   >
                     <span className="text-xs font-mono text-amber-600/70 w-5 text-center shrink-0">
-                      {cfg?.icon}
+                      <Icon size={13} strokeWidth={1.9} />
                     </span>
                     <span className="flex-1 text-sm text-ink-300 line-clamp-1 font-arabic">
                       {q.textAr}
@@ -192,6 +200,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
               )}
               {practiceQuestions.map((q) => {
                 const cfg    = QUESTION_TYPE_CONFIG[q.type];
+                const Icon   = QUESTION_ICONS[q.type] || CircleDot;
                 const cogCfg = COGNITIVE_LEVEL_CONFIG[q.cognitiveLevel];
                 return (
                   <div
@@ -199,7 +208,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                     className="flex items-center gap-3 px-3 py-2 bg-ink-800/60 rounded-lg group border border-transparent hover:border-ink-700 transition-colors"
                   >
                     <span className="text-xs font-mono text-ink-500 w-5 text-center shrink-0">
-                      {cfg?.icon}
+                      <Icon size={13} strokeWidth={1.9} />
                     </span>
                     <span className="flex-1 text-sm text-ink-300 line-clamp-1 font-arabic">
                       {q.textAr}
@@ -213,7 +222,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                       onClick={() => handleDelete(q.id)}
                       className="opacity-0 group-hover:opacity-100 text-ink-600 hover:text-red-500 transition-all p-0.5 shrink-0"
                     >
-                      ✕
+                      <X size={13} strokeWidth={1.9} />
                     </button>
                   </div>
                 );
@@ -224,7 +233,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
           {/* Empty state */}
           {lessonQuestions.length === 0 && (
             <div className="py-6 text-center border border-dashed border-ink-800/50 rounded-xl">
-              <p className="text-2xl mb-2">🎯</p>
+              <Target size={30} strokeWidth={1.6} className="mx-auto mb-2 text-ink-600" />
               <p className="text-sm text-ink-500 font-arabic">لا توجد أسئلة تدريب لهذا الدرس</p>
               <p className="text-xs text-ink-600 font-arabic mt-1">
                 نقاط التحقق تُضاف من داخل أقسام المحتوى
@@ -240,6 +249,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
               <div className="flex gap-1.5 flex-wrap">
                 {QUICK_TYPES.map((t) => {
                   const cfg = QUESTION_TYPE_CONFIG[t];
+                  const Icon = QUESTION_ICONS[t] || CircleDot;
                   return (
                     <button
                       key={t}
@@ -250,7 +260,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                           : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'
                         }`}
                     >
-                      <span className="font-mono">{cfg.icon}</span>
+                      <Icon size={13} strokeWidth={1.9} />
                       <span>{cfg.label}</span>
                     </button>
                   );
@@ -269,7 +279,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
               {/* Answer input — varies by type */}
               {type === 'TRUE_FALSE' && (
                 <div className="flex gap-2">
-                  {[['true', '✓ صح'], ['false', '✕ خطأ']].map(([val, lbl]) => (
+                  {[['true', 'صح'], ['false', 'خطأ']].map(([val, lbl]) => (
                     <button
                       key={val}
                       onClick={() => setCorrectAnswer(val)}
@@ -281,6 +291,9 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                           : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'
                         }`}
                     >
+                      <span className="inline-flex items-center justify-center ml-1">
+                        {val === 'true' ? <Check size={14} strokeWidth={2} /> : <X size={14} strokeWidth={2} />}
+                      </span>
                       {lbl}
                     </button>
                   ))}

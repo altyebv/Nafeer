@@ -1,6 +1,6 @@
 'use client';
 import { useMemo } from 'react';
-import { BookOpen, Check, CircleHelp, CornerDownLeft, FileText, Smartphone } from 'lucide-react';
+import { BookOpen, Check, CornerDownLeft, FileText, Smartphone } from 'lucide-react';
 import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
 
 // ─── CoveragePanel ────────────────────────────────────────────────────────────
