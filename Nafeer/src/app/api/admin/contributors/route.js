@@ -80,7 +80,7 @@ export async function PATCH(request) {
   const admin = await verifyAdminToken();
   if (!admin) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-  const { id, action, password } = await request.json();
+  const { id, action, password, subject, role, roleId } = await request.json();
   if (!id || !action) return NextResponse.json({ message: 'Missing id or action' }, { status: 400 });
 
   // Client-side refresh trigger — no server action needed
@@ -124,6 +124,12 @@ export async function PATCH(request) {
     contributor.onboarded    = true; // admin-set password skips onboarding
   } else if (action === 'reset_to_pending') {
     contributor.status = 'pending';
+  } else if (action === 'assign_subject') {
+    // Admin assigns (or clears) the subject for an approved contributor
+    contributor.subject = subject || '';
+  } else if (action === 'assign_role_id') {
+    // Admin assigns (or clears) the ContributorRole reference
+    contributor.roleId = roleId || null;
   } else if (action === 'generate_onboard_link') {
     // Re-generate a fresh link for an already-approved contributor
     if (contributor.status !== 'approved') {
