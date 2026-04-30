@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { signToken, setAuthCookie, buildTokenPayload } from '@/lib/auth';
+import { SUBJECT_IDS } from '@/shared/curriculum';
 import bcrypt from 'bcryptjs';
 
 // ─── GET /api/auth/onboard?token=xxx ─────────────────────────────────────────
 // Validates the magic link token.
-// Returns contributor name/username so the page can greet them.
+// Returns contributor name/username/subject so the page can greet them.
+//
+// Also returns `subjectsOfInterest` and a `needsSubjectChoice` boolean so the
+// onboard page can render a subject-picker step when the admin has not yet
+// assigned a canonical subject and the contributor expressed interest in more
+// than one subject during the join flow.
 
 export async function GET(request) {
   const token = new URL(request.url).searchParams.get('token');
@@ -41,23 +47,37 @@ export async function GET(request) {
     );
   }
 
+  // Determine whether the onboard page needs to show a subject-choice step.
+  // Needed when the admin has not assigned a subject AND the contributor picked
+  // more than one at join time. If exactly one exists, POST will auto-resolve it.
+  const interests          = contributor.subjectsOfInterest || [];
+  const needsSubjectChoice = !contributor.subject && interests.length > 1;
+
   return NextResponse.json({
     ok:   true,
     data: {
-      name:     contributor.name,
-      username: contributor.username,
-      subject:  contributor.subject,
+      name:               contributor.name,
+      username:           contributor.username,
+      subject:            contributor.subject,
+      subjectsOfInterest: interests,
+      needsSubjectChoice,
     },
   });
 }
 
 // ─── POST /api/auth/onboard ───────────────────────────────────────────────────
 // Completes the onboarding: sets password + bio, marks onboarded, issues JWT.
-// Body: { token, password, bio }
+// Body: { token, password, bio, chosenSubject? }
+//
+// Subject resolution order (first match wins):
+//   1. Admin has already assigned contributor.subject   → use it as-is
+//   2. Body includes a valid chosenSubject              → use it
+//   3. subjectsOfInterest has exactly one entry        → auto-resolve silently
+//   4. Multiple interests and no chosenSubject          → 422, frontend must ask
 
 export async function POST(request) {
   try {
-    const { token, password, bio } = await request.json();
+    const { token, password, bio, chosenSubject } = await request.json();
 
     if (!token || !password) {
       return NextResponse.json(
@@ -97,7 +117,43 @@ export async function POST(request) {
       );
     }
 
-    // Set password, bio, mark onboarded, clear token
+    // ── Subject resolution ────────────────────────────────────────────────────
+    const interests = contributor.subjectsOfInterest || [];
+
+    if (!contributor.subject) {
+      if (chosenSubject) {
+        // Validate: must be a real subject ID and must be from the contributor's
+        // interest list (fall back to allowing any valid ID if list is empty).
+        const allowedPool = interests.length > 0 ? interests : SUBJECT_IDS;
+        if (!SUBJECT_IDS.includes(chosenSubject) || !allowedPool.includes(chosenSubject)) {
+          return NextResponse.json(
+            { ok: false, error: 'المادة المختارة غير صالحة' },
+            { status: 400 }
+          );
+        }
+        contributor.subject = chosenSubject;
+      } else if (interests.length === 1) {
+        // Exactly one interest — resolve silently, no friction for the user.
+        contributor.subject = interests[0];
+      } else if (interests.length > 1) {
+        // Multiple interests and no choice provided — the frontend must show the
+        // picker before re-submitting. Return the options in the error body so
+        // the page can render them without an extra round-trip.
+        return NextResponse.json(
+          {
+            ok:                 false,
+            error:              'يرجى اختيار المادة التي ستساهم فيها',
+            needsSubjectChoice: true,
+            subjectsOfInterest: interests,
+          },
+          { status: 422 }
+        );
+      }
+      // interests.length === 0 and no chosenSubject: leave subject blank.
+      // The admin will assign it later; the card warning will prompt them.
+    }
+
+    // ── Persist ───────────────────────────────────────────────────────────────
     contributor.passwordHash        = await bcrypt.hash(password, 12);
     contributor.bio                 = (bio || '').trim().slice(0, 280);
     contributor.onboarded           = true;
@@ -107,7 +163,7 @@ export async function POST(request) {
 
     await contributor.save();
 
-    // Issue session cookie
+    // Issue session cookie — subject is now correctly baked into the JWT.
     const jwtToken = await signToken(buildTokenPayload(contributor));
     await setAuthCookie(jwtToken);
 

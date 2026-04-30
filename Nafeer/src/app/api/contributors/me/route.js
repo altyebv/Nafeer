@@ -20,6 +20,9 @@ export async function GET() {
 
 // ─── PATCH /api/contributors/me ───────────────────────────────────────────────
 // Updates mutable profile fields: bio, username (if not taken).
+// Also handles action=refresh_token to re-issue the JWT with the latest
+// DB state — used when the admin assigns a subject after onboarding so the
+// contributor can access the editor without signing out and back in.
 // Avatar is handled separately via /api/contributors/me/avatar.
 
 export async function PATCH(request) {
@@ -27,6 +30,34 @@ export async function PATCH(request) {
   if (!user?.id) return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
 
   const body = await request.json();
+
+  // ── Token refresh action ──────────────────────────────────────────────────
+  // Re-issues the JWT from the current DB record so any admin-assigned fields
+  // (e.g. subject) take effect immediately without requiring a sign-out.
+  if (body.action === 'refresh_token') {
+    await connectDB();
+    const contributor = await Contributor.findById(user.id);
+    if (!contributor) return NextResponse.json({ ok: false, error: 'المساهم غير موجود' }, { status: 404 });
+
+    const token = await signToken(buildTokenPayload(contributor));
+    await setAuthCookie(token);
+
+    return NextResponse.json({
+      ok: true,
+      contributor: {
+        id:        contributor._id,
+        name:      contributor.name,
+        username:  contributor.username,
+        email:     contributor.email,
+        subject:   contributor.subject,
+        role:      contributor.role,
+        avatarUrl: contributor.avatarUrl,
+        onboarded: contributor.onboarded,
+      },
+    });
+  }
+
+  // ── Profile field updates ─────────────────────────────────────────────────
   const update = {};
 
   if (typeof body.bio === 'string') {
