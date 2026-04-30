@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link                 from 'next/link';
 import { useDataStore }    from '@/store/dataStore';
 import { useMediaStore }   from '@/store/mediaStore';
 import { useRouter }       from 'next/navigation';
@@ -141,6 +142,8 @@ export function DesktopSidebar({
 
   const sidebarBg     = isDark ? '#090806'                 : '#faf5eb';
   const sidebarBorder = isDark ? 'rgba(255,255,255,0.065)' : 'rgba(146,79,18,0.12)';
+  const sidebarPanel  = isDark ? 'rgba(255,248,237,0.035)' : 'rgba(255,255,255,0.42)';
+  const sidebarPanelHover = isDark ? 'rgba(212,137,30,0.08)' : 'rgba(154,85,15,0.09)';
   const sidebarShadow = expanded
     ? isDark ? '-8px 0 40px rgba(0,0,0,0.6)' : '-8px 0 40px rgba(0,0,0,0.10)'
     : 'none';
@@ -149,6 +152,7 @@ export function DesktopSidebar({
   const textMid    = isDark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.62)';
   const textActive = isDark ? '#e8d5a8'                : '#7c3c10';
   const accent     = '#d4891e';
+  const profileHref = contributor?.username ? `/contributors/${encodeURIComponent(contributor.username)}` : null;
 
   const counts = {
     dashboard: annoCount,
@@ -190,18 +194,32 @@ export function DesktopSidebar({
         }}
       >
         {/* Avatar + identity — clickable link to public profile */}
-        <a
-          href={contributor?.username ? `/contributors/${contributor.username}` : undefined}
+        <Link
+          href={profileHref || '#'}
+          aria-disabled={!profileHref}
           title="عرض الملف الشخصي"
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
             textDecoration: 'none', width: '100%',
-            borderRadius: 12, padding: '4px',
-            transition: 'background 0.15s',
-            cursor: contributor?.username ? 'pointer' : 'default',
+            borderRadius: 16, padding: '12px 10px 10px',
+            transition: 'background 0.15s ease, border-color 0.15s ease, transform 0.15s ease',
+            cursor: profileHref ? 'pointer' : 'default',
+            background: sidebarPanel,
+            border: `1px solid ${sidebarBorder}`,
+            boxShadow: isDark ? 'inset 0 1px 0 rgba(255,255,255,0.035)' : 'inset 0 1px 0 rgba(255,255,255,0.55)',
           }}
-          onMouseEnter={(e) => { if (contributor?.username) e.currentTarget.style.background = 'rgba(212,137,30,0.06)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          onClick={(e) => { if (!profileHref) e.preventDefault(); }}
+          onMouseEnter={(e) => {
+            if (!profileHref) return;
+            e.currentTarget.style.background = sidebarPanelHover;
+            e.currentTarget.style.borderColor = 'rgba(212,137,30,0.24)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = sidebarPanel;
+            e.currentTarget.style.borderColor = sidebarBorder;
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
         >
           <Avatar contributor={contributor} size={52} />
 
@@ -233,9 +251,19 @@ export function DesktopSidebar({
                   </span>
                 </div>
               )}
+              {profileHref && (
+                <p style={{
+                  marginTop: 10,
+                  fontSize: 10,
+                  color: textDim,
+                  fontFamily: 'var(--font-arabic, serif)',
+                }}>
+                  عرض الملف العام
+                </p>
+              )}
             </div>
           )}
-        </a>
+        </Link>
       </div>
 
       {/* ── Header (brand + toggle) ──────────────────────────────────── */}
@@ -284,15 +312,32 @@ export function DesktopSidebar({
       {/* ── Collapsed avatar (rail mode) ────────────────────────────── */}
       {!expanded && contributor && (
         <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <a
-            href={contributor?.username ? `/contributors/${contributor.username}` : undefined}
+          <Link
+            href={profileHref || '#'}
+            aria-disabled={!profileHref}
             title={contributor.name || 'الملف الشخصي'}
-            style={{ display: 'block', borderRadius: '50%', transition: 'opacity 0.15s', cursor: contributor?.username ? 'pointer' : 'default' }}
-            onMouseEnter={(e) => { if (contributor?.username) e.currentTarget.style.opacity = '0.7'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+            style={{
+              display: 'block',
+              borderRadius: '50%',
+              padding: 3,
+              transition: 'background 0.15s ease, transform 0.15s ease',
+              cursor: profileHref ? 'pointer' : 'default',
+              background: sidebarPanel,
+              border: `1px solid ${sidebarBorder}`,
+            }}
+            onClick={(e) => { if (!profileHref) e.preventDefault(); }}
+            onMouseEnter={(e) => {
+              if (!profileHref) return;
+              e.currentTarget.style.background = sidebarPanelHover;
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = sidebarPanel;
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
           >
             <Avatar contributor={contributor} size={34} />
-          </a>
+          </Link>
         </div>
       )}
 
