@@ -1,20 +1,20 @@
 'use client';
 import { useState } from 'react';
-import { useDataStore }     from '@/store/dataStore';
-import { useAtlasSync }     from '@/hooks/useAtlasSync';
+import { useDataStore } from '@/store/dataStore';
+import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { BLOCK_TYPE_CONFIG, HIGHLIGHT_STYLES, HEADING_LEVELS, QUESTION_TYPE_CONFIG } from '@/shared/constants';
 import { LessonTableEditor } from '@/components/editor/blocks/TableEditor';
-import DeleteButton          from '@/components/editor/shared/DeleteButton';
-import MediaPicker           from '@/components/editor/media/MediaPicker';
-import ImageMarkerEditor     from '@/components/editor/media/ImageMarkerEditor';
-import { sanitiseMarkers }   from '@/lib/markerUtils';
-import FormulaEditor        from '@/components/editor/blocks/FormulaEditor';
+import DeleteButton from '@/components/editor/shared/DeleteButton';
+import MediaPicker from '@/components/editor/media/MediaPicker';
+import ImageMarkerEditor from '@/components/editor/media/ImageMarkerEditor';
+import { sanitiseMarkers } from '@/lib/markerUtils';
+import FormulaEditor from '@/components/editor/blocks/FormulaEditor';
 
 // Demo renderers — the actual lesson appearance
 import { HeadingBlock, TextBlock, TipBlock, ArabicFormulaBlock, ImagePlaceholderBlock, GifPlaceholderBlock, TableBlock } from '@/components/demo/blocks/PrimitiveBlocks';
-import { HighlightBox }  from '@/components/demo/blocks/HighlightBox';
-import { FormulaBlock }  from '@/components/demo/blocks/FormulaBlock';
-import { ExampleBlock }  from '@/components/demo/blocks/ExampleBlock';
+import { HighlightBox } from '@/components/demo/blocks/HighlightBox';
+import { FormulaBlock } from '@/components/demo/blocks/FormulaBlock';
+import { ExampleBlock } from '@/components/demo/blocks/ExampleBlock';
 
 // ─── Shared textarea style ────────────────────────────────────────────────────
 const ta =
@@ -23,10 +23,10 @@ const ta =
   'font-arabic placeholder-ink-800 resize-y transition-colors hover:border-ink-700';
 
 const HL_COLORS = {
-  DEFINITION: { border: 'border-blue-700',  bg: 'bg-blue-950/60',   label: 'text-blue-400',  ring: 'bg-blue-900/50 text-blue-400 border-blue-800'  },
-  WARNING:    { border: 'border-red-700',   bg: 'bg-red-950/60',    label: 'text-red-400',   ring: 'bg-red-900/50 text-red-400 border-red-800'     },
-  NOTE:       { border: 'border-amber-700', bg: 'bg-amber-950/50',  label: 'text-amber-400', ring: 'bg-amber-900/50 text-amber-400 border-amber-800'},
-  TIP:        { border: 'border-green-700', bg: 'bg-green-950/50',  label: 'text-green-400', ring: 'bg-green-900/50 text-green-400 border-green-800'},
+  DEFINITION: { border: 'border-blue-700', bg: 'bg-blue-950/60', label: 'text-blue-400', ring: 'bg-blue-900/50 text-blue-400 border-blue-800' },
+  WARNING: { border: 'border-red-700', bg: 'bg-red-950/60', label: 'text-red-400', ring: 'bg-red-900/50 text-red-400 border-red-800' },
+  NOTE: { border: 'border-amber-700', bg: 'bg-amber-950/50', label: 'text-amber-400', ring: 'bg-amber-900/50 text-amber-400 border-amber-800' },
+  TIP: { border: 'border-green-700', bg: 'bg-green-950/50', label: 'text-green-400', ring: 'bg-green-900/50 text-green-400 border-green-800' },
 };
 
 // ─── DragHandle ───────────────────────────────────────────────────────────────
@@ -38,9 +38,9 @@ function DragHandle({ dragHandleProps, className = '' }) {
       {...(dragHandleProps || {})}
     >
       <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
-        <circle cx="2.5" cy="2.5"  r="1.5"/><circle cx="7.5" cy="2.5"  r="1.5"/>
-        <circle cx="2.5" cy="7"    r="1.5"/><circle cx="7.5" cy="7"    r="1.5"/>
-        <circle cx="2.5" cy="11.5" r="1.5"/><circle cx="7.5" cy="11.5" r="1.5"/>
+        <circle cx="2.5" cy="2.5" r="1.5" /><circle cx="7.5" cy="2.5" r="1.5" />
+        <circle cx="2.5" cy="7" r="1.5" /><circle cx="7.5" cy="7" r="1.5" />
+        <circle cx="2.5" cy="11.5" r="1.5" /><circle cx="7.5" cy="11.5" r="1.5" />
       </svg>
     </span>
   );
@@ -77,7 +77,7 @@ function BlockPreview({ block }) {
 
     case 'EXAMPLE': {
       const interactive = block.metadata?.interactive ?? false;
-      const steps       = block.metadata?.steps ?? [];
+      const steps = block.metadata?.steps ?? [];
       if (!interactive && !block.content?.trim()) return null;
       if (interactive && steps.length === 0) return null;
       return <ExampleBlock block={{ ...b, interactive, steps, caption: block.metadata?.caption || 'مثال' }} />;
@@ -109,7 +109,7 @@ function BlockPreview({ block }) {
 
     case 'TABLE': {
       let parsed = { headers: [], rows: [] };
-      try { parsed = typeof block.content === 'string' ? JSON.parse(block.content) : block.content; } catch {}
+      try { parsed = typeof block.content === 'string' ? JSON.parse(block.content) : block.content; } catch { }
       if (!parsed?.headers?.length && !parsed?.rows?.length) return null;
       return <TableBlock block={{ ...b, ...parsed }} />;
     }
@@ -155,21 +155,21 @@ function BlockPreview({ block }) {
 // ─── BlockEditor ─────────────────────────────────────────────────────────────
 export default function BlockEditor({ block, subjectId, dragHandleProps }) {
   const { concepts, updateBlock, deleteBlock } = useDataStore();
-  const { deleteBlock: atlasDeleteBlock }      = useAtlasSync();
+  const { deleteBlock: atlasDeleteBlock } = useAtlasSync();
 
-  const config        = BLOCK_TYPE_CONFIG[block.type] || BLOCK_TYPE_CONFIG.TEXT;
+  const config = BLOCK_TYPE_CONFIG[block.type] || BLOCK_TYPE_CONFIG.TEXT;
   const linkedConcept = concepts.find((c) => c.id === block.conceptRef);
-  const isQuestion    = block.type === 'QUESTION';
-  const isDivider     = block.type === 'DIVIDER';
+  const isQuestion = block.type === 'QUESTION';
+  const isDivider = block.type === 'DIVIDER';
 
   // Empty blocks open in edit mode; filled blocks open in preview
   const [isEditing, setIsEditing] = useState(() => {
-    if (isDivider)   return false;
-    if (isQuestion)  return !block.content;
+    if (isDivider) return false;
+    if (isQuestion) return !block.content;
     return !block.content?.trim();
   });
 
-  const update    = (patch) => updateBlock(block.id, patch);
+  const update = (patch) => updateBlock(block.id, patch);
   const patchMeta = (patch) => update({ metadata: { ...(block.metadata || {}), ...patch } });
 
   const handleDelete = () => {
@@ -186,7 +186,7 @@ export default function BlockEditor({ block, subjectId, dragHandleProps }) {
           <DragHandle dragHandleProps={dragHandleProps} />
           <DeleteButton onDelete={handleDelete} compact />
         </div>
-        <CheckpointBlockEditor block={block} update={update} />
+        <CheckpointBlockEditor block={block} update={update} subjectId={subjectId} />
       </div>
     );
   }
@@ -209,8 +209,8 @@ export default function BlockEditor({ block, subjectId, dragHandleProps }) {
               className="flex items-center gap-1 px-2 py-1 rounded text-xs font-arabic text-ink-600 hover:text-sand-300 hover:bg-ink-800/70 transition-colors"
             >
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
               تعديل
             </button>
@@ -280,7 +280,7 @@ export default function BlockEditor({ block, subjectId, dragHandleProps }) {
             className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-sand-900/30 text-sand-400 border border-sand-800/40 hover:bg-sand-800/30 text-xs font-arabic transition-colors"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M20 6L9 17l-5-5"/>
+              <path d="M20 6L9 17l-5-5" />
             </svg>
             تم
           </button>
@@ -337,7 +337,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return <FormulaEditor value={block.content} onChange={(v) => update({ content: v })} />;
 
     case 'HIGHLIGHT_BOX': {
-      const style  = block.metadata?.style ?? 'NOTE';
+      const style = block.metadata?.style ?? 'NOTE';
       const colors = HL_COLORS[style] || HL_COLORS.NOTE;
       return (
         <div className="space-y-2.5">
@@ -362,12 +362,12 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
 
     case 'EXAMPLE': {
       const interactive = block.metadata?.interactive ?? false;
-      const steps       = block.metadata?.steps ?? [];
+      const steps = block.metadata?.steps ?? [];
       const setInteractive = (val) => {
         patchMeta({ interactive: val, steps: val && steps.length === 0 && block.content ? [block.content] : steps });
       };
       const updateStep = (i, val) => { const next = [...steps]; next[i] = val; patchMeta({ steps: next }); };
-      const addStep    = () => patchMeta({ steps: [...steps, ''] });
+      const addStep = () => patchMeta({ steps: [...steps, ''] });
       const removeStep = (i) => patchMeta({ steps: steps.filter((_, j) => j !== i) });
 
       return (
@@ -376,7 +376,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
             <span className="text-xs text-ink-600 font-arabic">النوع:</span>
             <div className="flex rounded-lg border border-ink-800 overflow-hidden">
               <button onClick={() => setInteractive(false)} className={`px-3 py-1 text-xs font-arabic transition-colors ${!interactive ? 'bg-teal-900/50 text-teal-400' : 'bg-ink-900 text-ink-600 hover:text-ink-400'}`}>عادي</button>
-              <button onClick={() => setInteractive(true)}  className={`px-3 py-1 text-xs font-arabic transition-colors border-r border-ink-800 ${interactive ? 'bg-teal-900/50 text-teal-400' : 'bg-ink-900 text-ink-600 hover:text-ink-400'}`}>⚡ تفاعلي</button>
+              <button onClick={() => setInteractive(true)} className={`px-3 py-1 text-xs font-arabic transition-colors border-r border-ink-800 ${interactive ? 'bg-teal-900/50 text-teal-400' : 'bg-ink-900 text-ink-600 hover:text-ink-400'}`}>⚡ تفاعلي</button>
             </div>
             {interactive && <span className="text-[11px] text-ink-700 font-arabic">كل خطوة تُكشف بنقرة</span>}
           </div>
@@ -419,7 +419,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return (
         <div className="space-y-2">
           <div className="flex gap-1">
-            {[['BULLET','● نقطي'],['NUMBERED','١ مرقّم']].map(([key, lbl]) => (
+            {[['BULLET', '● نقطي'], ['NUMBERED', '١ مرقّم']].map(([key, lbl]) => (
               <button key={key} onClick={() => patchMeta({ style: key })}
                 className={`px-3 py-1 text-xs rounded-md border font-arabic transition-all ${style === key ? 'bg-sand-900/50 text-sand-400 border-sand-800/60' : 'bg-ink-800 text-ink-600 border-ink-700 hover:text-ink-400'}`}>
                 {lbl}
@@ -465,10 +465,10 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
 // ─── MediaBlockEditor ─────────────────────────────────────────────────────────
 function MediaBlockEditor({ block, update, subjectId }) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const hasUrl        = Boolean(block.content?.trim());
-  const isGif         = block.type === 'GIF';
+  const hasUrl = Boolean(block.content?.trim());
+  const isGif = block.type === 'GIF';
   const isInteractive = block.type === 'INTERACTIVE_IMAGE';
-  const markers       = sanitiseMarkers(block.metadata?.markers);
+  const markers = sanitiseMarkers(block.metadata?.markers);
 
   const handleInteractiveToggle = (on) => update({
     type: on ? 'INTERACTIVE_IMAGE' : 'IMAGE',
@@ -519,7 +519,7 @@ function MediaBlockEditor({ block, update, subjectId }) {
                 {!hasUrl
                   ? <p className="text-xs text-ink-700 font-arabic text-center py-3">اختر صورة أولاً لإضافة العلامات</p>
                   : <ImageMarkerEditor imageUrl={block.content} markers={markers}
-                      onChange={(next) => update({ metadata: { ...(block.metadata || {}), markers: next } })} />}
+                    onChange={(next) => update({ metadata: { ...(block.metadata || {}), markers: next } })} />}
               </div>
             )}
           </div>
@@ -545,21 +545,21 @@ function MediaBlockEditor({ block, update, subjectId }) {
 // ─── CheckpointBlockEditor ────────────────────────────────────────────────────
 const CHECKPOINT_TYPES = ['MCQ', 'TRUE_FALSE'];
 
-function CheckpointBlockEditor({ block, update }) {
+function CheckpointBlockEditor({ block, update, subjectId }) {
   const { questions, addQuestion, updateQuestion, deleteQuestion } = useDataStore();
   const linked = questions.find((q) => q.id === block.content && q.isCheckpoint);
 
-  const [editing,      setEditing]      = useState(!block.content);
-  const [type,         setType]         = useState(linked?.type || 'MCQ');
-  const [textAr,       setTextAr]       = useState(linked?.textAr || '');
-  const [explanation,  setExplanation]  = useState(linked?.explanation || '');
-  const [mcqOptions,   setMcqOptions]   = useState(() => {
-    if (linked?.options) { try { return JSON.parse(linked.options); } catch {} }
+  const [editing, setEditing] = useState(!block.content);
+  const [type, setType] = useState(linked?.type || 'MCQ');
+  const [textAr, setTextAr] = useState(linked?.textAr || '');
+  const [explanation, setExplanation] = useState(linked?.explanation || '');
+  const [mcqOptions, setMcqOptions] = useState(() => {
+    if (linked?.options) { try { return JSON.parse(linked.options); } catch { } }
     return ['', '', '', ''];
   });
   const [correctIndex, setCorrectIndex] = useState(() => {
     if (linked?.type === 'MCQ' && linked?.correctAnswer && linked?.options) {
-      try { const opts = JSON.parse(linked.options); const idx = opts.indexOf(linked.correctAnswer); return idx >= 0 ? idx : -1; } catch {}
+      try { const opts = JSON.parse(linked.options); const idx = opts.indexOf(linked.correctAnswer); return idx >= 0 ? idx : -1; } catch { }
     }
     return -1;
   });
@@ -567,28 +567,53 @@ function CheckpointBlockEditor({ block, update }) {
 
   const resetForm = () => {
     setTextAr(linked?.textAr || ''); setExplanation(linked?.explanation || '');
-    setMcqOptions(linked?.options ? (() => { try { return JSON.parse(linked.options); } catch { return ['','','','']; } })() : ['','','','']);
+    setMcqOptions(linked?.options ? (() => { try { return JSON.parse(linked.options); } catch { return ['', '', '', '']; } })() : ['', '', '', '']);
     setCorrectIndex(-1); setTfAnswer(linked?.correctAnswer || ''); setType(linked?.type || 'MCQ');
   };
 
   const canSubmit = textAr.trim().length > 0 && (type !== 'MCQ' || correctIndex >= 0) && (type !== 'TRUE_FALSE' || tfAnswer !== '');
 
   const handleSave = () => {
-    let finalAnswer = tfAnswer, finalOptions = null;
+    let finalAnswer = tfAnswer;
+    let finalOptions = null;
+
     if (type === 'MCQ') {
       const filtered = mcqOptions.filter((o) => o.trim());
       finalOptions = JSON.stringify(filtered);
-      finalAnswer  = correctIndex >= 0 ? mcqOptions[correctIndex] : '';
+      finalAnswer = correctIndex >= 0 ? mcqOptions[correctIndex] : '';
     }
+
     if (linked) {
-      updateQuestion(linked.id, { type, textAr, explanation: explanation || null, correctAnswer: finalAnswer, options: finalOptions });
+      updateQuestion(linked.id, {
+        type, textAr, explanation: explanation || null,
+        correctAnswer: finalAnswer, options: finalOptions,
+      });
+      // ADD: sync edit to Atlas
+      if (subjectId) syncQuestion(linked.id, subjectId).catch(() => { });
     } else {
       const newId = `q_cp_${block.id}`;
-      addQuestion({ id: newId, type, textAr, correctAnswer: finalAnswer, options: finalOptions, explanation: explanation || null,
-        lessonId: block._lessonId || null, unitId: block._unitId || null, sectionId: block.sectionId || null,
-        isCheckpoint: true, difficulty: 1, points: 1, estimatedSeconds: 45, cognitiveLevel: 'RECALL',
-        source: 'ORIGINAL', feedEligible: false, conceptIds: [] });
+      addQuestion({
+        id: newId,
+        type,
+        textAr,
+        correctAnswer: finalAnswer,
+        options: finalOptions,
+        explanation: explanation || null,
+        lessonId: block._lessonId || null,
+        unitId: block._unitId || null,
+        sectionId: block.sectionId || null,
+        isCheckpoint: true,
+        difficulty: 1,
+        points: 1,
+        estimatedSeconds: 45,
+        cognitiveLevel: 'RECALL',
+        source: 'ORIGINAL',
+        feedEligible: false,
+        conceptIds: [],
+      });
       update({ content: newId });
+      // ADD: sync new checkpoint to Atlas
+      if (subjectId) syncQuestion(newId, subjectId).catch(() => { });
     }
     setEditing(false);
   };
@@ -596,7 +621,7 @@ function CheckpointBlockEditor({ block, update }) {
   const handleUnlink = () => {
     if (linked) deleteQuestion(linked.id);
     update({ content: '' }); setEditing(true);
-    setTextAr(''); setExplanation(''); setMcqOptions(['','','','']); setCorrectIndex(-1); setTfAnswer('');
+    setTextAr(''); setExplanation(''); setMcqOptions(['', '', '', '']); setCorrectIndex(-1); setTfAnswer('');
   };
 
   const inputCls = 'w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-500 focus:outline-none font-arabic placeholder-ink-600';
@@ -630,7 +655,7 @@ function CheckpointBlockEditor({ block, update }) {
         })()}
         {linked.type === 'TRUE_FALSE' && (
           <div className="flex gap-2">
-            {[['true','✓ صح'],['false','✕ خطأ']].map(([v,l]) => (
+            {[['true', '✓ صح'], ['false', '✕ خطأ']].map(([v, l]) => (
               <span key={v} className={`px-3 py-1 rounded-lg border text-xs ${linked.correctAnswer === v ? (v === 'true' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-700' : 'bg-red-900/30 text-red-400 border-red-700') : 'bg-ink-800/30 text-ink-500 border-ink-700'}`}>{l}</span>
             ))}
           </div>
@@ -675,7 +700,7 @@ function CheckpointBlockEditor({ block, update }) {
       )}
       {type === 'TRUE_FALSE' && (
         <div className="flex gap-2">
-          {[['true','✓ صح'],['false','✕ خطأ']].map(([val,lbl]) => (
+          {[['true', '✓ صح'], ['false', '✕ خطأ']].map(([val, lbl]) => (
             <button key={val} onClick={() => setTfAnswer(val)}
               className={`flex-1 py-2 rounded-lg text-sm border font-arabic transition-colors ${tfAnswer === val ? (val === 'true' ? 'bg-emerald-900/40 text-emerald-400 border-emerald-700' : 'bg-red-900/40 text-red-400 border-red-700') : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'}`}>
               {lbl}
