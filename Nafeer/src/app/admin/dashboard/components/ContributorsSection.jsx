@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { RequestCard, ActiveCard } from './ContributorCard';
 import { SetPasswordModal }        from './modals/SetPasswordModal';
 import { SectionHeader, EmptyState } from './ui/shared';
@@ -133,6 +133,15 @@ export function ContributorsSection({ allContributors, onRefresh }) {
   const [search,        setSearch]        = useState('');
   const [actionLoading, setActLoading]    = useState(null);
   const [passwordModal, setPwModal]       = useState(null);
+  const [roles,         setRoles]         = useState([]);
+
+  // Fetch available roles for the role-assignment panel
+  useEffect(() => {
+    fetch('/api/admin/roles')
+      .then((r) => r.json())
+      .then((d) => { if (d.ok) setRoles(d.roles || []); })
+      .catch(() => {});
+  }, []);
 
   // Split contributors into requests vs active
   const requests = useMemo(() =>
@@ -270,6 +279,7 @@ export function ContributorsSection({ allContributors, onRefresh }) {
                     onAct={act}
                     onDelete={del}
                     onSetPassword={(id, name) => setPwModal({ id, name })}
+                    roles={roles}
                   />
                 ))}
               </div>
