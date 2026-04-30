@@ -148,9 +148,11 @@ export default function ConceptsPage({ subjectId }) {
     }));
   };
 
-  // Scope to the current subject — concepts stamped with a different subjectId are hidden
+  // Scope to the current subject — only show concepts that belong to this subject.
+  // Items with no subjectId are NOT shown when a subject context is active (avoids
+  // test/orphaned concepts leaking into unrelated subjects).
   const subjectConcepts = concepts.filter(
-    (c) => !subjectId || !c.subjectId || c.subjectId === subjectId
+    (c) => !subjectId || c.subjectId === subjectId
   );
 
   const filtered = subjectConcepts.filter((c) => {

@@ -42,13 +42,14 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
 
   // ── Subject-scoped views ─────────────────────────────────────────────────
   // Hide questions/exams that belong to a different subject.
-  // Items without a subjectId (legacy local data) are shown as a safe fallback.
+  // Items without a subjectId are also hidden when a subject context is active
+  // to prevent test/orphaned data from leaking into unrelated subjects.
   const visibleQuestions = subjectId
-    ? questions.filter((q) => !q.subjectId || q.subjectId === subjectId)
+    ? questions.filter((q) => q.subjectId === subjectId)
     : questions;
 
   const visibleConcepts = subjectId
-    ? concepts.filter((c) => !c.subjectId || c.subjectId === subjectId)
+    ? concepts.filter((c) => c.subjectId === subjectId)
     : concepts;
 
   const {
