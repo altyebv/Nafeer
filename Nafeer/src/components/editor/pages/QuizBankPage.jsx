@@ -5,7 +5,7 @@ import { useAtlasSync }   from '@/hooks/useAtlasSync';
 import { sanitiseMarkers } from '@/lib/markerUtils';
 
 import QuestionsTab   from '@/components/editor/quizbank/QuestionsTab';
-import ExamsTab       from '@/components/editor/quizbank/ExamsTab';
+import ExamsTab       from '@/components/editor/quizbank/ExamTab';
 import QuestionModal  from '@/components/editor/quizbank/QuestionModal';
 import ExamModal      from '@/components/editor/quizbank/ExamModal';
 
