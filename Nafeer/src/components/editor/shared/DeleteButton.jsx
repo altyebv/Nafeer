@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 
 /**
  * Two-stage delete button — replaces native confirm() dialogs.
@@ -9,11 +10,11 @@ import { useState, useEffect } from 'react';
  *
  * Props:
  *   onDelete   — function called on confirmed delete
- *   label      — idle button label (default: '✕')
+ *   label      — idle button label (default: null; renders trash icon)
  *   className  — extra classes on the idle button
  *   size       — 'sm' | 'md' (default 'sm')
  */
-export default function DeleteButton({ onDelete, label = '✕', className = '', size = 'sm' }) {
+export default function DeleteButton({ onDelete, label = null, className = '', size = 'sm' }) {
   const [pending, setPending] = useState(false);
 
   // Auto-cancel if the user walks away
@@ -46,8 +47,9 @@ export default function DeleteButton({ onDelete, label = '✕', className = '', 
     <button
       onClick={(e) => { e.stopPropagation(); setPending(true); }}
       className={`transition-colors ${size === 'sm' ? 'p-1 text-sm' : 'p-1.5 text-base'} text-ink-600 hover:text-red-500 ${className}`}
+      aria-label="حذف"
     >
-      {label}
+      {label || <Trash2 size={size === 'sm' ? 15 : 17} strokeWidth={2} />}
     </button>
   );
 }

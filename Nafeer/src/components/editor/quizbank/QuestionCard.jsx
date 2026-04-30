@@ -1,6 +1,7 @@
 'use client';
 import DeleteButton from '@/components/editor/shared/DeleteButton';
 import StatusBadge from '@/components/editor/shared/StatusBadge';
+import { Pencil, Send } from 'lucide-react';
 import {
   QUESTION_TYPE_CONFIG,
   COGNITIVE_LEVEL_CONFIG,
@@ -78,7 +79,7 @@ export default function QuestionCard({ question, subjectId, onEdit, onDelete, on
               className="rounded-lg p-2 text-amber-600 transition-colors hover:bg-amber-900/20 hover:text-amber-400"
               title="إرسال للمراجعة"
             >
-              ⇪
+              <Send size={15} strokeWidth={2} />
             </button>
           )}
           <button
@@ -87,7 +88,7 @@ export default function QuestionCard({ question, subjectId, onEdit, onDelete, on
             className="rounded-lg p-2 text-ink-600 transition-colors hover:bg-ink-800 hover:text-sand-400"
             title="تعديل"
           >
-            ✎
+            <Pencil size={15} strokeWidth={2} />
           </button>
           <DeleteButton onDelete={() => onDelete(question.id)} className="rounded-lg hover:bg-red-900/10" />
         </div>

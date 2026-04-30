@@ -10,6 +10,7 @@ import ConceptsPage       from '@/components/editor/pages/ConceptsPage';
 import FeedItemsPage      from '@/components/editor/pages/FeedItemsPage';
 import QuizBankPage       from '@/components/editor/pages/QuizBankPage';
 import MediaPage          from '@/components/editor/pages/MediaPage';
+import { Check, TriangleAlert } from 'lucide-react';
 // ExportPage import removed — export section hidden for now
 
 // Sidebar widths — must match EditorSidebar constants
@@ -189,7 +190,10 @@ export function SyncBar({ isSyncing, syncError, lastSynced, inline = false }) {
       className="px-6 py-2 flex items-center justify-between shrink-0"
       style={{ background: 'rgba(127,29,29,0.12)', borderBottom: '1px solid rgba(239,68,68,0.15)' }}
     >
-      <span className="text-red-400 text-xs font-arabic">⚠ {syncError}</span>
+      <span className="inline-flex items-center gap-1.5 text-red-400 text-xs font-arabic">
+        <TriangleAlert size={13} strokeWidth={2} />
+        {syncError}
+      </span>
       <span className="text-red-500 text-xs font-arabic opacity-70">محفوظ محلياً</span>
     </div>
   );
@@ -209,7 +213,7 @@ export function SyncBar({ isSyncing, syncError, lastSynced, inline = false }) {
       className="px-6 py-1.5 flex items-center gap-2 shrink-0"
       style={{ background: 'rgba(16,185,129,0.03)', borderBottom: '1px solid rgba(16,185,129,0.08)' }}
     >
-      <span className="text-emerald-500 text-xs">✓</span>
+      <Check size={13} strokeWidth={2.2} className="text-emerald-500" />
       <span className="text-emerald-600 text-xs font-arabic">
         محفوظ · {new Date(lastSynced).toLocaleTimeString('ar-SD')}
       </span>

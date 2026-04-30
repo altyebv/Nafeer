@@ -1,6 +1,7 @@
 'use client';
 import { useState }   from 'react';
 import DeleteButton   from '@/components/editor/shared/DeleteButton';
+import { FileText, Pencil, X } from 'lucide-react';
 import {
   EXAM_SOURCE_CONFIG,
   EXAM_TYPE_CONFIG,
@@ -41,7 +42,7 @@ export default function ExamsTab({
       <div className="w-72 flex-shrink-0 space-y-2">
         {exams.length === 0 ? (
           <div className="text-center py-12 bg-ink-900 rounded-xl border border-ink-800">
-            <div className="text-3xl mb-3">📄</div>
+            <FileText size={34} strokeWidth={1.6} className="mx-auto mb-3 text-ink-600" />
             <p className="text-ink-500 text-sm font-arabic">لا توجد امتحانات</p>
           </div>
         ) : (
@@ -72,16 +73,17 @@ export default function ExamsTab({
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); onEdit(exam); }}
-                    className="text-xs text-ink-600 hover:text-sand-400 transition-colors font-arabic"
+                    className="inline-flex items-center gap-1 text-xs text-ink-600 hover:text-sand-400 transition-colors font-arabic"
                   >
-                    ✏ تعديل
+                    <Pencil size={12} strokeWidth={2} />
+                    تعديل
                   </button>
                   <DeleteButton
                     onDelete={() => {
                       onDelete(exam.id);
                       if (selectedExamId === exam.id) setSelectedExamId(null);
                     }}
-                    label="✕ حذف"
+                    label="حذف"
                   />
                 </div>
               </div>
@@ -147,8 +149,9 @@ export default function ExamsTab({
                     <button
                       onClick={() => onRemoveQuestion(selectedExam.id, q.id)}
                       className="opacity-0 group-hover:opacity-100 text-ink-600 hover:text-red-500 transition-all p-1 font-arabic"
+                      aria-label="إزالة السؤال"
                     >
-                      ✕
+                      <X size={14} strokeWidth={2} />
                     </button>
                   </div>
                 );

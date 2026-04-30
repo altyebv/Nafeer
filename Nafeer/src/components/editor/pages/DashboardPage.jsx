@@ -1,15 +1,16 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Blocks, BookOpen, Circle, CircleHelp, Globe2, Search, Sparkles, TriangleAlert } from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
 // ─── Announcement type config ─────────────────────────────────────────────────
 const ANNOUNCEMENT_STYLES = {
-  info:      { icon: '◈', color: '#6b9fd4', bg: 'rgba(107,159,212,0.07)', border: 'rgba(107,159,212,0.2)'  },
-  update:    { icon: '✦', color: '#d4891e', bg: 'rgba(212,137,30,0.07)',  border: 'rgba(212,137,30,0.2)'   },
-  warning:   { icon: '▲', color: '#d4726b', bg: 'rgba(212,114,107,0.07)', border: 'rgba(212,114,107,0.2)'  },
-  milestone: { icon: '◎', color: '#7db87d', bg: 'rgba(125,184,125,0.07)', border: 'rgba(125,184,125,0.2)'  },
+  info:      { icon: Circle, color: '#6b9fd4', bg: 'rgba(107,159,212,0.07)', border: 'rgba(107,159,212,0.2)'  },
+  update:    { icon: Sparkles, color: '#d4891e', bg: 'rgba(212,137,30,0.07)',  border: 'rgba(212,137,30,0.2)'   },
+  warning:   { icon: TriangleAlert, color: '#d4726b', bg: 'rgba(212,114,107,0.07)', border: 'rgba(212,114,107,0.2)'  },
+  milestone: { icon: CircleHelp, color: '#7db87d', bg: 'rgba(125,184,125,0.07)', border: 'rgba(125,184,125,0.2)'  },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ function SectionLabel({ children }) {
 
 function StatCard({ icon, value, label, delay = 0 }) {
   const animated = useCountUp(value, 900);
+  const Icon = icon;
   return (
     <div
       className="flex flex-col gap-2 p-4 rounded-2xl transition-all duration-300"
@@ -88,7 +90,7 @@ function StatCard({ icon, value, label, delay = 0 }) {
         e.currentTarget.style.background = 'var(--bg-card)';
       }}
     >
-      <span className="text-xl">{icon}</span>
+      <Icon size={22} strokeWidth={1.8} style={{ color: 'var(--accent)' }} />
       <span
         className="text-3xl font-bold font-mono tabular-nums leading-none"
         style={{ color: 'var(--accent)' }}
@@ -231,6 +233,7 @@ function ContributionHeatmap({ activityMap = {} }) {
 function AnnouncementCard({ announcement }) {
   const [expanded, setExpanded] = useState(false);
   const style = ANNOUNCEMENT_STYLES[announcement.type] || ANNOUNCEMENT_STYLES.info;
+  const Icon = style.icon;
 
   return (
     <div
@@ -245,9 +248,7 @@ function AnnouncementCard({ announcement }) {
         onClick={() => setExpanded((v) => !v)}
       >
         {/* Icon */}
-        <span style={{ color: style.color, fontSize: 14, marginTop: 1, flexShrink: 0 }}>
-          {style.icon}
-        </span>
+        <Icon size={15} strokeWidth={1.8} style={{ color: style.color, marginTop: 1, flexShrink: 0 }} />
 
         {/* Content */}
         <div className="flex-1 min-w-0 text-right">
@@ -317,7 +318,7 @@ function EmptyAnnouncements() {
       className="rounded-xl p-8 text-center"
       style={{ border: '1px dashed var(--border-subtle)' }}
     >
-      <p className="text-2xl mb-2 opacity-20">◈</p>
+      <Circle size={26} strokeWidth={1.5} className="mx-auto mb-2 opacity-20" />
       <p className="text-xs font-arabic" style={{ color: 'var(--text-muted)' }}>
         لا توجد إعلانات حالياً
       </p>
@@ -458,7 +459,7 @@ function WelcomeHero({ contributor, isFirstVisit }) {
             color:      'var(--text-secondary)',
           }}
         >
-          <span style={{ color: 'var(--accent)', marginLeft: 6 }}>✦</span>
+          <Sparkles size={15} strokeWidth={1.8} style={{ color: 'var(--accent)', marginLeft: 6, display: 'inline' }} />
           أهلاً وسهلاً بك في نفير! هذه لوحتك الشخصية — ستجد هنا إحصائياتك، إعلانات الإدارة، وكل ما يخصّك.
           ابدأ بالتنقل في القائمة الجانبية لاكتشاف الأدوات.
         </div>
@@ -568,12 +569,12 @@ export default function DashboardPage({ contributor }) {
       <div className="mb-8">
         <SectionLabel>إحصائياتك</SectionLabel>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <StatCard icon="📖" value={stats.lessonsCreated   || 0} label="درس أنشأته"     delay={0}   />
-          <StatCard icon="❓" value={stats.questionsAdded   || 0} label="سؤال أضفته"     delay={60}  />
-          <StatCard icon="📡" value={stats.feedItemsCreated || 0} label="بطاقة تغذية"    delay={120} />
-          <StatCard icon="🧱" value={stats.blocksAdded      || 0} label="وحدة محتوى"     delay={180} />
-          <StatCard icon="🔍" value={stats.reviewsSubmitted || 0} label="مراجعة قدّمتها" delay={240} />
-          <StatCard icon="🌍" value={stats.publishedLessons || 0} label="درس منشور"      delay={300} />
+          <StatCard icon={BookOpen} value={stats.lessonsCreated   || 0} label="درس أنشأته"     delay={0}   />
+          <StatCard icon={CircleHelp} value={stats.questionsAdded   || 0} label="سؤال أضفته"     delay={60}  />
+          <StatCard icon={Globe2} value={stats.feedItemsCreated || 0} label="بطاقة تغذية"    delay={120} />
+          <StatCard icon={Blocks} value={stats.blocksAdded      || 0} label="وحدة محتوى"     delay={180} />
+          <StatCard icon={Search} value={stats.reviewsSubmitted || 0} label="مراجعة قدّمتها" delay={240} />
+          <StatCard icon={Globe2} value={stats.publishedLessons || 0} label="درس منشور"      delay={300} />
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 'use client';
 import { useMemo } from 'react';
+import { BookOpen, Check, CircleHelp, CornerDownLeft, FileText, Smartphone } from 'lucide-react';
 import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
 
 // ─── CoveragePanel ────────────────────────────────────────────────────────────
@@ -19,7 +20,7 @@ const DIMENSION_CONFIG = [
     label:   'محتوى',
     sublabel: 'أقسام + عناصر',
     weight:  40,
-    icon:    '📖',
+    icon:    BookOpen,
     getScore: (c) => {
       if (c.sections > 0 && c.blocks > 0) return 40;
       if (c.sections > 0) return 20;
@@ -36,7 +37,7 @@ const DIMENSION_CONFIG = [
     label:   'تغذية',
     sublabel: 'بطاقات مراجعة',
     weight:  30,
-    icon:    '📱',
+    icon:    Smartphone,
     getScore: (c) => c.concepts === 0 ? 0 : Math.min(30, Math.round((c.feedItems / c.concepts) * 30)),
     getHint: (c) => {
       if (c.concepts === 0)          return 'ربط مفاهيم بالأقسام يفعّل هذا البُعد';
@@ -50,7 +51,7 @@ const DIMENSION_CONFIG = [
     label:   'أسئلة',
     sublabel: 'بنك الاختبار',
     weight:  30,
-    icon:    '📝',
+    icon:    FileText,
     getScore: (c) => c.concepts === 0 ? 0 : Math.min(30, Math.round((c.questions / (c.concepts * 2)) * 30)),
     getHint: (c) => {
       if (c.concepts === 0)                  return 'ربط مفاهيم يفعّل درجة الأسئلة';
@@ -125,11 +126,12 @@ export default function CoveragePanel({ coverage, loading }) {
         <div className="space-y-2">
           {dimensions.map((d) => {
             const pct = d.weight > 0 ? Math.round((d.score / d.weight) * 100) : 0;
+            const Icon = d.icon;
             return (
               <div key={d.key}>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs">{d.icon}</span>
+                    <Icon size={13} strokeWidth={1.8} className="text-ink-500" />
                     <span className="text-xs font-arabic text-ink-400">{d.label}</span>
                     <span className="text-[10px] font-mono text-ink-700">{d.sublabel}</span>
                   </div>
@@ -158,7 +160,7 @@ export default function CoveragePanel({ coverage, loading }) {
               { label: 'أسئلة',    value: coverage.questions },
               { label: 'عناصر',    value: coverage.blocks    },
               { label: 'تغذية',    value: coverage.feedItems },
-              { label: 'حالة',     value: coverage.status === 'approved' ? '✓' : coverage.status ?? '—' },
+              { label: 'حالة',     value: coverage.status === 'approved' ? 'معتمد' : coverage.status ?? '—' },
             ].map((s, i) => (
               <div key={i} className="text-center p-2 rounded-lg bg-ink-900/60">
                 <div className="text-sm font-mono font-bold text-sand-300">{s.value ?? 0}</div>
@@ -174,7 +176,7 @@ export default function CoveragePanel({ coverage, loading }) {
             <p className="text-[10px] font-mono text-ink-600 mb-1.5">— خطوات لرفع التغطية</p>
             {hints.map((hint, i) => (
               <div key={i} className="flex items-start gap-2">
-                <span className="text-amber-600 mt-0.5 shrink-0 text-xs">↳</span>
+                <CornerDownLeft size={12} strokeWidth={1.8} className="mt-1 shrink-0 text-amber-600" />
                 <p className="text-xs font-arabic text-ink-500 leading-relaxed">{hint}</p>
               </div>
             ))}
@@ -183,7 +185,7 @@ export default function CoveragePanel({ coverage, loading }) {
 
         {score >= 80 && (
           <div className="flex items-center gap-2 pt-1">
-            <span className="text-green-500 text-xs">✓</span>
+            <Check size={13} strokeWidth={2.2} className="text-green-500" />
             <p className="text-xs font-arabic text-green-600">تغطية ممتازة — جاهز للمراجعة</p>
           </div>
         )}

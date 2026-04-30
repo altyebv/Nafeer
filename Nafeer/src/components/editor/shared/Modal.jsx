@@ -1,3 +1,5 @@
+import { X } from 'lucide-react';
+
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }) {
   if (!isOpen) return null;
 
@@ -26,8 +28,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
           <button
             onClick={onClose}
             className="w-7 h-7 flex items-center justify-center text-ink-500 hover:text-ink-200 hover:bg-ink-800 rounded-lg transition-colors text-lg"
+            aria-label="إغلاق"
           >
-            ✕
+            <X size={16} strokeWidth={2} />
           </button>
         </div>
 

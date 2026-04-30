@@ -4,6 +4,7 @@ import Link                 from 'next/link';
 import { useDataStore }    from '@/store/dataStore';
 import { useMediaStore }   from '@/store/mediaStore';
 import { useRouter }       from 'next/navigation';
+import { BookOpen, CircleHelp, Image, LayoutDashboard, Menu, Sparkles, Smartphone } from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
 const SUBJECT_LABEL = Object.fromEntries(
@@ -15,12 +16,12 @@ const EXPANDED_W = 260;  // slightly wider expanded for readability
 
 // Export item removed from NAV — hidden for now
 const NAV = [
-  { id: 'dashboard', icon: '⌂', label: 'الرئيسية',  sub: 'Dashboard' },
-  { id: 'lessons',   icon: '◈', label: 'الدروس',    sub: 'Lessons'   },
-  { id: 'feeds',     icon: '▣', label: 'التغذية',   sub: 'Feed'      },
-  { id: 'quizbank',  icon: '◎', label: 'الأسئلة',   sub: 'Quiz Bank' },
-  { id: 'concepts',  icon: '✦', label: 'المفاهيم',  sub: 'Concepts'  },
-  { id: 'media',     icon: '⬜', label: 'الوسائط',   sub: 'Media'     },
+  { id: 'dashboard', icon: LayoutDashboard, label: 'الرئيسية',  sub: 'Dashboard' },
+  { id: 'lessons',   icon: BookOpen,         label: 'الدروس',    sub: 'Lessons'   },
+  { id: 'feeds',     icon: Smartphone,       label: 'التغذية',   sub: 'Feed'      },
+  { id: 'quizbank',  icon: CircleHelp,       label: 'الأسئلة',   sub: 'Quiz Bank' },
+  { id: 'concepts',  icon: Sparkles,         label: 'المفاهيم',  sub: 'Concepts'  },
+  { id: 'media',     icon: Image,            label: 'الوسائط',   sub: 'Media'     },
   // export hidden: { id: 'export', icon: '↑', label: 'تصدير', sub: 'Export' },
 ];
 
@@ -346,6 +347,7 @@ export function DesktopSidebar({
         {NAV.map((item) => {
           const active = currentPage === item.id || (currentPage === 'editor' && item.id === 'lessons');
           const count  = counts[item.id];
+          const Icon = item.icon;
 
           return (
             <button
@@ -377,10 +379,12 @@ export function DesktopSidebar({
                 />
               )}
               {/* Icon */}
-              <span className="shrink-0 transition-colors duration-150"
-                style={{ fontSize: 14, fontFamily: 'monospace', lineHeight: 1, color: active ? accent : 'inherit' }}>
-                {item.icon}
-              </span>
+              <Icon
+                size={17}
+                strokeWidth={1.9}
+                className="shrink-0 transition-colors duration-150"
+                style={{ color: active ? accent : 'inherit' }}
+              />
               {/* Label */}
               <div className="flex flex-col min-w-0 text-right transition-all duration-200 flex-1"
                 style={{ opacity: expanded ? 1 : 0, maxWidth: expanded ? 160 : 0, overflow: 'hidden', whiteSpace: 'nowrap' }}
@@ -521,6 +525,7 @@ export function MobileBottomNav({
       >
         {primaryNav.map((item) => {
           const active = currentPage === item.id || (currentPage === 'editor' && item.id === 'lessons');
+          const Icon = item.icon;
           return (
             <button
               key={item.id}
@@ -533,9 +538,7 @@ export function MobileBottomNav({
                   style={{ width: 24, height: 2.5, background: accent }}
                 />
               )}
-              <span style={{ fontSize: 15, fontFamily: 'monospace', lineHeight: 1, color: active ? accent : 'inherit' }}>
-                {item.icon}
-              </span>
+              <Icon size={18} strokeWidth={1.9} style={{ color: active ? accent : 'inherit' }} />
               <span style={{ fontSize: 10.5, fontFamily: 'var(--font-arabic, serif)', fontWeight: active ? 700 : 400, lineHeight: 1 }}>
                 {item.label}
               </span>
@@ -554,7 +557,7 @@ export function MobileBottomNav({
               <SyncDot isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
             </span>
           )}
-          <span style={{ fontSize: 15, fontFamily: 'monospace', lineHeight: 1, color: moreOpen ? accent : 'inherit' }}>≡</span>
+          <Menu size={18} strokeWidth={2} style={{ color: moreOpen ? accent : 'inherit' }} />
           <span style={{ fontSize: 10.5, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1 }}>المزيد</span>
         </button>
       </nav>
@@ -585,6 +588,7 @@ export function MobileBottomNav({
               {/* Non-primary nav items (export excluded since it's gone from NAV) */}
               {NAV.filter((n) => !MOBILE_PRIMARY.includes(n.id)).map((item) => {
                 const active = currentPage === item.id;
+                const Icon = item.icon;
                 return (
                   <button
                     key={item.id}
@@ -596,7 +600,7 @@ export function MobileBottomNav({
                       color: active ? textActive : textDim,
                     }}
                   >
-                    <span style={{ fontSize: 17, fontFamily: 'monospace', color: active ? accent : 'inherit' }}>{item.icon}</span>
+                    <Icon size={18} strokeWidth={1.9} style={{ color: active ? accent : 'inherit' }} />
                     <div className="flex flex-col text-right">
                       <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-arabic, serif)', color: 'inherit' }}>{item.label}</span>
                       <span style={{ fontSize: 11, fontFamily: 'monospace', color: textDim }}>{item.sub}</span>
