@@ -99,6 +99,72 @@ export function useAtlasSync() {
       } catch (loadErr) {
         console.warn('[bootstrapSubject] Could not load Atlas data:', loadErr.message);
       }
+
+      // ── Load concepts for this subject ────────────────────────────────────
+      try {
+        const rawConcepts = await apiFetch(`/api/content/concepts?subjectId=${subjectId}`);
+        if (Array.isArray(rawConcepts)) {
+          useConceptStore.getState().loadConcepts(
+            rawConcepts.map((c) => ({
+              id:              c.contentId,
+              subjectId:       c.subjectId,
+              type:            c.type,
+              titleAr:         c.titleAr,
+              titleEn:         c.titleEn         || null,
+              definition:      c.definition      || '',
+              shortDefinition: c.shortDefinition || null,
+              formula:         c.formula         || null,
+              imageUrl:        c.imageUrl         || null,
+              difficulty:      c.difficulty      || 1,
+              tagIds:          c.tagIds          || [],
+              extraData:       c.extraData       || null,
+              atlasStatus:     c.status          || 'draft',
+            }))
+          );
+        }
+      } catch (conceptsErr) {
+        console.warn('[bootstrapSubject] Could not load concepts:', conceptsErr.message);
+      }
+
+      // ── Load questions for this subject ───────────────────────────────────
+      try {
+        const rawQuestions = await apiFetch(`/api/content/questions?subjectId=${subjectId}`);
+        if (Array.isArray(rawQuestions)) {
+          useQuizStore.getState().loadQuestions(
+            rawQuestions.map((q) => ({
+              id:               q.contentId,
+              subjectId:        q.subjectId,
+              type:             q.type,
+              textAr:           q.textAr,
+              textEn:           q.textEn           || null,
+              correctAnswer:    q.correctAnswer,
+              options:          q.options          || null,
+              explanation:      q.explanation      || null,
+              imageUrl:         q.imageUrl         || null,
+              tableData:        q.tableData        || null,
+              difficulty:       q.difficulty       || 1,
+              points:           q.points           || 1,
+              estimatedSeconds: q.estimatedSeconds || 60,
+              cognitiveLevel:   q.cognitiveLevel   || 'RECALL',
+              source:           q.source           || 'ORIGINAL',
+              sourceExamId:     q.sourceExamContentId  || null,
+              sourceDetails:    q.sourceDetails    || null,
+              sourceYear:       q.sourceYear       || null,
+              feedEligible:     q.feedEligible     || false,
+              unitId:           q.unitContentId    || null,
+              lessonId:         q.lessonContentId  || null,
+              sectionId:        q.sectionContentId || null,
+              isCheckpoint:     q.isCheckpoint     || false,
+              conceptIds:       q.conceptIds       || [],
+              markers:          q.markers          || [],
+              atlasStatus:      q.status           || 'draft',
+            }))
+          );
+        }
+      } catch (questionsErr) {
+        console.warn('[bootstrapSubject] Could not load questions:', questionsErr.message);
+      }
+
       setDone();
       return true;
     } catch (e) {

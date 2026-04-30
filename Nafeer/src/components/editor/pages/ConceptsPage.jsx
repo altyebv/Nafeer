@@ -111,7 +111,7 @@ export default function ConceptsPage({ subjectId }) {
       if (subjectId) syncConcept(editingId, subjectId).catch(() => {});
     } else {
       const newId = `concept_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-      addConcept({ ...form, id: newId });
+      addConcept({ ...form, id: newId, subjectId: subjectId || undefined });
       if (subjectId) syncConcept(newId, subjectId).catch(() => {});
     }
     resetForm();
@@ -148,7 +148,12 @@ export default function ConceptsPage({ subjectId }) {
     }));
   };
 
-  const filtered = concepts.filter((c) => {
+  // Scope to the current subject — concepts stamped with a different subjectId are hidden
+  const subjectConcepts = concepts.filter(
+    (c) => !subjectId || !c.subjectId || c.subjectId === subjectId
+  );
+
+  const filtered = subjectConcepts.filter((c) => {
     const matchType   = !filterType || c.type === filterType;
     const matchSearch = !search || c.titleAr?.includes(search) || c.titleEn?.toLowerCase().includes(search.toLowerCase());
     return matchType && matchSearch;
@@ -156,7 +161,7 @@ export default function ConceptsPage({ subjectId }) {
 
   // Stat breakdown
   const typeCounts = Object.keys(CONCEPT_TYPES).reduce((acc, k) => {
-    acc[k] = concepts.filter((c) => c.type === k).length;
+    acc[k] = subjectConcepts.filter((c) => c.type === k).length;
     return acc;
   }, {});
 
@@ -191,7 +196,7 @@ export default function ConceptsPage({ subjectId }) {
         className="flex items-center gap-5 mb-6 pb-5"
         style={{ borderBottom: '1px solid var(--border-subtle)' }}
       >
-        <StatItem n={concepts.length} label="إجمالي" />
+        <StatItem n={subjectConcepts.length} label="إجمالي" />
         {Object.entries(typeCounts).map(([k, n]) => n > 0 && (
           <StatItem key={k} n={n} label={CONCEPT_TYPE_CONFIG[k]?.label} color={TYPE_HUE[k]} />
         ))}
@@ -202,7 +207,7 @@ export default function ConceptsPage({ subjectId }) {
         <FilterPill
           active={!filterType}
           onClick={() => setFilterType('')}
-          label={`الكل (${concepts.length})`}
+          label={`الكل (${subjectConcepts.length})`}
         />
         {Object.entries(CONCEPT_TYPES).map(([key]) => {
           const cfg   = CONCEPT_TYPE_CONFIG[key];
@@ -279,8 +284,8 @@ export default function ConceptsPage({ subjectId }) {
       {filtered.length === 0 ? (
         <EmptyState
           icon="💡"
-          title={concepts.length === 0 ? 'لا توجد مفاهيم بعد' : 'لا توجد نتائج'}
-          action={concepts.length === 0 ? (
+          title={subjectConcepts.length === 0 ? 'لا توجد مفاهيم بعد' : 'لا توجد نتائج'}
+          action={subjectConcepts.length === 0 ? (
             <button
               onClick={() => { resetForm(); setShowModal(true); }}
               className="font-arabic"

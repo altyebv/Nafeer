@@ -76,6 +76,9 @@ export const useConceptStore = create(
           })),
         })),
 
+      // ── Bulk replace concepts (called after Atlas bootstrap) ──────────────
+      loadConcepts: (concepts) => set({ concepts }),
+
       // ── Reset ─────────────────────────────────────────────────────────────
       resetConcepts: () => set({ concepts: [], tags: [] }),
     }),

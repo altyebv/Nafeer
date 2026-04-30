@@ -40,6 +40,17 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
     addQuestionToExam, removeQuestionFromExam,
   } = useDataStore();
 
+  // ── Subject-scoped views ─────────────────────────────────────────────────
+  // Hide questions/exams that belong to a different subject.
+  // Items without a subjectId (legacy local data) are shown as a safe fallback.
+  const visibleQuestions = subjectId
+    ? questions.filter((q) => !q.subjectId || q.subjectId === subjectId)
+    : questions;
+
+  const visibleConcepts = subjectId
+    ? concepts.filter((c) => !c.subjectId || c.subjectId === subjectId)
+    : concepts;
+
   const {
     syncQuestion, syncExam,
     submitForReview,
@@ -105,7 +116,7 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
       if (subjectId) syncQuestion(editingQId, subjectId).catch(() => {});
     } else {
       const newId = `q_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-      addQuestion({ ...saveForm, id: newId });
+      addQuestion({ ...saveForm, id: newId, subjectId: subjectId || undefined });
       if (subjectId) syncQuestion(newId, subjectId).catch(() => {});
     }
     setShowQModal(false);
@@ -160,7 +171,7 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
         <div>
           <h1 className="text-2xl font-semibold text-sand-200 font-arabic">بنك الأسئلة</h1>
           <p className="text-ink-500 mt-0.5 text-sm font-arabic">
-            {questions.length} سؤال · {exams.length} امتحان
+            {visibleQuestions.length} سؤال · {exams.length} امتحان
           </p>
         </div>
         <div className="flex gap-2">
@@ -200,7 +211,7 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
       {/* ── Tab content ─────────────────────────────────────────────────── */}
       {tab === 'questions' && (
         <QuestionsTab
-          questions={questions}
+          questions={visibleQuestions}
           subjectId={subjectId}
           onEdit={openEditQuestion}
           onDelete={handleDeleteQuestion}
@@ -212,7 +223,7 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
       {tab === 'exams' && (
         <ExamsTab
           exams={exams}
-          questions={questions}
+          questions={visibleQuestions}
           onEdit={openEditExam}
           onDelete={handleDeleteExam}
           onAddQuestion={addQuestionToExam}
@@ -228,7 +239,7 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
         form={qForm}
         setForm={setQForm}
         onSave={handleSaveQuestion}
-        concepts={concepts}
+        concepts={visibleConcepts}
         units={units}
         lessons={lessons}
         isTestSubject={isTestSubject}
