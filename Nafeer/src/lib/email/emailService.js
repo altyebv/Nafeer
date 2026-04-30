@@ -26,7 +26,7 @@
  */
 
 import { renderTemplate, TEMPLATE_KEYS } from './templates/index';
-import { logEmail }                       from './emailLogger';
+import { logEmail }                       from './EmailLogger';
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
