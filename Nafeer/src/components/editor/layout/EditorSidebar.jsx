@@ -9,9 +9,10 @@ const SUBJECT_LABEL = Object.fromEntries(
   SUBJECTS_CATALOG.map((s) => [s.id, { ar: s.nameAr, en: s.nameEn }])
 );
 
-const RAIL_W     = 56;
-const EXPANDED_W = 244;
+const RAIL_W     = 60;   // slightly wider rail for comfort
+const EXPANDED_W = 260;  // slightly wider expanded for readability
 
+// Export item removed from NAV — hidden for now
 const NAV = [
   { id: 'dashboard', icon: '⌂', label: 'الرئيسية',  sub: 'Dashboard' },
   { id: 'lessons',   icon: '◈', label: 'الدروس',    sub: 'Lessons'   },
@@ -19,7 +20,7 @@ const NAV = [
   { id: 'quizbank',  icon: '◎', label: 'الأسئلة',   sub: 'Quiz Bank' },
   { id: 'concepts',  icon: '✦', label: 'المفاهيم',  sub: 'Concepts'  },
   { id: 'media',     icon: '⬜', label: 'الوسائط',   sub: 'Media'     },
-  { id: 'export',    icon: '↑', label: 'تصدير',     sub: 'Export'    },
+  // export hidden: { id: 'export', icon: '↑', label: 'تصدير', sub: 'Export' },
 ];
 
 // ── Theme hook ─────────────────────────────────────────────────────────────────
@@ -47,7 +48,7 @@ function Avatar({ contributor, size = 28 }) {
     return (
       <img src={contributor.avatarUrl} alt={contributor.name}
         className="rounded-full object-cover shrink-0"
-        style={{ width: size, height: size, border: '1.5px solid rgba(212,137,30,0.45)' }}
+        style={{ width: size, height: size, border: '2px solid rgba(212,137,30,0.45)' }}
       />
     );
   }
@@ -55,10 +56,11 @@ function Avatar({ contributor, size = 28 }) {
     <div className="rounded-full flex items-center justify-center font-bold shrink-0"
       style={{
         width: size, height: size,
-        fontSize: size > 30 ? 13 : 11,
+        fontSize: size > 36 ? 16 : size > 24 ? 13 : 11,
         background: 'linear-gradient(135deg, rgba(212,137,30,0.9) 0%, rgba(146,79,18,0.65) 100%)',
         color: '#0e0c09',
-        border: '1.5px solid rgba(212,137,30,0.3)',
+        border: '2px solid rgba(212,137,30,0.35)',
+        boxShadow: '0 2px 8px rgba(212,137,30,0.2)',
       }}>
       {initials}
     </div>
@@ -67,9 +69,9 @@ function Avatar({ contributor, size = 28 }) {
 
 // ── Sync dot ──────────────────────────────────────────────────────────────────
 function SyncDot({ isSyncing, syncError, lastSynced }) {
-  if (syncError)  return <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#f87171' }} />;
-  if (isSyncing)  return <span className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse" style={{ background: '#fbbf24' }} />;
-  if (lastSynced) return <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#34d399' }} />;
+  if (syncError)  return <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#f87171' }} />;
+  if (isSyncing)  return <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: '#fbbf24' }} />;
+  if (lastSynced) return <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#34d399' }} />;
   return null;
 }
 
@@ -80,16 +82,16 @@ function ThemeToggle({ theme, toggle }) {
     <button onClick={toggle}
       title={isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
       className="shrink-0 rounded-lg flex items-center justify-center transition-all duration-150"
-      style={{ width: 28, height: 28, color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)', background: 'transparent' }}
+      style={{ width: 30, height: 30, color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)', background: 'transparent' }}
       onMouseEnter={(e) => { e.currentTarget.style.color = isDark ? '#fcd34d' : '#92400e'; e.currentTarget.style.background = isDark ? 'rgba(252,211,77,0.08)' : 'rgba(146,64,14,0.08)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)'; e.currentTarget.style.background = 'transparent'; }}
     >
       {isDark ? (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       ) : (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="5"/>
           <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
           <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
@@ -104,7 +106,7 @@ function ThemeToggle({ theme, toggle }) {
 // ── Sign-out icon ─────────────────────────────────────────────────────────────
 function SignOutIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
       <polyline points="16 17 21 12 16 7"/>
       <line x1="21" y1="12" x2="9" y2="12"/>
@@ -114,7 +116,6 @@ function SignOutIcon() {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESKTOP SIDEBAR (md+)
-// Fixed right-side rail that collapses to icons or expands to labels.
 // ═══════════════════════════════════════════════════════════════════════════════
 export function DesktopSidebar({
   currentPage, onNavigate, contributor,
@@ -134,18 +135,18 @@ export function DesktopSidebar({
       .catch(() => {});
   }, []);
 
-  const expanded   = isOpen;
-  const w          = expanded ? EXPANDED_W : RAIL_W;
-  const isDark     = theme === 'dark';
+  const expanded = isOpen;
+  const w        = expanded ? EXPANDED_W : RAIL_W;
+  const isDark   = theme === 'dark';
 
-  const sidebarBg     = isDark ? '#090806'                    : '#faf5eb';
-  const sidebarBorder = isDark ? 'rgba(255,255,255,0.065)'    : 'rgba(146,79,18,0.12)';
+  const sidebarBg     = isDark ? '#090806'                 : '#faf5eb';
+  const sidebarBorder = isDark ? 'rgba(255,255,255,0.065)' : 'rgba(146,79,18,0.12)';
   const sidebarShadow = expanded
     ? isDark ? '-8px 0 40px rgba(0,0,0,0.6)' : '-8px 0 40px rgba(0,0,0,0.10)'
     : 'none';
 
-  const textDim    = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
-  const textMid    = isDark ? 'rgba(255,255,255,0.58)' : 'rgba(0,0,0,0.58)';
+  const textDim    = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+  const textMid    = isDark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.62)';
   const textActive = isDark ? '#e8d5a8'                : '#7c3c10';
   const accent     = '#d4891e';
 
@@ -156,7 +157,6 @@ export function DesktopSidebar({
     quizbank:  questions.length,
     concepts:  concepts.length,
     media:     media.length,
-    export:    null,
   };
 
   const subjectInfo = contributor?.subject ? SUBJECT_LABEL[contributor.subject] : null;
@@ -179,7 +179,66 @@ export function DesktopSidebar({
         boxShadow: sidebarShadow,
       }}
     >
-      {/* ── Header ──────────────────────────────────────────────────────── */}
+      {/* ── Avatar / Identity block (top, expanded) ──────────────────── */}
+      <div
+        className="shrink-0 flex flex-col items-center overflow-hidden transition-all duration-300"
+        style={{
+          maxHeight: expanded ? 120 : 0,
+          opacity: expanded ? 1 : 0,
+          padding: expanded ? '20px 16px 16px' : '0 16px',
+          borderBottom: expanded ? `1px solid ${sidebarBorder}` : 'none',
+        }}
+      >
+        {/* Avatar + identity — clickable link to public profile */}
+        <a
+          href={contributor?.username ? `/contributors/${contributor.username}` : undefined}
+          title="عرض الملف الشخصي"
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
+            textDecoration: 'none', width: '100%',
+            borderRadius: 12, padding: '4px',
+            transition: 'background 0.15s',
+            cursor: contributor?.username ? 'pointer' : 'default',
+          }}
+          onMouseEnter={(e) => { if (contributor?.username) e.currentTarget.style.background = 'rgba(212,137,30,0.06)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+        >
+          <Avatar contributor={contributor} size={52} />
+
+          {contributor && (
+            <div className="mt-3 text-center w-full">
+              <p style={{
+                fontSize: 14, fontWeight: 700,
+                color: textMid,
+                fontFamily: 'var(--font-arabic, serif)',
+                lineHeight: 1.3,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {contributor.name || ''}
+              </p>
+              {contributor.username && (
+                <p style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(212,137,30,0.55)', marginTop: 2 }}>
+                  @{contributor.username}
+                </p>
+              )}
+              {subjectInfo && (
+                <div className="mt-2 flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg mx-auto w-fit"
+                  style={{ background: 'rgba(212,137,30,0.07)', border: '1px solid rgba(212,137,30,0.15)' }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 700, color: accent, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.2 }}>
+                    {subjectInfo.ar}
+                  </span>
+                  <span style={{ fontSize: 9, color: 'rgba(212,137,30,0.5)', fontFamily: 'monospace' }}>
+                    {subjectInfo.en}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </a>
+      </div>
+
+      {/* ── Header (brand + toggle) ──────────────────────────────────── */}
       <div className="flex items-center shrink-0"
         style={{
           height: 52,
@@ -194,7 +253,7 @@ export function DesktopSidebar({
           title={expanded ? 'طي القائمة' : 'توسيع القائمة'}
           className="shrink-0 flex items-center justify-center rounded-lg transition-all duration-150"
           style={{
-            width: 32, height: 32,
+            width: 34, height: 34,
             background: expanded ? 'rgba(212,137,30,0.10)' : 'rgba(212,137,30,0.08)',
             border: '1px solid rgba(212,137,30,0.22)',
             color: accent,
@@ -207,46 +266,38 @@ export function DesktopSidebar({
               <polyline points="4,2 8,6 4,10" />
             </svg>
           ) : (
-            <span style={{ fontWeight: 800, fontSize: 14, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1 }}>ن</span>
+            <span style={{ fontWeight: 800, fontSize: 15, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1 }}>ن</span>
           )}
         </button>
 
-        {/* Brand text */}
+        {/* Brand text — only when expanded */}
         <div className="flex flex-col min-w-0 flex-1 transition-all duration-200"
-          style={{ opacity: expanded ? 1 : 0, maxWidth: expanded ? 140 : 0, overflow: 'hidden', whiteSpace: 'nowrap' }}
+          style={{ opacity: expanded ? 1 : 0, maxWidth: expanded ? 160 : 0, overflow: 'hidden', whiteSpace: 'nowrap' }}
         >
-          <span style={{ fontSize: 13, fontWeight: 800, color: accent, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>نفير</span>
-          <span style={{ fontSize: 9, color: textDim, fontFamily: 'monospace', letterSpacing: '0.12em' }}>EDITOR</span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: accent, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>نفير</span>
+          <span style={{ fontSize: 10, color: textDim, fontFamily: 'monospace', letterSpacing: '0.12em' }}>EDITOR</span>
         </div>
 
         {expanded && <ThemeToggle theme={theme} toggle={toggleTheme} />}
       </div>
 
-      {/* ── Subject chip ──────────────────────────────────────────────── */}
-      {subjectInfo && (
-        <div className="shrink-0 overflow-hidden transition-all duration-300"
-          style={{
-            maxHeight: expanded ? 48 : 0,
-            opacity: expanded ? 1 : 0,
-            padding: expanded ? '7px 12px' : '0 12px',
-            borderBottom: expanded ? `1px solid ${sidebarBorder}` : 'none',
-          }}
-        >
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
-            style={{ background: 'rgba(212,137,30,0.07)', border: '1px solid rgba(212,137,30,0.15)' }}
+      {/* ── Collapsed avatar (rail mode) ────────────────────────────── */}
+      {!expanded && contributor && (
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <a
+            href={contributor?.username ? `/contributors/${contributor.username}` : undefined}
+            title={contributor.name || 'الملف الشخصي'}
+            style={{ display: 'block', borderRadius: '50%', transition: 'opacity 0.15s' }}
+            onMouseEnter={(e) => { if (contributor?.username) e.currentTarget.style.opacity = '0.7'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
           >
-            <span style={{ fontSize: 11, fontWeight: 700, color: accent, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.2 }}>
-              {subjectInfo.ar}
-            </span>
-            <span style={{ fontSize: 9, color: 'rgba(212,137,30,0.5)', fontFamily: 'monospace' }}>
-              {subjectInfo.en}
-            </span>
-          </div>
+            <Avatar contributor={contributor} size={34} />
+          </a>
         </div>
       )}
 
-      {/* ── Nav ──────────────────────────────────────────────────────────── */}
-      <nav className="flex-1 flex flex-col py-1.5 w-full overflow-hidden">
+      {/* ── Nav ─────────────────────────────────────────────────────── */}
+      <nav className="flex-1 flex flex-col py-2 w-full overflow-hidden">
         {NAV.map((item) => {
           const active = currentPage === item.id || (currentPage === 'editor' && item.id === 'lessons');
           const count  = counts[item.id];
@@ -258,10 +309,10 @@ export function DesktopSidebar({
               title={!expanded ? item.label : undefined}
               className="relative flex items-center w-full transition-all duration-150 group"
               style={{
-                height: 40,
-                padding: expanded ? '0 13px' : '0',
+                height: 44,
+                padding: expanded ? '0 14px' : '0',
                 justifyContent: expanded ? 'flex-start' : 'center',
-                gap: expanded ? 10 : 0,
+                gap: expanded ? 11 : 0,
                 color: active ? textActive : textDim,
                 background: active ? 'rgba(212,137,30,0.08)' : 'transparent',
               }}
@@ -277,29 +328,29 @@ export function DesktopSidebar({
               {/* Active accent bar */}
               {active && (
                 <span className="absolute right-0 rounded-l"
-                  style={{ width: 2.5, height: 20, top: '50%', transform: 'translateY(-50%)', background: accent }}
+                  style={{ width: 3, height: 22, top: '50%', transform: 'translateY(-50%)', background: accent }}
                 />
               )}
               {/* Icon */}
               <span className="shrink-0 transition-colors duration-150"
-                style={{ fontSize: 12, fontFamily: 'monospace', lineHeight: 1, color: active ? accent : 'inherit' }}>
+                style={{ fontSize: 14, fontFamily: 'monospace', lineHeight: 1, color: active ? accent : 'inherit' }}>
                 {item.icon}
               </span>
               {/* Label */}
               <div className="flex flex-col min-w-0 text-right transition-all duration-200 flex-1"
-                style={{ opacity: expanded ? 1 : 0, maxWidth: expanded ? 130 : 0, overflow: 'hidden', whiteSpace: 'nowrap' }}
+                style={{ opacity: expanded ? 1 : 0, maxWidth: expanded ? 160 : 0, overflow: 'hidden', whiteSpace: 'nowrap' }}
               >
-                <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.3, color: 'inherit' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.35, color: 'inherit' }}>
                   {item.label}
                 </span>
-                <span style={{ fontSize: 9, fontFamily: 'monospace', color: textDim, lineHeight: 1.2 }}>{item.sub}</span>
+                <span style={{ fontSize: 10, fontFamily: 'monospace', color: textDim, lineHeight: 1.2 }}>{item.sub}</span>
               </div>
               {/* Count badge */}
               {count != null && count > 0 && (
                 <span className="shrink-0 transition-all duration-200"
                   style={{
-                    fontSize: 9, fontFamily: 'monospace',
-                    padding: '1px 5px', borderRadius: 6,
+                    fontSize: 10, fontFamily: 'monospace',
+                    padding: '2px 6px', borderRadius: 6,
                     background: active ? 'rgba(212,137,30,0.18)' : 'rgba(128,128,128,0.08)',
                     color: active ? accent : textDim,
                     border: `1px solid ${active ? 'rgba(212,137,30,0.28)' : 'rgba(128,128,128,0.12)'}`,
@@ -316,72 +367,67 @@ export function DesktopSidebar({
         })}
       </nav>
 
-      {/* ── Sync row ──────────────────────────────────────────────────────── */}
+      {/* ── Sync row ────────────────────────────────────────────────── */}
       {(isSyncing || syncError || lastSynced) && (
         <div className="shrink-0 overflow-hidden transition-all duration-300 flex items-center"
           style={{
-            height: expanded ? 28 : 24,
-            padding: expanded ? '0 13px' : '0',
+            height: expanded ? 30 : 26,
+            padding: expanded ? '0 14px' : '0',
             justifyContent: expanded ? 'flex-start' : 'center',
-            gap: 6,
+            gap: 7,
             borderTop: `1px solid ${sidebarBorder}`,
             background: isDark ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.03)',
           }}
         >
           <SyncDot isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
           {expanded && syncLabel && (
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-arabic, serif)', color: textDim, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+            <span style={{ fontSize: 11, fontFamily: 'var(--font-arabic, serif)', color: textDim, whiteSpace: 'nowrap', overflow: 'hidden' }}>
               {syncLabel}
             </span>
           )}
         </div>
       )}
 
-      {/* ── Profile footer ────────────────────────────────────────────────── */}
+      {/* ── Profile footer (sign out + theme, collapsed) ─────────────── */}
       <div className="shrink-0 flex items-center overflow-hidden"
         style={{
-          height: expanded ? 56 : 52,
+          height: expanded ? 52 : 48,
           padding: expanded ? '0 10px' : '0',
           borderTop: `1px solid ${sidebarBorder}`,
-          justifyContent: expanded ? 'flex-start' : 'center',
-          gap: expanded ? 8 : 0,
+          justifyContent: expanded ? 'flex-end' : 'center',
+          gap: expanded ? 6 : 0,
           transition: 'height 0.26s ease, padding 0.26s ease',
         }}
       >
-        {/* Theme toggle in collapsed state */}
+        {/* In collapsed state: theme toggle above sign-out */}
         {!expanded && (
-          <div style={{ position: 'absolute', bottom: 60, right: 0, width: RAIL_W, display: 'flex', justifyContent: 'center', padding: '4px 0' }}>
+          <div style={{ position: 'absolute', bottom: 54, right: 0, width: RAIL_W, display: 'flex', justifyContent: 'center', padding: '4px 0' }}>
             <ThemeToggle theme={theme} toggle={toggleTheme} />
           </div>
         )}
-        {contributor ? (
-          <>
-            <Avatar contributor={contributor} size={expanded ? 32 : 26} />
-            <div className="flex flex-col min-w-0 flex-1 transition-all duration-200"
-              style={{ opacity: expanded ? 1 : 0, maxWidth: expanded ? 110 : 0, overflow: 'hidden', whiteSpace: 'nowrap' }}
-            >
-              <span style={{ fontSize: 11, fontWeight: 700, color: textMid, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.3 }}>
-                {(contributor.name || '').split(' ')[0]}
-              </span>
-              {contributor.username && (
-                <span style={{ fontSize: 9, fontFamily: 'monospace', color: textDim }}>@{contributor.username}</span>
-              )}
-            </div>
-            <button onClick={async () => { await fetch('/api/auth/signout', { method: 'POST' }); router.push('/'); }}
-              title="تسجيل الخروج"
-              className="shrink-0 transition-all duration-150 rounded-lg flex items-center justify-center"
-              style={{ width: 28, height: 28, color: textDim, background: 'transparent' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = textDim; e.currentTarget.style.background = 'transparent'; }}
-            >
-              <SignOutIcon />
-            </button>
-          </>
-        ) : (
-          <button onClick={async () => { await fetch('/api/auth/signout', { method: 'POST' }); router.push('/'); }}
+
+        {/* In expanded state: just sign-out (avatar+name are in the top block) */}
+        {expanded && (
+          <button
+            onClick={async () => { await fetch('/api/auth/signout', { method: 'POST' }); router.push('/'); }}
+            title="تسجيل الخروج"
+            className="shrink-0 transition-all duration-150 rounded-lg flex items-center gap-2 px-3 py-1.5"
+            style={{ color: textDim, background: 'transparent', fontSize: 11, fontFamily: 'var(--font-arabic, serif)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = textDim; e.currentTarget.style.background = 'transparent'; }}
+          >
+            <SignOutIcon />
+            <span>خروج</span>
+          </button>
+        )}
+
+        {/* Collapsed: just the icon */}
+        {!expanded && (
+          <button
+            onClick={async () => { await fetch('/api/auth/signout', { method: 'POST' }); router.push('/'); }}
             title="تسجيل الخروج"
             className="flex items-center justify-center transition-colors"
-            style={{ width: 28, height: 28, color: textDim }}
+            style={{ width: 30, height: 30, color: textDim }}
             onMouseEnter={(e) => (e.currentTarget.style.color = '#f87171')}
             onMouseLeave={(e) => (e.currentTarget.style.color = textDim)}
           >
@@ -395,10 +441,7 @@ export function DesktopSidebar({
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MOBILE BOTTOM NAV (< md)
-// Compact tab bar at the bottom + slide-up drawer for overflow pages.
 // ═══════════════════════════════════════════════════════════════════════════════
-
-// Mobile shows 5 primary tabs; others are in a "More" drawer.
 const MOBILE_PRIMARY = ['dashboard', 'lessons', 'quizbank', 'concepts', 'feeds'];
 
 export function MobileBottomNav({
@@ -410,11 +453,11 @@ export function MobileBottomNav({
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const navBg     = isDark ? 'rgba(9,8,6,0.97)'           : 'rgba(250,245,235,0.97)';
-  const border    = isDark ? 'rgba(255,255,255,0.07)'      : 'rgba(146,79,18,0.12)';
-  const textDim   = isDark ? 'rgba(255,255,255,0.35)'      : 'rgba(0,0,0,0.35)';
-  const textActive = isDark ? '#e8d5a8'                    : '#7c3c10';
-  const accent    = '#d4891e';
+  const navBg      = isDark ? 'rgba(9,8,6,0.97)'      : 'rgba(250,245,235,0.97)';
+  const border     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(146,79,18,0.12)';
+  const textDim    = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+  const textActive = isDark ? '#e8d5a8'                : '#7c3c10';
+  const accent     = '#d4891e';
 
   const primaryNav = NAV.filter((n) => MOBILE_PRIMARY.includes(n.id));
 
@@ -424,7 +467,7 @@ export function MobileBottomNav({
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch"
         style={{
-          height: 60,
+          height: 64,
           background: navBg,
           borderTop: `1px solid ${border}`,
           backdropFilter: 'blur(16px)',
@@ -437,28 +480,28 @@ export function MobileBottomNav({
             <button
               key={item.id}
               onClick={() => { onNavigate(item.id); if (moreOpen) onToggleMore(); }}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150"
+              className="flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-150 relative"
               style={{ color: active ? textActive : textDim }}
             >
               {active && (
                 <span className="absolute bottom-0 rounded-t-sm"
-                  style={{ width: 24, height: 2.5, background: accent, marginBottom: 0 }}
+                  style={{ width: 24, height: 2.5, background: accent }}
                 />
               )}
-              <span style={{ fontSize: 14, fontFamily: 'monospace', lineHeight: 1, color: active ? accent : 'inherit' }}>
+              <span style={{ fontSize: 15, fontFamily: 'monospace', lineHeight: 1, color: active ? accent : 'inherit' }}>
                 {item.icon}
               </span>
-              <span style={{ fontSize: 9.5, fontFamily: 'var(--font-arabic, serif)', fontWeight: active ? 700 : 400, lineHeight: 1 }}>
+              <span style={{ fontSize: 10.5, fontFamily: 'var(--font-arabic, serif)', fontWeight: active ? 700 : 400, lineHeight: 1 }}>
                 {item.label}
               </span>
             </button>
           );
         })}
 
-        {/* Sync / More button */}
+        {/* More button */}
         <button
           onClick={onToggleMore}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 relative"
+          className="flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-150 relative"
           style={{ color: moreOpen ? textActive : textDim }}
         >
           {(isSyncing || syncError || lastSynced) && (
@@ -466,15 +509,14 @@ export function MobileBottomNav({
               <SyncDot isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
             </span>
           )}
-          <span style={{ fontSize: 14, fontFamily: 'monospace', lineHeight: 1, color: moreOpen ? accent : 'inherit' }}>≡</span>
-          <span style={{ fontSize: 9.5, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1 }}>المزيد</span>
+          <span style={{ fontSize: 15, fontFamily: 'monospace', lineHeight: 1, color: moreOpen ? accent : 'inherit' }}>≡</span>
+          <span style={{ fontSize: 10.5, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1 }}>المزيد</span>
         </button>
       </nav>
 
-      {/* More drawer — slides up over the bottom bar */}
+      {/* More drawer */}
       {moreOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 z-50"
             style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}
@@ -494,51 +536,50 @@ export function MobileBottomNav({
               <div className="w-10 h-1 rounded-full" style={{ background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.15)' }} />
             </div>
 
-            {/* Non-primary nav items */}
-            <div className="px-4 pb-4 space-y-1">
+            <div className="px-4 pb-5 space-y-1.5">
+              {/* Non-primary nav items (export excluded since it's gone from NAV) */}
               {NAV.filter((n) => !MOBILE_PRIMARY.includes(n.id)).map((item) => {
                 const active = currentPage === item.id;
                 return (
                   <button
                     key={item.id}
                     onClick={() => { onNavigate(item.id); onToggleMore(); }}
-                    className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-150"
+                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-150"
                     style={{
                       background: active ? 'rgba(212,137,30,0.10)' : 'rgba(255,255,255,0.03)',
                       border: `1px solid ${active ? 'rgba(212,137,30,0.25)' : 'rgba(255,255,255,0.06)'}`,
                       color: active ? textActive : textDim,
                     }}
                   >
-                    <span style={{ fontSize: 16, fontFamily: 'monospace', color: active ? accent : 'inherit' }}>{item.icon}</span>
+                    <span style={{ fontSize: 17, fontFamily: 'monospace', color: active ? accent : 'inherit' }}>{item.icon}</span>
                     <div className="flex flex-col text-right">
-                      <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-arabic, serif)', color: 'inherit' }}>{item.label}</span>
-                      <span style={{ fontSize: 10, fontFamily: 'monospace', color: textDim }}>{item.sub}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-arabic, serif)', color: 'inherit' }}>{item.label}</span>
+                      <span style={{ fontSize: 11, fontFamily: 'monospace', color: textDim }}>{item.sub}</span>
                     </div>
                   </button>
                 );
               })}
 
-              {/* Divider */}
-              <div className="h-px my-2" style={{ background: border }} />
+              <div className="h-px my-1" style={{ background: border }} />
 
-              {/* Profile + sign out */}
+              {/* Profile */}
               {contributor && (
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl"
                   style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${border}` }}
                 >
-                  <Avatar contributor={contributor} size={36} />
+                  <Avatar contributor={contributor} size={40} />
                   <div className="flex-1 min-w-0">
-                    <p style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-arabic, serif)', color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-arabic, serif)', color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }}>
                       {contributor.name}
                     </p>
                     {contributor.username && (
-                      <p style={{ fontSize: 10, fontFamily: 'monospace', color: textDim }}>@{contributor.username}</p>
+                      <p style={{ fontSize: 11, fontFamily: 'monospace', color: textDim }}>@{contributor.username}</p>
                     )}
                   </div>
                   <button
                     onClick={async () => { await fetch('/api/auth/signout', { method: 'POST' }); router.push('/'); }}
                     className="flex items-center justify-center rounded-lg transition-colors"
-                    style={{ width: 36, height: 36, color: textDim }}
+                    style={{ width: 38, height: 38, color: textDim }}
                     onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.color = textDim; }}
                   >
@@ -547,11 +588,11 @@ export function MobileBottomNav({
                 </div>
               )}
 
-              {/* Sync status in drawer */}
+              {/* Sync status */}
               {(isSyncing || syncError || lastSynced) && (
                 <div className="flex items-center gap-2 px-4 py-2">
                   <SyncDot isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
-                  <span style={{ fontSize: 11, fontFamily: 'var(--font-arabic, serif)', color: textDim }}>
+                  <span style={{ fontSize: 12, fontFamily: 'var(--font-arabic, serif)', color: textDim }}>
                     {syncError ? 'خطأ في الحفظ' : isSyncing ? 'جاري الحفظ…' : lastSynced ? `محفوظ · ${new Date(lastSynced).toLocaleTimeString('ar-SD', { hour: '2-digit', minute: '2-digit' })}` : ''}
                   </span>
                 </div>
@@ -565,8 +606,7 @@ export function MobileBottomNav({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEFAULT EXPORT — unified component that renders the right nav for the
-// current viewport. EditorShell imports this single component.
+// DEFAULT EXPORT
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function EditorSidebar(props) {
   const [moreOpen, setMoreOpen] = useState(false);
