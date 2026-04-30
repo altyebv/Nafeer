@@ -183,7 +183,7 @@ export function DesktopSidebar({
       <div
         className="shrink-0 flex flex-col items-center overflow-hidden transition-all duration-300"
         style={{
-          maxHeight: expanded ? 120 : 0,
+          maxHeight: expanded ? 170 : 0,
           opacity: expanded ? 1 : 0,
           padding: expanded ? '20px 16px 16px' : '0 16px',
           borderBottom: expanded ? `1px solid ${sidebarBorder}` : 'none',
@@ -287,7 +287,7 @@ export function DesktopSidebar({
           <a
             href={contributor?.username ? `/contributors/${contributor.username}` : undefined}
             title={contributor.name || 'الملف الشخصي'}
-            style={{ display: 'block', borderRadius: '50%', transition: 'opacity 0.15s' }}
+            style={{ display: 'block', borderRadius: '50%', transition: 'opacity 0.15s', cursor: contributor?.username ? 'pointer' : 'default' }}
             onMouseEnter={(e) => { if (contributor?.username) e.currentTarget.style.opacity = '0.7'; }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
           >
