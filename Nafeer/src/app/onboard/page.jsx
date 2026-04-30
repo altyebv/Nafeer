@@ -2,14 +2,14 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// ─── Step components ──────────────────────────────────────────────────────────
+// ─── Step indicator ───────────────────────────────────────────────────────────
 
 function StepIndicator({ current, total }) {
   return (
     <div className="flex items-center justify-center gap-2 mb-10">
       {Array.from({ length: total }).map((_, i) => (
         <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${
-          i < current  ? 'w-6 bg-sand-500' :
+          i < current   ? 'w-6 bg-sand-500' :
           i === current ? 'w-10 bg-sand-400' :
           'w-4 bg-ink-700'
         }`} />
@@ -18,11 +18,12 @@ function StepIndicator({ current, total }) {
   );
 }
 
-// Step 1: Set password
+// ─── Step 1: Password ─────────────────────────────────────────────────────────
+
 function StepPassword({ onNext, loading }) {
-  const [pw, setPw]     = useState('');
-  const [pw2, setPw2]   = useState('');
-  const [err, setErr]   = useState('');
+  const [pw, setPw]   = useState('');
+  const [pw2, setPw2] = useState('');
+  const [err, setErr] = useState('');
 
   const submit = (e) => {
     e.preventDefault();
@@ -39,42 +40,31 @@ function StepPassword({ onNext, loading }) {
         <h2 className="text-2xl font-arabic font-bold text-sand-100 mb-2">أنشئ كلمة مرور</h2>
         <p className="text-ink-400 text-sm">ستستخدمها مع اسم المستخدم للدخول</p>
       </div>
-
-      {err && (
-        <div className="p-3 rounded-lg bg-red-900/30 border border-red-700/40 text-red-400 text-sm text-center">{err}</div>
-      )}
-
+      {err && <div className="p-3 rounded-lg bg-red-900/30 border border-red-700/40 text-red-400 text-sm text-center">{err}</div>}
       <div>
         <label className="block text-sm text-ink-400 mb-2">كلمة المرور</label>
-        <input
-          type="password" required autoComplete="new-password" value={pw}
+        <input type="password" required autoComplete="new-password" value={pw}
           onChange={(e) => setPw(e.target.value)} minLength={8}
           className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 placeholder-ink-600 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all"
-          placeholder="8 أحرف على الأقل"
-        />
+          placeholder="8 أحرف على الأقل" />
       </div>
-
       <div>
         <label className="block text-sm text-ink-400 mb-2">تأكيد كلمة المرور</label>
-        <input
-          type="password" required autoComplete="new-password" value={pw2}
+        <input type="password" required autoComplete="new-password" value={pw2}
           onChange={(e) => setPw2(e.target.value)}
           className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 placeholder-ink-600 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all"
-          placeholder="أعد كتابة كلمة المرور"
-        />
+          placeholder="أعد كتابة كلمة المرور" />
       </div>
-
-      <button
-        type="submit" disabled={loading}
-        className="w-full py-3.5 bg-sand-500 hover:bg-sand-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-500 font-bold rounded-xl transition-all"
-      >
+      <button type="submit" disabled={loading}
+        className="w-full py-3.5 bg-sand-500 hover:bg-sand-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-500 font-bold rounded-xl transition-all">
         {loading ? 'جاري الحفظ...' : 'التالي'}
       </button>
     </form>
   );
 }
 
-// Step 2: Bio
+// ─── Step 2: Bio ──────────────────────────────────────────────────────────────
+
 function StepBio({ onNext, onSkip }) {
   const [bio, setBio] = useState('');
   const MAX = 280;
@@ -86,37 +76,28 @@ function StepBio({ onNext, onSkip }) {
         <h2 className="text-2xl font-arabic font-bold text-sand-100 mb-2">عرّف بنفسك</h2>
         <p className="text-ink-400 text-sm">بضع كلمات تظهر في ملفك الشخصي</p>
       </div>
-
       <div className="relative">
-        <textarea
-          rows={4}
-          value={bio}
-          onChange={(e) => setBio(e.target.value.slice(0, MAX))}
+        <textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value.slice(0, MAX))}
           className="w-full px-4 py-3 rounded-xl bg-ink-900/60 border border-ink-700/60 text-sand-100 placeholder-ink-600 focus:outline-none focus:border-sand-600 focus:ring-1 focus:ring-sand-600/40 transition-all resize-none"
-          placeholder="معلم رياضيات، أحب مساعدة الطلاب على الفهم العميق..."
-        />
+          placeholder="معلم رياضيات، أحب مساعدة الطلاب على الفهم العميق..." />
         <span className={`absolute bottom-3 left-3 text-xs ${bio.length > MAX * 0.9 ? 'text-amber-500' : 'text-ink-600'}`}>
           {bio.length}/{MAX}
         </span>
       </div>
-
-      <button
-        onClick={() => onNext(bio)}
-        className="w-full py-3.5 bg-sand-500 hover:bg-sand-400 text-ink-950 font-bold rounded-xl transition-all"
-      >
+      <button onClick={() => onNext(bio)}
+        className="w-full py-3.5 bg-sand-500 hover:bg-sand-400 text-ink-950 font-bold rounded-xl transition-all">
         التالي
       </button>
-      <button
-        onClick={onSkip}
-        className="w-full py-2 text-ink-600 hover:text-ink-400 text-sm transition-colors"
-      >
+      <button onClick={onSkip}
+        className="w-full py-2 text-ink-600 hover:text-ink-400 text-sm transition-colors font-arabic">
         تخطّى الآن
       </button>
     </div>
   );
 }
 
-// Step 3: Avatar
+// ─── Step 3: Avatar ───────────────────────────────────────────────────────────
+
 function StepAvatar({ onFinish, loading }) {
   const [preview, setPreview] = useState(null);
   const [file, setFile]       = useState(null);
@@ -132,8 +113,6 @@ function StepAvatar({ onFinish, loading }) {
     setPreview(URL.createObjectURL(f));
   };
 
-  const submit = () => onFinish(file);
-
   return (
     <div className="space-y-5">
       <div className="text-center mb-8">
@@ -141,41 +120,27 @@ function StepAvatar({ onFinish, loading }) {
         <h2 className="text-2xl font-arabic font-bold text-sand-100 mb-2">صورتك الشخصية</h2>
         <p className="text-ink-400 text-sm">ستظهر مع مساهماتك في المشروع</p>
       </div>
-
-      {err && (
-        <div className="p-3 rounded-lg bg-red-900/30 border border-red-700/40 text-red-400 text-sm text-center">{err}</div>
-      )}
-
-      {/* Avatar picker */}
-      <div
-        onClick={() => inputRef.current?.click()}
-        className="relative mx-auto w-36 h-36 rounded-full overflow-hidden border-2 border-dashed border-ink-600 hover:border-sand-600 transition-colors cursor-pointer group"
-      >
+      {err && <div className="p-3 rounded-lg bg-red-900/30 border border-red-700/40 text-red-400 text-sm text-center">{err}</div>}
+      <div onClick={() => inputRef.current?.click()}
+        className="relative mx-auto w-36 h-36 rounded-full overflow-hidden border-2 border-dashed border-ink-600 hover:border-sand-600 transition-colors cursor-pointer group">
         {preview ? (
           <img src={preview} alt="preview" className="w-full h-full object-cover" />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-ink-500 group-hover:text-sand-500 transition-colors">
             <span className="text-3xl mb-1">+</span>
-            <span className="text-xs">اختر صورة</span>
+            <span className="text-xs font-arabic">اختر صورة</span>
           </div>
         )}
         {preview && (
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <span className="text-white text-xs">تغيير</span>
+            <span className="text-white text-xs font-arabic">تغيير</span>
           </div>
         )}
       </div>
       <p className="text-center text-xs text-ink-600">JPEG أو PNG أو WebP — حتى 5 ميغابايت</p>
-
-      <input
-        ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp"
-        onChange={handleFile} className="hidden"
-      />
-
-      <button
-        onClick={submit} disabled={loading}
-        className="w-full py-3.5 bg-sand-500 hover:bg-sand-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-500 font-bold rounded-xl transition-all"
-      >
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} className="hidden" />
+      <button onClick={() => onFinish(file)} disabled={loading}
+        className="w-full py-3.5 bg-sand-500 hover:bg-sand-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-500 font-bold rounded-xl transition-all">
         {loading ? 'جاري الرفع...' : file ? 'رفع الصورة والدخول' : 'الدخول بدون صورة'}
       </button>
     </div>
@@ -185,20 +150,18 @@ function StepAvatar({ onFinish, loading }) {
 // ─── Main onboarding page ─────────────────────────────────────────────────────
 
 function OnboardContent() {
-  const router        = useRouter();
-  const searchParams  = useSearchParams();
-  const token         = searchParams.get('token');
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const token        = searchParams.get('token');
 
-  const [phase, setPhase]           = useState('loading'); // loading | invalid | step1 | step2 | step3 | done
+  const [phase,       setPhase]       = useState('loading'); // loading | invalid | step1 | step2 | step3
   const [contributor, setContributor] = useState(null);
-  const [loading, setLoading]       = useState(false);
-  const [globalErr, setGlobalErr]   = useState('');
-  const [stepData, setStepData]     = useState({ password: '', bio: '' });
+  const [loading,     setLoading]     = useState(false);
+  const [globalErr,   setGlobalErr]   = useState('');
+  const [stepData,    setStepData]    = useState({ password: '', bio: '' });
 
-  // Validate token on mount
   useEffect(() => {
     if (!token) { setPhase('invalid'); return; }
-
     fetch(`/api/auth/onboard?token=${token}`)
       .then((r) => r.json())
       .then((data) => {
@@ -213,7 +176,7 @@ function OnboardContent() {
   const handlePassword = async (password) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/onboard', {
+      const res  = await fetch('/api/auth/onboard', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ token, password, bio: '' }),
@@ -259,7 +222,7 @@ function OnboardContent() {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   if (phase === 'loading') {
     return (
@@ -287,15 +250,13 @@ function OnboardContent() {
     );
   }
 
-  const STEPS = ['step1', 'step2', 'step3'];
+  const STEPS     = ['step1', 'step2', 'step3'];
   const stepIndex = STEPS.indexOf(phase);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 relative">
       <div className="absolute inset-0 mesh-bg pointer-events-none" />
-
       <div className="relative z-10 w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-arabic font-bold text-sand-400 mb-1">نفير</h1>
           {contributor && (
@@ -314,15 +275,9 @@ function OnboardContent() {
         )}
 
         <div className="glass rounded-2xl border border-ink-700/40 p-8">
-          {phase === 'step1' && (
-            <StepPassword onNext={handlePassword} loading={loading} />
-          )}
-          {phase === 'step2' && (
-            <StepBio onNext={handleBio} onSkip={() => setPhase('step3')} />
-          )}
-          {phase === 'step3' && (
-            <StepAvatar onFinish={handleAvatar} loading={loading} />
-          )}
+          {phase === 'step1' && <StepPassword onNext={handlePassword} loading={loading} />}
+          {phase === 'step2' && <StepBio onNext={handleBio} onSkip={() => setPhase('step3')} />}
+          {phase === 'step3' && <StepAvatar onFinish={handleAvatar} loading={loading} />}
         </div>
       </div>
     </div>
