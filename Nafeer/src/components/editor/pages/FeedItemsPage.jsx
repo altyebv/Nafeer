@@ -131,7 +131,13 @@ export default function FeedItemsPage({ subjectId }) {
 
   const getConceptTitle = (id) => concepts.find((c) => c.id === id)?.titleAr || '—';
 
-  const filtered = feedItems.filter((f) => {
+  // Scope to the current subject — items with no subjectId are excluded when a
+  // subject context is active (prevents test/orphaned feed items from leaking in).
+  const subjectFeedItems = subjectId
+    ? feedItems.filter((f) => f.subjectId === subjectId)
+    : feedItems;
+
+  const filtered = subjectFeedItems.filter((f) => {
     const matchType    = !filterType    || f.type       === filterType;
     const matchConcept = !filterConcept || f.conceptId  === filterConcept;
     return matchType && matchConcept;
@@ -144,7 +150,7 @@ export default function FeedItemsPage({ subjectId }) {
     return acc;
   }, {});
 
-  const conceptsWithoutFeed = concepts.filter((c) => !feedItems.some((f) => f.conceptId === c.id));
+  const conceptsWithoutFeed = concepts.filter((c) => !subjectFeedItems.some((f) => f.conceptId === c.id));
   const isInteractive = (type) => type === 'MINI_QUIZ';
   const isFlashCard   = (type) => type === 'FLASH_CARD';
 
@@ -152,7 +158,7 @@ export default function FeedItemsPage({ subjectId }) {
   const typeStats = Object.entries(FEED_ITEM_TYPES).map(([key, value]) => ({
     key, value,
     cfg:   FEED_ITEM_TYPE_CONFIG[key],
-    count: feedItems.filter((f) => f.type === value).length,
+    count: subjectFeedItems.filter((f) => f.type === value).length,
   }));
 
   return (
@@ -164,7 +170,7 @@ export default function FeedItemsPage({ subjectId }) {
             التغذية
           </h1>
           <p className="font-arabic mt-0.5" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            {feedItems.length} بطاقة · {concepts.length} مفهوم
+            {subjectFeedItems.length} بطاقة · {concepts.length} مفهوم
           </p>
         </div>
         <button
@@ -286,8 +292,8 @@ export default function FeedItemsPage({ subjectId }) {
       {filtered.length === 0 ? (
         <EmptyState
           icon="📱"
-          title={feedItems.length === 0 ? 'لا توجد بطاقات بعد' : 'لا توجد نتائج'}
-          action={feedItems.length === 0 ? (
+          title={subjectFeedItems.length === 0 ? 'لا توجد بطاقات بعد' : 'لا توجد نتائج'}
+          action={subjectFeedItems.length === 0 ? (
             <button
               onClick={() => { resetForm(); setShowModal(true); }}
               className="font-arabic"
@@ -547,7 +553,7 @@ export default function FeedItemsPage({ subjectId }) {
             </>
           )}
 
-          {feedItems.length > 0 && questions.length > 0 && (
+          {subjectFeedItems.length > 0 && questions.length > 0 && (
             <FormField label="ربط بسؤال من بنك الأسئلة (اختياري)">
               <select
                 value={form.questionId}
