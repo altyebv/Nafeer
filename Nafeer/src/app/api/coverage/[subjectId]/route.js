@@ -1,27 +1,36 @@
-import { NextResponse }    from 'next/server';
-import { connectDB }       from '@/lib/db';
-import { verifyAdminAuth } from '@/lib/adminAuth';
-import { Unit }            from '@/lib/models/Unit';
-import { Lesson }          from '@/lib/models/Lesson';
-import { SUBJECTS_BY_ID }  from '@/shared/curriculum';
+import { NextResponse }         from 'next/server';
+import { connectDB }            from '@/lib/db';
+import { requireSubjectAccess } from '@/lib/api/guard';
+import { Unit }                 from '@/lib/models/Unit';
+import { Lesson }               from '@/lib/models/Lesson';
+import { Section }              from '@/lib/models/Section';
+import { Block }                from '@/lib/models/Block';
+import { SUBJECTS_BY_ID }       from '@/shared/curriculum';
 
-// ─── GET /api/admin/coverage/[subjectId] ──────────────────────────────────────
+// ─── GET /api/coverage/[subjectId] ───────────────────────────────────────────
+// Auth: contributor assigned to this subject, or any admin.
 // Returns a structured coverage snapshot for the given subject:
 //   { ok: true, data: { subjectId, units: [ { unitId, mongoId, title, ... lessons[] } ] } }
 //
-// Each lesson row contains denormalized counts (sections, concepts, feedItems,
-// questions) pulled from the lesson document's own counters, plus a computed
+// Each lesson row contains live counts (sections, blocks, concepts, feedItems,
+// questions) fetched from their respective collections, plus a computed
 // coverageScore (0-100) and coverageLevel label.
 //
-// NOTE: The counts use the lesson's stored denormalized fields. If you later
-// add real aggregation (querying Section / Concept / FeedItem / Question
-// collections), replace the extraction block marked ── COUNT EXTRACTION ──.
+// Scoring formula (aligned with CoveragePanel.jsx dimension weights):
+//   Content  — max 40 pts: sections>0 AND blocks>0 → 40; sections>0 only → 20
+//   Feed     — max 30 pts: min(30, round(feedItems / concepts × 30))   [0 if no concepts]
+//   Questions — max 30 pts: min(30, round(questions / (concepts×2) × 30)) [0 if no concepts]
+//   Bonus    — +10 pts for approved status (capped at 100)
 
 export async function GET(_request, { params }) {
-  const authErr = await verifyAdminAuth();
-  if (authErr) return authErr;
-
   const { subjectId } = await params;
+
+  // Contributor auth — admins and assigned contributors both pass
+  try {
+    await requireSubjectAccess(subjectId);
+  } catch (authErr) {
+    return authErr;
+  }
 
   const subject = SUBJECTS_BY_ID[subjectId];
   if (!subject) {
@@ -31,13 +40,34 @@ export async function GET(_request, { params }) {
   try {
     await connectDB();
 
-    // ── Fetch all units and lessons for the subject ─────────────────────────
-    const [units, lessons] = await Promise.all([
+    // ── Fetch in parallel ────────────────────────────────────────────────────
+    const [units, lessons, allSections, blockAgg] = await Promise.all([
       Unit.find({ subjectId }).sort({ order: 1 }).lean(),
       Lesson.find({ subjectId }).sort({ order: 1 }).lean(),
+      // Only need contentId + lessonContentId for the join index
+      Section.find({ subjectId }).select('contentId lessonContentId').lean(),
+      // Count blocks per section in one aggregate round-trip
+      Block.aggregate([
+        { $match: { subjectId } },
+        { $group: { _id: '$sectionContentId', count: { $sum: 1 } } },
+      ]),
     ]);
 
-    // Index lessons by unitContentId for fast lookup
+    // ── Build lookup indexes ─────────────────────────────────────────────────
+
+    // blocksBySectionId — { sectionContentId → block count }
+    const blocksBySectionId = Object.fromEntries(
+      blockAgg.map((b) => [b._id, b.count])
+    );
+
+    // sectionsByLessonId — { lessonContentId → [ sectionContentId, … ] }
+    const sectionsByLessonId = {};
+    for (const s of allSections) {
+      if (!sectionsByLessonId[s.lessonContentId]) sectionsByLessonId[s.lessonContentId] = [];
+      sectionsByLessonId[s.lessonContentId].push(s.contentId);
+    }
+
+    // lessonsByUnitId — { unitContentId → [ lesson, … ] }
     const lessonsByUnit = {};
     for (const lesson of lessons) {
       const uid = lesson.unitContentId;
@@ -53,24 +83,32 @@ export async function GET(_request, { params }) {
 
       const lessonRows = unitLessons.map((lesson) => {
         // ── COUNT EXTRACTION ─────────────────────────────────────────────────
-        // Lessons currently store denormalized counters added by the editor.
-        // Fall back to 0 if the field doesn't exist yet.
+        // Prefer denormalized lesson counters (cheap); fall back to 0.
         const sections  = lesson.sectionsCount  ?? lesson.sections  ?? 0;
         const concepts  = lesson.conceptsCount  ?? lesson.concepts  ?? 0;
         const feedItems = lesson.feedItemsCount ?? lesson.feedItems ?? 0;
         const questions = lesson.questionsCount ?? lesson.questions ?? 0;
 
-        // Coverage score:
-        //   30 pts — has ≥1 section
-        //   20 pts — has ≥1 concept
-        //   30 pts — has ≥1 feed item
-        //   20 pts — has ≥1 question
-        // Plus a bonus 10% for approved status (capped at 100).
+        // Blocks: always live-counted (no denormalized counter on Lesson yet)
+        const lessonSectionIds = sectionsByLessonId[lesson.contentId] || [];
+        const blocks = lessonSectionIds.reduce(
+          (sum, sid) => sum + (blocksBySectionId[sid] || 0), 0
+        );
+
+        // ── Coverage score (matches CoveragePanel.jsx dimension weights) ──────
         let score = 0;
-        if (sections  > 0) score += 30;
-        if (concepts  > 0) score += 20;
-        if (feedItems > 0) score += 30;
-        if (questions > 0) score += 20;
+
+        // Content dimension — 40 pts
+        if (sections > 0 && blocks > 0) score += 40;
+        else if (sections > 0)          score += 20;
+
+        // Feed dimension — 30 pts, pro-rated by feedItems/concepts
+        if (concepts > 0) score += Math.min(30, Math.round((feedItems / concepts) * 30));
+
+        // Questions dimension — 30 pts, target = 2 questions per concept
+        if (concepts > 0) score += Math.min(30, Math.round((questions / (concepts * 2)) * 30));
+
+        // Bonus for approved (capped at 100)
         if (lesson.status === 'approved') score = Math.min(100, score + 10);
 
         const level =
@@ -90,6 +128,7 @@ export async function GET(_request, { params }) {
           groupId:       lesson.groupId    || null,
           groupTitle:    lesson.groupTitle || null,
           sections,
+          blocks,
           concepts,
           feedItems,
           questions,
@@ -132,8 +171,8 @@ export async function GET(_request, { params }) {
         units: unitRows,
       },
     });
-  } catch (err) {
-    console.error('[GET /api/admin/coverage/[subjectId]]', err);
+  } catch (e) {
+    console.error('[GET /api/coverage/[subjectId]]', e);
     return NextResponse.json({ ok: false, error: 'حدث خطأ في الخادم' }, { status: 500 });
   }
 }
