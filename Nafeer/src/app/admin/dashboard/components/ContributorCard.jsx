@@ -6,6 +6,201 @@ import {
 } from '../constants';
 import { Btn } from './ui/Btn';
 
+// ─── Subject Picker ────────────────────────────────────────────────────────────
+// Inline dropdown that lets an admin assign/clear the canonical subject.
+// Grouped by track so it's easy to scan.
+
+const TRACK_ORDER = ['COMMON', 'SCIENCE', 'LITERARY'];
+const TRACK_LABELS = { COMMON: 'مشترك', SCIENCE: 'علمي', LITERARY: 'أدبي' };
+
+function SubjectPicker({ current, hint = [], onAssign, loading }) {
+  const [open, setOpen] = useState(false);
+
+  const grouped = TRACK_ORDER.map((track) => ({
+    track,
+    subjects: SUBJECTS_CATALOG_REF.filter((s) => s.track === track),
+  }));
+
+  const currentSubj = SUBJECT_MAP[current];
+  const isUnset = !current;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-arabic transition-all"
+        style={{
+          background: isUnset
+            ? 'rgba(239,68,68,0.08)'
+            : 'rgba(212,137,30,0.08)',
+          border: isUnset
+            ? '1px solid rgba(239,68,68,0.25)'
+            : '1px solid rgba(212,137,30,0.22)',
+          color: isUnset ? '#f87171' : 'var(--accent)',
+        }}
+      >
+        <span style={{ fontSize: 9 }}>📚</span>
+        <span>{currentSubj ? currentSubj.nameAr : 'لم يُعيَّن مادة'}</span>
+        <span style={{ fontSize: 8, opacity: 0.6 }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div
+          className="absolute z-50 right-0 mt-1.5 rounded-2xl overflow-hidden"
+          style={{
+            minWidth: 220,
+            background: '#111009',
+            border: '1px solid rgba(212,137,30,0.18)',
+            boxShadow: '0 16px 40px rgba(0,0,0,0.6)',
+          }}
+        >
+          {/* Hint: subjects the contributor expressed interest in */}
+          {hint.length > 0 && (
+            <div className="px-3 pt-2.5 pb-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <p className="text-[9px] font-mono text-ink-700 uppercase tracking-wider mb-1.5">اهتمامات المساهم</p>
+              <div className="flex flex-wrap gap-1">
+                {hint.map((sid) => {
+                  const s = SUBJECTS_CATALOG_REF.find((x) => x.id === sid);
+                  if (!s) return null;
+                  return (
+                    <button
+                      key={sid}
+                      onClick={() => { onAssign(sid); setOpen(false); }}
+                      className="text-[10px] px-2 py-0.5 rounded-full font-arabic transition-all"
+                      style={{
+                        background: 'rgba(212,137,30,0.1)',
+                        color: 'var(--accent)',
+                        border: '1px solid rgba(212,137,30,0.3)',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,137,30,0.2)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212,137,30,0.1)'; }}
+                    >
+                      ✦ {s.nameAr}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Full catalog grouped by track */}
+          <div className="py-1.5 max-h-64 overflow-y-auto">
+            {grouped.map(({ track, subjects }) => (
+              <div key={track}>
+                <p className="text-[9px] font-mono text-ink-800 uppercase tracking-wider px-3 pt-2 pb-1">
+                  {TRACK_LABELS[track]}
+                </p>
+                {subjects.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => { onAssign(s.id); setOpen(false); }}
+                    className="w-full text-right px-3 py-1.5 text-[11px] font-arabic flex items-center gap-2 transition-colors"
+                    style={{
+                      color: s.id === current ? 'var(--accent)' : 'rgba(255,255,255,0.55)',
+                      background: s.id === current ? 'rgba(212,137,30,0.07)' : 'transparent',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = s.id === current ? 'rgba(212,137,30,0.07)' : 'transparent'; }}
+                  >
+                    {s.id === current && <span style={{ fontSize: 8, color: 'var(--accent)' }}>✓</span>}
+                    {s.nameAr}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {/* Clear option */}
+          {current && (
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              <button
+                onClick={() => { onAssign(''); setOpen(false); }}
+                className="w-full text-right px-3 py-2 text-[10px] font-arabic transition-colors"
+                style={{ color: 'rgba(239,68,68,0.5)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(239,68,68,0.5)'; }}
+              >
+                إلغاء تعيين المادة
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Role Picker ───────────────────────────────────────────────────────────────
+
+function RolePicker({ currentRoleId, roles = [], onAssign, loading }) {
+  const [open, setOpen] = useState(false);
+  const currentRole = roles.find((r) => r._id === currentRoleId);
+
+  if (!roles.length) return null;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-arabic transition-all"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: currentRole ? 'rgba(200,180,140,0.8)' : 'rgba(255,255,255,0.3)',
+        }}
+      >
+        <span style={{ fontSize: 9 }}>◆</span>
+        <span>{currentRole ? currentRole.name : 'بدون دور'}</span>
+        <span style={{ fontSize: 8, opacity: 0.5 }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div
+          className="absolute z-50 right-0 mt-1.5 rounded-2xl overflow-hidden"
+          style={{
+            minWidth: 180,
+            background: '#111009',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 16px 40px rgba(0,0,0,0.6)',
+          }}
+        >
+          <div className="py-1.5">
+            {roles.map((r) => (
+              <button
+                key={r._id}
+                onClick={() => { onAssign(r._id); setOpen(false); }}
+                className="w-full text-right px-3 py-2 text-[11px] font-arabic flex items-center gap-2 transition-colors"
+                style={{
+                  color: r._id === currentRoleId ? 'rgba(200,180,140,1)' : 'rgba(255,255,255,0.5)',
+                  background: r._id === currentRoleId ? 'rgba(200,180,140,0.06)' : 'transparent',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = r._id === currentRoleId ? 'rgba(200,180,140,0.06)' : 'transparent'; }}
+              >
+                {r._id === currentRoleId && <span style={{ fontSize: 8 }}>✓</span>}
+                ◆ {r.name}
+              </button>
+            ))}
+          </div>
+          {currentRoleId && (
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              <button
+                onClick={() => { onAssign(null); setOpen(false); }}
+                className="w-full text-right px-3 py-2 text-[10px] font-arabic transition-colors"
+                style={{ color: 'rgba(239,68,68,0.45)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(239,68,68,0.45)'; }}
+              >
+                إزالة الدور
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
 const COMMITMENT_LABELS = {
@@ -379,16 +574,46 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
 
 // ─── ACTIVE CARD ──────────────────────────────────────────────────────────────
 
-export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword }) {
-  const [activeLink,    setActiveLink]    = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [localLoading,  setLocalLoading]  = useState(null);
+export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, roles = [] }) {
+  const [activeLink,       setActiveLink]       = useState(null);
+  const [deleteConfirm,    setDeleteConfirm]    = useState(false);
+  const [localLoading,     setLocalLoading]     = useState(null);
+  const [assigningSubject, setAssigningSubject] = useState(false);
+  const [assigningRole,    setAssigningRole]    = useState(false);
 
   const subj        = SUBJECT_MAP[c.subject];
   const stats       = c.stats || {};
   const hasStats    = (stats.lessonsCreated || 0) + (stats.questionsAdded || 0)
                     + (stats.feedItemsCreated || 0) + (stats.blocksAdded || 0) > 0;
   const BORDER = 'rgba(255,255,255,0.05)';
+
+  const handleAssignSubject = async (subjectId) => {
+    setAssigningSubject(true);
+    try {
+      await fetch('/api/admin/contributors', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ id: c._id, action: 'assign_subject', subject: subjectId }),
+      });
+      onAct(c._id, '_noop');
+    } finally {
+      setAssigningSubject(false);
+    }
+  };
+
+  const handleAssignRole = async (roleId) => {
+    setAssigningRole(true);
+    try {
+      await fetch('/api/admin/contributors', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ id: c._id, action: 'assign_role_id', roleId }),
+      });
+      onAct(c._id, '_noop');
+    } finally {
+      setAssigningRole(false);
+    }
+  };
 
   const handleOnboardLink = async () => {
     setLocalLoading('onboard');
@@ -408,12 +633,27 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword })
     }
   };
 
+  const subjectMissing = c.onboarded && !c.subject;
+
   return (
     <div
       className="rounded-2xl overflow-hidden transition-all duration-200"
-      style={{ background: '#0d0b08', border: '1px solid rgba(255,255,255,0.06)' }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+      style={{
+        background: '#0d0b08',
+        border: subjectMissing
+          ? '1px solid rgba(239,68,68,0.2)'
+          : '1px solid rgba(255,255,255,0.06)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = subjectMissing
+          ? 'rgba(239,68,68,0.35)'
+          : 'rgba(255,255,255,0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = subjectMissing
+          ? 'rgba(239,68,68,0.2)'
+          : 'rgba(255,255,255,0.06)';
+      }}
     >
       {/* Header */}
       <div className="p-4 flex items-start gap-3">
@@ -478,6 +718,51 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword })
           <StatBadge icon="🌍" count={stats.publishedLessons} label="منشور" />
         </div>
       )}
+
+      {/* Missing-subject warning banner */}
+      {subjectMissing && (
+        <div
+          className="mx-4 px-3 py-2 rounded-xl flex items-center gap-2"
+          style={{
+            background: 'rgba(239,68,68,0.06)',
+            border: '1px solid rgba(239,68,68,0.2)',
+            marginTop: hasStats ? 0 : 8,
+            marginBottom: 4,
+          }}
+        >
+          <span style={{ fontSize: 11 }}>⚠</span>
+          <p className="text-[10px] font-arabic flex-1" style={{ color: '#f87171' }}>
+            لم تُعيَّن مادة — لن يتمكن من الوصول للمحرر حتى يتم التعيين
+          </p>
+          {(c.subjectsOfInterest?.length || 0) > 0 && (
+            <span className="text-[9px] font-mono text-ink-700 shrink-0">
+              اختار {c.subjectsOfInterest.length} أثناء التسجيل
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Subject + Role assignment row */}
+      <div
+        className="px-4 py-2.5 flex items-center gap-2 flex-wrap"
+        style={{ borderTop: `1px solid ${BORDER}` }}
+      >
+        <SubjectPicker
+          current={c.subject}
+          hint={c.subjectsOfInterest || []}
+          onAssign={handleAssignSubject}
+          loading={assigningSubject}
+        />
+        <RolePicker
+          currentRoleId={c.roleId?._id || c.roleId}
+          roles={roles}
+          onAssign={handleAssignRole}
+          loading={assigningRole}
+        />
+        {(assigningSubject || assigningRole) && (
+          <span className="text-[9px] font-mono text-ink-700">جارٍ الحفظ…</span>
+        )}
+      </div>
 
       {/* Inline link */}
       {activeLink && (
