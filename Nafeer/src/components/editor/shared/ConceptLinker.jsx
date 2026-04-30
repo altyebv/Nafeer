@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDataStore }      from '@/store/dataStore';
-import { CONCEPT_TYPE_CONFIG } from '@/shared/constants';
+import { Lightbulb, X } from 'lucide-react';
 
 export default function ConceptLinker({ sectionId }) {
   const { concepts, sections, linkConceptToSection, unlinkConceptFromSection } = useDataStore();
@@ -28,7 +28,7 @@ export default function ConceptLinker({ sectionId }) {
                 onClick={() => unlinkConceptFromSection(sectionId, concept.id)}
                 className="text-sand-600 hover:text-red-400 transition-colors mr-0.5"
               >
-                ✕
+                <X size={12} strokeWidth={1.9} />
               </button>
             </span>
           ))}
@@ -48,14 +48,13 @@ export default function ConceptLinker({ sectionId }) {
       {availableConcepts.length > 0 ? (
         <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
           {availableConcepts.slice(0, 20).map((concept) => {
-            const typeConfig = CONCEPT_TYPE_CONFIG[concept.type];
             return (
               <button
                 key={concept.id}
                 onClick={() => linkConceptToSection(sectionId, concept.id)}
                 className="flex items-center gap-1 px-2 py-0.5 bg-ink-800 border border-ink-700 text-xs rounded hover:border-sand-700 hover:text-sand-400 transition-colors font-arabic text-ink-400"
               >
-                <span className="text-ink-600">{typeConfig?.icon}</span>
+                <Lightbulb size={12} strokeWidth={1.8} className="text-ink-600" />
                 {concept.titleAr}
               </button>
             );

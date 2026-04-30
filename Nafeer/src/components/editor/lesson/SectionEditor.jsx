@@ -23,6 +23,7 @@ import BlockEditor    from '@/components/editor/blocks/BlockEditor';
 import AddBlockMenu   from '@/components/editor/blocks/AddBlockMenu';
 import ConceptLinker  from '@/components/editor/shared/ConceptLinker';
 import DeleteButton   from '@/components/editor/shared/DeleteButton';
+import { Lightbulb } from 'lucide-react';
 
 // ─── Learning-type colour system ──────────────────────────────────────────────
 const LT_STYLE = {
@@ -244,7 +245,7 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
               <span className="text-xs text-ink-800 font-arabic">لا مفاهيم مرتبطة</span>
             ) : linkedConcepts.map((c) => (
               <span key={c.id} className="px-2 py-0.5 bg-sand-900/20 text-sand-600 text-xs rounded-full border border-sand-800/30 font-arabic">
-                💡 {c.titleAr}
+                <Lightbulb size={12} strokeWidth={1.8} className="inline ml-1" /> {c.titleAr}
               </span>
             ))}
             <button

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { ScrollText, X } from 'lucide-react';
 
 // ─── LessonHistoryDrawer ──────────────────────────────────────────────────────
 // Slide-in panel from the right showing the full lesson audit trail.
@@ -222,7 +223,7 @@ export default function LessonHistoryDrawer({ lessonId, onClose }) {
             onClick={onClose}
             className="p-1.5 rounded-lg text-ink-600 hover:text-ink-300 hover:bg-ink-800 transition-colors"
           >
-            ✕
+            <X size={16} strokeWidth={1.9} />
           </button>
           <h2 className="text-sm font-semibold text-sand-300 font-arabic">سجل الإصدارات</h2>
           {!loading && history.length > 0 && (
@@ -268,7 +269,7 @@ export default function LessonHistoryDrawer({ lessonId, onClose }) {
 
           {!loading && !error && history.length === 0 && (
             <div className="py-12 text-center">
-              <p className="text-3xl mb-3 opacity-30">📜</p>
+              <ScrollText size={34} strokeWidth={1.5} className="mx-auto mb-3 opacity-30" />
               <p className="text-sm text-ink-600 font-arabic">لا يوجد سجل بعد</p>
               <p className="text-xs text-ink-700 font-arabic mt-1">يبدأ السجل عند أول تعديل</p>
             </div>

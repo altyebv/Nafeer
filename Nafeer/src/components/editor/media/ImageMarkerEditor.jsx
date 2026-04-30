@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { randomId } from '@/lib/markerUtils';
+import { Plus, Sparkles, X } from 'lucide-react';
 
 // ─── ImageMarkerEditor ────────────────────────────────────────────────────────
 // Props:
@@ -116,7 +117,7 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
                 : 'bg-ink-900 text-ink-400 border-ink-700 hover:border-ink-500 hover:text-ink-200'
             }`}
           >
-            <span className="text-sm">{placingMode ? '✦' : '+'}</span>
+            {placingMode ? <Sparkles size={14} strokeWidth={1.8} /> : <Plus size={14} strokeWidth={1.9} />}
             {placingMode ? 'انقر على الصورة لإضافة علامة' : 'إضافة علامة'}
           </button>
 
@@ -303,7 +304,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
           onClick={onClose}
           className="text-ink-600 hover:text-ink-400 transition-colors text-xs w-5 h-5 flex items-center justify-center"
         >
-          ✕
+          <X size={15} strokeWidth={1.9} />
         </button>
       </div>
 
@@ -369,7 +370,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
             onClick={onDelete}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-600 hover:text-red-400 hover:bg-red-900/20 rounded-lg border border-transparent hover:border-red-900/40 transition-all font-arabic"
           >
-            <span>✕</span> حذف هذه العلامة
+            <X size={13} strokeWidth={1.9} /> حذف هذه العلامة
           </button>
         </div>
       </div>

@@ -1,5 +1,22 @@
 'use client';
 import { BLOCK_TYPES, BLOCK_TYPE_CONFIG } from '@/shared/constants';
+import {
+  AlignLeft,
+  BookOpen,
+  CircleHelp,
+  Columns3,
+  Heading2,
+  Image,
+  List,
+  Minus,
+  PenLine,
+  Quote,
+  Sigma,
+  Sparkles,
+  Table2,
+  X,
+  Zap,
+} from 'lucide-react';
 
 // Block type color accents
 const TYPE_ACCENT = {
@@ -21,6 +38,23 @@ const TYPE_ACCENT = {
 // Block types that are "interactive" — shown in a separate section
 const CHECKPOINT_TYPES = new Set(['QUESTION']);
 
+const BLOCK_ICONS = {
+  TEXT: AlignLeft,
+  HEADING: Heading2,
+  IMAGE: Image,
+  INTERACTIVE_IMAGE: Sparkles,
+  GIF: Zap,
+  FORMULA: Sigma,
+  HIGHLIGHT_BOX: BookOpen,
+  EXAMPLE: PenLine,
+  TIP: Sparkles,
+  LIST: List,
+  TABLE: Table2,
+  QUOTE: Quote,
+  DIVIDER: Minus,
+  QUESTION: CircleHelp,
+};
+
 export default function AddBlockMenu({ onSelect, onClose }) {
   const contentTypes    = Object.entries(BLOCK_TYPES).filter(([k]) => !CHECKPOINT_TYPES.has(k));
   const checkpointTypes = Object.entries(BLOCK_TYPES).filter(([k]) =>  CHECKPOINT_TYPES.has(k));
@@ -28,6 +62,7 @@ export default function AddBlockMenu({ onSelect, onClose }) {
   const renderButton = ([key, value]) => {
     const cfg    = BLOCK_TYPE_CONFIG[key];
     const accent = TYPE_ACCENT[key] || TYPE_ACCENT.TEXT;
+    const Icon   = BLOCK_ICONS[key] || Columns3;
     return (
       <button
         key={key}
@@ -38,9 +73,7 @@ export default function AddBlockMenu({ onSelect, onClose }) {
           ${accent.bg}
         `}
       >
-        <span className={`text-base font-mono leading-none transition-colors ${accent.icon}`}>
-          {cfg.icon}
-        </span>
+        <Icon size={18} strokeWidth={1.8} className={`transition-colors ${accent.icon}`} />
         <span className="text-[10px] text-ink-600 group-hover:text-ink-300 font-arabic leading-none text-center transition-colors">
           {cfg.label}
         </span>
@@ -59,7 +92,7 @@ export default function AddBlockMenu({ onSelect, onClose }) {
           onClick={onClose}
           className="text-ink-700 hover:text-ink-400 transition-colors text-sm w-5 h-5 flex items-center justify-center"
         >
-          ✕
+          <X size={15} strokeWidth={1.9} />
         </button>
       </div>
 

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { Check, ClipboardList, Flag, MessageCircle, RotateCcw, Send, X } from 'lucide-react';
 
 // ─── LessonNotesDrawer ────────────────────────────────────────────────────────
 // Slide-in panel from the right. Loads notes from API, supports:
@@ -14,9 +15,9 @@ import { useState, useEffect, useRef } from 'react';
 //   onCountChange — (n) => void — keeps parent's note count badge in sync
 
 const NOTE_TYPE_CONFIG = {
-  comment:         { label: 'تعليق',     color: 'text-ink-400',    bg: 'bg-ink-800/40',    icon: '💬' },
-  review_feedback: { label: 'ملاحظة مراجعة', color: 'text-amber-500', bg: 'bg-amber-900/15', icon: '📋' },
-  flag:            { label: 'تنبيه',     color: 'text-red-400',    bg: 'bg-red-900/15',    icon: '⚑'  },
+  comment:         { label: 'تعليق',     color: 'text-ink-400',    bg: 'bg-ink-800/40',    icon: MessageCircle },
+  review_feedback: { label: 'ملاحظة مراجعة', color: 'text-amber-500', bg: 'bg-amber-900/15', icon: ClipboardList },
+  flag:            { label: 'تنبيه',     color: 'text-red-400',    bg: 'bg-red-900/15',    icon: Flag },
 };
 
 function relativeTime(dateStr) {
@@ -48,6 +49,7 @@ function NoteCard({ note, currentUser, onResolve, onDelete }) {
   const isOwn    = note.authorId && note.authorId === currentUser?.id;
   const isAdmin  = currentUser?.role === 'admin';
   const canDelete = isOwn || isAdmin;
+  const Icon = cfg.icon;
 
   return (
     <div className={`rounded-xl border p-3 space-y-2 transition-opacity ${note.resolved ? 'opacity-40' : ''}
@@ -63,7 +65,7 @@ function NoteCard({ note, currentUser, onResolve, onDelete }) {
             </span>
             <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-arabic leading-none ${cfg.color}
               ${note.noteType === 'review_feedback' ? 'border-amber-800/40' : note.noteType === 'flag' ? 'border-red-800/40' : 'border-ink-700/40'}`}>
-              {cfg.icon} {cfg.label}
+              <Icon size={11} strokeWidth={1.9} className="inline ml-1" /> {cfg.label}
             </span>
           </div>
           <span className="text-[10px] text-ink-700 font-mono">{relativeTime(note.createdAt)}</span>
@@ -79,7 +81,7 @@ function NoteCard({ note, currentUser, onResolve, onDelete }) {
                 : 'border-emerald-800/40 text-emerald-600 hover:bg-emerald-900/20'}`}
             title={note.resolved ? 'إعادة فتح' : 'وضع علامة محلول'}
           >
-            {note.resolved ? '↺' : '✓'}
+            {note.resolved ? <RotateCcw size={12} strokeWidth={1.9} /> : <Check size={12} strokeWidth={2.1} />}
           </button>
           {canDelete && (
             <button
@@ -87,7 +89,7 @@ function NoteCard({ note, currentUser, onResolve, onDelete }) {
               className="text-[10px] px-1.5 py-1 rounded-lg border border-transparent text-ink-700 hover:text-red-400 hover:border-red-900/40 transition-colors"
               title="حذف الملاحظة"
             >
-              ✕
+              <X size={12} strokeWidth={1.9} />
             </button>
           )}
         </div>
@@ -217,7 +219,7 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
             onClick={onClose}
             className="p-1.5 rounded-lg text-ink-600 hover:text-ink-300 hover:bg-ink-800 transition-colors"
           >
-            ✕
+            <X size={16} strokeWidth={1.9} />
           </button>
           <h2 className="text-sm font-semibold text-sand-300 font-arabic">ملاحظات الدرس</h2>
           {notes.length > 0 && (
@@ -232,7 +234,7 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
           {[
             { id: 'all',  label: `الكل (${notes.length})` },
             { id: 'open', label: `مفتوحة (${openCount})` },
-            { id: 'flag', label: `⚑ تنبيهات (${flagCount})` },
+            { id: 'flag', label: `تنبيهات (${flagCount})`, icon: Flag },
           ].map((f) => (
             <button
               key={f.id}
@@ -242,6 +244,7 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
                   ? 'bg-sand-800/40 border-sand-700/50 text-sand-400'
                   : 'border-ink-700/40 text-ink-600 hover:text-ink-400 hover:border-ink-600'}`}
             >
+              {f.icon && <f.icon size={11} strokeWidth={1.9} className="inline ml-1" />}
               {f.label}
             </button>
           ))}
@@ -256,7 +259,7 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
           )}
           {!loading && visible.length === 0 && (
             <div className="py-12 text-center">
-              <p className="text-3xl mb-3 opacity-30">💬</p>
+              <MessageCircle size={34} strokeWidth={1.5} className="mx-auto mb-3 opacity-30" />
               <p className="text-sm text-ink-600 font-arabic">
                 {filter === 'all' ? 'لا توجد ملاحظات بعد' : 'لا توجد ملاحظات في هذا التصنيف'}
               </p>
@@ -287,8 +290,8 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
           {/* Type selector */}
           <div className="flex items-center gap-2">
             {[
-              { id: 'comment', label: '💬 تعليق' },
-              { id: 'flag',    label: '⚑ تنبيه' },
+              { id: 'comment', label: 'تعليق', icon: MessageCircle },
+              { id: 'flag',    label: 'تنبيه', icon: Flag },
             ].map((t) => (
               <button
                 key={t.id}
@@ -300,6 +303,7 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
                       : 'bg-sand-900/30 border-sand-800/50 text-sand-400'
                     : 'border-ink-700/40 text-ink-600 hover:text-ink-400'}`}
               >
+                <t.icon size={11} strokeWidth={1.9} className="inline ml-1" />
                 {t.label}
               </button>
             ))}
@@ -329,7 +333,7 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
             >
               {submitting
                 ? <><span className="w-3 h-3 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" /> إرسال…</>
-                : 'إرسال'}
+                : <><Send size={13} strokeWidth={1.9} /> إرسال</>}
             </button>
           </div>
         </div>

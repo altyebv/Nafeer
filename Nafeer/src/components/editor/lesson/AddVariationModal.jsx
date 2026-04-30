@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { VARIATION_CONFIG } from '@/components/editor/lesson/LinkVariationModal';
+import { X } from 'lucide-react';
 
 // ─── AddVariationModal ────────────────────────────────────────────────────────
 // Creates a new variation lesson directly — no search, no two-step linking.
@@ -95,7 +96,7 @@ export default function AddVariationModal({ parentLesson, unitId, onCreated, onC
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
-            ✕
+            <X size={16} strokeWidth={1.9} />
           </button>
         </div>
 
@@ -110,7 +111,9 @@ export default function AddVariationModal({ parentLesson, unitId, onCreated, onC
               نوع التنويع
             </p>
             <div className="grid grid-cols-2 gap-1.5">
-              {Object.entries(VARIATION_CONFIG).map(([type, c]) => (
+              {Object.entries(VARIATION_CONFIG).map(([type, c]) => {
+                const Icon = c.icon;
+                return (
                 <button
                   key={type}
                   onClick={() => setVariationType(type)}
@@ -121,7 +124,7 @@ export default function AddVariationModal({ parentLesson, unitId, onCreated, onC
                   }
                 >
                   <div className="flex items-center gap-2">
-                    <span style={{ fontSize: 14, lineHeight: 1 }}>{c.icon}</span>
+                    <Icon size={15} strokeWidth={1.9} />
                     <div>
                       <div className="font-semibold font-arabic" style={{ fontSize: 12 }}>{c.label}</div>
                       <div
@@ -133,7 +136,8 @@ export default function AddVariationModal({ parentLesson, unitId, onCreated, onC
                     </div>
                   </div>
                 </button>
-              ))}
+              );
+              })}
             </div>
           </div>
 

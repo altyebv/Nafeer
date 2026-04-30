@@ -1,5 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
+import { Circle, CircleDot, X } from 'lucide-react';
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -100,7 +101,7 @@ function Cell({ value, onChange, isHeader, isEditable, onToggleEditable, quizMod
             }
           `}
         >
-          {isEditable ? '○' : '●'}
+          {isEditable ? <Circle size={12} strokeWidth={1.8} /> : <CircleDot size={12} strokeWidth={1.8} />}
         </button>
       )}
     </td>
@@ -174,7 +175,7 @@ export function LessonTableEditor({ value, onChange }) {
                     className="text-ink-700 hover:text-red-500 transition-colors disabled:opacity-20 text-xs px-1"
                     title="حذف العمود"
                   >
-                    ✕
+                    <X size={13} strokeWidth={1.9} />
                   </button>
                 </td>
               ))}
@@ -208,7 +209,7 @@ export function LessonTableEditor({ value, onChange }) {
                     className="text-ink-700 hover:text-red-500 transition-colors disabled:opacity-20 text-xs"
                     title="حذف الصف"
                   >
-                    ✕
+                    <X size={13} strokeWidth={1.9} />
                   </button>
                 </td>
               </tr>
@@ -320,11 +321,11 @@ export function QuizTableEditor({ value, onChange }) {
       {/* Hint */}
       <div className="flex items-center gap-2 p-2.5 bg-ink-900/60 border border-ink-800 rounded-lg">
         <div className="flex items-center gap-1.5 text-xs text-ink-500 font-arabic">
-          <span className="w-4 h-4 bg-sand-900/40 border border-sand-700 rounded-sm text-sand-500 flex items-center justify-center text-xs">○</span>
+          <span className="w-4 h-4 bg-sand-900/40 border border-sand-700 rounded-sm text-sand-500 flex items-center justify-center text-xs"><Circle size={11} strokeWidth={1.8} /></span>
           خلية فارغة — يملأها الطالب
         </div>
         <div className="flex items-center gap-1.5 text-xs text-ink-500 font-arabic">
-          <span className="w-4 h-4 bg-ink-700 border border-ink-600 rounded-sm text-ink-400 flex items-center justify-center text-xs">●</span>
+          <span className="w-4 h-4 bg-ink-700 border border-ink-600 rounded-sm text-ink-400 flex items-center justify-center text-xs"><CircleDot size={11} strokeWidth={1.8} /></span>
           خلية ثابتة — تظهر للطالب
         </div>
         <span className="mr-auto text-xs font-mono text-ink-600">{editableCount} خلية فارغة</span>
@@ -343,7 +344,7 @@ export function QuizTableEditor({ value, onChange }) {
                     disabled={cols <= 1}
                     className="text-ink-700 hover:text-red-500 transition-colors disabled:opacity-20 text-xs px-1"
                   >
-                    ✕
+                    <X size={13} strokeWidth={1.9} />
                   </button>
                 </td>
               ))}
@@ -382,7 +383,7 @@ export function QuizTableEditor({ value, onChange }) {
                     disabled={table.rows.length <= 1}
                     className="text-ink-700 hover:text-red-500 transition-colors disabled:opacity-20 text-xs"
                   >
-                    ✕
+                    <X size={13} strokeWidth={1.9} />
                   </button>
                 </td>
               </tr>

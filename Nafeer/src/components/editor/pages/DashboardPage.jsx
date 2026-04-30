@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Blocks, BookOpen, Circle, CircleHelp, Globe2, Search, Sparkles, TriangleAlert } from 'lucide-react';
+import { Blocks, BookOpen, Circle, CircleHelp, ExternalLink, Globe2, Search, Sparkles, TriangleAlert } from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
@@ -443,7 +443,7 @@ function WelcomeHero({ contributor, isFirstVisit }) {
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,137,30,0.15)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212,137,30,0.08)'; }}
           >
-            <span>↗</span>
+            <ExternalLink size={13} strokeWidth={1.9} />
             <span>ملفي الشخصي</span>
           </a>
         )}

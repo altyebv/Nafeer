@@ -2,6 +2,34 @@
 import { useState } from 'react';
 import { HIGHLIGHT_STYLES } from '@/shared/constants';
 import FormulaPreview from '@/components/editor/shared/FormulaPreview';
+import {
+  AlertTriangle,
+  BookOpen,
+  Brain,
+  FileText,
+  Info,
+  Lightbulb,
+  PartyPopper,
+  Pencil,
+  Save,
+  Sparkles,
+  Target,
+  Zap,
+  X,
+} from 'lucide-react';
+
+const LEARNING_ICONS = {
+  UNDERSTANDING: Brain,
+  MEMORIZATION: Save,
+  HYBRID: Zap,
+};
+
+const HIGHLIGHT_ICONS = {
+  DEFINITION: BookOpen,
+  WARNING: AlertTriangle,
+  NOTE: Info,
+  TIP: Lightbulb,
+};
 
 // ─── Phone frame preview — Android Basheer mocker ────────────────────────────
 export default function LessonPreviewModal({ lesson, sections, blocks, questions, onClose }) {
@@ -35,7 +63,7 @@ export default function LessonPreviewModal({ lesson, sections, blocks, questions
             onClick={onClose}
             className="text-ink-600 hover:text-ink-300 transition-colors text-sm px-3 py-1 rounded-lg hover:bg-ink-800 font-arabic"
           >
-            ✕ إغلاق
+            <X size={13} strokeWidth={1.9} className="inline ml-1" /> إغلاق
           </button>
         </div>
 
@@ -107,7 +135,7 @@ export default function LessonPreviewModal({ lesson, sections, blocks, questions
           <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
             {activeSections.length === 0 && (
               <div className="flex flex-col items-center justify-center h-48 gap-2">
-                <span className="text-3xl">📄</span>
+                <FileText size={34} strokeWidth={1.5} className="text-white/20" />
                 <span className="text-white/30 text-xs font-arabic">لا يوجد محتوى في هذا الجزء</span>
               </div>
             )}
@@ -150,9 +178,9 @@ export default function LessonPreviewModal({ lesson, sections, blocks, questions
 
         {/* Legend */}
         <div className="flex items-center gap-4 text-[10px] text-ink-700 font-arabic">
-          <span>⚡ تفاعلي</span>
-          <span>🧠 فهم · 💾 حفظ</span>
-          <span>◎ نقطة تحقق</span>
+          <span className="inline-flex items-center gap-1"><Zap size={11} strokeWidth={1.9} /> تفاعلي</span>
+          <span className="inline-flex items-center gap-1"><Brain size={11} strokeWidth={1.9} /> فهم · <Save size={11} strokeWidth={1.9} /> حفظ</span>
+          <span className="inline-flex items-center gap-1"><Target size={11} strokeWidth={1.9} /> نقطة تحقق</span>
         </div>
       </div>
     </div>
@@ -162,12 +190,13 @@ export default function LessonPreviewModal({ lesson, sections, blocks, questions
 // ─── Section header (matches Android SectionHeader.kt) ────────────────────────
 function SectionHeader({ title, type }) {
   const typeColor = type === 'MEMORIZATION' ? '#7c6fc4' : type === 'HYBRID' ? '#d4891e' : '#5b8dd9';
+  const Icon = LEARNING_ICONS[type] || Brain;
   return (
     <div className="flex items-center gap-2 px-4 py-3 mt-2" style={{ borderBottom: '1px solid #1a1713' }}>
       <div className="w-0.5 h-4 rounded-full" style={{ background: typeColor }} />
       <span className="text-white/80 text-sm font-semibold font-arabic">{title}</span>
       <span className="text-[10px] mr-auto" style={{ color: typeColor }}>
-        {type === 'UNDERSTANDING' ? '🧠' : type === 'MEMORIZATION' ? '💾' : '⚡'}
+        <Icon size={13} strokeWidth={1.9} />
       </span>
     </div>
   );
@@ -237,14 +266,18 @@ function BlockPreview({ block }) {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
-              <span className="text-2xl">{block.type === 'GIF' ? '▷' : '⬜'}</span>
+              {block.type === 'GIF'
+                ? <Zap size={26} strokeWidth={1.6} className="text-white/20" />
+                : <FileText size={26} strokeWidth={1.6} className="text-white/20" />}
               <span className="text-white/30 text-xs font-mono">لم يتم اختيار صورة</span>
             </div>
           )}
           {/* Marker count hint */}
           {markers.length > 0 && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-              <span className="text-[10px]" style={{ color: '#d4891e' }}>✦ {markers.length} علامة تفاعلية</span>
+              <span className="text-[10px] inline-flex items-center gap-1" style={{ color: '#d4891e' }}>
+                <Sparkles size={11} strokeWidth={1.8} /> {markers.length} علامة تفاعلية
+              </span>
             </div>
           )}
           {block.caption && (
@@ -278,10 +311,11 @@ function BlockPreview({ block }) {
       };
       const c   = colors[style] || colors.NOTE;
       const cfg = HIGHLIGHT_STYLES[style];
+      const Icon = HIGHLIGHT_ICONS[style] || Info;
       return (
         <div className="rounded-xl p-3" style={{ background: c.bg, borderRight: `3px solid ${c.border}` }}>
           <p className="text-xs mb-1.5 font-arabic" style={{ color: c.text }}>
-            {cfg?.icon} {cfg?.label}
+            <Icon size={12} strokeWidth={1.9} className="inline ml-1" /> {cfg?.label}
           </p>
           <p className="text-sm font-arabic text-white/80 leading-relaxed">
             {block.content || '…'}
@@ -296,8 +330,8 @@ function BlockPreview({ block }) {
       return (
         <div className="rounded-xl overflow-hidden" style={{ background: '#0a1f1c', border: '1px solid #134e4a' }}>
           <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: '1px solid #134e4a' }}>
-            <span className="text-xs" style={{ color: '#2dd4bf' }}>✎ مثال</span>
-            {interactive && <span className="text-[10px] px-1.5 py-0.5 rounded font-arabic" style={{ background: '#134e4a', color: '#5eead4' }}>⚡ تفاعلي</span>}
+            <span className="text-xs inline-flex items-center gap-1" style={{ color: '#2dd4bf' }}><Pencil size={12} strokeWidth={1.9} /> مثال</span>
+            {interactive && <span className="text-[10px] px-1.5 py-0.5 rounded font-arabic inline-flex items-center gap-1" style={{ background: '#134e4a', color: '#5eead4' }}><Zap size={10} strokeWidth={1.9} /> تفاعلي</span>}
           </div>
           <div className="p-3 space-y-2">
             {interactive && steps.length > 0 ? (
@@ -384,7 +418,9 @@ function CheckpointPreview({ question }) {
   return (
     <div className="mx-4 my-3 rounded-xl p-3" style={{ background: '#0f1620', border: '1px solid #1e3a5f' }}>
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs" style={{ color: '#60a5fa' }}>◎ نقطة تحقق</span>
+        <span className="text-xs inline-flex items-center gap-1" style={{ color: '#60a5fa' }}>
+          <Target size={12} strokeWidth={1.9} /> نقطة تحقق
+        </span>
         <span className="text-[10px] px-1.5 py-0.5 rounded font-arabic" style={{ background: '#1e3a5f', color: '#93c5fd' }}>
           {question.type}
         </span>
@@ -417,7 +453,7 @@ function CheckpointPreview({ question }) {
 function LessonCompleteCard({ lesson }) {
   return (
     <div className="mx-4 my-4 rounded-2xl p-4 text-center" style={{ background: 'linear-gradient(135deg, #1c1200, #0e0c09)', border: '1px solid #2a2215' }}>
-      <div className="text-3xl mb-2">🎉</div>
+      <PartyPopper size={34} strokeWidth={1.6} className="mx-auto mb-2" style={{ color: '#d4891e' }} />
       <p className="text-white font-semibold font-arabic mb-1">أتممت الدرس!</p>
       <p className="text-white/50 text-xs font-arabic mb-3">{lesson.title}</p>
       {lesson.metadata?.forwardPull && (

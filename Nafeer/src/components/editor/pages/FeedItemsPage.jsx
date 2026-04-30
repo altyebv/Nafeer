@@ -8,6 +8,22 @@ import {
 import Modal from '@/components/editor/shared/Modal';
 import DeleteButton from '@/components/editor/shared/DeleteButton';
 import StatusBadge from '@/components/editor/shared/StatusBadge';
+import {
+  BookOpen,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  CreditCard,
+  Lightbulb,
+  Pencil,
+  Ruler,
+  Send,
+  Sigma,
+  Smartphone,
+  Target,
+  TriangleAlert,
+  X,
+} from 'lucide-react';
 
 // ─── Theme primitives ─────────────────────────────────────────────────────────
 const FIELD = {
@@ -33,6 +49,17 @@ const TYPE_COLOR = {
   RULE:       '#ef4444',
   MINI_QUIZ:  '#8b5cf6',
   FLASH_CARD: '#3b82f6',
+};
+
+const FEED_ICONS = {
+  DEFINITION: BookOpen,
+  FORMULA: Sigma,
+  DATE: CalendarDays,
+  FACT: CheckCircle2,
+  RULE: Ruler,
+  TIP: Lightbulb,
+  MINI_QUIZ: Target,
+  FLASH_CARD: CreditCard,
 };
 
 function typeBg(type) {
@@ -183,7 +210,7 @@ export default function FeedItemsPage({ subjectId }) {
           onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-hover)'}
           onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
         >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> إضافة بطاقة
+          <Smartphone size={16} strokeWidth={1.9} /> إضافة بطاقة
         </button>
       </div>
 
@@ -192,6 +219,7 @@ export default function FeedItemsPage({ subjectId }) {
         {typeStats.map(({ key, value, cfg, count }) => {
           const { bg, fg, border } = typeBg(key);
           const active = filterType === value;
+          const Icon = FEED_ICONS[key] || BookOpen;
           return (
             <button
               key={key}
@@ -204,7 +232,9 @@ export default function FeedItemsPage({ subjectId }) {
                 cursor: 'pointer',
               }}
             >
-              <div style={{ fontSize: 20, marginBottom: 4 }}>{cfg.icon}</div>
+              <div className="flex justify-center mb-1">
+                <Icon size={20} strokeWidth={1.8} style={{ color: active ? fg : 'var(--text-muted)' }} />
+              </div>
               <div className="font-mono font-semibold" style={{ fontSize: 17, color: active ? fg : 'var(--text-secondary)' }}>
                 {count}
               </div>
@@ -243,7 +273,7 @@ export default function FeedItemsPage({ subjectId }) {
             onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card)'}
             onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
           >
-            ✕ مسح الفلاتر
+            <X size={13} strokeWidth={1.9} className="inline ml-1" /> مسح الفلاتر
           </button>
         )}
       </div>
@@ -259,7 +289,7 @@ export default function FeedItemsPage({ subjectId }) {
           }}
         >
           <p className="font-arabic mb-2.5" style={{ fontSize: 12, color: 'var(--accent)' }}>
-            ⚠ مفاهيم بدون بطاقات ({conceptsWithoutFeed.length}) — انقر لإنشاء بطاقة سريعة
+            <TriangleAlert size={13} strokeWidth={1.9} className="inline ml-1" /> مفاهيم بدون بطاقات ({conceptsWithoutFeed.length}) — انقر لإنشاء بطاقة سريعة
           </p>
           <div className="flex flex-wrap gap-1.5">
             {conceptsWithoutFeed.slice(0, 12).map((concept) => (
@@ -291,7 +321,7 @@ export default function FeedItemsPage({ subjectId }) {
       {/* ── Feed items ─────────────────────────────────────────────────────── */}
       {filtered.length === 0 ? (
         <EmptyState
-          icon="📱"
+          icon={<Smartphone size={38} strokeWidth={1.6} />}
           title={subjectFeedItems.length === 0 ? 'لا توجد بطاقات بعد' : 'لا توجد نتائج'}
           action={subjectFeedItems.length === 0 ? (
             <button
@@ -474,7 +504,6 @@ export default function FeedItemsPage({ subjectId }) {
                           cursor: 'pointer',
                         }}
                       >
-                        <span style={{ fontFamily: 'monospace' }}>{cfg.icon}</span>
                         <span>{cfg.label}</span>
                       </button>
                     );
@@ -485,7 +514,7 @@ export default function FeedItemsPage({ subjectId }) {
               {form.interactionType === 'SWIPE_TF' && (
                 <FormField label="الإجابة الصحيحة">
                   <div className="flex gap-2">
-                    {[['true', '✓ صح'], ['false', '✕ خطأ']].map(([val, lbl]) => (
+                    {[['true', 'صح'], ['false', 'خطأ']].map(([val, lbl]) => (
                       <button
                         key={val}
                         onClick={() => setForm({ ...form, correctAnswer: val })}
@@ -504,7 +533,10 @@ export default function FeedItemsPage({ subjectId }) {
                           cursor: 'pointer',
                         }}
                       >
-                        {lbl}
+                        <span className="inline-flex items-center gap-1">
+                          {val === 'true' ? <Check size={14} strokeWidth={2} /> : <X size={14} strokeWidth={2} />}
+                          {lbl}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -639,7 +671,7 @@ function ConceptGroup({ conceptId, conceptTitle, items, onEdit, onDelete, onRevi
         onClick={() => setCollapsed((v) => !v)}
       >
         <div className="flex items-center gap-2">
-          <span style={{ color: 'var(--accent)', fontSize: 14 }}>💡</span>
+          <Lightbulb size={15} strokeWidth={1.8} style={{ color: 'var(--accent)' }} />
           <span className="font-arabic font-medium" style={{ fontSize: 14, color: 'var(--text-primary)' }}>
             {conceptTitle}
           </span>
@@ -677,6 +709,7 @@ function ConceptGroup({ conceptId, conceptTitle, items, onEdit, onDelete, onRevi
           {items.map((item, i) => {
             const cfg = FEED_ITEM_TYPE_CONFIG[item.type];
             const { bg, fg } = typeBg(item.type);
+            const Icon = FEED_ICONS[item.type] || BookOpen;
             return (
               <div
                 key={item.id}
@@ -696,7 +729,7 @@ function ConceptGroup({ conceptId, conceptTitle, items, onEdit, onDelete, onRevi
                     justifyContent: 'center', fontSize: 15,
                   }}
                 >
-                  {cfg?.icon}
+                  <Icon size={16} strokeWidth={1.9} color={fg} />
                 </div>
 
                 {/* Content */}
@@ -739,7 +772,7 @@ function ConceptGroup({ conceptId, conceptTitle, items, onEdit, onDelete, onRevi
                   )}
                   {item.type === 'MINI_QUIZ' && item.correctAnswer && (
                     <p className="font-arabic mt-0.5" style={{ fontSize: 12, color: '#10b981' }}>
-                      ✓ {item.correctAnswer}
+                      <Check size={13} strokeWidth={2} className="inline ml-1" /> {item.correctAnswer}
                     </p>
                   )}
                 </div>
@@ -747,9 +780,9 @@ function ConceptGroup({ conceptId, conceptTitle, items, onEdit, onDelete, onRevi
                 {/* Row actions */}
                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   {(!item.atlasStatus || item.atlasStatus === 'draft') && subjectId && (
-                    <ActionBtn onClick={() => onReview(item.id)} title="إرسال للمراجعة" color="#f59e0b">⇪</ActionBtn>
+                    <ActionBtn onClick={() => onReview(item.id)} title="إرسال للمراجعة" color="#f59e0b"><Send size={13} strokeWidth={1.9} /></ActionBtn>
                   )}
-                  <ActionBtn onClick={() => onEdit(item)} title="تعديل">✏</ActionBtn>
+                  <ActionBtn onClick={() => onEdit(item)} title="تعديل"><Pencil size={13} strokeWidth={1.9} /></ActionBtn>
                   <DeleteButton onDelete={() => onDelete(item.id)} />
                 </div>
               </div>
@@ -798,7 +831,7 @@ function EmptyState({ icon, title, action }) {
         background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 16,
       }}
     >
-      <div style={{ fontSize: 36, marginBottom: 12 }}>{icon}</div>
+      <div className="flex justify-center mb-3" style={{ color: 'var(--text-muted)' }}>{icon}</div>
       <p className="font-arabic" style={{ fontSize: 14, color: 'var(--text-muted)' }}>{title}</p>
       {action}
     </div>

@@ -5,6 +5,7 @@ import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import StatusBadge       from '@/components/editor/shared/StatusBadge';
 import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
 import { VARIATION_CONFIG } from '@/components/editor/lesson/LinkVariationModal';
+import { StickyNote } from 'lucide-react';
 
 const STATUS_BORDER = {
   empty:   'var(--border-subtle)',
@@ -133,7 +134,7 @@ export default function LessonItem({ lesson, index, onEdit, onAddVariation, cove
         {/* Notes count */}
         {lesson.notesCount > 0 && (
           <div className="flex items-center gap-0.5 shrink-0" title={`${lesson.notesCount} ملاحظة`}>
-            <span style={{ fontSize: 9 }}>📝</span>
+            <StickyNote size={11} strokeWidth={1.8} />
             <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{lesson.notesCount}</span>
           </div>
         )}

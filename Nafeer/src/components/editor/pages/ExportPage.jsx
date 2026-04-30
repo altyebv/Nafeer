@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import DeleteButton from '@/components/editor/shared/DeleteButton';
+import { Check, ChevronLeft, Download, TriangleAlert, Upload } from 'lucide-react';
 
 export default function ExportPage({ subjectId }) {
   const {
@@ -143,7 +144,7 @@ export default function ExportPage({ subjectId }) {
           {isExporting ? (
             <span className="inline-block w-5 h-5 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" />
           ) : (
-            <span className="text-xl">📤</span>
+            <Download size={22} strokeWidth={1.9} />
           )}
           <div className="text-right">
             <div className="font-semibold font-arabic">{isExporting ? 'جاري التصدير…' : 'تصدير JSON'}</div>
@@ -155,7 +156,7 @@ export default function ExportPage({ subjectId }) {
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center justify-center gap-3 py-4 bg-ink-800 text-ink-200 rounded-xl hover:bg-ink-700 transition-colors border border-ink-700"
         >
-          <span className="text-xl">📥</span>
+          <Upload size={22} strokeWidth={1.9} />
           <div className="text-right">
             <div className="font-semibold font-arabic">معاينة JSON</div>
             <div className="text-xs text-ink-500 font-arabic">فتح ملف محلي للمعاينة</div>
@@ -172,13 +173,13 @@ export default function ExportPage({ subjectId }) {
 
       {importSuccess && (
         <div className="mb-4 p-3 bg-emerald-900/20 border border-emerald-800/50 rounded-lg text-emerald-400 text-sm font-arabic">
-          ✓ تم استيراد البيانات بنجاح
+          <Check size={15} strokeWidth={2} className="inline ml-1" /> تم استيراد البيانات بنجاح
         </div>
       )}
 
       {exportError && (
         <div className="mb-4 p-3 bg-amber-900/20 border border-amber-800/50 rounded-lg text-amber-400 text-sm font-arabic">
-          ⚠ {exportError}
+          <TriangleAlert size={15} strokeWidth={1.9} className="inline ml-1" /> {exportError}
         </div>
       )}
 
@@ -189,7 +190,7 @@ export default function ExportPage({ subjectId }) {
           disabled={!previewData}
           className="flex items-center gap-2 text-ink-500 hover:text-ink-300 transition-colors text-sm font-arabic disabled:opacity-40"
         >
-          <span className={`text-xs transition-transform ${showPreview ? 'rotate-90' : ''}`}>▶</span>
+          <ChevronLeft size={13} strokeWidth={2} className={`transition-transform ${showPreview ? '-rotate-90' : ''}`} />
           {showPreview ? 'إخفاء' : 'معاينة'} JSON
         </button>
 

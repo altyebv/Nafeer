@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useDataStore }                        from '@/store/dataStore';
 import { SUBJECTS_BY_ID, TRACK_CONFIG }        from '@/shared/curriculum';
 import { getLessonStatus, computeProgress, STATUS_CONFIG } from '@/lib/lessonStatus';
+import { ArrowLeft, LoaderCircle } from 'lucide-react';
 
 export default function SubjectOverview({ onSelectUnit, onOpenLesson }) {
   const { subject, units, lessons, sections, blocks } = useDataStore();
@@ -43,7 +44,7 @@ export default function SubjectOverview({ onSelectUnit, onOpenLesson }) {
   if (!subject || sortedUnits.length === 0) {
     return (
       <div className="text-center py-32">
-        <div className="text-5xl mb-5">🌀</div>
+        <LoaderCircle size={48} strokeWidth={1.6} className="mx-auto mb-5 animate-spin text-ink-600" />
         <h2 className="text-lg font-medium text-ink-300 font-arabic mb-2">جاري تحميل المادة…</h2>
         <p className="text-ink-600 text-sm font-arabic">إذا استمرت المشكلة، تواصل مع المدير</p>
       </div>
@@ -84,7 +85,7 @@ export default function SubjectOverview({ onSelectUnit, onOpenLesson }) {
               <span className="opacity-70 text-xs font-mono truncate max-w-[120px]">
                 {resumeLesson.lesson.title}
               </span>
-              <span>←</span>
+              <ArrowLeft size={15} strokeWidth={2} />
             </button>
           )}
         </div>
@@ -169,7 +170,7 @@ function UnitRow({ unit, lessons, sections, blocks, lessonsMap, onSelect, onOpen
       {/* Progress pct + arrow */}
       <div className="shrink-0 flex items-center gap-3">
         <span className="text-xs font-mono text-ink-500">{progress.pct}%</span>
-        <span className="text-ink-700 group-hover:text-sand-500 transition-colors text-sm">←</span>
+        <ArrowLeft size={14} strokeWidth={2} className="text-ink-700 group-hover:text-sand-500 transition-colors" />
       </div>
     </div>
   );

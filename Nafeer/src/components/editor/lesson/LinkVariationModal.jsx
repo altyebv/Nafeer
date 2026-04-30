@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { ArrowDown, ArrowLeft, ArrowUp, Check, Shuffle, X } from 'lucide-react';
 
 // ─── Variation type config ────────────────────────────────────────────────────
 export const VARIATION_CONFIG = {
-  alternative:  { label: 'بديل',    color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)',  border: 'rgba(139,92,246,0.3)',  icon: '↔' },
-  prerequisite: { label: 'متطلب',   color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.3)',  icon: '←' },
-  extension:    { label: 'توسع',    color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)',  icon: '↑' },
-  simplified:   { label: 'مبسط',    color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: '↓' },
+  alternative:  { label: 'بديل',    color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)',  border: 'rgba(139,92,246,0.3)',  icon: Shuffle },
+  prerequisite: { label: 'متطلب',   color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.3)',  icon: ArrowLeft },
+  extension:    { label: 'توسع',    color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)',  icon: ArrowUp },
+  simplified:   { label: 'مبسط',    color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: ArrowDown },
 };
 
 const VARIATION_DESCRIPTIONS = {
@@ -81,7 +82,7 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
             onClick={onClose}
             className="text-ink-600 hover:text-ink-300 transition-colors text-lg leading-none"
           >
-            ✕
+            <X size={17} strokeWidth={1.9} />
           </button>
         </div>
 
@@ -124,7 +125,7 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
                     {unitMap[lesson.unitId] || '—'}
                   </span>
                   {selectedId === lesson.id && (
-                    <span className="text-sand-500 text-xs shrink-0">✓</span>
+                    <Check size={13} strokeWidth={2} className="text-sand-500 shrink-0" />
                   )}
                 </button>
               ))}
@@ -135,7 +136,9 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
           <div>
             <label className="block text-xs text-ink-500 font-arabic mb-2">٢. نوع العلاقة</label>
             <div className="grid grid-cols-2 gap-2">
-              {Object.entries(VARIATION_CONFIG).map(([type, cfg]) => (
+              {Object.entries(VARIATION_CONFIG).map(([type, cfg]) => {
+                const Icon = cfg.icon;
+                return (
                 <button
                   key={type}
                   onClick={() => setVariationType(type)}
@@ -146,7 +149,7 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
                   }
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-base leading-none">{cfg.icon}</span>
+                    <Icon size={15} strokeWidth={1.9} />
                     <div>
                       <div className="text-xs font-semibold font-arabic">{cfg.label}</div>
                       <div className="text-[10px] opacity-70 font-arabic leading-tight mt-0.5">
@@ -155,7 +158,8 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
                     </div>
                   </div>
                 </button>
-              ))}
+              );
+              })}
             </div>
           </div>
 

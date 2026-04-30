@@ -15,6 +15,16 @@ import { HeadingBlock, TextBlock, TipBlock, ArabicFormulaBlock, ImagePlaceholder
 import { HighlightBox } from '@/components/demo/blocks/HighlightBox';
 import { FormulaBlock } from '@/components/demo/blocks/FormulaBlock';
 import { ExampleBlock } from '@/components/demo/blocks/ExampleBlock';
+import {
+  Check,
+  CircleDot,
+  Image as ImageIcon,
+  Lightbulb,
+  Pencil,
+  Sparkles,
+  X,
+  Zap,
+} from 'lucide-react';
 
 // ─── Shared textarea style ────────────────────────────────────────────────────
 const ta =
@@ -219,7 +229,7 @@ export default function BlockEditor({ block, subjectId, dragHandleProps, lessonI
           {/* Concept badge — shown in toolbar so it's still discoverable */}
           {linkedConcept && (
             <span className="px-2 py-0.5 bg-sand-900/40 text-sand-600 text-[10px] rounded-full border border-sand-800/40 font-arabic leading-none">
-              💡 {linkedConcept.titleAr}
+              <Lightbulb size={11} strokeWidth={1.8} /> {linkedConcept.titleAr}
             </span>
           )}
 
@@ -267,7 +277,7 @@ export default function BlockEditor({ block, subjectId, dragHandleProps, lessonI
 
         {linkedConcept && (
           <span className="px-2 py-0.5 bg-sand-900/30 text-sand-600 text-xs rounded-full border border-sand-800/40 font-arabic">
-            💡 {linkedConcept.titleAr}
+            <Lightbulb size={12} strokeWidth={1.8} /> {linkedConcept.titleAr}
           </span>
         )}
 
@@ -346,7 +356,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
               <button key={key} onClick={() => patchMeta({ style: key })}
                 className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border transition-all font-arabic
                   ${style === key ? HL_COLORS[key].ring : 'bg-ink-800 text-ink-600 border-ink-700 hover:border-ink-600 hover:text-ink-400'}`}>
-                <span>{cfg.icon}</span><span>{cfg.label}</span>
+                <span>{cfg.label}</span>
               </button>
             ))}
           </div>
@@ -376,13 +386,13 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
             <span className="text-xs text-ink-600 font-arabic">النوع:</span>
             <div className="flex rounded-lg border border-ink-800 overflow-hidden">
               <button onClick={() => setInteractive(false)} className={`px-3 py-1 text-xs font-arabic transition-colors ${!interactive ? 'bg-teal-900/50 text-teal-400' : 'bg-ink-900 text-ink-600 hover:text-ink-400'}`}>عادي</button>
-              <button onClick={() => setInteractive(true)} className={`px-3 py-1 text-xs font-arabic transition-colors border-r border-ink-800 ${interactive ? 'bg-teal-900/50 text-teal-400' : 'bg-ink-900 text-ink-600 hover:text-ink-400'}`}>⚡ تفاعلي</button>
+              <button onClick={() => setInteractive(true)} className={`px-3 py-1 text-xs font-arabic transition-colors border-r border-ink-800 inline-flex items-center gap-1 ${interactive ? 'bg-teal-900/50 text-teal-400' : 'bg-ink-900 text-ink-600 hover:text-ink-400'}`}><Zap size={12} strokeWidth={1.9} /> تفاعلي</button>
             </div>
             {interactive && <span className="text-[11px] text-ink-700 font-arabic">كل خطوة تُكشف بنقرة</span>}
           </div>
           {!interactive ? (
             <div className="bg-teal-950/40 border-r-4 border-teal-700 rounded-lg p-3">
-              <p className="text-xs text-teal-600 mb-2 font-arabic">✎ مثال</p>
+              <p className="text-xs text-teal-600 mb-2 font-arabic inline-flex items-center gap-1"><Pencil size={12} strokeWidth={1.9} /> مثال</p>
               <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
                 className="w-full bg-transparent border-none resize-y min-h-[88px] focus:outline-none text-teal-100 text-sm font-arabic placeholder-teal-900"
                 placeholder="اكتب المثال كاملاً هنا…" autoFocus />
@@ -393,7 +403,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
                 <div key={i} className="flex gap-2 items-start">
                   <div className="w-6 h-6 rounded-full bg-teal-900/50 border border-teal-800/50 text-teal-500 text-[10px] font-mono flex items-center justify-center shrink-0 mt-1.5">{i + 1}</div>
                   <textarea value={step} onChange={(e) => updateStep(i, e.target.value)} className={`${ta} flex-1 min-h-[60px]`} placeholder={`الخطوة ${i + 1}…`} autoFocus />
-                  <button onClick={() => removeStep(i)} className="text-ink-700 hover:text-red-500 transition-colors mt-2 text-sm">✕</button>
+                  <button onClick={() => removeStep(i)} className="text-ink-700 hover:text-red-500 transition-colors mt-2 text-sm"><X size={14} strokeWidth={1.9} /></button>
                 </div>
               ))}
               <button onClick={addStep} className="w-full py-2 border border-dashed border-teal-900 rounded-lg text-teal-800 hover:text-teal-600 hover:border-teal-800 transition-colors text-xs font-arabic">+ إضافة خطوة</button>
@@ -419,7 +429,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return (
         <div className="space-y-2">
           <div className="flex gap-1">
-            {[['BULLET', '● نقطي'], ['NUMBERED', '١ مرقّم']].map(([key, lbl]) => (
+            {[['BULLET', 'نقطي'], ['NUMBERED', '١ مرقّم']].map(([key, lbl]) => (
               <button key={key} onClick={() => patchMeta({ style: key })}
                 className={`px-3 py-1 text-xs rounded-md border font-arabic transition-all ${style === key ? 'bg-sand-900/50 text-sand-400 border-sand-800/60' : 'bg-ink-800 text-ink-600 border-ink-700 hover:text-ink-400'}`}>
                 {lbl}
@@ -491,13 +501,13 @@ function MediaBlockEditor({ block, update, subjectId }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={block.content} alt={block.metadata?.alt || ''} className="max-h-48 w-auto mx-auto object-contain py-2"
               onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            <button onClick={handleClear} className="absolute top-2 left-2 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-red-400 hover:bg-black/80 transition-all opacity-0 group-hover/thumb:opacity-100 text-xs">✕</button>
+            <button onClick={handleClear} className="absolute top-2 left-2 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-red-400 hover:bg-black/80 transition-all opacity-0 group-hover/thumb:opacity-100 text-xs"><X size={14} strokeWidth={1.9} /></button>
             {isGif && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-900/80 text-purple-300 text-[10px] font-bold rounded">GIF</span>}
-            {isInteractive && markers.length > 0 && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-sand-900/80 text-sand-300 text-[10px] font-bold rounded border border-sand-700/60">✦ {markers.length}</span>}
+            {isInteractive && markers.length > 0 && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-sand-900/80 text-sand-300 text-[10px] font-bold rounded border border-sand-700/60 inline-flex items-center gap-1"><Sparkles size={10} strokeWidth={1.8} /> {markers.length}</span>}
           </div>
         )}
         <button onClick={() => setPickerOpen(true)} className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-ink-700 hover:border-sand-600 text-ink-500 hover:text-sand-400 text-sm font-arabic transition-all">
-          <span className="font-mono text-base">⬜</span>
+          <ImageIcon size={16} strokeWidth={1.8} />
           <span>{hasUrl ? 'تغيير الصورة من المكتبة' : 'اختر صورة من المكتبة'}</span>
         </button>
         <input type="text" value={block.caption || ''} onChange={(e) => update({ caption: e.target.value })}
@@ -506,7 +516,7 @@ function MediaBlockEditor({ block, update, subjectId }) {
         {!isGif && (
           <div className={`rounded-lg border overflow-hidden ${isInteractive ? 'border-sand-700/50' : 'border-ink-800'}`}>
             <div className={`flex items-center gap-3 px-3 py-2.5 ${isInteractive ? 'bg-sand-900/20 border-b border-sand-800/40' : 'bg-ink-900/40 hover:bg-ink-900/60 transition-colors'}`}>
-              <span className={`font-mono text-sm ${isInteractive ? 'text-sand-500' : 'text-ink-600'}`}>✦</span>
+              <Sparkles size={14} strokeWidth={1.8} className={isInteractive ? 'text-sand-500' : 'text-ink-600'} />
               <span className={`text-xs font-arabic font-semibold flex-1 ${isInteractive ? 'text-sand-400' : 'text-ink-500'}`}>صورة تفاعلية</span>
               {isInteractive && <span className="text-[10px] text-sand-600 font-arabic">{markers.length > 0 ? `${markers.length} علامة` : 'لا علامات بعد'}</span>}
               <button onClick={() => handleInteractiveToggle(!isInteractive)}
@@ -633,12 +643,12 @@ function CheckpointBlockEditor({ block, update, subjectId , lessonId, unitId, se
     return (
       <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/20 p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-emerald-600">◎</span>
+          <CircleDot size={13} strokeWidth={1.9} className="text-emerald-600" />
           <span className="text-xs font-arabic text-emerald-500 font-semibold">نقطة تحقق</span>
-          {cfg && <span className="text-xs font-arabic text-ink-500 px-1.5 py-0.5 bg-ink-800/60 rounded border border-ink-700">{cfg.icon} {cfg.label}</span>}
+          {cfg && <span className="text-xs font-arabic text-ink-500 px-1.5 py-0.5 bg-ink-800/60 rounded border border-ink-700">{cfg.label}</span>}
           <div className="flex-1" />
           <button onClick={() => { resetForm(); setEditing(true); }} className="text-xs text-ink-500 hover:text-sand-400 px-2 py-1 rounded hover:bg-ink-800 transition-colors font-arabic">تعديل</button>
-          <button onClick={handleUnlink} className="text-xs text-ink-600 hover:text-red-500 px-2 py-1 rounded hover:bg-red-950/30 transition-colors font-arabic">✕ حذف</button>
+          <button onClick={handleUnlink} className="text-xs text-ink-600 hover:text-red-500 px-2 py-1 rounded hover:bg-red-950/30 transition-colors font-arabic inline-flex items-center gap-1"><X size={12} strokeWidth={1.9} /> حذف</button>
         </div>
         <p className="text-sm font-arabic text-ink-100 leading-relaxed">{linked.textAr}</p>
         {linked.type === 'MCQ' && linked.options && (() => {
@@ -656,12 +666,15 @@ function CheckpointBlockEditor({ block, update, subjectId , lessonId, unitId, se
         })()}
         {linked.type === 'TRUE_FALSE' && (
           <div className="flex gap-2">
-            {[['true', '✓ صح'], ['false', '✕ خطأ']].map(([v, l]) => (
-              <span key={v} className={`px-3 py-1 rounded-lg border text-xs ${linked.correctAnswer === v ? (v === 'true' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-700' : 'bg-red-900/30 text-red-400 border-red-700') : 'bg-ink-800/30 text-ink-500 border-ink-700'}`}>{l}</span>
+            {[['true', 'صح'], ['false', 'خطأ']].map(([v, l]) => (
+              <span key={v} className={`px-3 py-1 rounded-lg border text-xs inline-flex items-center gap-1 ${linked.correctAnswer === v ? (v === 'true' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-700' : 'bg-red-900/30 text-red-400 border-red-700') : 'bg-ink-800/30 text-ink-500 border-ink-700'}`}>
+                {v === 'true' ? <Check size={12} strokeWidth={2} /> : <X size={12} strokeWidth={2} />}
+                {l}
+              </span>
             ))}
           </div>
         )}
-        {linked.explanation && <p className="text-xs text-ink-500 font-arabic border-t border-ink-800/50 pt-2">💡 {linked.explanation}</p>}
+        {linked.explanation && <p className="text-xs text-ink-500 font-arabic border-t border-ink-800/50 pt-2 inline-flex items-center gap-1"><Lightbulb size={12} strokeWidth={1.8} /> {linked.explanation}</p>}
       </div>
     );
   }
@@ -670,7 +683,7 @@ function CheckpointBlockEditor({ block, update, subjectId , lessonId, unitId, se
   return (
     <div className="rounded-xl border border-amber-900/30 bg-amber-950/10 p-4 space-y-3">
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-xs font-mono text-amber-600">◎</span>
+        <CircleDot size={13} strokeWidth={1.9} className="text-amber-600" />
         <span className="text-xs font-arabic text-amber-500 font-semibold">{linked ? 'تعديل نقطة التحقق' : 'إنشاء نقطة تحقق'}</span>
         <div className="flex-1" />
         {linked && <button onClick={() => { resetForm(); setEditing(false); }} className="text-xs text-ink-500 hover:text-ink-300 px-2 py-1 rounded hover:bg-ink-800 transition-colors font-arabic">إلغاء</button>}
@@ -681,7 +694,7 @@ function CheckpointBlockEditor({ block, update, subjectId , lessonId, unitId, se
           return (
             <button key={t} onClick={() => setType(t)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border font-arabic transition-colors ${type === t ? 'bg-sand-900/50 text-sand-300 border-sand-700' : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'}`}>
-              <span className="font-mono">{cfg.icon}</span><span>{cfg.label}</span>
+              <span>{cfg.label}</span>
             </button>
           );
         })}
@@ -701,10 +714,13 @@ function CheckpointBlockEditor({ block, update, subjectId , lessonId, unitId, se
       )}
       {type === 'TRUE_FALSE' && (
         <div className="flex gap-2">
-          {[['true', '✓ صح'], ['false', '✕ خطأ']].map(([val, lbl]) => (
+          {[['true', 'صح'], ['false', 'خطأ']].map(([val, lbl]) => (
             <button key={val} onClick={() => setTfAnswer(val)}
               className={`flex-1 py-2 rounded-lg text-sm border font-arabic transition-colors ${tfAnswer === val ? (val === 'true' ? 'bg-emerald-900/40 text-emerald-400 border-emerald-700' : 'bg-red-900/40 text-red-400 border-red-700') : 'bg-ink-800 text-ink-500 border-ink-700 hover:border-ink-600'}`}>
-              {lbl}
+              <span className="inline-flex items-center gap-1">
+                {val === 'true' ? <Check size={14} strokeWidth={2} /> : <X size={14} strokeWidth={2} />}
+                {lbl}
+              </span>
             </button>
           ))}
         </div>

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useMediaStore } from '@/store/mediaStore';
+import { Image as ImageIcon, TriangleAlert, X } from 'lucide-react';
 
 // ─── MediaPicker ──────────────────────────────────────────────────────────────
 // A lightweight modal that lets the user select a media item from the library.
@@ -63,7 +64,7 @@ export default function MediaPicker({ type, subjectId, onSelect, onClose }) {
             onClick={onClose}
             className="w-7 h-7 flex items-center justify-center text-ink-600 hover:text-ink-300 transition-colors text-base"
           >
-            ✕
+            <X size={16} strokeWidth={1.9} />
           </button>
         </div>
 
@@ -109,13 +110,13 @@ export default function MediaPicker({ type, subjectId, onSelect, onClose }) {
 
           {localError && (
             <div className="flex items-center justify-center py-10 text-red-400 text-sm gap-2">
-              <span>⚠</span><span>{localError}</span>
+              <TriangleAlert size={16} strokeWidth={1.9} /><span>{localError}</span>
             </div>
           )}
 
           {!mediaLoading && !localError && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 gap-2 text-ink-600">
-              <span className="text-3xl">🖼</span>
+              <ImageIcon size={34} strokeWidth={1.5} />
               <p className="text-sm">
                 {media.length === 0
                   ? 'لا توجد وسائط — اطلب من المشرف رفع صور'

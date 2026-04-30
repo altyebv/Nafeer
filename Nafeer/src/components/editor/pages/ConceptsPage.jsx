@@ -485,7 +485,7 @@ export default function ConceptsPage({ subjectId }) {
               >
                 {Object.entries(CONCEPT_TYPES).map(([key]) => (
                   <option key={key} value={key}>
-                    {CONCEPT_TYPE_CONFIG[key].icon} {CONCEPT_TYPE_CONFIG[key].label}
+                    {CONCEPT_TYPE_CONFIG[key].label}
                   </option>
                 ))}
               </select>

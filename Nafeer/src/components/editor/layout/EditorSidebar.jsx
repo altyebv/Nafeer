@@ -22,7 +22,7 @@ const NAV = [
   { id: 'quizbank',  icon: CircleHelp,       label: 'الأسئلة',   sub: 'Quiz Bank' },
   { id: 'concepts',  icon: Sparkles,         label: 'المفاهيم',  sub: 'Concepts'  },
   { id: 'media',     icon: Image,            label: 'الوسائط',   sub: 'Media'     },
-  // export hidden: { id: 'export', icon: '↑', label: 'تصدير', sub: 'Export' },
+  // export hidden: { id: 'export', label: 'تصدير', sub: 'Export' },
 ];
 
 // ── Theme hook ─────────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ import {
   QUESTION_TYPES, QUESTION_TYPE_CONFIG,
   COGNITIVE_LEVEL_CONFIG,
 } from '@/shared/constants';
-import { Check, ChevronLeft, CircleDot, ListChecks, MessageCircle, PencilLine, Target, TextCursorInput, ToggleRight, X } from 'lucide-react';
+import { Check, ChevronLeft, CircleDot, ExternalLink, ListChecks, MessageCircle, PencilLine, Target, TextCursorInput, ToggleRight, X } from 'lucide-react';
 
 // Quick-add supports the 5 most common question types.
 // Full editing for all 11 types lives in the global QuizBankPage.
@@ -161,7 +161,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
           {checkpointQuestions.length > 0 && (
             <div className="space-y-1">
               <p className="text-xs text-amber-600/80 font-arabic font-semibold mb-1.5">
-                ◎ نقاط تحقق ({checkpointQuestions.length}) — تُعدَّل من داخل القسم
+                <CircleDot size={12} strokeWidth={2} className="inline ml-1" /> نقاط تحقق ({checkpointQuestions.length}) — تُعدَّل من داخل القسم
               </p>
               {checkpointQuestions.map((q) => {
                 const cfg    = QUESTION_TYPE_CONFIG[q.type];
@@ -350,7 +350,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                   className="px-3 py-2.5 text-xs text-ink-600 hover:text-sand-400 border border-ink-800 hover:border-ink-700 rounded-lg transition-colors font-arabic"
                   title="فتح بنك الأسئلة"
                 >
-                  عرض الكل ↗
+                  <span className="inline-flex items-center gap-1">عرض الكل <ExternalLink size={12} strokeWidth={1.9} /></span>
                 </button>
               )}
             </div>

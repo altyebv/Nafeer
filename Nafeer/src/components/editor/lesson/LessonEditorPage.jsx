@@ -12,6 +12,23 @@ import AttributionBar       from '@/components/editor/lesson/AttributionBar';
 import LessonNotesDrawer    from '@/components/editor/lesson/LessonNotesDrawer';
 import LessonHistoryDrawer  from '@/components/editor/lesson/LessonHistoryDrawer';
 import LinkVariationModal, { VARIATION_CONFIG } from '@/components/editor/lesson/LinkVariationModal';
+import {
+  Check,
+  Circle,
+  CircleDot,
+  Clock3,
+  Eye,
+  FileText,
+  Link2,
+  NotebookPen,
+  Send,
+  Smartphone,
+  Sparkles,
+  Target,
+  TriangleAlert,
+  Upload,
+  X,
+} from 'lucide-react';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 
@@ -181,7 +198,7 @@ export default function LessonEditorPage({
 
   if (!lesson) return (
     <div className="text-center py-32">
-      <div className="text-4xl mb-4">📝</div>
+      <NotebookPen size={42} strokeWidth={1.5} className="mx-auto mb-4 text-ink-600" />
       <h2 className="text-lg font-medium text-ink-400 mb-4 font-arabic">الدرس غير موجود</h2>
       <button onClick={onBack} className="px-6 py-2 bg-sand-700 text-ink-950 rounded-lg font-arabic">العودة</button>
     </div>
@@ -245,7 +262,7 @@ export default function LessonEditorPage({
                 disabled={isSyncing}
                 className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-green-400 text-xs font-semibold rounded-lg border border-green-800/50 bg-green-900/20 hover:bg-green-800/30 disabled:opacity-40 font-arabic transition-colors"
               >
-                {approveSuccess ? '✓ تم الاعتماد' : '✓ اعتماد مباشر'}
+                {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الاعتماد</> : <><Check size={13} strokeWidth={2} /> اعتماد مباشر</>}
               </button>
             ) : (
               <button
@@ -253,7 +270,7 @@ export default function LessonEditorPage({
                 disabled={isSyncing}
                 className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-amber-400 text-xs font-semibold rounded-lg border border-amber-800/50 bg-amber-900/20 hover:bg-amber-800/30 disabled:opacity-40 font-arabic transition-colors"
               >
-                {reviewSuccess ? '✓ أُرسل' : '⇪ مراجعة'}
+                {reviewSuccess ? <><Check size={13} strokeWidth={2} /> أُرسل</> : <><Send size={13} strokeWidth={1.9} /> مراجعة</>}
               </button>
             )
           )}
@@ -264,7 +281,7 @@ export default function LessonEditorPage({
               disabled={isSyncing}
               className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-sand-400 text-xs font-semibold rounded-lg border border-sand-800/50 bg-sand-900/20 hover:bg-sand-800/30 disabled:opacity-40 font-arabic transition-colors"
             >
-              {approveSuccess ? '✓ تم الحفظ' : '↑ حفظ + اعتماد'}
+              {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الحفظ</> : <><Upload size={13} strokeWidth={1.9} /> حفظ + اعتماد</>}
             </button>
           )}
 
@@ -273,7 +290,7 @@ export default function LessonEditorPage({
             className="flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
             title="سجل الإصدارات"
           >
-            <span className="text-xs leading-none">🕒</span>
+            <Clock3 size={13} strokeWidth={1.9} />
             <span className="hidden sm:inline">السجل</span>
           </button>
 
@@ -281,7 +298,7 @@ export default function LessonEditorPage({
             onClick={() => setShowNotes(true)}
             className="relative flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
           >
-            <span className="text-xs leading-none">📝</span>
+            <NotebookPen size={13} strokeWidth={1.9} />
             <span className="hidden sm:inline">ملاحظات</span>
             {notesCount > 0 && (
               <span className="absolute -top-1.5 -left-1 w-4 h-4 bg-sand-700 text-ink-950 text-xs font-bold rounded-full flex items-center justify-center font-mono leading-none">
@@ -294,7 +311,7 @@ export default function LessonEditorPage({
             onClick={() => setShowPreview(true)}
             className="flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
           >
-            <span className="text-xs leading-none">👁</span>
+            <Eye size={13} strokeWidth={1.9} />
             <span className="hidden sm:inline">معاينة</span>
           </button>
 
@@ -305,7 +322,7 @@ export default function LessonEditorPage({
           >
             {isSyncing
               ? <><span className="w-3 h-3 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" />حفظ…</>
-              : saveSuccess ? '✓ تم' : '↑ حفظ'}
+              : saveSuccess ? <><Check size={13} strokeWidth={2} /> تم</> : <><Upload size={13} strokeWidth={1.9} /> حفظ</>}
           </button>
         </div>
 
@@ -317,7 +334,7 @@ export default function LessonEditorPage({
         {/* Sync error */}
         {syncError && (
           <div className="flex items-center gap-2 px-5 py-1.5 bg-red-950/50 border-t border-red-900/30 text-red-400 text-sm font-arabic">
-            <span>⚠</span>
+            <TriangleAlert size={14} strokeWidth={1.9} />
             <span className="flex-1 truncate">فشل الحفظ — {typeof syncError === 'string' ? syncError : 'تحقق من الاتصال'}</span>
           </div>
         )}
@@ -340,7 +357,7 @@ export default function LessonEditorPage({
                     : isDone  ? 'border-emerald-700 bg-emerald-900/20 text-emerald-500'
                     :           'border-ink-700 text-ink-400'}`}
                 >
-                  {isDone && !isActive ? '✓' : tab.ar}
+                  {isDone && !isActive ? <Check size={11} strokeWidth={2.1} /> : tab.ar}
                 </span>
                 <span>{tab.label}</span>
               </button>
@@ -357,7 +374,7 @@ export default function LessonEditorPage({
       {lesson.atlasStatus === 'approved' && currentUser?.role !== 'admin' && (
         <div className="max-w-4xl mx-auto w-full px-5 pt-4">
           <div className="px-4 py-3 bg-amber-900/10 border border-amber-800/30 rounded-xl flex items-start gap-3">
-            <span className="text-amber-500 text-sm mt-0.5 shrink-0">⚠</span>
+            <TriangleAlert size={15} strokeWidth={1.9} className="text-amber-500 mt-0.5 shrink-0" />
             <p className="text-sm text-amber-400/90 font-arabic leading-relaxed">
               هذا الدرس <strong>معتمد</strong>. أي تعديل سيُعيده إلى حالة المسودة.
             </p>
@@ -462,14 +479,14 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
       </div>
 
       <Card>
-        <CardHeader icon="◈" title="المعلومات الأساسية" hint="تظهر للطالب قبل دخول الدرس" />
+        <CardHeader icon={<NotebookPen size={13} strokeWidth={1.9} />} title="المعلومات الأساسية" hint="تظهر للطالب قبل دخول الدرس" />
         <div className="p-5 space-y-4">
           <Field label="عنوان الدرس" required>
             <input type="text" value={lesson.title}
               onChange={(e) => updateLesson(lesson.id, { title: e.target.value })}
               className={FIELD} placeholder="أدخل عنوان الدرس…" />
             {lesson.title && SCAFFOLD_TITLE_RE.test(lesson.title.trim()) && (
-              <p className="text-sm text-amber-600 font-arabic mt-1.5">⚠ هذا عنوان تلقائي — أدخل عنواناً حقيقياً</p>
+              <p className="text-sm text-amber-600 font-arabic mt-1.5 inline-flex items-center gap-1"><TriangleAlert size={14} strokeWidth={1.9} /> هذا عنوان تلقائي — أدخل عنواناً حقيقياً</p>
             )}
           </Field>
           <Field label="ملخص الدرس">
@@ -499,7 +516,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
       </Card>
 
       <Card>
-        <CardHeader icon="✦" title="التحفيز والتوجيه" hint="اختياري — يُشاهده الطالب قبل بدء الدرس" />
+        <CardHeader icon={<Sparkles size={13} strokeWidth={1.9} />} title="التحفيز والتوجيه" hint="اختياري — يُشاهده الطالب قبل بدء الدرس" />
         <div className="p-5 space-y-4">
           <Field label="السؤال التحفيزي" hint="يستثير فضول الطالب قبل البدء">
             <textarea value={lesson.metadata?.hook || ''}
@@ -519,7 +536,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
       </Card>
 
       <Card>
-        <CardHeader icon="⊞" title="تجميع الدروس" hint="اختياري — يُنظِّم الدروس في مجموعات داخل الوحدة" />
+        <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="تجميع الدروس" hint="اختياري — يُنظِّم الدروس في مجموعات داخل الوحدة" />
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Field label="معرّف المجموعة" hint="ثابت — مثال: ARABIC_U1_G1">
@@ -570,19 +587,19 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
 
           {/* Warning when groupId is set but groupTitle is missing (or vice versa) */}
           {(lesson.groupId && !lesson.groupTitle) && (
-            <p className="text-xs text-amber-600 font-arabic">⚠ معرّف المجموعة موجود دون اسم — أضف الاسم حتى يظهر في التطبيق</p>
+            <p className="text-xs text-amber-600 font-arabic inline-flex items-center gap-1"><TriangleAlert size={12} strokeWidth={1.9} /> معرّف المجموعة موجود دون اسم — أضف الاسم حتى يظهر في التطبيق</p>
           )}
           {(!lesson.groupId && lesson.groupTitle) && (
-            <p className="text-xs text-amber-600 font-arabic">⚠ اسم المجموعة موجود دون معرّف — أضف المعرّف لربط الدروس معاً</p>
+            <p className="text-xs text-amber-600 font-arabic inline-flex items-center gap-1"><TriangleAlert size={12} strokeWidth={1.9} /> اسم المجموعة موجود دون معرّف — أضف المعرّف لربط الدروس معاً</p>
           )}
           {lesson.groupId && lesson.groupTitle && (
-            <p className="text-xs text-emerald-700 font-arabic">✓ مجموعة محددة — ستظهر الدروس ذات المعرّف نفسه تحت عنوان واحد</p>
+            <p className="text-xs text-emerald-700 font-arabic inline-flex items-center gap-1"><Check size={12} strokeWidth={2} /> مجموعة محددة — ستظهر الدروس ذات المعرّف نفسه تحت عنوان واحد</p>
           )}
         </div>
       </Card>
 
       <Card>
-        <CardHeader icon="◎" title="اكتمال الدرس" />
+        <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="اكتمال الدرس" />
         <div className="p-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 h-1 bg-ink-800 rounded-full overflow-hidden">
@@ -594,7 +611,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
             {checklist.map((item) => (
               <div key={item.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-arabic
                 ${item.done ? 'bg-emerald-900/15 border-emerald-800/30 text-emerald-500' : 'bg-ink-800/15 border-ink-800/60 text-ink-400'}`}>
-                <span className={item.done ? 'text-emerald-500' : 'text-ink-500'}>{item.done ? '✓' : '○'}</span>
+                <span className={item.done ? 'text-emerald-500' : 'text-ink-500'}>{item.done ? <Check size={13} strokeWidth={2} /> : <Circle size={13} strokeWidth={1.8} />}</span>
                 <span>{item.label}</span>
               </div>
             ))}
@@ -657,7 +674,7 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSectio
           className="py-20 text-center border-2 border-dashed border-ink-800/60 rounded-2xl cursor-pointer group hover:border-sand-800/40 hover:bg-sand-900/5 transition-all"
           onClick={onAddNewPart}
         >
-          <p className="text-3xl mb-3 opacity-40">📄</p>
+          <FileText size={34} strokeWidth={1.5} className="mx-auto mb-3 opacity-40 text-ink-500" />
           <p className="text-sm text-ink-500 font-arabic mb-1">لا يوجد محتوى بعد</p>
           <p className="text-sm text-ink-500 font-arabic group-hover:text-sand-700 transition-colors">اضغط لإضافة أول قسم</p>
         </div>
@@ -736,7 +753,7 @@ function StepQuestions({ lessonId, unitId, subjectId, lessonSections, lessonQues
         </p>
       </div>
       <Card>
-        <CardHeader icon="◎" title="نظرة عامة" />
+        <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="نظرة عامة" />
         <div className="p-5">
           <div className="grid grid-cols-2 gap-3">
             <StatCard
@@ -753,7 +770,7 @@ function StepQuestions({ lessonId, unitId, subjectId, lessonSections, lessonQues
                 const sec = lessonSections.find((s) => s.id === q.sectionId);
                 return (
                   <div key={q.id} className="flex items-center gap-2 text-xs font-arabic px-3 py-1.5 bg-amber-950/15 border border-amber-900/25 rounded-lg text-ink-400">
-                    <span className="text-amber-600/70">◎</span>
+                    <CircleDot size={12} strokeWidth={1.9} className="text-amber-600/70" />
                     <span className="flex-1 truncate">{q.textAr}</span>
                     {sec && <span className="text-ink-600 truncate max-w-[100px]">{sec.title}</span>}
                   </div>
@@ -763,7 +780,7 @@ function StepQuestions({ lessonId, unitId, subjectId, lessonSections, lessonQues
           )}
           {lessonQuestions.length === 0 && (
             <div className="mt-4 py-6 text-center border border-dashed border-ink-800/50 rounded-xl">
-              <p className="text-2xl mb-2">🎯</p>
+              <Target size={30} strokeWidth={1.6} className="mx-auto mb-2 text-ink-500" />
               <p className="text-sm text-ink-400 font-arabic">لا توجد أسئلة مرتبطة بهذا الدرس</p>
               <p className="text-xs text-ink-600 font-arabic mt-1">أضف نقاط تحقق من تبويب المحتوى</p>
             </div>
@@ -785,11 +802,11 @@ function StepFeed({ lessonId, unitId, subjectId, lessonConceptIds, lessonFeedIte
         <p className="text-sm text-ink-400 font-arabic mt-0.5">بطاقات المراجعة السريعة في تطبيق بشير</p>
       </div>
       <Card>
-        <CardHeader icon="▣" title="نظرة عامة" />
+        <CardHeader icon={<Smartphone size={13} strokeWidth={1.9} />} title="نظرة عامة" />
         <div className="p-5">
           {lessonFeedItems.length === 0 ? (
             <div className="py-6 text-center border border-dashed border-ink-800/50 rounded-xl">
-              <p className="text-2xl mb-2">📱</p>
+              <Smartphone size={30} strokeWidth={1.6} className="mx-auto mb-2 text-ink-500" />
               <p className="text-sm text-ink-400 font-arabic">لا توجد بطاقات تغذية لهذا الدرس</p>
             </div>
           ) : (
@@ -838,7 +855,7 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
       {/* This lesson is itself a variation — show parent info */}
       {lesson.parentLesson && (
         <div className="px-4 py-3 rounded-xl border border-ink-700/60 bg-ink-800/30 flex items-center gap-3">
-          <span className="text-ink-400 text-lg">↑</span>
+          <Upload size={18} strokeWidth={1.9} className="text-ink-400" />
           <div className="flex-1 min-w-0">
             <p className="text-sm text-ink-400 font-arabic">هذا الدرس تنويع من:</p>
             <p className="text-sm text-ink-300 font-arabic truncate font-mono">{lesson.parentLesson}</p>
@@ -850,7 +867,10 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
                 className="text-xs font-arabic px-2 py-0.5 rounded border shrink-0"
                 style={{ background: cfg.bg, borderColor: cfg.border, color: cfg.color }}
               >
-                {cfg.icon} {cfg.label}
+                {(() => {
+                  const Icon = cfg.icon;
+                  return <><Icon size={13} strokeWidth={1.9} className="inline ml-1" /> {cfg.label}</>;
+                })()}
               </span>
             );
           })()}
@@ -864,7 +884,7 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
             cursor-pointer group hover:border-sand-800/40 hover:bg-sand-900/5 transition-all"
           onClick={onOpenLinkModal}
         >
-          <p className="text-3xl mb-3 opacity-30">🔗</p>
+          <Link2 size={34} strokeWidth={1.5} className="mx-auto mb-3 opacity-30 text-ink-500" />
           <p className="text-sm text-ink-500 font-arabic mb-1">لا توجد دروس متنوعة مرتبطة</p>
           <p className="text-sm text-ink-500 font-arabic group-hover:text-sand-700 transition-colors">
             اضغط لربط درس بديل أو متطلب أو توسع…
@@ -890,7 +910,10 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
                     style={{ color: cfg.color }}
                     title={cfg.label}
                   >
-                    {cfg.icon}
+                    {(() => {
+                      const Icon = cfg.icon;
+                      return <Icon size={16} strokeWidth={1.9} />;
+                    })()}
                   </span>
                 )}
 
@@ -923,7 +946,7 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
                     hover:bg-red-900/20 font-arabic"
                   title="إلغاء الربط"
                 >
-                  ✕
+                  <X size={14} strokeWidth={1.9} />
                 </button>
               </div>
             );
@@ -933,13 +956,15 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
 
       {/* Type legend */}
       <div className="grid grid-cols-2 gap-2 pt-2">
-        {Object.entries(VARIATION_CONFIG).map(([type, cfg]) => (
+        {Object.entries(VARIATION_CONFIG).map(([type, cfg]) => {
+          const Icon = cfg.icon;
+          return (
           <div
             key={type}
             className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm"
             style={{ borderColor: cfg.border, background: cfg.bg }}
           >
-            <span style={{ color: cfg.color }}>{cfg.icon}</span>
+            <Icon size={15} strokeWidth={1.9} style={{ color: cfg.color }} />
             <div>
               <span className="font-arabic font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
               <span className="text-ink-400 font-arabic block text-sm">
@@ -950,7 +975,8 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
               </span>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       <StepFooter onPrev={onPrev} prevLabel="→ التغذية" />
@@ -1058,7 +1084,7 @@ function OrientationInput({ value = [], onChange }) {
         <div key={i} className="flex items-start gap-2 group">
           <span className="text-sand-700 text-sm mt-2.5 shrink-0">•</span>
           <span className="flex-1 text-sm text-ink-200 font-arabic py-1.5 leading-relaxed">{item}</span>
-          <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-ink-500 hover:text-red-500 text-xs mt-2">✕</button>
+          <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-ink-500 hover:text-red-500 text-xs mt-2"><X size={13} strokeWidth={1.9} /></button>
         </div>
       ))}
       <div className="flex gap-2">

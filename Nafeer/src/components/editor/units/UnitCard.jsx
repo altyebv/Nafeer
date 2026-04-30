@@ -1,4 +1,5 @@
 'use client';
+import { X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useDataStore }    from '@/store/dataStore';
 import { computeProgress } from '@/lib/LessonStatus';
@@ -275,7 +276,7 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
                 className="px-3 py-2 rounded-lg text-sm transition-colors"
                 style={{ color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}
               >
-                ✕
+                <X size={14} strokeWidth={1.9} />
               </button>
             </div>
           ) : (

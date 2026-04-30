@@ -1,7 +1,8 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useDataStore }                                     from '@/store/dataStore';
-import { getLessonStatus, computeProgress, STATUS_CONFIG }  from '@/lib/lessonStatus';
+import { getLessonStatus, computeProgress, STATUS_CONFIG }  from '@/lib/LessonStatus';
+import { Check } from 'lucide-react';
 
 export default function UnitView({ unitId, onBack, onOpenLesson }) {
   const { units, lessons, sections, blocks, updateLesson } = useDataStore();
@@ -164,7 +165,7 @@ function LessonCard({ lesson, index, sections, blocks, onOpen, onRename }) {
         <span>·</span>
         <span>{lesson.estimatedMinutes ?? 15}د</span>
         <span>·</span>
-        <span>{completedChecks}/4 ✓</span>
+        <span className="inline-flex items-center gap-1">{completedChecks}/4 <Check size={12} strokeWidth={2} /></span>
       </div>
 
       {/* Open button */}
