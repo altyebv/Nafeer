@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Blocks, BookOpen, CircleHelp, Landmark, Radio, Sparkles } from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -87,11 +88,11 @@ function EduBadge({ background, fieldOfStudy }) {
 }
 
 // ── Stat pill ─────────────────────────────────────────────────────────────────
-function StatPill({ icon, value, label }) {
+function StatPill({ icon: Icon, value, label }) {
   if (!value) return null;
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-base leading-none">{icon}</span>
+      {Icon && <Icon size={15} strokeWidth={1.9} style={{ color: 'var(--accent)' }} />}
       <span className="font-mono text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
         {value}
       </span>
@@ -134,10 +135,11 @@ function FeaturedCard({ contributor }) {
         </span>
         <div className="flex items-center gap-2 flex-wrap">
           <span
-            className="text-xs font-mono px-2.5 py-1 rounded-full"
+            className="inline-flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full"
             style={{ background: 'rgba(212,137,30,0.1)', border: '1px solid rgba(212,137,30,0.38)', color: 'var(--accent)' }}
           >
-            ✦ المساهم الأول
+            <Sparkles size={12} strokeWidth={1.8} />
+            المساهم الأول
           </span>
           <SubjectBadge subject={contributor.subject} />
         </div>
@@ -190,10 +192,10 @@ function FeaturedCard({ contributor }) {
         className="relative flex flex-wrap gap-6 pt-5"
         style={{ borderTop: '1px solid var(--border-subtle)' }}
       >
-        <StatPill icon="📖" value={s.lessonsCreated}   label="درس"    />
-        <StatPill icon="❓" value={s.questionsAdded}   label="سؤال"   />
-        <StatPill icon="📡" value={s.feedItemsCreated} label="تغذية"  />
-        <StatPill icon="🧱" value={s.blocksAdded}      label="وحدة"   />
+        <StatPill icon={BookOpen} value={s.lessonsCreated}   label="درس"    />
+        <StatPill icon={CircleHelp} value={s.questionsAdded}   label="سؤال"   />
+        <StatPill icon={Radio} value={s.feedItemsCreated} label="تغذية"  />
+        <StatPill icon={Blocks} value={s.blocksAdded}      label="وحدة"   />
       </div>
     </div>
   );
@@ -272,9 +274,9 @@ function ContributorCard({ contributor, rank }) {
         className="flex gap-4 pt-3 mt-auto flex-wrap"
         style={{ borderTop: '1px solid var(--border-subtle)' }}
       >
-        <StatPill icon="📖" value={s.lessonsCreated}   label="درس"   />
-        <StatPill icon="❓" value={s.questionsAdded}   label="سؤال"  />
-        <StatPill icon="📡" value={s.feedItemsCreated} label="تغذية" />
+        <StatPill icon={BookOpen} value={s.lessonsCreated}   label="درس"   />
+        <StatPill icon={CircleHelp} value={s.questionsAdded}   label="سؤال"  />
+        <StatPill icon={Radio} value={s.feedItemsCreated} label="تغذية" />
       </div>
     </div>
   );
@@ -287,7 +289,9 @@ function EmptyHall() {
       className="hall-grid text-center py-20 px-6 rounded-3xl"
       style={{ background: 'var(--bg-card)', border: '1px dashed var(--border-mid)' }}
     >
-      <div className="flex justify-center gap-3 mb-6 text-3xl opacity-20"><span>🏛️</span></div>
+      <div className="flex justify-center gap-3 mb-6 opacity-25">
+        <Landmark size={34} strokeWidth={1.4} style={{ color: 'var(--accent)' }} />
+      </div>
       <h3 className="text-xl font-arabic font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
         القاعة في انتظار أعمدتها
       </h3>

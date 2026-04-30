@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { Check, Hand } from 'lucide-react';
 
 const STORAGE_KEY = 'nafeer-supported';
 
@@ -88,12 +89,12 @@ export default function SupportButton() {
             e.currentTarget.style.transform = 'translateY(0)';
           }}
         >
-          <span
-            className="text-base transition-transform duration-300"
-            style={{ display: 'inline-block', transform: animating ? 'scale(1.4)' : 'scale(1)' }}
-          >
-            🙋
-          </span>
+          <Hand
+            size={17}
+            strokeWidth={2}
+            className="transition-transform duration-300"
+            style={{ transform: animating ? 'scale(1.25)' : 'scale(1)' }}
+          />
           <span>أنا أيضاً أريده</span>
         </button>
       ) : (
@@ -105,7 +106,7 @@ export default function SupportButton() {
             color: '#4ade80',
           }}
         >
-          <span>✓</span>
+          <Check size={16} strokeWidth={2.2} />
           <span>صوتك محفوظ — شكراً لك</span>
         </div>
       )}

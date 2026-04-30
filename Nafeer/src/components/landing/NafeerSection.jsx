@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { ArrowLeft, Globe2, GraduationCap, Infinity, LaptopMinimal, Medal, Wrench } from 'lucide-react';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 
 const steps = [
@@ -131,9 +132,9 @@ export default function NafeerSection() {
               </p>
               <div className="space-y-2">
                 {[
-                  { icon: '🎓', who: 'معلمين', desc: 'يريدون نقل مادتهم بطريقة تفاعلية' },
-                  { icon: '🧑‍💻', who: 'طلاب جامعة', desc: 'يريدون تسهيل ما صعب عليهم' },
-                  { icon: '🌍', who: 'متحمسين', desc: 'يرون التعليم قضية تستحق وقتهم' },
+                  { icon: GraduationCap, who: 'معلمين', desc: 'يريدون نقل مادتهم بطريقة تفاعلية' },
+                  { icon: LaptopMinimal, who: 'طلاب جامعة', desc: 'يريدون تسهيل ما صعب عليهم' },
+                  { icon: Globe2, who: 'متحمسين', desc: 'يرون التعليم قضية تستحق وقتهم' },
                 ].map((item, i) => (
                   <div
                     key={i}
@@ -148,7 +149,7 @@ export default function NafeerSection() {
                       e.currentTarget.style.background = 'transparent';
                     }}
                   >
-                    <span className="text-lg shrink-0">{item.icon}</span>
+                    <item.icon size={19} strokeWidth={1.8} className="shrink-0" style={{ color: 'var(--accent)' }} />
                     <div>
                       <span className="font-bold text-xs block" style={{ color: 'var(--text-primary)' }}>{item.who}</span>
                       <span className="text-xs leading-snug" style={{ color: 'var(--text-muted)' }}>{item.desc}</span>
@@ -177,9 +178,9 @@ export default function NafeerSection() {
                 <span style={{ color: 'var(--accent)' }}> وتُستخدم آلاف المرات</span>
               </p>
               <div className="flex gap-8 shrink-0">
-                {[{ value: '١٢', label: 'مادة مفتوحة' }, { value: '∞', label: 'طالب يستفيد' }].map((s, i) => (
+                {[{ value: '١٢', label: 'مادة مفتوحة' }, { value: <Infinity size={28} strokeWidth={1.9} />, label: 'طالب يستفيد' }].map((s, i) => (
                   <div key={i} className="text-center">
-                    <div className="text-3xl font-bold stat-number" style={{ color: 'var(--accent)' }}>{s.value}</div>
+                    <div className="flex h-9 items-center justify-center text-3xl font-bold stat-number" style={{ color: 'var(--accent)' }}>{s.value}</div>
                     <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{s.label}</div>
                   </div>
                 ))}
@@ -246,17 +247,17 @@ export default function NafeerSection() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-px" style={{ background: 'var(--border-subtle)', borderRadius: 16, overflow: 'hidden' }}>
             {[
               {
-                icon: '🏅',
+                icon: Medal,
                 title: 'اسمك في لحظة التعلم',
                 desc: 'كل طالب يفتح درساً أنشأته يرى اسمك — ليس في الإهداء ، بل في لحظة التعلم نفسها.',
               },
               {
-                icon: '🎓',
+                icon: GraduationCap,
                 title: 'أثر يتضاعف',
                 desc: 'طالب يفهم اليوم بسببك قد يُعلّم غيره غداً. بعض الأفعال لا حدود لامتدادها.',
               },
               {
-                icon: '🛠️',
+                icon: Wrench,
                 title: 'أدوات مبنية لغرض واحد',
                 desc: 'نفير بُني خصيصاً لمحتوى الشهادة السودانية. كل أداة فيه لها غرض واحد فقط.',
               },
@@ -268,7 +269,7 @@ export default function NafeerSection() {
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; }}
               >
-                <span className="text-2xl block mb-4">{item.icon}</span>
+                <item.icon size={28} strokeWidth={1.7} className="mb-4 block" style={{ color: 'var(--accent)' }} />
                 <h4 className="font-bold mb-2 text-sm sm:text-base" style={{ color: 'var(--text-primary)' }}>{item.title}</h4>
                 <p className="text-xs sm:text-sm leading-loose font-arabic" style={{ color: 'var(--text-muted)' }}>{item.desc}</p>
               </div>
@@ -311,7 +312,7 @@ export default function NafeerSection() {
               }}
             >
               <span>انضم للنفير الآن</span>
-              <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span>
+              <ArrowLeft size={18} strokeWidth={2} style={{ transform: 'scaleX(-1)' }} />
             </a>
           </div>
         </div>

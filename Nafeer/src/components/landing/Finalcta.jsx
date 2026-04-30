@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Link from 'next/link';
+import { ArrowLeft, Construction, Smartphone } from 'lucide-react';
 import SupportButton from '@/components/landing/SupportButton';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -99,7 +100,9 @@ export default function FinalCTA() {
               </span>
             </div>
 
-            <div className="relative z-10 text-5xl sm:text-6xl mb-6" style={{ lineHeight: 1 }}>📱</div>
+            <div className="relative z-10 mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-blue-300">
+              <Smartphone size={30} strokeWidth={1.7} />
+            </div>
 
             <div className="relative z-10 flex-1">
               <h2
@@ -140,7 +143,7 @@ export default function FinalCTA() {
               }}
             >
               <span>جرّب بشير الآن</span>
-              <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span>
+              <ArrowLeft size={18} strokeWidth={2} style={{ transform: 'scaleX(-1)' }} />
             </Link>
           </div>
 
@@ -180,7 +183,9 @@ export default function FinalCTA() {
               </span>
             </div>
 
-            <div className="relative z-10 text-5xl sm:text-6xl mb-6" style={{ lineHeight: 1 }}>🏗️</div>
+            <div className="relative z-10 mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-sand-500/25 bg-sand-900/30 text-sand-300">
+              <Construction size={31} strokeWidth={1.7} />
+            </div>
 
             <div className="relative z-10 flex-1">
               <h2
@@ -223,7 +228,7 @@ export default function FinalCTA() {
               }}
             >
               <span>انضم للنفير</span>
-              <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span>
+              <ArrowLeft size={18} strokeWidth={2} style={{ transform: 'scaleX(-1)' }} />
             </Link>
           </div>
         </div>

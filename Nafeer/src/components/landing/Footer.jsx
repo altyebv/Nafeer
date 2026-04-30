@@ -1,3 +1,5 @@
+import { MapPin } from 'lucide-react';
+
 export default function Footer() {
   return (
     <footer
@@ -46,9 +48,7 @@ export default function Footer() {
 
           {/* Made in Sudan */}
           <div className="flex items-center gap-2 text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
-            <span
-                className="text-xl font-bold"
-                style={{ color: 'var(--accent)' }}>🇸🇩</span>
+            <MapPin size={17} strokeWidth={1.9} style={{ color: 'var(--accent)' }} />
             <span>made in sudan</span>
           </div>
 
