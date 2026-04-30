@@ -11,6 +11,9 @@ export default function QuestionCard({ question, subjectId, onEdit, onDelete, on
   const cfg = QUESTION_TYPE_CONFIG[question.type];
   const cogCfg = COGNITIVE_LEVEL_CONFIG[question.cognitiveLevel];
   const srcCfg = QUESTION_SOURCE_CONFIG[question.source];
+  const answerPreview = question.correctAnswer === 'MATCH_PAIRS'
+    ? 'الأزواج المحددة'
+    : question.correctAnswer;
 
   return (
     <article className="group rounded-2xl border border-ink-800 bg-ink-900/70 p-3 transition-colors hover:border-ink-700 hover:bg-ink-900 sm:p-4">
@@ -59,9 +62,9 @@ export default function QuestionCard({ question, subjectId, onEdit, onDelete, on
             <p className="line-clamp-2 text-base leading-7 text-ink-100 transition-colors group-hover:text-sand-100 font-arabic">
               {question.textAr}
             </p>
-            {question.correctAnswer && (
+            {answerPreview && (
               <p className="mt-1 line-clamp-1 text-xs text-ink-600 font-arabic">
-                الإجابة: {question.correctAnswer}
+                الإجابة: {answerPreview}
               </p>
             )}
           </button>

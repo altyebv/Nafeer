@@ -74,6 +74,7 @@ const normaliseQuestion = (draft) => {
   }
   if (normalised.type === 'MATCH' && Array.isArray(normalised.options)) {
     normalised.options = normalised.options.filter((pair) => pair.right?.trim() && pair.left?.trim());
+    normalised.correctAnswer = 'MATCH_PAIRS';
   }
   if (normalised.type === 'ORDER' && Array.isArray(normalised.options)) {
     normalised.options = normalised.options.map((item) => item.trim()).filter(Boolean);
