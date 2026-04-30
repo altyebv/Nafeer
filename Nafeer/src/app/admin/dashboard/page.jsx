@@ -16,6 +16,7 @@ import { SeedSection }            from './components/SeedSection';
 import { PublishSection }         from './components/PublishSection';
 import { AdminEditorSection }     from './components/AdminEditorSection';
 import { CurriculumSection }      from './components/CurriculumSection';
+import { EmailSection } from './components/EmailSection';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -103,6 +104,7 @@ export default function AdminDashboard() {
         {section === 'admins'       && <AdminsSection />}
         {section === 'settings'     && <SiteSettingsSection />}
         {section === 'seed'         && <SeedSection />}
+        {section === 'email'        && <EmailSection />}
       </main>
 
       {showCreate && (

@@ -38,6 +38,7 @@ export const NAV = [
   { id: 'media',        icon: '⬜', label: 'الوسائط',           badgeKey: null          },
   { id: 'admins',       icon: '⬡', label: 'المشرفون',          badgeKey: null          },
   { id: 'settings',     icon: '⚙', label: 'الإعدادات',         badgeKey: null          },
+  { id: 'email',        icon: '✉', label: 'البريد الإلكتروني',   badgeKey: null          },
   //
   // NOTE: 'publish' and 'seed' are intentionally removed from the sidebar.
   // Publishing (delta + full) is handled inside AdminEditorSection (editor).
