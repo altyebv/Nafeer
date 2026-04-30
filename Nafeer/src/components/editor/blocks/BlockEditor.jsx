@@ -153,7 +153,7 @@ function BlockPreview({ block }) {
 }
 
 // ─── BlockEditor ─────────────────────────────────────────────────────────────
-export default function BlockEditor({ block, subjectId, dragHandleProps }) {
+export default function BlockEditor({ block, subjectId, dragHandleProps, lessonId, unitId, sectionId }) {
   const { concepts, updateBlock, deleteBlock } = useDataStore();
   const { deleteBlock: atlasDeleteBlock } = useAtlasSync();
 
@@ -186,7 +186,7 @@ export default function BlockEditor({ block, subjectId, dragHandleProps }) {
           <DragHandle dragHandleProps={dragHandleProps} />
           <DeleteButton onDelete={handleDelete} compact />
         </div>
-        <CheckpointBlockEditor block={block} update={update} subjectId={subjectId} />
+        <CheckpointBlockEditor block={block} update={update} subjectId={subjectId} lessonId={lessonId} unitId={unitId} sectionId={sectionId} />
       </div>
     );
   }
@@ -545,8 +545,9 @@ function MediaBlockEditor({ block, update, subjectId }) {
 // ─── CheckpointBlockEditor ────────────────────────────────────────────────────
 const CHECKPOINT_TYPES = ['MCQ', 'TRUE_FALSE'];
 
-function CheckpointBlockEditor({ block, update, subjectId }) {
+function CheckpointBlockEditor({ block, update, subjectId , lessonId, unitId, sectionId}) {
   const { questions, addQuestion, updateQuestion, deleteQuestion } = useDataStore();
+  const { syncQuestion } = useAtlasSync()
   const linked = questions.find((q) => q.id === block.content && q.isCheckpoint);
 
   const [editing, setEditing] = useState(!block.content);
@@ -599,9 +600,9 @@ function CheckpointBlockEditor({ block, update, subjectId }) {
         correctAnswer: finalAnswer,
         options: finalOptions,
         explanation: explanation || null,
-        lessonId: block._lessonId || null,
-        unitId: block._unitId || null,
-        sectionId: block.sectionId || null,
+        lessonId:  lessonId || null,
+        unitId: unitId || null,
+        sectionId: sectionId || null,
         isCheckpoint: true,
         difficulty: 1,
         points: 1,

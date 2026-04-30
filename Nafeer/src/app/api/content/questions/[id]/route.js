@@ -43,19 +43,11 @@ export async function PATCH(request, { params }) {
     const user = await requireContributor();
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
-
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
 
-     const question = await createQuestion(
-      { 
-        ...body, contentId: body.contentId || generateId('q'),
-        status: user.role === 'admin' ? 'approved' : undefined,
-      },
-      actorId
-    );
+    const question = await updateQuestionStatus((await params).id, status, actorId, note || '');
     if (!question) return err('السؤال غير موجود', 404);
-
     return ok(question);
   } catch (e) {
     if (e instanceof Response) return e;

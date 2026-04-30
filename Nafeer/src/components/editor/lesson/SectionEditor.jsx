@@ -74,13 +74,16 @@ function SortableBlockItem({ block, subjectId, isDraggingOver }) {
         block={block}
         subjectId={subjectId}
         dragHandleProps={{ ...attributes, ...listeners }}
+        lessonId={lessonId}
+        unitId={unitId}
+        sectionId={sectionId}
       />
     </div>
   );
 }
 
 // ─── SectionEditor ────────────────────────────────────────────────────────────
-export default function SectionEditor({ section, maxPart = 0, subjectId }) {
+export default function SectionEditor({ section, maxPart = 0, subjectId, lessonId, unitId }) {
   const { blocks, concepts, updateSection, deleteSection, addBlock, reorderBlocks } = useDataStore();
   const { deleteSection: atlasDeleteSection } = useAtlasSync();
 
