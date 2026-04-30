@@ -52,6 +52,20 @@ export async function verifyAdminToken() {
   }
 }
 
+// ─── Admin session helper — returns a normalized admin object or null ──────────
+
+export async function getAdminSession() {
+  const admin = await verifyAdminToken();
+  if (!admin) return null;
+  return {
+    id: admin.id,
+    username: admin.username,
+    name: admin.displayName || admin.username || admin.email,
+    email: admin.email,
+    role: admin.role,
+  };
+}
+
 // ─── Guard helper — returns 401 response if not admin, null if OK ─────────────
 // Usage: const authErr = await verifyAdminAuth(request); if (authErr) return authErr;
 
