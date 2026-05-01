@@ -4,7 +4,7 @@ import { getAdminAsUser } from '@/lib/adminAuth';
 // Use at the top of any content API route handler.
 // Returns the contributor/admin JWT payload, or throws a Response if unauthorized.
 export async function requireContributor() {
-  const user = await getCurrentUser() || await getAdminAsUser();
+  const user = await getAdminAsUser() || await getCurrentUser();
   if (!user) {
     throw Response.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
   }

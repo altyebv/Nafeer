@@ -153,7 +153,7 @@ export function DesktopSidebar({
   const textMid    = isDark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.62)';
   const textActive = isDark ? '#e8d5a8'                : '#7c3c10';
   const accent     = '#d4891e';
-  const profileHref = contributor?.username ? `/contributors/${encodeURIComponent(contributor.username)}` : null;
+  const profileHref = contributor?.username ? `/contributor/${encodeURIComponent(contributor.username)}` : null;
 
   const counts = {
     dashboard: annoCount,
