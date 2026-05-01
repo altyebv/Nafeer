@@ -3,18 +3,42 @@ import { connectDB }    from '@/lib/db';
 import { Contributor }  from '@/lib/models/Contributor';
 
 // ─── GET /api/contributors/public ─────────────────────────────────────────────
-// Public — returns approved contributors with safe fields only.
-// Sorted by total contribution score (lessons * 3 + questions + feedItems * 2).
+// Public — when called with ?username=xxx returns a single contributor profile.
+// Without a username param, returns all approved contributors sorted by score.
 
-export async function GET() {
+export async function GET(request) {
   try {
     await connectDB();
 
+    const { searchParams } = new URL(request.url);
+    const username = searchParams.get('username');
+
+    // ── Single contributor lookup (used by the profile page) ──────────────────
+    if (username) {
+      const contributor = await Contributor.findOne(
+        { username, status: 'approved', onboarded: true },
+        {
+          name: 1, username: 1, avatarUrl: 1, bio: 1,
+          subject: 1, role: 1, stats: 1, createdAt: 1,
+        }
+      ).lean();
+
+      if (!contributor) {
+        return NextResponse.json({ ok: false, contributor: null }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        ok: true,
+        contributor: { ...contributor, _id: contributor._id.toString() },
+      });
+    }
+
+    // ── Full list (leaderboard / directory) ───────────────────────────────────
     const contributors = await Contributor.find(
       { status: 'approved', onboarded: true },
       {
         name: 1, username: 1, avatarUrl: 1, bio: 1,
-        subject: 1, stats: 1, createdAt: 1,
+        subject: 1, role: 1, stats: 1, createdAt: 1,
       }
     ).lean();
 
@@ -31,11 +55,10 @@ export async function GET() {
 
     scored.sort((a, b) => b._score - a._score);
 
-    // Remove internal score field
     const result = scored.map(({ _score, ...c }) => c);
 
     return NextResponse.json({ ok: true, contributors: result });
   } catch {
-    return NextResponse.json({ ok: true, contributors: [] });
+    return NextResponse.json({ ok: false, contributors: [] }, { status: 500 });
   }
 }
