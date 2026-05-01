@@ -97,6 +97,23 @@ export async function buildAndUploadDelta({
   const { changedByType, deletedByType, newEntityIndex } =
     computeDelta(currentEntities, prevIndex, prevPublishedAt);
 
+  // ── 3b. Ancestor cascade ──────────────────────────────────────────────────
+  //
+  // When a child entity (LESSON, SECTION, BLOCK) is new or changed, its parent
+  // may not appear in changedByType (the parent row itself didn't change).
+  // But Android's FK constraints require the parent row to exist in Room before
+  // the child can be inserted. If this is a fresh install or a new subject, the
+  // parent will be missing and the bundle fails with SQLITE_CONSTRAINT_FOREIGNKEY.
+  //
+  // Fix: for each changed child, ensure its direct parent is included in
+  // changedByType. We only add parents that are genuinely absent from the
+  // previous entityIndex (i.e. unknown to the device) — if the parent was
+  // already synced, it's already in Room and we don't need to re-send it.
+  //
+  // Cascade is one level at a time (BLOCK→SECTION→LESSON→UNIT) so we process
+  // them in reverse apply-order: deepest children first.
+  cascadeAncestors({ changedByType, prevIndex, snapshot });
+
   // ── 4. Build DeltaPatch payloads and upload bundles ───────────────────────
   const patches = [];
 
@@ -208,6 +225,72 @@ function computeDelta(currentEntities, prevIndex, prevPublishedAt) {
   }
 
   return { changedByType, deletedByType, newEntityIndex };
+}
+
+// ── Ancestor cascade ───────────────────────────────────────────────────────────
+
+/**
+ * Ensure that every changed child entity has its ancestor chain included in
+ * changedByType when the ancestor is unknown to the device (absent from
+ * prevIndex). This prevents SQLITE_CONSTRAINT_FOREIGNKEY failures on fresh
+ * installs or first-time subject syncs.
+ *
+ * Cascade rules (child → parent FK field on the *Export shape):
+ *   BLOCK   → SECTION  (block.sectionId)
+ *   SECTION → LESSON   (section.lessonId)
+ *   LESSON  → UNIT     (lesson.unitId)
+ *
+ * We only pull in a parent when it is genuinely absent from prevIndex — if the
+ * device already has it stamped, resending it is wasteful (though harmless).
+ *
+ * Mutates changedByType in-place.
+ */
+function cascadeAncestors({ changedByType, prevIndex, snapshot }) {
+  // Build lookup maps from the export-shaped arrays (id → export object).
+  const unitById    = toMap(snapshot.unitsExport,    'id');
+  const lessonById  = toMap(snapshot.lessonsExport,  'id');
+  const sectionById = toMap(snapshot.sectionsExport, 'id');
+
+  const prevUnits    = prevIndex?.[ENTITY_TYPES.UNIT]    || {};
+  const prevLessons  = prevIndex?.[ENTITY_TYPES.LESSON]  || {};
+  const prevSections = prevIndex?.[ENTITY_TYPES.SECTION] || {};
+
+  // Helper: add an id to changedByType[type] if not already present.
+  function ensureChanged(type, id) {
+    if (!id) return;
+    if (!changedByType[type]) changedByType[type] = [];
+    if (!changedByType[type].includes(id)) changedByType[type].push(id);
+  }
+
+  // BLOCK → SECTION: for every changed block, ensure its parent section is
+  // included if the device has never seen it.
+  for (const blockId of (changedByType[ENTITY_TYPES.BLOCK] || [])) {
+    const block = snapshot.blocksExport?.find((b) => b.id === blockId);
+    const sectionId = block?.sectionId;
+    if (sectionId && !(sectionId in prevSections)) {
+      ensureChanged(ENTITY_TYPES.SECTION, sectionId);
+    }
+  }
+
+  // SECTION → LESSON: for every changed section (including just-cascaded ones),
+  // ensure its parent lesson is included if the device has never seen it.
+  for (const sectionId of (changedByType[ENTITY_TYPES.SECTION] || [])) {
+    const section = sectionById[sectionId] || snapshot.sectionsExport?.find((s) => s.id === sectionId);
+    const lessonId = section?.lessonId;
+    if (lessonId && !(lessonId in prevLessons)) {
+      ensureChanged(ENTITY_TYPES.LESSON, lessonId);
+    }
+  }
+
+  // LESSON → UNIT: for every changed lesson (including just-cascaded ones),
+  // ensure its parent unit is included if the device has never seen it.
+  for (const lessonId of (changedByType[ENTITY_TYPES.LESSON] || [])) {
+    const lesson = lessonById[lessonId] || snapshot.lessonsExport?.find((l) => l.id === lessonId);
+    const unitId = lesson?.unitId;
+    if (unitId && !(unitId in prevUnits)) {
+      ensureChanged(ENTITY_TYPES.UNIT, unitId);
+    }
+  }
 }
 
 /**
