@@ -5,12 +5,10 @@ import { bootstrapSubject, getUnitsWithLessons, getSubject } from '@/lib/api/sub
 // Returns subject document + units + lessons (for editor mount)
 export async function GET(request) {
   try {
-    const user = await requireSubjectAccess(
-      new URL(request.url).searchParams.get('subjectId')
-    );
-
     const subjectId = new URL(request.url).searchParams.get('subjectId');
     if (!subjectId) return err('subjectId مطلوب');
+
+    const user = await requireSubjectAccess(subjectId);
 
     const [subject, unitsWithLessons] = await Promise.all([
       getSubject(subjectId),

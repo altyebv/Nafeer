@@ -13,13 +13,25 @@ export async function requireContributor() {
 
 // Like requireContributor, but also checks the user is assigned
 // to the requested subjectId (or is an admin).
+//
+// Admins always pass — they are not bound to a single subject and must
+// be able to access all subjects, including test/remote subjects created
+// outside the main curriculum catalog.
 export async function requireSubjectAccess(subjectId) {
+  if (!subjectId) {
+    throw Response.json(
+      { ok: false, error: 'subjectId مطلوب' },
+      { status: 400 }
+    );
+  }
+
   const user = await requireContributor();
 
-  const isAdmin = user.role === 'admin';
-  const isAssigned = user.subject === subjectId;
+  // Admins bypass the subject assignment check entirely.
+  if (user.role === 'admin') return user;
 
-  if (!isAdmin && !isAssigned) {
+  // Contributors must be assigned to exactly this subject.
+  if (user.subject !== subjectId) {
     throw Response.json(
       { ok: false, error: 'ليس لديك صلاحية الوصول إلى هذه المادة' },
       { status: 403 }

@@ -118,6 +118,7 @@ export async function GET(request) {
       })),
       concepts: concepts.map((concept) => ({
         id: concept.contentId,
+        subjectId: concept.subjectId,
         type: concept.type,
         titleAr: concept.titleAr,
         titleEn: concept.titleEn || null,
@@ -139,6 +140,7 @@ export async function GET(request) {
         bookTitle: unit.bookTitle || null,
         lessons: (lessonsByUnit[unit.contentId] || []).map((lesson) => ({
           id: lesson.contentId,
+          subjectId: lesson.subjectId,
           metadata: lesson.metadata || null,
           title: lesson.title,
           order: lesson.order,
@@ -174,6 +176,7 @@ export async function GET(request) {
       })),
       questions: questions.map((question) => ({
         id: question.contentId,
+        subjectId: question.subjectId,
         type: question.type,
         textAr: question.textAr,
         textEn: question.textEn || null,
@@ -216,6 +219,7 @@ export async function GET(request) {
       })),
       feedItems: feedItems.map((item) => ({
         id: item.contentId,
+        subjectId: item.subjectId,
         conceptId: item.conceptContentId,
         type: item.type,
         contentAr: item.contentAr || '',
