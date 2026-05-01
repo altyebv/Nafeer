@@ -7,22 +7,17 @@ import {
 import { Btn } from './ui/Btn';
 
 // ─── Subject Picker ────────────────────────────────────────────────────────────
-// Inline dropdown that lets an admin assign/clear the canonical subject.
-// Grouped by track so it's easy to scan.
-
-const TRACK_ORDER = ['COMMON', 'SCIENCE', 'LITERARY'];
+const TRACK_ORDER  = ['COMMON', 'SCIENCE', 'LITERARY'];
 const TRACK_LABELS = { COMMON: 'مشترك', SCIENCE: 'علمي', LITERARY: 'أدبي' };
 
 function SubjectPicker({ current, hint = [], onAssign, loading }) {
   const [open, setOpen] = useState(false);
-
-  const grouped = TRACK_ORDER.map((track) => ({
+  const grouped     = TRACK_ORDER.map((track) => ({
     track,
     subjects: SUBJECTS_CATALOG_REF.filter((s) => s.track === track),
   }));
-
   const currentSubj = SUBJECT_MAP[current];
-  const isUnset = !current;
+  const isUnset     = !current;
 
   return (
     <div className="relative">
@@ -30,13 +25,9 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-arabic transition-all"
         style={{
-          background: isUnset
-            ? 'rgba(239,68,68,0.08)'
-            : 'rgba(212,137,30,0.08)',
-          border: isUnset
-            ? '1px solid rgba(239,68,68,0.25)'
-            : '1px solid rgba(212,137,30,0.22)',
-          color: isUnset ? '#f87171' : 'var(--accent)',
+          background: isUnset ? 'rgba(239,68,68,0.08)' : 'rgba(212,137,30,0.08)',
+          border:     isUnset ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(212,137,30,0.22)',
+          color:      isUnset ? '#f87171' : 'var(--accent)',
         }}
       >
         <span style={{ fontSize: 9 }}>📚</span>
@@ -54,7 +45,6 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
             boxShadow: '0 16px 40px rgba(0,0,0,0.6)',
           }}
         >
-          {/* Hint: subjects the contributor expressed interest in */}
           {hint.length > 0 && (
             <div className="px-3 pt-2.5 pb-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <p className="text-[9px] font-mono text-ink-700 uppercase tracking-wider mb-1.5">اهتمامات المساهم</p>
@@ -67,11 +57,7 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
                       key={sid}
                       onClick={() => { onAssign(sid); setOpen(false); }}
                       className="text-[10px] px-2 py-0.5 rounded-full font-arabic transition-all"
-                      style={{
-                        background: 'rgba(212,137,30,0.1)',
-                        color: 'var(--accent)',
-                        border: '1px solid rgba(212,137,30,0.3)',
-                      }}
+                      style={{ background: 'rgba(212,137,30,0.1)', color: 'var(--accent)', border: '1px solid rgba(212,137,30,0.3)' }}
                       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,137,30,0.2)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212,137,30,0.1)'; }}
                     >
@@ -82,21 +68,17 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
               </div>
             </div>
           )}
-
-          {/* Full catalog grouped by track */}
           <div className="py-1.5 max-h-64 overflow-y-auto">
             {grouped.map(({ track, subjects }) => (
               <div key={track}>
-                <p className="text-[9px] font-mono text-ink-800 uppercase tracking-wider px-3 pt-2 pb-1">
-                  {TRACK_LABELS[track]}
-                </p>
+                <p className="text-[9px] font-mono text-ink-800 uppercase tracking-wider px-3 pt-2 pb-1">{TRACK_LABELS[track]}</p>
                 {subjects.map((s) => (
                   <button
                     key={s.id}
                     onClick={() => { onAssign(s.id); setOpen(false); }}
                     className="w-full text-right px-3 py-1.5 text-[11px] font-arabic flex items-center gap-2 transition-colors"
                     style={{
-                      color: s.id === current ? 'var(--accent)' : 'rgba(255,255,255,0.55)',
+                      color:      s.id === current ? 'var(--accent)' : 'rgba(255,255,255,0.55)',
                       background: s.id === current ? 'rgba(212,137,30,0.07)' : 'transparent',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
@@ -109,8 +91,6 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
               </div>
             ))}
           </div>
-
-          {/* Clear option */}
           {current && (
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
               <button
@@ -131,11 +111,9 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
 }
 
 // ─── Role Picker ───────────────────────────────────────────────────────────────
-
 function RolePicker({ currentRoleId, roles = [], onAssign, loading }) {
   const [open, setOpen] = useState(false);
   const currentRole = roles.find((r) => r._id === currentRoleId);
-
   if (!roles.length) return null;
 
   return (
@@ -145,8 +123,8 @@ function RolePicker({ currentRoleId, roles = [], onAssign, loading }) {
         className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-arabic transition-all"
         style={{
           background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          color: currentRole ? 'rgba(200,180,140,0.8)' : 'rgba(255,255,255,0.3)',
+          border:     '1px solid rgba(255,255,255,0.08)',
+          color:      currentRole ? 'rgba(200,180,140,0.8)' : 'rgba(255,255,255,0.3)',
         }}
       >
         <span style={{ fontSize: 9 }}>◆</span>
@@ -171,7 +149,7 @@ function RolePicker({ currentRoleId, roles = [], onAssign, loading }) {
                 onClick={() => { onAssign(r._id); setOpen(false); }}
                 className="w-full text-right px-3 py-2 text-[11px] font-arabic flex items-center gap-2 transition-colors"
                 style={{
-                  color: r._id === currentRoleId ? 'rgba(200,180,140,1)' : 'rgba(255,255,255,0.5)',
+                  color:      r._id === currentRoleId ? 'rgba(200,180,140,1)' : 'rgba(255,255,255,0.5)',
                   background: r._id === currentRoleId ? 'rgba(200,180,140,0.06)' : 'transparent',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
@@ -201,8 +179,150 @@ function RolePicker({ currentRoleId, roles = [], onAssign, loading }) {
   );
 }
 
-// ─── Shared helpers ───────────────────────────────────────────────────────────
+// ─── Username Editor ───────────────────────────────────────────────────────────
+// Inline editor that lets an admin set or change the contributor's username.
+// Shows a small pencil button when collapsed; expands to an input + save/cancel.
 
+function UsernameEditor({ contributorId, currentUsername, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [value,   setValue]   = useState(currentUsername || '');
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState(null);
+
+  const open = () => {
+    setValue(currentUsername || '');
+    setError(null);
+    setEditing(true);
+  };
+
+  const cancel = () => {
+    setEditing(false);
+    setError(null);
+  };
+
+  const save = async () => {
+    const username = value.trim().toLowerCase().replace(/\s+/g, '_');
+    if (!username) { setError('اسم المستخدم لا يمكن أن يكون فارغاً'); return; }
+    if (username === currentUsername) { setEditing(false); return; }
+
+    setSaving(true);
+    setError(null);
+    try {
+      const res  = await fetch('/api/admin/contributors', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ id: contributorId, action: 'set_username', username }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || 'حدث خطأ');
+      } else {
+        setEditing(false);
+        onSaved?.();
+      }
+    } catch {
+      setError('تعذّر الاتصال بالخادم');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleKey = (e) => {
+    if (e.key === 'Enter')  save();
+    if (e.key === 'Escape') cancel();
+  };
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-1.5">
+        {currentUsername ? (
+          <span dir="ltr" className="text-[11px] font-mono" style={{ color: 'rgba(212,137,30,0.6)' }}>
+            @{currentUsername}
+          </span>
+        ) : (
+          <span className="text-[10px] font-mono" style={{ color: 'rgba(255,255,255,0.2)' }}>
+            بدون username
+          </span>
+        )}
+        <button
+          onClick={open}
+          title="تعديل اسم المستخدم"
+          className="flex items-center justify-center transition-all"
+          style={{
+            width: 18, height: 18, borderRadius: 5,
+            background: 'rgba(255,255,255,0.04)',
+            border:     '1px solid rgba(255,255,255,0.08)',
+            color:      'rgba(255,255,255,0.3)',
+            fontSize:   9, cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,137,30,0.1)'; e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderColor = 'rgba(212,137,30,0.3)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+        >
+          ✎
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5">
+        {/* @ prefix */}
+        <span className="text-[11px] font-mono" style={{ color: 'rgba(212,137,30,0.5)' }}>@</span>
+        <input
+          autoFocus
+          dir="ltr"
+          value={value}
+          onChange={(e) => { setValue(e.target.value); setError(null); }}
+          onKeyDown={handleKey}
+          placeholder="username"
+          className="text-[11px] font-mono outline-none rounded-lg transition-all"
+          style={{
+            width: 110, padding: '3px 8px',
+            background:  'rgba(212,137,30,0.06)',
+            border:      error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(212,137,30,0.3)',
+            color:       '#e8d5a8',
+            caretColor:  'var(--accent)',
+          }}
+        />
+        {/* Save */}
+        <button
+          onClick={save}
+          disabled={saving}
+          className="flex items-center justify-center transition-all"
+          style={{
+            width: 22, height: 22, borderRadius: 6,
+            background: saving ? 'rgba(52,211,153,0.05)' : 'rgba(52,211,153,0.1)',
+            border:     '1px solid rgba(52,211,153,0.3)',
+            color:      '#34d399', fontSize: 10, cursor: saving ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {saving ? '…' : '✓'}
+        </button>
+        {/* Cancel */}
+        <button
+          onClick={cancel}
+          className="flex items-center justify-center transition-all"
+          style={{
+            width: 22, height: 22, borderRadius: 6,
+            background: 'rgba(255,255,255,0.04)',
+            border:     '1px solid rgba(255,255,255,0.08)',
+            color:      'rgba(255,255,255,0.3)', fontSize: 10, cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+        >
+          ✕
+        </button>
+      </div>
+      {error && (
+        <p className="text-[9px] font-mono" style={{ color: '#f87171', paddingRight: 14 }}>{error}</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
 const COMMITMENT_LABELS = {
   occasional: 'بشكل متقطع',
   '2-3h':     '٢–٣ ساعات / أسبوع',
@@ -210,19 +330,13 @@ const COMMITMENT_LABELS = {
 };
 
 const AI_TOOL_LABELS = {
-  chatgpt:    'ChatGPT',
-  gemini:     'Gemini',
-  notebooklm: 'NotebookLM',
-  claude:     'Claude',
-  other:      'أدوات أخرى',
+  chatgpt: 'ChatGPT', gemini: 'Gemini', notebooklm: 'NotebookLM',
+  claude: 'Claude', other: 'أدوات أخرى',
 };
 
 const AGE_LABELS = {
-  'under-18': 'أقل من 18',
-  '18-22':    '18 – 22',
-  '23-28':    '23 – 28',
-  '29-35':    '29 – 35',
-  '36+':      '36+',
+  'under-18': 'أقل من 18', '18-22': '18 – 22', '23-28': '23 – 28',
+  '29-35': '29 – 35', '36+': '36+',
 };
 
 function relativeTime(d) {
@@ -232,8 +346,7 @@ function relativeTime(d) {
   if (days < 1)   return 'اليوم';
   if (days === 1) return 'أمس';
   if (days < 30)  return `منذ ${days} يوماً`;
-  const months = Math.floor(days / 30);
-  return `منذ ${months} شهر`;
+  return `منذ ${Math.floor(days / 30)} شهر`;
 }
 
 function shortDate(d) {
@@ -260,10 +373,7 @@ function InfoPill({ label, value }) {
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-[9px] font-mono text-ink-700 uppercase tracking-wider">{label}</span>
-      <span
-        className="text-[11px] font-arabic"
-        style={{ color: isBool ? (value ? '#34d399' : '#f87171') : 'rgba(255,255,255,0.5)' }}
-      >
+      <span className="text-[11px] font-arabic" style={{ color: isBool ? (value ? '#34d399' : '#f87171') : 'rgba(255,255,255,0.5)' }}>
         {display}
       </span>
     </div>
@@ -273,7 +383,8 @@ function InfoPill({ label, value }) {
 function StatBadge({ icon, count, label }) {
   if (!count) return null;
   return (
-    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(212,137,30,0.05)', border: '1px solid rgba(212,137,30,0.1)' }}>
+    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
+      style={{ background: 'rgba(212,137,30,0.05)', border: '1px solid rgba(212,137,30,0.1)' }}>
       <span className="text-[11px]">{icon}</span>
       <span className="text-sm font-bold font-mono tabular-nums" style={{ color: 'var(--accent)' }}>{count}</span>
       <span className="text-[10px] text-ink-600 font-arabic">{label}</span>
@@ -296,9 +407,7 @@ function InlineLinkBox({ link, label, expiry }) {
         {expiry && <span className="text-[9px] text-ink-700 font-arabic">{expiry}</span>}
       </div>
       <div className="flex items-center gap-2">
-        <p dir="ltr" className="flex-1 text-[10px] font-mono text-ink-500 break-all truncate select-all">
-          {link}
-        </p>
+        <p dir="ltr" className="flex-1 text-[10px] font-mono text-ink-500 break-all truncate select-all">{link}</p>
         <button
           onClick={copy}
           className="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-arabic font-semibold transition-all"
@@ -316,7 +425,6 @@ function InlineLinkBox({ link, label, expiry }) {
 }
 
 // ─── REQUEST CARD ─────────────────────────────────────────────────────────────
-
 const INTERVIEW_FIELDS = [
   { label: 'لماذا تريد المساهمة؟',      key: 'motivation'        },
   { label: 'ما الذي يُعلَّم بشكل سيئ؟', key: 'educationCritique' },
@@ -342,19 +450,16 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
 
   const avatarGradient = c.status === 'rejected'
     ? 'from-red-900 to-red-950'
-    : hasAnyAnswers
-    ? 'from-green-900 to-green-950'
-    : c.interviewToken
-    ? 'from-blue-900 to-blue-950'
+    : hasAnyAnswers ? 'from-green-900 to-green-950'
+    : c.interviewToken ? 'from-blue-900 to-blue-950'
     : 'from-sand-800 to-ink-900';
 
   const sendInterviewLink = async () => {
     setLocalLoading('send_interview');
     try {
       const res  = await fetch('/api/admin/contributors', {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ id: c._id, action: 'send_interview' }),
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body:   JSON.stringify({ id: c._id, action: 'send_interview' }),
       });
       const data = await res.json();
       if (data.interviewLink) {
@@ -424,9 +529,9 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
       {/* Section tabs */}
       <div className="flex" style={{ borderTop: `1px solid ${BORDER}` }}>
         {[
-          { key: 'profile',   icon: '◉', label: 'بيانات الطلب',       always: true  },
+          { key: 'profile',   icon: '◉', label: 'بيانات الطلب' },
           { key: 'interview', icon: hasAnyAnswers ? '✦' : '◌',
-            label: hasAnyAnswers ? 'إجابات المقابلة' : 'لم تُكمل المقابلة', always: true },
+            label: hasAnyAnswers ? 'إجابات المقابلة' : 'لم تُكمل المقابلة' },
         ].map(({ key, icon, label }, i) => (
           <button
             key={key}
@@ -435,11 +540,9 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
             style={{
               borderLeft:  i === 0 ? `1px solid ${BORDER}` : 'none',
               background:  openSection === key ? 'rgba(212,137,30,0.06)' : 'transparent',
-              color:       openSection === key
-                ? 'var(--accent)'
-                : (key === 'interview' && hasAnyAnswers)
-                ? 'rgba(52,211,153,0.65)'
-                : 'rgba(255,255,255,0.25)',
+              color:       openSection === key ? 'var(--accent)'
+                         : (key === 'interview' && hasAnyAnswers) ? 'rgba(52,211,153,0.65)'
+                         : 'rgba(255,255,255,0.25)',
             }}
           >
             <span className="text-[10px]">{icon}</span>
@@ -452,12 +555,12 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
       {openSection === 'profile' && (
         <div className="px-4 py-4" style={{ background: 'rgba(0,0,0,0.2)', borderTop: `1px solid ${BORDER}` }}>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 mb-4">
-            <InfoPill label="الخلفية"           value={c.background || c.fieldOfStudy} />
-            <InfoPill label="الفئة العمرية"     value={AGE_LABELS[c.age] || c.age}    />
-            <InfoPill label="المدينة"            value={c.town}                         />
-            <InfoPill label="حاسب / لوحي"       value={c.hasPcOrTablet}               />
-            <InfoPill label="إنترنت مستقر"      value={c.hasStableInternet}            />
-            <InfoPill label="يستخدم أدوات AI"   value={c.usesAiTools}                 />
+            <InfoPill label="الخلفية"         value={c.background || c.fieldOfStudy} />
+            <InfoPill label="الفئة العمرية"   value={AGE_LABELS[c.age] || c.age}    />
+            <InfoPill label="المدينة"          value={c.town}                         />
+            <InfoPill label="حاسب / لوحي"     value={c.hasPcOrTablet}               />
+            <InfoPill label="إنترنت مستقر"    value={c.hasStableInternet}            />
+            <InfoPill label="يستخدم أدوات AI" value={c.usesAiTools}                 />
           </div>
           {c.aiToolsList?.length > 0 && (
             <div className="mb-3">
@@ -573,7 +676,6 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
 }
 
 // ─── ACTIVE CARD ──────────────────────────────────────────────────────────────
-
 export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, roles = [] }) {
   const [activeLink,       setActiveLink]       = useState(null);
   const [deleteConfirm,    setDeleteConfirm]    = useState(false);
@@ -581,81 +683,61 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
   const [assigningSubject, setAssigningSubject] = useState(false);
   const [assigningRole,    setAssigningRole]    = useState(false);
 
-  const subj        = SUBJECT_MAP[c.subject];
-  const stats       = c.stats || {};
-  const hasStats    = (stats.lessonsCreated || 0) + (stats.questionsAdded || 0)
-                    + (stats.feedItemsCreated || 0) + (stats.blocksAdded || 0) > 0;
-  const BORDER = 'rgba(255,255,255,0.05)';
+  const subj           = SUBJECT_MAP[c.subject];
+  const stats          = c.stats || {};
+  const hasStats       = (stats.lessonsCreated || 0) + (stats.questionsAdded || 0)
+                       + (stats.feedItemsCreated || 0) + (stats.blocksAdded || 0) > 0;
+  const BORDER         = 'rgba(255,255,255,0.05)';
+  const subjectMissing = c.onboarded && !c.subject;
 
   const handleAssignSubject = async (subjectId) => {
     setAssigningSubject(true);
     try {
       await fetch('/api/admin/contributors', {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ id: c._id, action: 'assign_subject', subject: subjectId }),
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body:   JSON.stringify({ id: c._id, action: 'assign_subject', subject: subjectId }),
       });
       onAct(c._id, '_noop');
-    } finally {
-      setAssigningSubject(false);
-    }
+    } finally { setAssigningSubject(false); }
   };
 
   const handleAssignRole = async (roleId) => {
     setAssigningRole(true);
     try {
       await fetch('/api/admin/contributors', {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ id: c._id, action: 'assign_role_id', roleId }),
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body:   JSON.stringify({ id: c._id, action: 'assign_role_id', roleId }),
       });
       onAct(c._id, '_noop');
-    } finally {
-      setAssigningRole(false);
-    }
+    } finally { setAssigningRole(false); }
   };
 
   const handleOnboardLink = async () => {
     setLocalLoading('onboard');
     try {
       const res  = await fetch('/api/admin/contributors', {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ id: c._id, action: 'generate_onboard_link' }),
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body:   JSON.stringify({ id: c._id, action: 'generate_onboard_link' }),
       });
       const data = await res.json();
       if (data.onboardingLink) {
         setActiveLink({ link: data.onboardingLink, label: 'رابط التأهيل', expiry: 'صالح 7 أيام' });
       }
       onAct(c._id, '_noop');
-    } finally {
-      setLocalLoading(null);
-    }
+    } finally { setLocalLoading(null); }
   };
-
-  const subjectMissing = c.onboarded && !c.subject;
 
   return (
     <div
       className="rounded-2xl overflow-hidden transition-all duration-200"
       style={{
         background: '#0d0b08',
-        border: subjectMissing
-          ? '1px solid rgba(239,68,68,0.2)'
-          : '1px solid rgba(255,255,255,0.06)',
+        border: subjectMissing ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(255,255,255,0.06)',
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = subjectMissing
-          ? 'rgba(239,68,68,0.35)'
-          : 'rgba(255,255,255,0.1)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = subjectMissing
-          ? 'rgba(239,68,68,0.2)'
-          : 'rgba(255,255,255,0.06)';
-      }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = subjectMissing ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.1)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = subjectMissing ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'; }}
     >
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="p-4 flex items-start gap-3">
         {c.avatarUrl ? (
           <img src={c.avatarUrl} alt={c.name} className="rounded-full object-cover shrink-0"
@@ -665,7 +747,8 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
         )}
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+          {/* Name row */}
+          <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-bold text-sand-200 font-arabic text-sm">{c.name}</span>
             {c.onboarded
               ? <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-green-900/50 bg-green-950/30 text-green-500 font-arabic">مكتمل</span>
@@ -682,16 +765,24 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
               </span>
             )}
           </div>
+
+          {/* Email + editable username */}
           <div className="flex items-center gap-2 flex-wrap">
             <p dir="ltr" className="text-[11px] font-mono text-ink-500">{c.email}</p>
-            {c.username && <p dir="ltr" className="text-[11px] font-mono text-sand-700">@{c.username}</p>}
+            <div style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.08)' }} />
+            <UsernameEditor
+              contributorId={c._id}
+              currentUsername={c.username}
+              onSaved={() => onAct(c._id, '_noop')}
+            />
           </div>
         </div>
 
-        <div className="shrink-0 text-left">
+        {/* Right meta */}
+        <div className="shrink-0 text-left flex flex-col items-end gap-1">
           {stats.lastActiveAt ? (
             <>
-              <p className="text-[9px] font-mono text-ink-800 mb-0.5">آخر نشاط</p>
+              <p className="text-[9px] font-mono text-ink-800">آخر نشاط</p>
               <p className="text-[10px] font-mono text-ink-600">{relativeTime(stats.lastActiveAt)}</p>
             </>
           ) : (
@@ -699,8 +790,8 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
           )}
           {c.username && (
             <a href={`/contributors/${c.username}`} target="_blank" rel="noreferrer"
-              className="text-[9px] font-mono mt-1 block transition-colors"
-              style={{ color: 'rgba(212,137,30,0.45)' }}
+              className="text-[9px] font-mono mt-0.5 transition-colors"
+              style={{ color: 'rgba(212,137,30,0.45)', textDecoration: 'none' }}
               onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(212,137,30,0.45)'; }}>
               ↗ ملفه
@@ -719,14 +810,14 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
         </div>
       )}
 
-      {/* Missing-subject warning banner */}
+      {/* Missing-subject warning */}
       {subjectMissing && (
         <div
           className="mx-4 px-3 py-2 rounded-xl flex items-center gap-2"
           style={{
             background: 'rgba(239,68,68,0.06)',
-            border: '1px solid rgba(239,68,68,0.2)',
-            marginTop: hasStats ? 0 : 8,
+            border:     '1px solid rgba(239,68,68,0.2)',
+            marginTop:  hasStats ? 0 : 8,
             marginBottom: 4,
           }}
         >
@@ -742,7 +833,7 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
         </div>
       )}
 
-      {/* Subject + Role assignment row */}
+      {/* Subject + Role + saving indicator */}
       <div
         className="px-4 py-2.5 flex items-center gap-2 flex-wrap"
         style={{ borderTop: `1px solid ${BORDER}` }}
