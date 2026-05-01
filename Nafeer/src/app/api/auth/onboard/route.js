@@ -5,6 +5,32 @@ import { signToken, setAuthCookie, buildTokenPayload } from '@/lib/auth';
 import { SUBJECT_IDS } from '@/shared/curriculum';
 import bcrypt from 'bcryptjs';
 
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+async function generateUsername(name) {
+  // Build a base slug from the first two words of the name (Arabic or Latin)
+  const base = name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .join('_')
+    .toLowerCase()
+    .replace(/[^a-z0-9_\u0600-\u06FF]/g, '') // keep latin, digits, Arabic chars
+    .slice(0, 20) || 'contributor';
+
+  // Try the plain base first, then append a random suffix until unique
+  let candidate = base;
+  let attempts  = 0;
+  while (attempts < 10) {
+    const exists = await Contributor.exists({ username: candidate });
+    if (!exists) return candidate;
+    candidate = `${base}_${Math.floor(1000 + Math.random() * 9000)}`;
+    attempts++;
+  }
+  // Absolute fallback
+  return `${base}_${Date.now()}`;
+}
+
 // ─── GET /api/auth/onboard?token=xxx ─────────────────────────────────────────
 // Validates the magic link token.
 // Returns contributor name/username/subject so the page can greet them.
@@ -151,6 +177,11 @@ export async function POST(request) {
       }
       // interests.length === 0 and no chosenSubject: leave subject blank.
       // The admin will assign it later; the card warning will prompt them.
+    }
+
+    // ── Generate username if not yet assigned ─────────────────────────────────
+    if (!contributor.username) {
+      contributor.username = await generateUsername(contributor.name);
     }
 
     // ── Persist ───────────────────────────────────────────────────────────────
