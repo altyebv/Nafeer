@@ -49,7 +49,7 @@ const LT_STYLE = {
 
 // ─── SortableBlockItem ────────────────────────────────────────────────────────
 // Thin wrapper that owns the useSortable hook and passes the handle down.
-function SortableBlockItem({ block, subjectId, isDraggingOver }) {
+function SortableBlockItem({ block, subjectId, lessonId, unitId, sectionId }) {
   const {
     attributes,
     listeners,
@@ -285,6 +285,9 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
                     key={block.id}
                     block={block}
                     subjectId={subjectId}
+                    lessonId={lessonId}
+                    unitId={unitId}
+                    sectionId={section.id}
                   />
                 ))}
               </div>
@@ -298,6 +301,9 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
                     block={activeBlock}
                     subjectId={subjectId}
                     dragHandleProps={{}}   // handle is inert in the overlay
+                    lessonId={lessonId}
+                    unitId={unitId}
+                    sectionId={section.id}
                   />
                 </div>
               )}
