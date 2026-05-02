@@ -397,7 +397,7 @@ export default function LessonEditorPage({
         {activeTab === 1 && (
           <StepBody
             lesson={lesson} lessonSections={lessonSections} lessonBlocks={lessonBlocks}
-            subjectId={subjectId} onAddSection={handleAddSection} onAddNewPart={handleAddNewPart}
+            subjectId={subjectId} lessonId={lessonId} unitId={unitId} onAddSection={handleAddSection} onAddNewPart={handleAddNewPart}
             onPrev={() => setActiveTab(0)} onNext={() => setActiveTab(2)}
           />
         )}
@@ -643,7 +643,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
 }
 
 // ─── Step 2: Body ─────────────────────────────────────────────────────────────
-function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, onAddSection, onAddNewPart, onPrev, onNext }) {
+function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, unitId, onAddSection, onAddNewPart, onPrev, onNext }) {
   const partsMap = lessonSections.reduce((acc, s) => {
     const p = s.partIndex ?? 0;
     if (!acc[p]) acc[p] = [];
