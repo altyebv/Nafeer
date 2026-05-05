@@ -201,6 +201,7 @@ export async function POST(request) {
         conceptRef: block.conceptRef || null,
         caption:    block.caption    || null,
         metadata:   coerceMixedToString(block.metadata),
+        mediaPath:  block.mediaPath  || null,
       }));
 
     // ── Questions
@@ -511,6 +512,7 @@ function assembleFullExport({
               conceptRef: block.conceptRef || null,
               caption:    block.caption    || null,
               metadata:   coerceMixedToString(block.metadata),
+              mediaPath:  block.mediaPath  || null,
             })),
           })),
       })),

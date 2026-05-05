@@ -169,6 +169,7 @@ export async function GET(request) {
               conceptRef: block.conceptRef || null,
               caption: block.caption || null,
               metadata: coerceMixedToString(block.metadata),
+              mediaPath: block.mediaPath || null,
               status: block.status || 'draft',
             })),
           })),

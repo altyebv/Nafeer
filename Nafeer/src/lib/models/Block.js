@@ -41,6 +41,8 @@ const BlockSchema = new mongoose.Schema(
     order:      { type: Number, required: true },
     conceptRef: { type: String, default: null },   // conceptId reference
     caption:    { type: String, default: null },
+    mediaPath:  { type: String, default: null }, // Supabase storage path for IMAGE/GIF blocks
+
     metadata:   { type: mongoose.Schema.Types.Mixed, default: null },
 
     ...versioningFields,
