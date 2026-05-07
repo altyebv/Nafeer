@@ -114,7 +114,7 @@ function TopNav({ active, onChange, badges }) {
     }}>
       <div style={{
         display: 'flex', alignItems: 'stretch', gap: 0,
-        padding: '22px 32px 0',
+        padding: '22px 40px 0',
         borderBottom: `1px solid ${C.border}`,
       }}>
         {tabs.map((t) => {
@@ -361,7 +361,7 @@ function ContributorsScreen({ allContributors, onRefresh }) {
   const answeredCount   = stageCounts['answered'] || 0;
 
   return (
-    <div style={{ padding: '28px 32px 48px', direction: 'rtl', maxWidth: 860 }}>
+    <div style={{ padding: '28px 40px 48px', direction: 'rtl' }}>
 
       {/* ── Stats row ── */}
       <div style={{
@@ -423,8 +423,8 @@ function ContributorsScreen({ allContributors, onRefresh }) {
       {/* ── REQUESTS ── */}
       {subTab === 'requests' && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
               {REQUEST_STAGES.map((s) => (
                 <Chip key={s.key} label={s.label} count={stageCounts[s.key]} active={stage === s.key} onClick={() => setStage(s.key)} />
               ))}
@@ -435,7 +435,7 @@ function ContributorsScreen({ allContributors, onRefresh }) {
           {shownRequests.length === 0 ? (
             <Empty icon="◌" text="لا يوجد طلبات في هذه الفئة" />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(560px, 1fr))', gap: 10 }}>
               {shownRequests.map((c) => (
                 <RequestCard key={c._id} c={c} actionLoading={actionLoading} onAct={act} onDelete={del}
                   onSetPassword={(id, name) => setPwModal({ id, name })} />
@@ -466,7 +466,7 @@ function ContributorsScreen({ allContributors, onRefresh }) {
           {shownActive.length === 0 ? (
             <Empty text="لا يوجد مساهمون نشطون" />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(560px, 1fr))', gap: 10 }}>
               {shownActive.map((c) => (
                 <ActiveCard key={c._id} c={c} actionLoading={actionLoading} onAct={act} onDelete={del}
                   roles={roles} onSetPassword={(id, name) => setPwModal({ id, name })} />
@@ -847,7 +847,7 @@ function TeamsScreen({ allContributors }) {
   const subjectTeams  = teams.filter((t) => t.subject).length;
 
   return (
-    <div style={{ padding: '28px 32px 48px', direction: 'rtl', maxWidth: 900 }}>
+    <div style={{ padding: '28px 40px 48px', direction: 'rtl' }}>
 
       {/* Stats + action */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
@@ -855,11 +855,11 @@ function TeamsScreen({ allContributors }) {
           display: 'flex', gap: 24, padding: '14px 20px', borderRadius: 14,
           background: C.surface, border: `1px solid ${C.border}`,
         }}>
-          <Stat label="فريق"    value={teams.length}    color={C.text}        />
+          <Stat label="فريق"    value={teams.length}    color={C.text}       />
           <div style={{ width: 1, background: C.border, alignSelf: 'stretch' }} />
-          <Stat label="عضو"     value={totalMembers}    color={C.accentText}  />
-          <Stat label="مواد"    value={subjectTeams}    color={C.blue}        />
-          {leaderCount > 0 && <Stat label="قائد"  value={leaderCount}  color={C.amber} />}
+          <Stat label="عضو"     value={totalMembers}    color={C.accentText} />
+          <Stat label="مواد"    value={subjectTeams}    color={C.blue}       />
+          {leaderCount > 0 && <><div style={{ width: 1, background: C.border, alignSelf: 'stretch' }} /><Stat label="قائد" value={leaderCount} color={C.amber} /></>}
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -888,7 +888,7 @@ function TeamsScreen({ allContributors }) {
           {!search && <p style={{ fontSize: 12, color: C.textMuted, opacity: 0.6 }}>أنشئ أول فريق لتنظيم المساهمين</p>}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 12 }}>
           {filtered.map((team) => (
             <TeamCard key={team._id} team={team} allContributors={allContributors} onUpdate={handleUpdate} onDelete={handleDelete} />
           ))}
@@ -1045,7 +1045,7 @@ function RolesScreen() {
   const totalQs       = roles.reduce((n, r) => n + (r.interviewQuestions?.length ?? 0), 0);
 
   return (
-    <div style={{ padding: '28px 32px 48px', direction: 'rtl', maxWidth: 900 }}>
+    <div style={{ padding: '28px 40px 48px', direction: 'rtl' }}>
 
       {/* Stats + action */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
@@ -1084,7 +1084,7 @@ function RolesScreen() {
             </div>
 
             {/* Role cards grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 10 }}>
               {catRoles.map((role) => (
                 <RoleCard
                   key={role._id} role={role}
