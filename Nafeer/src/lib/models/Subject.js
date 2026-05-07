@@ -15,12 +15,14 @@ const SubjectSchema = new mongoose.Schema(
       unique: true,
     },
 
-    nameAr:  { type: String, required: true },
-    nameEn:  { type: String, default: null },
-    path:    { type: String },        // 'SCIENCE' | 'LITERARY' | 'COMMON'
+    nameAr: { type: String, required: true },
+    nameEn: { type: String, default: null },
+    path: { type: String },        // 'SCIENCE' | 'LITERARY' | 'COMMON'
     isMajor: { type: Boolean, default: false },
-    order:   { type: Number, default: 0 },
+    order: { type: Number, default: 0 },
     colorHex: { type: String, default: null },
+    // Inside SubjectSchema, after colorHex:
+    iconUrl: { type: String, default: null },
 
     // The contributor assigned to this subject
     contributor: {

@@ -124,6 +124,7 @@ export async function POST(request) {
       isMajor:  subject.isMajor  || false,
       order:    subject.order    || 0,
       colorHex: subject.colorHex || null,
+      iconRes:  subject.iconUrl  || null,
     };
 
     // ── Tags
@@ -293,6 +294,7 @@ export async function POST(request) {
           questions,  questionsExport,
           exams,      examsExport,
           feedItems,  feedItemsExport,
+          
         },
         stats: {
           lessons:   lessons.length,
