@@ -4,11 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminSidebar }           from './components/AdminSidebar';
 import { OverviewSection }        from './components/OverviewSection';
-import { ContributorsSection }    from './components/ContributorsSection';
+import { PeopleSection }          from './components/PeopleSection';
 import { ReviewQueueSection }     from './components/ReviewQueueSection';
 import { CoverageSection }        from './components/CoverageSection';
 import { MediaSection }           from './components/MediaSection';
-import { RolesSection }           from './components/RolesSection';
 import { AdminsSection }          from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
 import { SiteSettingsSection }    from './components/SiteSettingSection';
@@ -16,8 +15,7 @@ import { SeedSection }            from './components/SeedSection';
 import { PublishSection }         from './components/PublishSection';
 import { AdminEditorSection }     from './components/AdminEditorSection';
 import { CurriculumSection }      from './components/CurriculumSection';
-import { TeamsSection }           from './components/TeamsSection';
-import { EmailSection } from './components/EmailSection';
+import { EmailSection }           from './components/EmailSection';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -82,7 +80,7 @@ export default function AdminDashboard() {
       <main className="flex-1 mr-56 min-h-screen overflow-y-auto">
         {section === 'overview'     && <OverviewSection allContributors={allContributors} isLoading={isInitialLoad} />}
         {section === 'contributors' && (
-          <ContributorsSection
+          <PeopleSection
             allContributors={allContributors}
             isLoading={isInitialLoad}
             onRefresh={loadAll}
@@ -90,23 +88,21 @@ export default function AdminDashboard() {
             onOptimisticRemove={optimisticRemove}
           />
         )}
-        {section === 'roles'        && <RolesSection />}
-        {section === 'review'       && (
+        {section === 'review'     && (
           <ReviewQueueSection
             onTotalChange={setReviewTotal}
             onUnauthorized={() => router.push('/admin/login')}
           />
         )}
-        {section === 'editor'       && <AdminEditorSection />}
-        {section === 'coverage'     && <CoverageSection />}
-        {section === 'curriculum'   && <CurriculumSection />}
-        {section === 'publish'      && <PublishSection />}
-        {section === 'media'        && <MediaSection />}
-        {section === 'admins'       && <AdminsSection />}
-        {section === 'settings'     && <SiteSettingsSection />}
-        {section === 'seed'         && <SeedSection />}
-        {section === 'email'        && <EmailSection />}
-        {section === 'Teams'        && <TeamsSection />}
+        {section === 'editor'     && <AdminEditorSection />}
+        {section === 'coverage'   && <CoverageSection />}
+        {section === 'curriculum' && <CurriculumSection />}
+        {section === 'publish'    && <PublishSection />}
+        {section === 'media'      && <MediaSection />}
+        {section === 'admins'     && <AdminsSection />}
+        {section === 'settings'   && <SiteSettingsSection />}
+        {section === 'seed'       && <SeedSection />}
+        {section === 'email'      && <EmailSection />}
       </main>
 
       {showCreate && (

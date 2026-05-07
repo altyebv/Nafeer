@@ -30,7 +30,6 @@ export const NAV = [
   //
   // ── Community ─────────────────────────────────────────────────────────────
   { id: 'contributors', icon: '◉', label: 'المساهمون',         badgeKey: 'pending'     },
-  { id: 'roles',        icon: '◈', label: 'الأدوار',            badgeKey: null          },
   { id: 'review',       icon: '◎', label: 'طابور المراجعة',    badgeKey: 'reviewTotal' },
   //
   // ── Ops ───────────────────────────────────────────────────────────────────
@@ -39,7 +38,6 @@ export const NAV = [
   { id: 'admins',       icon: '⬡', label: 'المشرفون',          badgeKey: null          },
   { id: 'settings',     icon: '⚙', label: 'الإعدادات',         badgeKey: null          },
   { id: 'email',        icon: '✉', label: 'البريد الإلكتروني',   badgeKey: null          },
-  { id: "Teams",        icon: '👥', label: 'الفرق',              badgeKey: null          },
   //
   // NOTE: 'publish' and 'seed' are intentionally removed from the sidebar.
   // Publishing (delta + full) is handled inside AdminEditorSection (editor).
