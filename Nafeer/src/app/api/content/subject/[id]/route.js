@@ -26,7 +26,7 @@ export async function PATCH(request, { params }) {
   const body = await request.json();
   const { note, ...updates } = body;
 
-  const allowed = ['nameAr', 'nameEn', 'colorHex'];
+  const allowed = ['nameAr', 'nameEn', 'colorHex', 'iconUrl'];
   const safeUpdates = Object.fromEntries(
     Object.entries(updates).filter(([k]) => allowed.includes(k))
   );
