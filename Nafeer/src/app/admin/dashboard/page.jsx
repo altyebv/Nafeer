@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminSidebar }           from './components/AdminSidebar';
 import { OverviewSection }        from './components/OverviewSection';
-import { PeopleSection }          from './components/PeopleSection';
+import { PeopleSection }          from './components/PeoplesSection';
 import { ReviewQueueSection }     from './components/ReviewQueueSection';
 import { CoverageSection }        from './components/CoverageSection';
 import { MediaSection }           from './components/MediaSection';
