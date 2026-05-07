@@ -16,6 +16,7 @@ import { SeedSection }            from './components/SeedSection';
 import { PublishSection }         from './components/PublishSection';
 import { AdminEditorSection }     from './components/AdminEditorSection';
 import { CurriculumSection }      from './components/CurriculumSection';
+import { TeamsSection }           from './components/TeamsSection';
 import { EmailSection } from './components/EmailSection';
 
 export default function AdminDashboard() {
@@ -105,6 +106,7 @@ export default function AdminDashboard() {
         {section === 'settings'     && <SiteSettingsSection />}
         {section === 'seed'         && <SeedSection />}
         {section === 'email'        && <EmailSection />}
+        {section === 'Teams'        && <TeamsSection />}
       </main>
 
       {showCreate && (
