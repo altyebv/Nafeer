@@ -1,46 +1,83 @@
-import { NextResponse }   from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
-import { connectDB }      from '@/lib/db';
-import { Announcement }   from '@/lib/models/announcement';
+import { NextResponse } from 'next/server';
+import { connectDB }    from '@/lib/mongodb';
+import Announcement     from '@/models/Announcement';
+import Contributor      from '@/models/Contributor';
+import Team             from '@/models/Team';
+import { getContributorSession } from '@/lib/auth';
 
 // ─── GET /api/contributors/announcements ──────────────────────────────────────
-// Returns active announcements for the current contributor.
-// Filters by targetSubjects (empty = all) and returns pinned-first.
-
-export async function GET() {
-  const user = await getCurrentUser();
-  if (!user?.id) {
-    return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
-  }
-
+//
+// Returns announcements relevant to the authenticated contributor:
+//   • Broadcast (no targets set on any targeting field)
+//   • Targeted at contributor's subject
+//   • Targeted at a team the contributor belongs to
+//   • Targeted directly at the contributor by _id
+//
+// Response shape:
+//   { ok: true, data: Announcement[] }
+//
+// Each item:
+//   { id, title, body, type, pinned, authorName, createdAt }
+//
+export async function GET(req) {
   try {
+    const session = await getContributorSession(req);
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     await connectDB();
 
-    // Match announcements that are global OR target this contributor's subject
-    const filter = user.subject
-      ? { $or: [{ targetSubjects: { $size: 0 } }, { targetSubjects: user.subject }] }
-      : { targetSubjects: { $size: 0 } };
+    // Fetch contributor record for subject + _id
+    const contributor = await Contributor.findById(session.id).select('subject _id').lean();
+    if (!contributor) return NextResponse.json({ error: 'Contributor not found' }, { status: 404 });
 
-    const announcements = await Announcement
-      .find(filter)
+    const contributorId = contributor._id.toString();
+
+    // Fetch teams this contributor belongs to
+    const memberTeams = await Team.find({
+      'members.contributorId': contributor._id,
+    }).select('_id').lean();
+    const teamIds = memberTeams.map((t) => t._id.toString());
+
+    // Query: broadcast OR subject match OR team match OR direct target
+    const query = {
+      $or: [
+        // Broadcast — all three targeting arrays are empty
+        {
+          targetSubjects:       { $size: 0 },
+          targetTeamIds:        { $size: 0 },
+          targetContributorIds: { $size: 0 },
+        },
+        // Subject-targeted and contributor has that subject
+        ...(contributor.subject
+          ? [{ targetSubjects: contributor.subject }]
+          : []),
+        // Team-targeted and contributor is in that team
+        ...(teamIds.length > 0
+          ? [{ targetTeamIds: { $in: teamIds } }]
+          : []),
+        // Directly targeted contributor
+        { targetContributorIds: contributorId },
+      ],
+    };
+
+    const items = await Announcement.find(query)
       .sort({ pinned: -1, createdAt: -1 })
-      .limit(20)
+      .limit(40)
       .lean();
 
-    return NextResponse.json({
-      ok: true,
-      data: announcements.map((a) => ({
-        id:          a._id.toString(),
-        title:       a.title,
-        body:        a.body,
-        type:        a.type,
-        pinned:      a.pinned,
-        authorName:  a.authorName,
-        createdAt:   a.createdAt,
-      })),
-    });
+    const data = items.map((a) => ({
+      id:         a._id.toString(),
+      title:      a.title,
+      body:       a.body,
+      type:       a.type       || 'info',
+      pinned:     a.pinned     || false,
+      authorName: a.authorName || 'الإدارة',
+      createdAt:  a.createdAt,
+    }));
+
+    return NextResponse.json({ ok: true, data });
   } catch (err) {
     console.error('[GET /api/contributors/announcements]', err);
-    return NextResponse.json({ ok: false, error: 'خطأ في الخادم' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
