@@ -270,7 +270,7 @@ export default function ContributorProfilePage() {
     if (!username) return;
     (async () => {
       try {
-        const res = await fetch(`/api/contributors/profile?username=${encodeURIComponent(username)}`);
+        const res = await fetch(`/api/contributors/public?username=${encodeURIComponent(username)}`);
         if (res.status === 404) { setNotFound(true); setLoading(false); return; }
         const data = await res.json();
         if (!data.ok || !data.contributor) { setNotFound(true); setLoading(false); return; }
