@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import Team from '@/lib/models/Team';
-import { getContributorSession } from '@/lib/auth';
-import Contributor from '@/lib/models/Contributor';
+import {Team} from '@/lib/models/Team';
+import { getCurrentUser } from '@/lib/auth';
+import {Contributor} from '@/lib/models/Contributor';
 import { connectDB } from '@/lib/db';
-import Announcement from '@/lib/models/announcement';
+import {Announcement} from '@/lib/models/announcement';
 
 
 // ─── GET /api/contributors/announcements ──────────────────────────────────────
@@ -22,7 +22,7 @@ import Announcement from '@/lib/models/announcement';
 
 export async function GET(req) {
   try {
-    const session = await getContributorSession(req);
+    const session = await getCurrentUser(req);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     await connectDB();
