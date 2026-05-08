@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { connectDB }    from '@/lib/mongodb';
-import Announcement     from '@/models/Announcement';
-import Contributor      from '@/models/Contributor';
-import Team             from '@/models/Team';
+import { connectDB }    from '@/lib/db';
+import Announcement     from '@/lib/models/announcement';
+import Contributor      from '@/lib/models/Contributor';
+import Team             from '@/lib/models/Team';
 import { getContributorSession } from '@/lib/auth';
 
 // ─── GET /api/contributors/announcements ──────────────────────────────────────

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { connectDB }    from '@/lib/mongodb';
-import Announcement     from '@/models/Announcement';
+import { connectDB }    from '@/lib/db';
+import Announcement     from '@/lib/models/announcement';
 import { getAdminSession } from '@/lib/auth';
 
 // ─── GET /api/admin/announcements ─────────────────────────────────────────────
