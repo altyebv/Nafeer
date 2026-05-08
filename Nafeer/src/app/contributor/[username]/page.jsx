@@ -14,10 +14,10 @@ const STAT_META = [
 ];
 
 const ROLE_LABELS = {
-  contributor: { ar: 'مساهم',       en: 'Contributor'        },
-  reviewer:    { ar: 'مراجع',       en: 'Reviewer'           },
-  lead:        { ar: 'قائد مجتمع',  en: 'Community Lead'     },
-  editor:      { ar: 'محرر',        en: 'Editor'             },
+  contributor: { ar: 'مساهم',       en: 'Contributor'    },
+  reviewer:    { ar: 'مراجع',       en: 'Reviewer'       },
+  lead:        { ar: 'قائد مجتمع',  en: 'Community Lead' },
+  editor:      { ar: 'محرر',        en: 'Editor'         },
 };
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
@@ -96,8 +96,98 @@ function StatCard({ icon, value, labelAr, labelEn, delay }) {
   );
 }
 
+// ── Team badge on profile ─────────────────────────────────────────────────────
+function TeamBadge({ team, teamRole, delay }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+
+  const isLeader = teamRole === 'leader';
+
+  return (
+    <div style={{
+      display:    'flex',
+      alignItems: 'center',
+      gap:        12,
+      padding:    '12px 16px',
+      borderRadius: 14,
+      background: isLeader
+        ? 'rgba(167,139,250,0.06)'
+        : 'rgba(255,255,255,0.03)',
+      border: isLeader
+        ? '1px solid rgba(167,139,250,0.2)'
+        : '1px solid rgba(255,255,255,0.07)',
+      opacity:   visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(8px)',
+      transition: 'opacity 0.4s ease, transform 0.4s ease',
+      boxShadow: isLeader ? '0 2px 16px rgba(167,139,250,0.08)' : 'none',
+    }}>
+      {/* Icon */}
+      <div style={{
+        width: 36, height: 36,
+        borderRadius: '50%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: isLeader ? 'rgba(167,139,250,0.12)' : 'rgba(255,255,255,0.05)',
+        border: isLeader ? '1px solid rgba(167,139,250,0.25)' : '1px solid rgba(255,255,255,0.08)',
+        fontSize: 14,
+        color: isLeader ? '#a78bfa' : 'rgba(255,255,255,0.3)',
+        flexShrink: 0,
+      }}>
+        {isLeader ? '⬡' : '◦'}
+      </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          margin: 0,
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'rgba(255,255,255,0.8)',
+          fontFamily: 'var(--font-arabic, serif)',
+          marginBottom: 2,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {team.name}
+        </p>
+        {team.description && (
+          <p style={{
+            margin: 0,
+            fontSize: 11,
+            color: 'rgba(255,255,255,0.3)',
+            fontFamily: 'var(--font-arabic, serif)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {team.description}
+          </p>
+        )}
+      </div>
+
+      {/* Role badge */}
+      <span style={{
+        fontSize: 10,
+        fontFamily: 'var(--font-arabic, serif)',
+        padding: '3px 10px',
+        borderRadius: 20,
+        background: isLeader ? 'rgba(167,139,250,0.12)' : 'rgba(255,255,255,0.04)',
+        border: isLeader ? '1px solid rgba(167,139,250,0.3)' : '1px solid rgba(255,255,255,0.08)',
+        color: isLeader ? '#a78bfa' : 'rgba(255,255,255,0.3)',
+        flexShrink: 0,
+        fontWeight: isLeader ? 600 : 400,
+      }}>
+        {isLeader ? 'قائد الفريق' : 'عضو'}
+      </span>
+    </div>
+  );
+}
+
 // ── Share button ──────────────────────────────────────────────────────────────
-function ShareBtn({ username }) {
+function ShareBtn() {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -129,7 +219,7 @@ function ShareBtn({ username }) {
   );
 }
 
-// ── Not found state ───────────────────────────────────────────────────────────
+// ── Not found / Loading ───────────────────────────────────────────────────────
 function NotFound() {
   return (
     <div style={{
@@ -145,7 +235,6 @@ function NotFound() {
   );
 }
 
-// ── Loading skeleton ──────────────────────────────────────────────────────────
 function Loading() {
   return (
     <div style={{
@@ -167,13 +256,14 @@ function Loading() {
 // PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function ContributorProfilePage() {
-  const params  = useParams();
+  const params   = useParams();
   const username = params?.username;
 
-  const [profile,  setProfile]  = useState(null);
-  const [activity, setActivity] = useState(null);
-  const [loading,  setLoading]  = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [profile,     setProfile]     = useState(null);
+  const [activity,    setActivity]    = useState(null);
+  const [teams,       setTeams]       = useState([]);   // contributor's team memberships
+  const [loading,     setLoading]     = useState(true);
+  const [notFound,    setNotFound]    = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
 
   useEffect(() => {
@@ -191,6 +281,14 @@ export default function ContributorProfilePage() {
           .then((r) => r.json())
           .then((d) => { if (d.ok) setActivity(d.activity); })
           .catch(() => {});
+
+        // Load team memberships — non-blocking
+        // Teams endpoint returns all teams; we filter on client to find this contributor's teams
+        fetch(`/api/contributors/teams?username=${encodeURIComponent(username)}`)
+          .then((r) => r.json())
+          .then((d) => { if (d.ok && d.teams) setTeams(d.teams); })
+          .catch(() => {});
+
       } catch {
         setNotFound(true);
       } finally {
@@ -203,14 +301,13 @@ export default function ContributorProfilePage() {
   if (loading)  return <Loading />;
   if (notFound) return <NotFound />;
 
-  const subject     = profile.subject ? SUBJECT_MAP[profile.subject] : null;
-  const roleKey     = profile.role || 'contributor';
-  const roleLabel   = ROLE_LABELS[roleKey] || ROLE_LABELS.contributor;
-  const joinYear    = profile.createdAt ? new Date(profile.createdAt).getFullYear() : null;
+  const subject   = SUBJECT_MAP[profile.subject];
+  const roleLabel = ROLE_LABELS[profile.role] || ROLE_LABELS.contributor;
+  const joinYear  = profile.createdAt ? new Date(profile.createdAt).getFullYear() : null;
 
   const stats = STAT_META.map((m) => ({
     ...m,
-    value: activity?.[m.key] ?? profile?.stats?.[m.key] ?? null,
+    value: activity?.[m.key] ?? profile.stats?.[m.key] ?? null,
   }));
 
   return (
@@ -221,7 +318,7 @@ export default function ContributorProfilePage() {
       overflowX: 'hidden',
     }}>
 
-      {/* ── Ambient background ──────────────────────────────────────── */}
+      {/* ── Ambient background ── */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
         background: 'radial-gradient(ellipse 80% 60% at 60% -10%, rgba(212,137,30,0.09) 0%, transparent 60%)',
@@ -232,21 +329,20 @@ export default function ContributorProfilePage() {
         background: 'radial-gradient(ellipse 100% 80% at 50% 120%, rgba(212,137,30,0.05) 0%, transparent 70%)',
       }} />
 
-      {/* ── Grain texture ───────────────────────────────────────────── */}
+      {/* ── Grain texture ── */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.025,
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
         backgroundSize: '128px 128px',
       }} />
 
-      {/* ── Main content ────────────────────────────────────────────── */}
+      {/* ── Main content ── */}
       <div style={{
         position: 'relative', zIndex: 1,
         maxWidth: 640, margin: '0 auto',
         padding: '64px 24px 80px',
       }}>
 
-        {/* ── Hero card ─────────────────────────────────────────────── */}
         <div style={{
           opacity: heroVisible ? 1 : 0,
           transform: heroVisible ? 'translateY(0)' : 'translateY(20px)',
@@ -265,7 +361,6 @@ export default function ContributorProfilePage() {
             <Avatar profile={profile} size={88} />
 
             <div style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
-              {/* Name */}
               <h1 style={{
                 fontSize: 'clamp(22px, 5vw, 30px)',
                 fontWeight: 800,
@@ -277,7 +372,6 @@ export default function ContributorProfilePage() {
                 {profile.name}
               </h1>
 
-              {/* Username */}
               {profile.username && (
                 <p style={{
                   fontSize: 13, fontFamily: 'monospace',
@@ -289,9 +383,8 @@ export default function ContributorProfilePage() {
                 </p>
               )}
 
-              {/* Role + subject chips */}
+              {/* Role + subject + join year chips */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {/* Role */}
                 <span style={{
                   fontSize: 11, fontFamily: 'monospace',
                   padding: '4px 10px', borderRadius: 6,
@@ -303,7 +396,6 @@ export default function ContributorProfilePage() {
                   {roleLabel.ar} · {roleLabel.en}
                 </span>
 
-                {/* Subject */}
                 {subject && (
                   <span style={{
                     fontSize: 11, fontFamily: 'var(--font-arabic, serif)',
@@ -321,7 +413,6 @@ export default function ContributorProfilePage() {
                   </span>
                 )}
 
-                {/* Join year */}
                 {joinYear && (
                   <span style={{
                     fontSize: 11, fontFamily: 'monospace',
@@ -332,6 +423,21 @@ export default function ContributorProfilePage() {
                     letterSpacing: '0.04em',
                   }}>
                     منذ {joinYear}
+                  </span>
+                )}
+
+                {/* Team count chip — quick glance */}
+                {teams.length > 0 && (
+                  <span style={{
+                    fontSize: 11, fontFamily: 'var(--font-arabic, serif)',
+                    padding: '4px 10px', borderRadius: 6,
+                    background: 'rgba(167,139,250,0.08)',
+                    border: '1px solid rgba(167,139,250,0.2)',
+                    color: '#a78bfa',
+                    display: 'flex', alignItems: 'center', gap: 5,
+                  }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 9 }}>⬡</span>
+                    {teams.length === 1 ? `${teams[0].team.name}` : `${teams.length} فرق`}
                   </span>
                 )}
               </div>
@@ -352,13 +458,13 @@ export default function ContributorProfilePage() {
             </p>
           )}
 
-          {/* ── Divider ───────────────────────────────────────────── */}
+          {/* Divider */}
           <div style={{
             height: 1, marginBottom: 32,
             background: 'linear-gradient(90deg, rgba(255,255,255,0.07), transparent)',
           }} />
 
-          {/* ── Stats ─────────────────────────────────────────────── */}
+          {/* Stats */}
           <div style={{ marginBottom: 40 }}>
             <p style={{
               fontSize: 10, fontFamily: 'monospace',
@@ -382,12 +488,47 @@ export default function ContributorProfilePage() {
             </div>
           </div>
 
-          {/* ── Footer row ────────────────────────────────────────── */}
+          {/* ── Teams section ── */}
+          {teams.length > 0 && (
+            <div style={{ marginBottom: 40 }}>
+              {/* Section label */}
+              <p style={{
+                fontSize: 10, fontFamily: 'monospace',
+                color: 'rgba(255,255,255,0.2)',
+                letterSpacing: '0.14em', textTransform: 'uppercase',
+                marginBottom: 14,
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <span>الفرق · Teams</span>
+                <span style={{
+                  fontSize: 9, padding: '1px 6px', borderRadius: 4,
+                  background: 'rgba(167,139,250,0.1)',
+                  border: '1px solid rgba(167,139,250,0.2)',
+                  color: '#a78bfa',
+                  textTransform: 'none', letterSpacing: 0,
+                }}>
+                  {teams.length}
+                </span>
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {teams.map((membership, i) => (
+                  <TeamBadge
+                    key={membership.team._id || i}
+                    team={membership.team}
+                    teamRole={membership.teamRole}
+                    delay={350 + i * 80}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Footer row */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             flexWrap: 'wrap', gap: 12,
           }}>
-            {/* Nafeer credit */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{
                 fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-arabic, serif)',
@@ -400,7 +541,7 @@ export default function ContributorProfilePage() {
               }}>CONTRIBUTOR</span>
             </div>
 
-            <ShareBtn username={username} />
+            <ShareBtn />
           </div>
         </div>
       </div>
