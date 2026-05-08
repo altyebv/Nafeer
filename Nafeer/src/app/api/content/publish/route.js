@@ -477,7 +477,7 @@ function assembleFullExport({
   approvedLessonIds,
 }) {
   return {
-    version:    '2.0',
+    version:    '1.0',
     exportedAt: new Date().toISOString(),
     subject:    subjectExport,
     tags:       tagsExport,
