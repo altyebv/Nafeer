@@ -38,7 +38,7 @@ export async function POST(request) {
 
     const manifest = await getManifest().catch(() => null);
     const manifestEntry = (manifest?.subjects || []).find((entry) => entry.id === subjectId) || null;
-    const downloadUrl = manifestEntry?.downloadUrl || manifestEntry?.legacyDownloadUrl;
+    const downloadUrl = manifestEntry?.legacyDownloadUrl || manifestEntry?.downloadUrl;
     if (!downloadUrl) {
      return NextResponse.json({ ok: false, error: 'لا يوجد ملف منشور لهذه المادة' }, { status: 404 });
     }
