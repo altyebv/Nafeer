@@ -59,7 +59,11 @@ export async function GET(request) {
       Concept.find({ subjectId, ...contentStatusFilter }).lean(),
       Tag.find({ subjectId, ...contentStatusFilter }).lean(),
       FeedItem.find({ subjectId, ...contentStatusFilter }).sort({ order: 1 }).lean(),
-      Question.find({ subjectId, ...contentStatusFilter }).lean(),
+      Question.find(
+        canIncludeAll
+          ? { subjectId }
+          : { subjectId, $or: [{ status: 'approved' }, { isCheckpoint: true }] }
+      ).lean(),
       Exam.find({ subjectId, ...contentStatusFilter }).lean(),
     ]);
 
@@ -77,7 +81,14 @@ export async function GET(request) {
     });
 
     const scopedSectionIds = new Set(scopedSections.map((section) => section.contentId));
-    const scopedBlocks = blocks.filter((block) => scopedSectionIds.has(block.sectionContentId));
+    const scopedBlocks = blocks.filter((block) => (
+      scopedSectionIds.has(block.sectionContentId) && block.type !== 'QUESTION'
+    ));
+    const scopedQuestions = questions.filter((question) => (
+      canIncludeAll ||
+      question.status === 'approved' ||
+      (question.isCheckpoint && scopedSectionIds.has(question.sectionContentId))
+    ));
 
     const blocksBySection = scopedBlocks.reduce((acc, block) => {
       if (!acc[block.sectionContentId]) acc[block.sectionContentId] = [];
@@ -175,7 +186,7 @@ export async function GET(request) {
           })),
         })),
       })),
-      questions: questions.map((question) => ({
+      questions: scopedQuestions.map((question) => ({
         id: question.contentId,
         subjectId: question.subjectId,
         type: question.type,
@@ -246,7 +257,7 @@ export async function GET(request) {
       lessons.length === 0 &&
       concepts.length === 0 &&
       feedItems.length === 0 &&
-      questions.length === 0
+      scopedQuestions.length === 0
     ) {
       const remoteData = await loadRemoteSubjectExport(manifestEntry.legacyDownloadUrl || manifestEntry.downloadUrl);
       if (remoteData) return ok(remoteData, { origin: 'remote' });

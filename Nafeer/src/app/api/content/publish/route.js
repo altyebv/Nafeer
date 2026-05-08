@@ -79,7 +79,10 @@ export async function POST(request) {
       Concept.find({ subjectId, status: 'approved' }).lean(),
       Tag.find({ subjectId, status: 'approved' }).lean(),
       FeedItem.find({ subjectId, status: 'approved' }).sort({ order: 1 }).lean(),
-      Question.find({ subjectId, status: 'approved' }).lean(),
+      Question.find({
+        subjectId,
+        $or: [{ status: 'approved' }, { isCheckpoint: true }],
+      }).lean(),
       Exam.find({ subjectId, status: 'approved' }).lean(),
     ]);
 
@@ -192,7 +195,7 @@ export async function POST(request) {
     // ── Blocks (flat — carry sectionId FK)
     const approvedSectionIds = new Set(sectionsExport.map((s) => s.id));
     const blocksExport = blocks
-      .filter((b) => approvedSectionIds.has(b.sectionContentId))
+      .filter((b) => approvedSectionIds.has(b.sectionContentId) && b.type !== 'QUESTION')
       .map((block) => ({
         id:         block.contentId,
         sectionId:  block.sectionContentId,          // FK for delta patches
@@ -206,7 +209,12 @@ export async function POST(request) {
       }));
 
     // ── Questions
-    const questionsExport = questions.map((q) => ({
+    const scopedQuestions = questions.filter((q) => (
+      q.status === 'approved' ||
+      (q.isCheckpoint && approvedSectionIds.has(q.sectionContentId))
+    ));
+
+    const questionsExport = scopedQuestions.map((q) => ({
       id:               q.contentId,
       type:             q.type,
       textAr:           q.textAr,
@@ -291,7 +299,7 @@ export async function POST(request) {
           lessons,    lessonsExport,
           sections,   sectionsExport,
           blocks,     blocksExport,
-          questions,  questionsExport,
+          questions: scopedQuestions,  questionsExport,
           exams,      examsExport,
           feedItems,  feedItemsExport,
           
@@ -300,7 +308,7 @@ export async function POST(request) {
           lessons:   lessons.length,
           sections:  totalSections,
           blocks:    totalBlocks,
-          questions: questions.length,
+          questions: scopedQuestions.length,
           feedItems: feedItems.length,
           concepts:  concepts.length,
           exams:     exams.length,
@@ -333,7 +341,7 @@ export async function POST(request) {
           lessons:   lessons.length,
           sections:  totalSections,
           blocks:    totalBlocks,
-          questions: questions.length,
+          questions: scopedQuestions.length,
           feedItems: feedItems.length,
           concepts:  concepts.length,
           exams:     exams.length,
@@ -506,7 +514,9 @@ function assembleFullExport({
             partIndex:    section.partIndex    ?? 0,
             learningType: section.learningType || 'UNDERSTANDING',
             conceptIds:   section.conceptIds   || [],
-            blocks: (blocksBySection[section.contentId] || []).map((block) => ({
+            blocks: (blocksBySection[section.contentId] || [])
+              .filter((block) => block.type !== 'QUESTION')
+              .map((block) => ({
               id:         block.contentId,
               type:       block.type,
               content:    block.content    || '',

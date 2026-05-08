@@ -1,7 +1,8 @@
 import { requireContributor, ok, err } from '@/lib/api/guard';
-import { deleteBlock } from '@/lib/api/content';
+import { deleteBlock, upsertBlock } from '@/lib/api/content';
 import { connectDB } from '@/lib/db';
 import { Block } from '@/lib/models/Block';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 
 // Returns null if the URL doesn't match the Supabase media bucket.
 function deriveMediaPath(url) {
@@ -19,7 +20,10 @@ const IMAGE_BLOCK_TYPES = new Set(['IMAGE', 'GIF']);
 export async function PATCH(request, { params }) {
   try {
     await connectDB();
-    await requireContributor();
+    const user = await requireContributor();
+    const actorId = user.role === 'admin'
+      ? await ensureSystemSeedContributor()
+      : user.id;
 
     const { id } = await params;
     const update  = await request.json();
@@ -34,10 +38,20 @@ export async function PATCH(request, { params }) {
       update.mediaPath = deriveMediaPath(update.content);
     }
 
-    Object.assign(block, update);
-    await block.save();
+    const saved = await upsertBlock(
+      {
+        ...block.toObject(),
+        ...update,
+        contentId: block.contentId,
+        subjectId: update.subjectId || block.subjectId,
+        sectionContentId: update.sectionContentId || update.sectionId || block.sectionContentId,
+        order: update.order ?? block.order,
+        type: resolvedType,
+      },
+      actorId
+    );
 
-    return ok({ id: block.contentId, mediaPath: block.mediaPath ?? null });
+    return ok({ id: saved.contentId, mediaPath: saved.mediaPath ?? null });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[PATCH /api/content/blocks/[id]]', e);
