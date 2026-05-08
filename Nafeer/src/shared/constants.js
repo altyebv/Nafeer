@@ -1,4 +1,5 @@
-// Block types for lesson content (matches Android BlockType enum)
+// Block types for lesson content. QUESTION is a CMS-only checkpoint authoring
+// placeholder; publish/export mirrors it to Question and omits it from app blocks.
 export const BLOCK_TYPES = {
   TEXT: 'TEXT',
   HEADING: 'HEADING',
