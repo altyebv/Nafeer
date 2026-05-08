@@ -22,7 +22,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ ok: false, error: 'النسخة البعيدة غير موجودة' }, { status: 404 });
     }
 
-    const remotePath = extractSupabasePublicPath(entry.downloadUrl, EXPORTS_BUCKET);
+    const remotePath = extractSupabasePublicPath(entry.legacyDownloadUrl || entry.downloadUrl, EXPORTS_BUCKET);
     if (remotePath) {
       await deleteFile(EXPORTS_BUCKET, remotePath);
     }

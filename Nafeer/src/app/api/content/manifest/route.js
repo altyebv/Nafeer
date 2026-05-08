@@ -6,8 +6,12 @@ const ENTRY_FIELDS = [
   'id',
   'enabled',
   'minAppVersion',
+  'contentVersion',
   'version',
   'downloadUrl',
+  'legacyDownloadUrl',
+  'legacySha256',
+  'legacySize',
   'updatedAt',
   'sha256',
   'size',
@@ -17,8 +21,12 @@ const ENTRY_FIELDS = [
 ];
 
 const CONTENT_METADATA_FIELDS = [
+  'contentVersion',
   'version',
   'downloadUrl',
+  'legacyDownloadUrl',
+  'legacySha256',
+  'legacySize',
   'sha256',
   'size',
   'approvedLessonsCount',
@@ -121,8 +129,12 @@ function buildManifestEntry(rawEntry, existingEntry) {
     id: normalizeString(rawEntry.id ?? existingEntry?.id),
     enabled: rawEntry.enabled ?? existingEntry?.enabled ?? true,
     minAppVersion: normalizeString(rawEntry.minAppVersion ?? existingEntry?.minAppVersion ?? '1.0'),
+    contentVersion: normalizeString(rawEntry.contentVersion ?? existingEntry?.contentVersion ?? existingEntry?.version),
     version: normalizeString(rawEntry.version ?? existingEntry?.version),
     downloadUrl: normalizeNullableString(rawEntry.downloadUrl ?? existingEntry?.downloadUrl),
+    legacyDownloadUrl: normalizeNullableString(rawEntry.legacyDownloadUrl ?? existingEntry?.legacyDownloadUrl ?? existingEntry?.downloadUrl),
+    legacySha256: normalizeNullableString(rawEntry.legacySha256 ?? existingEntry?.legacySha256)?.toLowerCase() || null,
+    legacySize: normalizeNullableNumber(rawEntry.legacySize ?? existingEntry?.legacySize),
     sha256: normalizeNullableString(rawEntry.sha256 ?? existingEntry?.sha256)?.toLowerCase() || null,
     size: normalizeNullableNumber(rawEntry.size ?? existingEntry?.size),
     approvedLessonsCount: normalizeCount(rawEntry.approvedLessonsCount ?? existingEntry?.approvedLessonsCount),
@@ -145,31 +157,39 @@ function validateManifestEntry(entry) {
   if (!entry.id) return 'entry.id is required';
   if (!entry.minAppVersion) return 'minAppVersion is required';
 
-  if (entry.enabled && !entry.version) {
-    return 'Enabled manifest entries must include a version';
+  const hasDeltaPayload = entry.entityIndex != null;
+  const hasLegacyPayload = !!(entry.legacyDownloadUrl || entry.downloadUrl);
+
+  if (entry.enabled && !(entry.contentVersion || entry.version)) {
+    return 'Enabled manifest entries must include a contentVersion';
   }
 
-  if (entry.enabled && !entry.downloadUrl) {
-    return 'Enabled manifest entries must include a downloadUrl';
+  if (entry.enabled && !hasDeltaPayload && !hasLegacyPayload) {
+    return 'Enabled manifest entries must include either delta patches/entityIndex or a legacyDownloadUrl';
   }
 
-  if (entry.downloadUrl) {
+  for (const field of ['downloadUrl', 'legacyDownloadUrl']) {
+    if (!entry[field]) continue;
     try {
-      const url = new URL(entry.downloadUrl);
+      const url = new URL(entry[field]);
       if (!['http:', 'https:'].includes(url.protocol)) {
-        return 'downloadUrl must use http or https';
+        return `${field} must use http or https`;
       }
     } catch {
-      return 'downloadUrl must be a valid URL';
+      return `${field} must be a valid URL`;
     }
   }
 
-  if (entry.sha256 && !/^[a-f0-9]{64}$/i.test(entry.sha256)) {
-    return 'sha256 must be a 64-character hex string';
+  for (const field of ['sha256', 'legacySha256']) {
+    if (entry[field] && !/^[a-f0-9]{64}$/i.test(entry[field])) {
+      return `${field} must be a 64-character hex string`;
+    }
   }
 
-  if (entry.size != null && (!Number.isInteger(entry.size) || entry.size < 0)) {
-    return 'size must be a non-negative integer';
+  for (const field of ['size', 'legacySize']) {
+    if (entry[field] != null && (!Number.isInteger(entry[field]) || entry[field] < 0)) {
+      return `${field} must be a non-negative integer`;
+    }
   }
 
   for (const field of ['approvedLessonsCount', 'approvedSectionsCount', 'approvedBlocksCount']) {
@@ -208,7 +228,7 @@ function getTypeError(rawEntry) {
     return 'enabled must be a boolean';
   }
 
-  for (const key of ['id', 'minAppVersion', 'version', 'downloadUrl', 'updatedAt', 'sha256']) {
+  for (const key of ['id', 'minAppVersion', 'contentVersion', 'version', 'downloadUrl', 'legacyDownloadUrl', 'updatedAt', 'sha256', 'legacySha256']) {
     if (key in rawEntry && rawEntry[key] != null && typeof rawEntry[key] !== 'string') {
       return `${key} must be a string or null`;
     }

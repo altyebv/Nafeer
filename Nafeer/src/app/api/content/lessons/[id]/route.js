@@ -46,8 +46,8 @@ export async function PUT(request, { params }) {
       actorId,
       note || '',
       versionLabel || '',
-      user.name || '',
-      user.role === 'admin'   
+      user.name || ''
+      
     );
     if (!lesson) return err('الدرس غير موجود', 404);
 

@@ -105,7 +105,7 @@ export async function GET() {
         appVersion: manifestEntry?.contentVersion || manifestEntry?.version || null,
         patchCount: manifestEntry?.patches?.length ?? null,
         publishedAt: manifestEntry?.updatedAt || null,
-        downloadUrl: manifestEntry?.downloadUrl || null,
+        downloadUrl: manifestEntry?.legacyDownloadUrl || manifestEntry?.downloadUrl || null,
         enabled: manifestEntry?.enabled ?? true,
         minAppVersion: manifestEntry?.minAppVersion || '1.0',
         remoteLessons: manifestEntry?.approvedLessonsCount ?? null,
