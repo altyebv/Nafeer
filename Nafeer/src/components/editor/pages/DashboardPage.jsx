@@ -10,7 +10,7 @@ const ANNOUNCEMENT_STYLES = {
   info:      { icon: Circle, color: '#6b9fd4', bg: 'rgba(107,159,212,0.07)', border: 'rgba(107,159,212,0.2)'  },
   update:    { icon: Sparkles, color: '#d4891e', bg: 'rgba(212,137,30,0.07)',  border: 'rgba(212,137,30,0.2)'   },
   warning:   { icon: TriangleAlert, color: '#d4726b', bg: 'rgba(212,114,107,0.07)', border: 'rgba(212,114,107,0.2)'  },
-  milestone: { icon: CircleHelp, color: '#7db87d', bg: 'rgba(125,184,125,0.07)', border: 'rgba(125,184,125,0.2)'  },
+  urgent:    { icon: TriangleAlert, color: '#d4726b', bg: 'rgba(212,114,107,0.07)', border: 'rgba(212,114,107,0.2)' },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
