@@ -64,7 +64,7 @@ export async function GET(request) {
     ]);
 
     if (!subject) {
-      const remoteData = await loadRemoteSubjectExport(manifestEntry?.downloadUrl);
+      const remoteData = await loadRemoteSubjectExport(manifestEntry?.legacyDownloadUrl || manifestEntry?.downloadUrl);
       if (remoteData) return ok(remoteData, { origin: 'remote' });
       return err('المادة غير موجودة في قاعدة البيانات', 404);
     }
@@ -242,13 +242,13 @@ export async function GET(request) {
 
     if (
       !canIncludeAll &&
-      manifestEntry?.downloadUrl &&
+      (manifestEntry?.legacyDownloadUrl || manifestEntry?.downloadUrl) &&
       lessons.length === 0 &&
       concepts.length === 0 &&
       feedItems.length === 0 &&
       questions.length === 0
     ) {
-      const remoteData = await loadRemoteSubjectExport(manifestEntry.downloadUrl);
+      const remoteData = await loadRemoteSubjectExport(manifestEntry.legacyDownloadUrl || manifestEntry.downloadUrl);
       if (remoteData) return ok(remoteData, { origin: 'remote' });
     }
 
