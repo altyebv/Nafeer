@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/db';
 import { Lesson } from '@/lib/models/Lesson';
 import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
+import { deleteCheckpointQuestionsForSections } from '@/lib/api/content';
 
 // GET /api/content/lessons/[id]
 // Returns lesson + sections + blocks (full content for editor)
@@ -110,6 +111,7 @@ export async function DELETE(request, { params }) {
     await Promise.all([
       Lesson.deleteOne({ contentId: (await params).id }),
       Section.deleteMany({ lessonContentId: (await params).id }),
+      deleteCheckpointQuestionsForSections(sectionIds),
       sectionIds.length ? Block.deleteMany({ sectionContentId: { $in: sectionIds } }) : null,
     ]);
 

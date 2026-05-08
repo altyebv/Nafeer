@@ -48,7 +48,7 @@ export async function GET(_request, { params }) {
       Section.find({ subjectId }).select('contentId lessonContentId').lean(),
       // Count blocks per section in one aggregate round-trip
       Block.aggregate([
-        { $match: { subjectId } },
+        { $match: { subjectId, type: { $ne: 'QUESTION' } } },
         { $group: { _id: '$sectionContentId', count: { $sum: 1 } } },
       ]),
     ]);

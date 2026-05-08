@@ -29,7 +29,9 @@ export function getLessonStatus(lessonId, sections, blocks, lesson) {
   if (lessonSections.length === 0) return LESSON_STATUS.EMPTY;
 
   const sectionIds  = lessonSections.map((s) => s.id);
-  const totalBlocks = blocks.filter((b) => sectionIds.includes(b.sectionId)).length;
+  const totalBlocks = blocks.filter((b) => (
+    sectionIds.includes(b.sectionId) && b.type !== 'QUESTION'
+  )).length;
   if (totalBlocks === 0) return LESSON_STATUS.STARTED;
 
   const hasSummary = lesson?.summary?.trim()?.length > 0;
