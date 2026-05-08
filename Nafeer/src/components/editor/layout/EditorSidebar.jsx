@@ -131,7 +131,7 @@ export function DesktopSidebar({
   const [annoCount, setAnnoCount] = useState(0);
 
   useEffect(() => {
-    fetch('/api/contributors/announcements')
+    fetch('/api/contributors/announcement')
       .then((r) => r.json())
       .then((d) => { if (d.ok) setAnnoCount(d.data.length); })
       .catch(() => {});

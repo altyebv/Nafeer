@@ -535,7 +535,7 @@ export default function DashboardPage({ contributor }) {
 
   // Fetch announcements
   useEffect(() => {
-    fetch('/api/contributors/announcements')
+    fetch('/api/contributors/announcement')
       .then((r) => r.json())
       .then((d) => { if (d.ok) setAnnouncements(d.data); })
       .catch(() => {})

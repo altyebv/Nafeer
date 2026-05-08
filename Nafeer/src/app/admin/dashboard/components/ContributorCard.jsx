@@ -444,7 +444,7 @@ function AnnouncePanel({ contributor, contributorTeams = [], onClose, onSent }) 
     if (!title.trim() || !body.trim()) { setError('العنوان والمحتوى مطلوبان'); return; }
     setSending(true); setError(null);
     try {
-      const res  = await fetch('/api/admin/announcements', {
+      const res  = await fetch('/api/admin/announcement', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body:   JSON.stringify(buildPayload()),
       });
