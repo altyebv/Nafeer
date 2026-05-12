@@ -182,7 +182,7 @@ export function CoverageSection() {
     setLoading(true);
     setError(null);
     try {
-      const res  = await fetch(`/api/admin/coverage/${subjectId}`);
+      const res  = await fetch(`/api/coverage/${subjectId}`);
       const json = await res.json();
       if (json.ok) {
         setData(json.data);
