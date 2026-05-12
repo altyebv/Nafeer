@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import {Announcement}     from '@/lib/models/announcement';
 import { connectDB }    from '@/lib/db';
 
-import { getCurrentUser } from '@/lib/auth';
+import { getAdminSession } from '@/lib/adminAuth';
 
 // ─── GET /api/admin/announcements ─────────────────────────────────────────────
 export async function GET(req) {
   try {
-    const session = await getCurrentUser(req);
+    const session = await getAdminSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     await connectDB();
@@ -56,7 +56,7 @@ export async function GET(req) {
 //
 export async function POST(req) {
   try {
-    const session = await getCurrentUser(req);
+    const session = await getAdminSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
@@ -117,7 +117,7 @@ export async function POST(req) {
 // ─── DELETE /api/admin/announcements?id=xxx ───────────────────────────────────
 export async function DELETE(req) {
   try {
-    const session = await getCurrentUser(req);
+    const session = await getAdminSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
@@ -137,7 +137,7 @@ export async function DELETE(req) {
 // Toggle pinned, update fields, etc.
 export async function PATCH(req) {
   try {
-    const session = await getCurrentUser(req);
+    const session = await getAdminSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id, ...updates } = await req.json();
