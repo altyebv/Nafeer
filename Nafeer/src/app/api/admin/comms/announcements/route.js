@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/adminAuth';
+import { verifyAdminAuth } from '@/lib/adminAuth';
 import { adminDb } from '@/lib/FirebaseAdmin';
 
 const COLL = 'comm_items';
 
 export async function GET(req) {
-  const auth = await requireAdmin(req);
+  const auth = await verifyAdminAuth(req);
   if (auth) return auth;
 
   try {
@@ -24,7 +24,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const auth = await requireAdmin(req);
+  const auth = await verifyAdminAuth(req);
   if (auth) return auth;
 
   try {

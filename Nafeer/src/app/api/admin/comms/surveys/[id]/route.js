@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/adminAuth';
+import { verifyAdminAuth } from '@/lib/adminAuth';
 import { adminDb } from '@/lib/FirebaseAdmin';
 
 const COLL = 'comm_items';
@@ -11,7 +11,7 @@ const ALLOWED_FIELDS = [
 ];
 
 export async function GET(req, { params }) {
-  const auth = await requireAdmin(req);
+  const auth = await verifyAdminAuth(req);
   if (auth) return auth;
 
   try {
@@ -26,7 +26,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
-  const auth = await requireAdmin(req);
+  const auth = await verifyAdminAuth(req);
   if (auth) return auth;
 
   try {
@@ -59,7 +59,7 @@ export async function PATCH(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const auth = await requireAdmin(req);
+  const auth = await verifyAdminAuth(req);
   if (auth) return auth;
 
   try {
