@@ -392,20 +392,238 @@ function SurveyCard({ item, deleting, onDelete }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   APP SETTINGS TAB (placeholder — extensible)
+   APP SETTINGS TAB — Feature Flags
 ═══════════════════════════════════════════════════════════════════════════════ */
+
+// Flag definitions: key, Arabic label, description, and which flags it depends on.
+// `dependsOn` is purely informational — shown as a warning when the master flag is off.
+const FLAG_DEFS = [
+  {
+    key:        'commCenterEnabled',
+    label:      'مركز التواصل',
+    desc:       'البوابة الرئيسية — تفعيل الإعلانات والاستطلاعات والجولات في التطبيق.',
+    icon:       '⌘',
+    isMaster:   true,
+  },
+  {
+    key:        'feedbackEnabled',
+    label:      'نموذج الملاحظات',
+    desc:       'إظهار رابط الملاحظات في الملف الشخصي وإعدادات التطبيق.',
+    icon:       '◈',
+    dependsOn:  null, // independent of commCenterEnabled
+  },
+  {
+    key:        'toursEnabled',
+    label:      'الجولات التعريفية',
+    desc:       'تشغيل الجولات التعريفية تلقائياً عند أول دخول للمستخدم.',
+    icon:       '◉',
+    dependsOn:  'commCenterEnabled',
+  },
+];
+
 function AppSettingsTab() {
-  return (
-    <div className="rounded-2xl border border-ink-700/30 bg-ink-800/20 px-8 py-12 text-center space-y-3">
-      <div className="w-12 h-12 rounded-xl bg-ink-800/60 border border-ink-700/40 flex items-center justify-center text-xl text-ink-600 mx-auto">
-        ⚙
+  const [flags, setFlags]     = useState(null);   // null = not loaded yet
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+  const [saving, setSaving]   = useState(null);   // key being saved right now
+  const [saveError, setSaveError] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res  = await fetch('/api/admin/comms/feature-flags');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setFlags(data.flags);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleToggle = async (key) => {
+    if (saving) return;
+    const next = !flags[key];
+
+    // Optimistic update
+    setFlags((prev) => ({ ...prev, [key]: next }));
+    setSaving(key);
+    setSaveError(null);
+
+    try {
+      const res  = await fetch('/api/admin/comms/feature-flags', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ [key]: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      // Sync state with what the server confirmed
+      setFlags(data.flags);
+    } catch (e) {
+      // Rollback
+      setFlags((prev) => ({ ...prev, [key]: !next }));
+      setSaveError(e.message);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  // ── Loading skeleton ──────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <FlagSectionHeader />
+        {FLAG_DEFS.map((def) => (
+          <div
+            key={def.key}
+            className="h-[72px] rounded-xl bg-ink-800/30 border border-ink-700/30 animate-pulse"
+          />
+        ))}
       </div>
-      <p className="text-sm font-arabic font-medium text-ink-400">إعدادات التطبيق</p>
-      <p className="text-xs text-ink-600 font-arabic max-w-xs mx-auto">
-        هنا ستُضاف إعدادات التطبيق العامة — Feature Flags، إعدادات الجولات التعريفية، والمزيد.
+    );
+  }
+
+  // ── Error state ───────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div className="space-y-3">
+        <FlagSectionHeader />
+        <ErrorBanner msg={error} onRetry={load} />
+      </div>
+    );
+  }
+
+  const masterOn = flags?.commCenterEnabled;
+
+  return (
+    <div className="space-y-4">
+      <FlagSectionHeader />
+
+      {/* Master-off warning banner */}
+      {!masterOn && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-950/30 border border-amber-800/30">
+          <span className="text-amber-500 text-base leading-none mt-0.5">⚠</span>
+          <p className="text-xs text-amber-400/80 font-arabic leading-relaxed">
+            مركز التواصل مغلق حالياً — لن تظهر أي إعلانات أو استطلاعات أو جولات في التطبيق
+            حتى يتم تفعيله.
+          </p>
+        </div>
+      )}
+
+      {/* Flag rows */}
+      <div className="rounded-2xl border border-ink-700/40 bg-ink-800/20 divide-y divide-ink-700/30 overflow-hidden">
+        {FLAG_DEFS.map((def) => {
+          const isOn        = flags?.[def.key] ?? false;
+          const isSaving    = saving === def.key;
+          const isDepBlocked = def.dependsOn && !flags?.[def.dependsOn];
+
+          return (
+            <div
+              key={def.key}
+              className={`flex items-center gap-4 px-5 py-4 transition-colors ${
+                isDepBlocked ? 'opacity-50' : 'hover:bg-ink-700/10'
+              }`}
+            >
+              {/* Flag icon */}
+              <div className={`shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center text-sm transition-colors ${
+                isOn
+                  ? 'bg-teal-900/30 border-teal-700/40 text-teal-400'
+                  : 'bg-ink-700/30 border-ink-600/30 text-ink-500'
+              }`}>
+                {def.icon}
+              </div>
+
+              {/* Text */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-arabic font-medium text-ink-100 leading-snug">
+                    {def.label}
+                  </p>
+                  {def.isMaster && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-sand-800/50 text-sand-600 bg-sand-900/20">
+                      MASTER
+                    </span>
+                  )}
+                  {isDepBlocked && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-ink-700/40 text-ink-600">
+                      يتطلب مركز التواصل
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-ink-500 font-arabic mt-0.5 leading-relaxed">
+                  {def.desc}
+                </p>
+              </div>
+
+              {/* Toggle */}
+              <button
+                onClick={() => handleToggle(def.key)}
+                disabled={isSaving}
+                title={isOn ? 'إيقاف' : 'تفعيل'}
+                className="shrink-0 focus:outline-none disabled:cursor-not-allowed"
+                aria-checked={isOn}
+                role="switch"
+              >
+                <div className={`relative w-11 h-6 rounded-full border transition-all duration-200 ${
+                  isOn
+                    ? 'bg-teal-600/40 border-teal-500/50'
+                    : 'bg-ink-700/60 border-ink-600/40'
+                }`}>
+                  <div className={`absolute top-0.5 w-5 h-5 rounded-full border shadow-sm transition-all duration-200 ${
+                    isOn
+                      ? 'right-0.5 bg-teal-400 border-teal-300/50'
+                      : 'left-0.5 bg-ink-500 border-ink-400/40'
+                  } ${isSaving ? 'opacity-50' : ''}`} />
+                  {isSaving && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-3 h-3 rounded-full border border-ink-400/50 border-t-transparent animate-spin" />
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Inline save error */}
+      {saveError && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-950/30 border border-red-900/40">
+          <span className="text-red-400 text-sm">✕</span>
+          <p className="text-xs font-arabic text-red-400">{saveError}</p>
+          <button
+            onClick={() => setSaveError(null)}
+            className="mr-auto text-[10px] font-mono text-red-500 hover:text-red-300 transition-colors"
+          >
+            إغلاق
+          </button>
+        </div>
+      )}
+
+      {/* Footer note */}
+      <p className="text-[11px] font-mono text-ink-700 text-center">
+        التغييرات تنعكس في التطبيق عند أول sync بعد الحفظ
       </p>
-      <span className="inline-block text-[10px] font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-700">
-        COMING SOON
+    </div>
+  );
+}
+
+function FlagSectionHeader() {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-arabic font-medium text-ink-200">Feature Flags</p>
+        <p className="text-xs text-ink-600 font-arabic mt-0.5">
+          التحكم في ميزات مركز التواصل — تُطبَّق فوراً على جميع المستخدمين
+        </p>
+      </div>
+      <span className="text-[10px] font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-700">
+        content_config/manifest
       </span>
     </div>
   );
