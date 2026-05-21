@@ -100,7 +100,7 @@ export default function AdminDashboard() {
         {section === 'curriculum' && <CurriculumSection />}
         {section === 'publish'    && <PublishSection />}
         {section === 'media'      && <MediaSection />}
-        {section === 'control'      && <CommsSection />}
+        {section === 'comms'      && <CommsSection />}
         {section === 'admins'     && <AdminsSection />}
         {section === 'settings'   && <SiteSettingsSection />}
         {section === 'seed'       && <SeedSection />}
