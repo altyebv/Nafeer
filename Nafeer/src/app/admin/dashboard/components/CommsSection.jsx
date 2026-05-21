@@ -494,3 +494,4 @@ function formatDate(iso) {
     return iso;
   }
 }
+export { CommsSection };
