@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/adminAuth';
-import { adminDb } from '@/lib/FirebaseAdmin';
+import { getAdminFirestore } from '@/lib//FirebaseAdmin';
 
 const COLL = 'comm_items';
 
@@ -11,11 +11,11 @@ const ALLOWED_FIELDS = [
 ];
 
 export async function GET(req, { params }) {
-  const auth = await verifyAdminAuth(req);
+  const auth = await verifyAdminAuth();
   if (auth) return auth;
 
   try {
-    const doc = await adminDb.collection(COLL).doc(params.id).get();
+    const doc = await getAdminFirestore().collection(COLL).doc(params.id).get();
     if (!doc.exists || doc.data()?.type !== 'SURVEY') {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
@@ -26,7 +26,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
-  const auth = await verifyAdminAuth(req);
+  const auth = await verifyAdminAuth();
   if (auth) return auth;
 
   try {
@@ -51,7 +51,7 @@ export async function PATCH(req, { params }) {
       }
     }
 
-    await adminDb.collection(COLL).doc(params.id).update(update);
+    await getAdminFirestore().collection(COLL).doc(params.id).update(update);
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -59,11 +59,11 @@ export async function PATCH(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const auth = await verifyAdminAuth(req);
+  const auth = await verifyAdminAuth();
   if (auth) return auth;
 
   try {
-    await adminDb.collection(COLL).doc(params.id).delete();
+    await getAdminFirestore().collection(COLL).doc(params.id).delete();
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

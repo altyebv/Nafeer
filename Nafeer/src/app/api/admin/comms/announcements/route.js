@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/adminAuth';
-import { adminDb } from '@/lib/FirebaseAdmin';
+import { getAdminFirestore } from '@/lib/FirebaseAdmin';
 
 const COLL = 'comm_items';
 
 export async function GET(req) {
-  const auth = await verifyAdminAuth(req);
+  const auth = await verifyAdminAuth();
   if (auth) return auth;
 
   try {
-    const snap = await adminDb
-      .collection(COLL)
+    const snap = await getAdminFirestore().collection(COLL)
       .where('type', '==', 'ANNOUNCEMENT')
       .orderBy('publishedAt', 'desc')
       .get();
@@ -24,7 +23,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const auth = await verifyAdminAuth(req);
+  const auth = await verifyAdminAuth();
   if (auth) return auth;
 
   try {
@@ -65,7 +64,7 @@ export async function POST(req) {
       segmentMinVersionCode: segmentMinVersionCode ?? null,
     };
 
-    const ref = await adminDb.collection(COLL).add(doc);
+    const ref = await getAdminFirestore().collection(COLL).add(doc);
     return NextResponse.json({ id: ref.id, ...doc }, { status: 201 });
   } catch (e) {
     console.error('[comms/announcements POST]', e);
