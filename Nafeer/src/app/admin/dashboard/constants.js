@@ -22,9 +22,6 @@ export const NAV = [
   { id: 'overview',     icon: '◈', label: 'نظرة عامة',        badgeKey: null          },
   //
   // ── Content pipeline ─────────────────────────────────────────────────────
-  // editor    → load manifest entry, edit content via full workspace, publish (delta or full)
-  // curriculum → manage local Atlas data (units, lesson titles, ordering)
-  //
   { id: 'editor',       icon: '✎', label: 'محرر المشرف',       badgeKey: null          },
   { id: 'curriculum',   icon: '◆', label: 'إدارة المنهج',      badgeKey: null          },
   //
@@ -32,16 +29,16 @@ export const NAV = [
   { id: 'contributors', icon: '◉', label: 'المساهمون',         badgeKey: 'pending'     },
   { id: 'review',       icon: '◎', label: 'طابور المراجعة',    badgeKey: 'reviewTotal' },
   //
+  // ── Comms ─────────────────────────────────────────────────────────────────
+  // Announcements, surveys, and future app-level settings (feature flags, tours).
+  { id: 'comms',        icon: '⌘', label: 'مركز التحكم', badgeKey: null        },
+  //
   // ── Ops ───────────────────────────────────────────────────────────────────
   { id: 'coverage',     icon: '▦', label: 'خريطة التغطية',     badgeKey: null          },
   { id: 'media',        icon: '⬜', label: 'الوسائط',           badgeKey: null          },
   { id: 'admins',       icon: '⬡', label: 'المشرفون',          badgeKey: null          },
   { id: 'settings',     icon: '⚙', label: 'الإعدادات',         badgeKey: null          },
-  { id: 'email',        icon: '✉', label: 'البريد الإلكتروني',   badgeKey: null          },
-  //
-  // NOTE: 'publish' and 'seed' are intentionally removed from the sidebar.
-  // Publishing (delta + full) is handled inside AdminEditorSection (editor).
-  // Seeding is a dev/bootstrap concern — run it from CLI or Settings if needed.
+  { id: 'email',        icon: '✉', label: 'البريد الإلكتروني',  badgeKey: null          },
 ];
 
 // Pipeline stage for a pending applicant
