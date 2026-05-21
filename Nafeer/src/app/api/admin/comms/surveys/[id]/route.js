@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/adminAuth';
-import { getAdminFirestore } from '@/lib//FirebaseAdmin';
+import { getAdminFirestore } from '@/lib/FirebaseAdmin';
 
 const COLL = 'comm_items';
 
