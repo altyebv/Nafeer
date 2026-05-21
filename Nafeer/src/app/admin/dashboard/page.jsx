@@ -16,7 +16,7 @@ import { PublishSection }         from './components/PublishSection';
 import { AdminEditorSection }     from './components/AdminEditorSection';
 import { CurriculumSection }      from './components/CurriculumSection';
 import { EmailSection }           from './components/EmailSection';
-import { CommsSection }           from './components/CommsSection';
+import { CommsSection }          from './components/CommsSection';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -100,11 +100,11 @@ export default function AdminDashboard() {
         {section === 'curriculum' && <CurriculumSection />}
         {section === 'publish'    && <PublishSection />}
         {section === 'media'      && <MediaSection />}
-        {section === 'comms'      && <CommsSection />}
         {section === 'admins'     && <AdminsSection />}
         {section === 'settings'   && <SiteSettingsSection />}
         {section === 'seed'       && <SeedSection />}
         {section === 'email'      && <EmailSection />}
+        {section === 'comms'      && <CommsSection />}
       </main>
 
       {showCreate && (
