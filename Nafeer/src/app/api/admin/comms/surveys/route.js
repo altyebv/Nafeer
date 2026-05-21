@@ -23,7 +23,7 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req) {
   const auth = await verifyAdminAuth();
   if (auth) return auth;
 
