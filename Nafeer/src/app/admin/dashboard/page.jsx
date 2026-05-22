@@ -17,6 +17,8 @@ import { AdminEditorSection }     from './components/AdminEditorSection';
 import { CurriculumSection }      from './components/CurriculumSection';
 import { EmailSection }           from './components/EmailSection';
 import { CommsSection }          from './components/CommsSection';
+import { AndroidInsightsSection } from './components/android/AndroidInsightsSection';
+
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -105,6 +107,7 @@ export default function AdminDashboard() {
         {section === 'seed'       && <SeedSection />}
         {section === 'email'      && <EmailSection />}
         {section === 'comms'      && <CommsSection />}
+        {section === 'android'    && <AndroidInsightsSection />}
       </main>
 
       {showCreate && (

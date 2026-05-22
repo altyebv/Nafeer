@@ -32,6 +32,8 @@ export const NAV = [
   // ── Comms ─────────────────────────────────────────────────────────────────
   // Announcements, surveys, and future app-level settings (feature flags, tours).
   { id: 'comms',        icon: '⌘', label: 'مركز التحكم', badgeKey: null        },
+
+  { id: 'android', icon: '◉', label: 'تحليلات الأندرويد', badgeKey: null },
   //
   // ── Ops ───────────────────────────────────────────────────────────────────
   { id: 'coverage',     icon: '▦', label: 'خريطة التغطية',     badgeKey: null          },
