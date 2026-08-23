@@ -1,5 +1,5 @@
 export function Btn({ children, variant = 'ghost', small = false, loading = false, onClick, disabled }) {
-  const sz = small ? 'px-3 py-1.5 text-[11px]' : 'px-3 py-2 text-xs';
+  const sz = small ? 'px-3 py-1.5 text-2xs' : 'px-3 py-2 text-xs';
   const V = {
     green: 'bg-green-900/50 hover:bg-green-800/60 border border-green-700/50 text-green-400',
     red:   'bg-red-900/30 hover:bg-red-900/50 border border-red-800/40 text-red-400',
@@ -12,7 +12,7 @@ export function Btn({ children, variant = 'ghost', small = false, loading = fals
       disabled={disabled || loading}
       className={`${sz} rounded-lg font-arabic font-semibold transition-all flex items-center justify-center gap-1 disabled:opacity-50 w-full ${V[variant] || V.ghost}`}
     >
-      {loading ? <span className="animate-pulse font-mono text-[10px]">···</span> : children}
+      {loading ? <span className="animate-pulse font-mono text-2xs">···</span> : children}
     </button>
   );
 }

@@ -99,7 +99,7 @@ export function ReviewQueueSection({ onTotalChange, onUnauthorized }) {
               return (
                 <section key={type}>
                   <div className="flex items-center gap-3 mb-3">
-                    <span className={`text-[11px] px-2.5 py-1 rounded-lg border font-arabic flex items-center gap-1.5 ${t.color}`}>
+                    <span className={`text-2xs px-2.5 py-1 rounded-lg border font-arabic flex items-center gap-1.5 ${t.color}`}>
                       <span>{t.icon}</span>{t.label}
                     </span>
                     <span className="text-xs font-mono text-ink-600">{items.length}</span>
@@ -117,22 +117,22 @@ export function ReviewQueueSection({ onTotalChange, onUnauthorized }) {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
                                 {subj && (
-                                  <span className={`text-[10px] px-2 py-0.5 rounded border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
+                                  <span className={`text-2xs px-2 py-0.5 rounded border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
                                     {subj.nameAr}
                                   </span>
                                 )}
                                 {item.itemType && (
-                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-ink-700/40 text-ink-600">
+                                  <span className="text-2xs font-mono px-2 py-0.5 rounded border border-ink-700/40 text-ink-600">
                                     {item.itemType}
                                   </span>
                                 )}
                                 {item.difficulty && (
-                                  <span className="text-[10px] font-mono text-ink-700">{'★'.repeat(item.difficulty)}</span>
+                                  <span className="text-2xs font-mono text-ink-700">{'★'.repeat(item.difficulty)}</span>
                                 )}
-                                <span className="text-[10px] font-mono text-ink-700">v{item.version}</span>
+                                <span className="text-2xs font-mono text-ink-700">v{item.version}</span>
                               </div>
                               <p className="text-sm text-sand-300 font-arabic leading-relaxed">{item.label}</p>
-                              <p className="text-[10px] font-mono text-ink-700 mt-1.5">
+                              <p className="text-2xs font-mono text-ink-700 mt-1.5">
                                 {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                               </p>
                             </div>

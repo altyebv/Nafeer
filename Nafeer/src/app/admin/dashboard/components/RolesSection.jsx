@@ -44,7 +44,7 @@ function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
             <div className="flex items-center gap-2 flex-wrap mb-0.5">
               <h3 className="font-bold text-sand-200 font-arabic text-sm leading-tight">{role.name}</h3>
               {!role.isActive && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full border border-ink-700/40 bg-ink-800/40 text-ink-600 font-arabic">
+                <span className="text-2xs px-2 py-0.5 rounded-full border border-ink-700/40 bg-ink-800/40 text-ink-600 font-arabic">
                   معطّل
                 </span>
               )}
@@ -52,23 +52,23 @@ function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
 
             {/* Badges row */}
             <div className="flex items-center gap-1.5 flex-wrap mb-1">
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-arabic ${meta.color}`}>
+              <span className={`text-2xs px-2 py-0.5 rounded-full border font-arabic ${meta.color}`}>
                 {meta.label}
               </span>
               {role.subcategory && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full border border-ink-700/40 text-ink-500 font-arabic">
+                <span className="text-2xs px-2 py-0.5 rounded-full border border-ink-700/40 text-ink-500 font-arabic">
                   {role.subcategory}
                 </span>
               )}
               {role.portfolioPrompt && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full border border-ink-700/30 text-ink-600 font-arabic">
+                <span className="text-2xs px-2 py-0.5 rounded-full border border-ink-700/30 text-ink-600 font-arabic">
                   ◆ محفظة
                 </span>
               )}
             </div>
 
             {role.description && (
-              <p className="text-[11px] text-ink-600 font-arabic leading-relaxed line-clamp-2">
+              <p className="text-xs text-ink-600 font-arabic leading-relaxed line-clamp-2">
                 {role.description}
               </p>
             )}
@@ -78,14 +78,14 @@ function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
           <div className="shrink-0 flex flex-col gap-1.5 w-[90px]">
             <button
               onClick={() => onEdit(role)}
-              className="w-full py-1.5 rounded-lg text-[11px] font-arabic border transition-all bg-ink-800/60 hover:bg-ink-700/60 border-ink-700/50 text-ink-300 hover:text-ink-100"
+              className="w-full py-1.5 rounded-lg text-2xs font-arabic border transition-all bg-ink-800/60 hover:bg-ink-700/60 border-ink-700/50 text-ink-300 hover:text-ink-100"
             >
               تعديل
             </button>
             <button
               onClick={() => onToggle(role)}
               disabled={toggling}
-              className={`w-full py-1.5 rounded-lg text-[11px] font-arabic border transition-all disabled:opacity-50 ${
+              className={`w-full py-1.5 rounded-lg text-2xs font-arabic border transition-all disabled:opacity-50 ${
                 role.isActive
                   ? 'bg-red-900/20 hover:bg-red-900/40 border-red-800/30 text-red-500'
                   : 'bg-sand-900/20 hover:bg-sand-900/40 border-sand-800/30 text-sand-500'
@@ -100,17 +100,17 @@ function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
         <div className="mt-3 pt-3 border-t border-ink-800/30 flex items-center justify-between">
           {/* Stats */}
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-[11px] font-arabic text-ink-700">
+            <span className="flex items-center gap-1 text-2xs font-arabic text-ink-700">
               <span className="font-mono text-ink-500">{qCount}</span>
               {' '}{qCount === 1 ? 'سؤال' : 'أسئلة'}
             </span>
             {role.microTask?.prompt && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full border border-ink-800/50 text-ink-700 font-arabic">
+              <span className="text-2xs px-2 py-0.5 rounded-full border border-ink-800/50 text-ink-700 font-arabic">
                 مهمة ✓
               </span>
             )}
             {qCount > 0 && role.interviewQuestions?.some((q) => q.subjectFilter?.length > 0) && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full border border-ink-800/50 text-ink-700 font-arabic">
+              <span className="text-2xs px-2 py-0.5 rounded-full border border-ink-800/50 text-ink-700 font-arabic">
                 تصفية مواد
               </span>
             )}
@@ -119,16 +119,16 @@ function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
           {/* Delete */}
           {confirmDelete ? (
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-red-400 font-arabic">تأكيد الحذف؟</span>
+              <span className="text-2xs text-red-400 font-arabic">تأكيد الحذف؟</span>
               <button
                 onClick={() => onDelete(role)}
-                className="text-[10px] font-arabic px-2 py-0.5 rounded-lg bg-red-900/40 border border-red-800/40 text-red-400 hover:bg-red-900/60 transition-colors"
+                className="text-2xs font-arabic px-2 py-0.5 rounded-lg bg-red-900/40 border border-red-800/40 text-red-400 hover:bg-red-900/60 transition-colors"
               >
                 {deleting ? '···' : 'حذف'}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="text-[10px] font-arabic text-ink-700 hover:text-ink-400 transition-colors"
+                className="text-2xs font-arabic text-ink-700 hover:text-ink-400 transition-colors"
               >
                 إلغاء
               </button>
@@ -136,7 +136,7 @@ function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="text-[10px] font-mono text-ink-800 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+              className="text-2xs font-mono text-ink-800 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
             >
               حذف
             </button>
@@ -255,7 +255,7 @@ export function RolesSection() {
                 <span className={`text-xs font-arabic px-2.5 py-1 rounded-lg border ${meta.color}`}>
                   {meta.icon} {meta.label}
                 </span>
-                <span className="text-[11px] font-mono text-ink-700">{catRoles.length}</span>
+                <span className="text-2xs font-mono text-ink-700">{catRoles.length}</span>
                 <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
               </div>
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

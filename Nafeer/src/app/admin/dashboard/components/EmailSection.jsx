@@ -129,7 +129,7 @@ function TemplateSelector({ selected, onSelect }) {
               style={{ color: active ? '#d4891e' : 'rgba(255,255,255,0.7)', marginBottom: 2 }}>
               {t.label}
             </p>
-            <p className="text-[11px] font-arabic"
+            <p className="text-2xs font-arabic"
               style={{ color: 'rgba(255,255,255,0.3)', margin: 0 }}>
               {t.description}
             </p>
@@ -182,12 +182,12 @@ function LogRow({ log }) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="text-xs text-ink-200 font-arabic truncate">{log.to}</p>
-        <p className="text-[11px] text-ink-600 font-arabic mt-0.5 truncate">{log.subject}</p>
+        <p className="text-2xs text-ink-600 font-arabic mt-0.5 truncate">{log.subject}</p>
       </div>
 
       {/* Right: template + time */}
       <div className="text-right shrink-0">
-        <p className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+        <p className="text-2xs font-mono px-1.5 py-0.5 rounded"
           style={{
             background: 'rgba(212,137,30,0.08)',
             border:     '1px solid rgba(212,137,30,0.12)',
@@ -195,7 +195,7 @@ function LogRow({ log }) {
           }}>
           {log.template}
         </p>
-        <p className="text-[10px] text-ink-700 font-mono mt-1">{fmtTime(log.timestamp)}</p>
+        <p className="text-2xs text-ink-700 font-mono mt-1">{fmtTime(log.timestamp)}</p>
       </div>
     </div>
   );
@@ -218,7 +218,7 @@ function LivePreview({ template, to, fields }) {
       borderRadius: 14,
       padding:      '18px 20px',
     }}>
-      <p className="text-[10px] font-mono text-ink-700 uppercase tracking-widest mb-3">معاينة</p>
+      <p className="text-2xs font-mono text-ink-700 uppercase tracking-widest mb-3">معاينة</p>
 
       {/* Envelope summary */}
       <div className="space-y-2 mb-4">
@@ -244,7 +244,7 @@ function LivePreview({ template, to, fields }) {
         <div className="flex items-center gap-2 mb-2.5 pb-2.5"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <span className="text-sm font-bold" style={{ color: '#d4891e' }}>نفير</span>
-          <span className="text-[9px] font-mono text-ink-700">ADMIN</span>
+          <span className="text-2xs font-mono text-ink-700">ADMIN</span>
         </div>
 
         {fields.subject || fields.name || fields.link ? (
@@ -253,24 +253,24 @@ function LivePreview({ template, to, fields }) {
               {fields.subject || meta.label}
             </p>
             {fields.name && (
-              <p className="text-[11px] font-arabic text-ink-600">
+              <p className="text-2xs font-arabic text-ink-600">
                 مرحباً {fields.name}،
               </p>
             )}
             {fields.link && (
-              <div className="mt-2 inline-block px-3 py-1 rounded text-[10px] font-arabic"
+              <div className="mt-2 inline-block px-3 py-1 rounded text-2xs font-arabic"
                 style={{ background: 'rgba(212,137,30,0.15)', color: '#d4891e' }}>
                 → رابط الإجراء
               </div>
             )}
             {fields.message && (
-              <p className="text-[11px] font-arabic text-ink-600 mt-1 line-clamp-2">
+              <p className="text-2xs font-arabic text-ink-600 mt-1 line-clamp-2">
                 {fields.message.slice(0, 80)}{fields.message.length > 80 ? '…' : ''}
               </p>
             )}
           </>
         ) : (
-          <p className="text-[11px] font-arabic text-ink-700">أدخل بيانات لرؤية المعاينة…</p>
+          <p className="text-2xs font-arabic text-ink-700">أدخل بيانات لرؤية المعاينة…</p>
         )}
       </div>
     </div>
@@ -438,27 +438,27 @@ export function EmailSection() {
               padding:      '18px 20px',
             }}>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-mono text-ink-700 uppercase tracking-widest">
+                <p className="text-2xs font-mono text-ink-700 uppercase tracking-widest">
                   آخر الإرسالات
                 </p>
                 <button
                   onClick={loadLogs}
-                  className="text-[10px] font-mono text-ink-700 hover:text-ink-400 transition-colors"
+                  className="text-2xs font-mono text-ink-700 hover:text-ink-400 transition-colors"
                 >
                   ↻ تحديث
                 </button>
               </div>
 
               {logsState === 'loading' && (
-                <p className="text-[11px] font-mono text-ink-700 animate-pulse py-2">LOADING...</p>
+                <p className="text-2xs font-mono text-ink-700 animate-pulse py-2">LOADING...</p>
               )}
 
               {logsState === 'error' && (
-                <p className="text-[11px] font-arabic text-red-800 py-2">تعذّر تحميل السجل</p>
+                <p className="text-2xs font-arabic text-red-800 py-2">تعذّر تحميل السجل</p>
               )}
 
               {logsState === 'ok' && logs.length === 0 && (
-                <p className="text-[11px] font-arabic text-ink-700 py-2">لا يوجد إرسالات بعد</p>
+                <p className="text-2xs font-arabic text-ink-700 py-2">لا يوجد إرسالات بعد</p>
               )}
 
               {logsState === 'ok' && logs.length > 0 && (
@@ -467,7 +467,7 @@ export function EmailSection() {
                     <LogRow key={log._id} log={log} />
                   ))}
                   {logs.length > 15 && (
-                    <p className="text-[10px] font-mono text-ink-700 pt-2 text-center">
+                    <p className="text-2xs font-mono text-ink-700 pt-2 text-center">
                       +{logs.length - 15} إرسال أقدم
                     </p>
                   )}

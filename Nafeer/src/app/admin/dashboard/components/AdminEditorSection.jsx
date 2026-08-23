@@ -26,7 +26,7 @@ function readStoredSelectedSubject() {
 function TrackBadge({ track }) {
   const m = TRACK_META[track] || { label: track, cls: 'border-ink-700 text-ink-500' };
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${m.cls}`}>
+    <span className={`text-2xs px-2 py-0.5 rounded-full font-mono border ${m.cls}`}>
       {m.label}
     </span>
   );
@@ -34,12 +34,12 @@ function TrackBadge({ track }) {
 
 function VersionBadge({ version }) {
   if (!version) return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-ink-700/60 text-ink-600">
+    <span className="text-2xs px-2 py-0.5 rounded-full font-mono border border-ink-700/60 text-ink-600">
       غير منشور
     </span>
   );
   return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-sand-800/60 text-sand-400">
+    <span className="text-2xs px-2 py-0.5 rounded-full font-mono border border-sand-800/60 text-sand-400">
       v{version}
     </span>
   );
@@ -223,7 +223,7 @@ function RefreshStatus({ refreshing }) {
       style={{ background: 'rgba(212,137,30,0.05)', borderColor: 'rgba(212,137,30,0.18)' }}
     >
       <Spinner />
-      <span className="text-[11px] font-arabic text-sand-300">جار تحديث بيانات المحرر بدون إغلاق مساحة العمل...</span>
+      <span className="text-2xs font-arabic text-sand-300">جار تحديث بيانات المحرر بدون إغلاق مساحة العمل...</span>
     </div>
   );
 }
@@ -235,10 +235,10 @@ function InlineRefreshError({ message, onRetry }) {
       className="mb-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-3"
       style={{ background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.18)' }}
     >
-      <span className="text-[12px] font-arabic text-red-300">{message}</span>
+      <span className="text-xs font-arabic text-red-300">{message}</span>
       <button
         onClick={onRetry}
-        className="text-[10px] font-mono text-red-300/80 hover:text-red-200 transition-colors"
+        className="text-2xs font-mono text-red-300/80 hover:text-red-200 transition-colors"
       >
         retry
       </button>
@@ -266,12 +266,12 @@ function SubjectPicker({ subjects, selected, onSelect, onCreateTest }) {
       style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.07)' }}
     >
       <div className="px-3 py-2.5 border-b flex items-center justify-between" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-        <p className="text-[10px] font-mono text-ink-600 uppercase tracking-widest">المواد</p>
+        <p className="text-2xs font-mono text-ink-600 uppercase tracking-widest">المواد</p>
         {/* ── Create test subject button ── */}
         <button
           onClick={onCreateTest}
           title="إنشاء مادة تجريبية"
-          className="text-[10px] font-mono text-ink-700 hover:text-sand-400 transition-colors px-1.5 py-0.5 rounded border border-ink-800/60 hover:border-sand-700/50"
+          className="text-2xs font-mono text-ink-700 hover:text-sand-400 transition-colors px-1.5 py-0.5 rounded border border-ink-800/60 hover:border-sand-700/50"
         >
           + تجريبي
         </button>
@@ -282,7 +282,7 @@ function SubjectPicker({ subjects, selected, onSelect, onCreateTest }) {
           <div key={track}>
             <div className="flex items-center gap-1.5 px-3 py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
               <span className={`w-1.5 h-1.5 rounded-full ${TRACK_META[track]?.dot || 'bg-ink-600'}`} />
-              <span className="text-[9px] font-mono text-ink-700 uppercase tracking-widest">
+              <span className="text-2xs font-mono text-ink-700 uppercase tracking-widest">
                 {TRACK_META[track]?.label || track}
               </span>
             </div>
@@ -304,11 +304,11 @@ function SubjectPicker({ subjects, selected, onSelect, onCreateTest }) {
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(s)}`} />
                   <span className="font-arabic text-xs truncate">{s.nameAr}</span>
                   {s.isMajor && (
-                    <span className="mr-auto text-[8px] font-mono text-ink-700 shrink-0">★</span>
+                    <span className="mr-auto text-2xs font-mono text-ink-700 shrink-0">★</span>
                   )}
                   {/* Mark test/scratch subjects */}
                   {isTest && !s.isMajor && (
-                    <span className="mr-auto text-[7px] font-mono text-ink-800 shrink-0">DEV</span>
+                    <span className="mr-auto text-2xs font-mono text-ink-800 shrink-0">DEV</span>
                   )}
                 </button>
               );
@@ -330,7 +330,7 @@ function SubjectPicker({ subjects, selected, onSelect, onCreateTest }) {
         ].map(({ dot, label }) => (
           <div key={label} className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-            <span className="text-[9px] font-mono text-ink-700">{label}</span>
+            <span className="text-2xs font-mono text-ink-700">{label}</span>
           </div>
         ))}
       </div>
@@ -365,8 +365,8 @@ function StatCard({ label, total, approved, icon, diffSincePublish }) {
       />
 
       <div className="flex items-center justify-between relative">
-        <span className="text-[10px] font-arabic text-ink-400 tracking-wide">{label}</span>
-        <span className="text-[13px] font-mono" style={{ color: accent.fg }}>{icon}</span>
+        <span className="text-2xs font-arabic text-ink-400 tracking-wide">{label}</span>
+        <span className="text-sm font-mono" style={{ color: accent.fg }}>{icon}</span>
       </div>
 
       <div className="flex items-end gap-2 relative">
@@ -375,7 +375,7 @@ function StatCard({ label, total, approved, icon, diffSincePublish }) {
         </span>
         <span className="text-sm font-mono text-ink-600 mb-0.5">/ {total}</span>
         {hasNew && (
-          <span className="mr-auto text-[10px] font-mono text-amber-400/80 mb-0.5">
+          <span className="mr-auto text-2xs font-mono text-amber-400/80 mb-0.5">
             +{diffSincePublish} جديد
           </span>
         )}
@@ -388,7 +388,7 @@ function StatCard({ label, total, approved, icon, diffSincePublish }) {
         />
       </div>
 
-      <p className="text-[9px] font-mono text-ink-700 relative">{approvalRate}% معتمد</p>
+      <p className="text-2xs font-mono text-ink-700 relative">{approvalRate}% معتمد</p>
     </div>
   );
 }
@@ -440,7 +440,7 @@ function PublishResult({ result, onDismiss }) {
           <span className="font-arabic text-sm text-sand-300">
             تم النشر بنجاح — نسخة {displayVersion}
           </span>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border"
+          <span className="text-2xs font-mono px-1.5 py-0.5 rounded border"
             style={{ borderColor: 'rgba(212,137,30,0.3)', color: 'var(--accent)' }}>
             {isDelta ? 'delta' : 'full'}
           </span>
@@ -457,13 +457,13 @@ function PublishResult({ result, onDismiss }) {
         ].map(([label, val]) => (
           <div key={label} className="text-center">
             <p className="text-base font-mono font-bold text-sand-400">{val}</p>
-            <p className="text-[10px] font-arabic text-ink-600">{label}</p>
+            <p className="text-2xs font-arabic text-ink-600">{label}</p>
           </div>
         ))}
       </div>
 
       {isDelta && data.delta && (
-        <div className="mt-3 flex items-center gap-4 text-[10px] font-mono text-ink-500">
+        <div className="mt-3 flex items-center gap-4 text-2xs font-mono text-ink-500">
           <span>↑ {data.delta.bundlesUploaded} bundle</span>
           <span>~ {data.delta.changedEntities} entity</span>
           {data.delta.deletedEntities > 0 && (
@@ -474,12 +474,12 @@ function PublishResult({ result, onDismiss }) {
 
       {data.downloadUrl && (
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-[10px] font-mono text-ink-600">رابط التحميل:</span>
+          <span className="text-2xs font-mono text-ink-600">رابط التحميل:</span>
           <a
             href={data.downloadUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] font-mono text-sky-500/70 hover:text-sky-400 truncate"
+            className="text-2xs font-mono text-sky-500/70 hover:text-sky-400 truncate"
           >
             {data.downloadUrl.split('/').pop()}
           </a>
@@ -559,27 +559,27 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
               <h2 className="font-arabic text-xl font-bold text-ink-100 truncate">{s.nameAr}</h2>
               <TrackBadge track={s.track} />
               {s.isMajor && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>
+                <span className="text-2xs px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>
               )}
               {isTestSubject && !s.isMajor && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-purple-800/40 text-purple-500/70">TEST</span>
+                <span className="text-2xs px-1.5 py-0.5 rounded font-mono border border-purple-800/40 text-purple-500/70">TEST</span>
               )}
               <VersionBadge version={s.appVersion} />
               {s.contentVersion && s.patchCount != null && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sky-800/40 text-sky-500/70">
+                <span className="text-2xs px-1.5 py-0.5 rounded font-mono border border-sky-800/40 text-sky-500/70">
                   {s.patchCount} patch
                 </span>
               )}
             </div>
 
             {s.isPublished && s.publishedAt && (
-              <p className="text-[11px] font-mono text-ink-600">
+              <p className="text-2xs font-mono text-ink-600">
                 آخر نشر: {relativeTime(s.publishedAt)} ·{' '}
                 <span dir="ltr" className="text-ink-700">{new Date(s.publishedAt).toLocaleDateString('ar-SA')}</span>
               </p>
             )}
 
-            <p className="text-[10px] font-mono text-ink-700 mt-1 tracking-widest">{s.id}</p>
+            <p className="text-2xs font-mono text-ink-700 mt-1 tracking-widest">{s.id}</p>
           </div>
 
           {/* Status pill — right side */}
@@ -591,7 +591,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
                   style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)' }}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 animate-pulse" />
-                  <span className="text-[11px] font-arabic text-amber-300">يوجد محتوى جديد</span>
+                  <span className="text-2xs font-arabic text-amber-300">يوجد محتوى جديد</span>
                 </div>
               ) : (
                 <div
@@ -599,7 +599,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
                   style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                  <span className="text-[11px] font-arabic text-green-300">محدّث</span>
+                  <span className="text-2xs font-arabic text-green-300">محدّث</span>
                 </div>
               )
             ) : (
@@ -608,7 +608,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-ink-700 shrink-0" />
-                <span className="text-[11px] font-arabic text-ink-600">لا يوجد محتوى معتمد</span>
+                <span className="text-2xs font-arabic text-ink-600">لا يوجد محتوى معتمد</span>
               </div>
             )}
           </div>
@@ -631,8 +631,8 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
           className="rounded-xl border px-4 py-3"
           style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.06)' }}
         >
-          <p className="text-[10px] font-mono text-ink-600 uppercase tracking-widest mb-2">آخر نسخة منشورة</p>
-          <div className="flex items-center gap-6 text-[11px] font-mono">
+          <p className="text-2xs font-mono text-ink-600 uppercase tracking-widest mb-2">آخر نسخة منشورة</p>
+          <div className="flex items-center gap-6 text-2xs font-mono">
             {s.remoteLessons != null && <span><span className="text-sand-500">{s.remoteLessons}</span>  <span className="text-ink-700">درس</span></span>}
             {s.remoteSections != null && <span><span className="text-sand-500">{s.remoteSections}</span> <span className="text-ink-700">قسم</span></span>}
             {s.remoteBlocks != null && <span><span className="text-sand-500">{s.remoteBlocks}</span>   <span className="text-ink-700">مقطع</span></span>}
@@ -656,7 +656,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
             <p className="font-arabic text-sm font-semibold text-ink-200 mb-1">
               {s.isPublished ? 'نشر تحديث للتطبيق' : 'نشر للمرة الأولى'}
             </p>
-            <p className="text-[11px] font-arabic text-ink-500 leading-relaxed">
+            <p className="text-xs font-arabic text-ink-500 leading-relaxed">
               {s.isPublishable
                 ? `سيتم نشر ${s.lessons.approved} درس معتمد إلى تطبيق بشير مباشرة`
                 : 'لا يوجد دروس معتمدة — أضف محتوى أولاً'}
@@ -674,7 +674,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
             {/* ── Major release ── */}
             {showMajorConfirm ? (
               <div className="flex items-center gap-3 flex-wrap">
-                <p className="text-[11px] font-arabic text-sky-300/80 flex-1">
+                <p className="text-2xs font-arabic text-sky-300/80 flex-1">
                   سيرفع رقم الإصدار الرئيسي (مثلاً 1.4 ← 2.0). استخدمه عند إطلاق وحدة جديدة أو تغيير جوهري في المنهج.
                 </p>
                 <div className="flex gap-2">
@@ -688,7 +688,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
               <button
                 onClick={() => setShowMajorConfirm(true)}
                 disabled={publishing || !s.isPublishable}
-                className="text-[10px] font-mono text-sky-600/70 hover:text-sky-400/80 transition-colors text-right"
+                className="text-2xs font-mono text-sky-600/70 hover:text-sky-400/80 transition-colors text-right"
               >
                 ★ نشر إصدار رئيسي (major bump)
               </button>
@@ -697,7 +697,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
             {/* ── Emergency full publish ── */}
             {showFullConfirm ? (
               <div className="flex items-center gap-3 flex-wrap">
-                <p className="text-[11px] font-arabic text-amber-300/80 flex-1">
+                <p className="text-2xs font-arabic text-amber-300/80 flex-1">
                   سيُعاد رفع ملف JSON كامل وتحديث manifest — استخدم هذا فقط عند الإصلاح الاضطراري أو الترحيل الأول.
                 </p>
                 <div className="flex gap-2">
@@ -711,7 +711,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
               <button
                 onClick={() => setShowFullConfirm(true)}
                 disabled={publishing || !s.isPublishable}
-                className="text-[10px] font-mono text-ink-600 hover:text-amber-400/70 transition-colors text-right"
+                className="text-2xs font-mono text-ink-600 hover:text-amber-400/70 transition-colors text-right"
               >
                 ↻ نشر كامل اضطراري (mode: full)
               </button>
@@ -728,11 +728,11 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
         >
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-[11px] font-mono text-red-400/70">حذف المادة من قاعدة البيانات</p>
-              <p className="text-[10px] font-arabic text-ink-600">
+              <p className="text-2xs font-mono text-red-400/70">حذف المادة من قاعدة البيانات</p>
+              <p className="text-2xs font-arabic text-ink-600">
                 يحذف المادة ووحداتها ودروسها من Atlas + Firestore + Supabase. لا يمكن التراجع.
               </p>
-              {deleteError && <p className="text-[10px] text-red-400 mt-1">{deleteError}</p>}
+              {deleteError && <p className="text-2xs text-red-400 mt-1">{deleteError}</p>}
             </div>
             {showDeleteConfirm ? (
               <div className="flex items-center gap-2 shrink-0">
@@ -755,7 +755,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
             ) : (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="shrink-0 text-[10px] font-mono text-red-400/50 hover:text-red-400/80 transition-colors"
+                className="shrink-0 text-2xs font-mono text-red-400/50 hover:text-red-400/80 transition-colors"
               >
                 ✕ حذف
               </button>
@@ -771,7 +771,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
           style={{ background: 'rgba(239,68,68,0.03)', borderColor: 'rgba(239,68,68,0.10)' }}
         >
           <span className="text-red-500/50 text-sm shrink-0">↓</span>
-          <p className="text-[11px] font-arabic text-ink-600">
+          <p className="text-2xs font-arabic text-ink-600">
             هذه المادة موجودة في Firestore فقط. زر «حذف من Remote» متاح في منطقة العمل أدناه.
           </p>
         </div>

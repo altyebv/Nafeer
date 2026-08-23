@@ -40,7 +40,7 @@ function MediaLightbox({ item, onClose, onDelete, onCopy, copiedId }) {
 
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-ink-800/60">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className={`text-[11px] px-2 py-0.5 rounded border ${badge.bg} ${badge.text} ${badge.border}`}>{badge.label}</span>
+            <span className={`text-2xs px-2 py-0.5 rounded border ${badge.bg} ${badge.text} ${badge.border}`}>{badge.label}</span>
             <span className="text-sm text-sand-300 font-mono truncate">{item.filename}</span>
           </div>
           <button onClick={onClose} className="shrink-0 text-ink-600 hover:text-ink-300 text-xl leading-none w-7 h-7 flex items-center justify-center rounded-lg hover:bg-ink-800 transition-colors">×</button>
@@ -60,12 +60,12 @@ function MediaLightbox({ item, onClose, onDelete, onCopy, copiedId }) {
           </div>
 
           <div className="flex items-center gap-2 bg-ink-950/60 rounded-lg px-3 py-2 border border-ink-800/40">
-            <span className="flex-1 text-[11px] font-mono text-ink-600 truncate" dir="ltr">{item.url}</span>
+            <span className="flex-1 text-2xs font-mono text-ink-600 truncate" dir="ltr">{item.url}</span>
             <button
               onClick={() => onCopy(item.url, item.contentId)}
               className={`shrink-0 text-xs font-mono px-2.5 py-1 rounded-lg border transition-all ${
                 copiedId === item.contentId
-                  ? 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400'
+                  ? 'bg-green-900/40 border-green-800/50 text-green-400'
                   : 'bg-ink-800/60 border-ink-700/50 text-ink-400 hover:text-ink-200'
               }`}
             >
@@ -266,7 +266,7 @@ export function MediaSection() {
                         {f.status==='done'?'✓':f.status==='error'?'✗':f.status==='uploading'?'↑':'·'}
                       </span>
                       <span className="flex-1 text-xs text-ink-400 truncate font-mono">{f.name}</span>
-                      {f.msg && <span className="text-[10px] text-red-400 shrink-0">{f.msg}</span>}
+                      {f.msg && <span className="text-2xs text-red-400 shrink-0">{f.msg}</span>}
                     </div>
                   ))}
                 </div>
@@ -324,11 +324,11 @@ export function MediaSection() {
                       <div className="px-2 py-2 space-y-1">
                         <p className="text-xs text-ink-300 truncate leading-tight" title={item.filename}>{item.filename}</p>
                         <div className="flex items-center gap-1 flex-wrap">
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] border ${badge.bg} ${badge.text} ${badge.border}`}>{badge.label}</span>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] border bg-ink-800/60 text-ink-500 border-ink-700/40 font-arabic">{subjectLabel(item.subjectId)}</span>
-                          <span className="text-[10px] text-ink-700 font-mono mr-auto">{fmtBytes(item.size)}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-2xs border ${badge.bg} ${badge.text} ${badge.border}`}>{badge.label}</span>
+                          <span className="px-1.5 py-0.5 rounded text-2xs border bg-ink-800/60 text-ink-500 border-ink-700/40 font-arabic">{subjectLabel(item.subjectId)}</span>
+                          <span className="text-2xs text-ink-700 font-mono mr-auto">{fmtBytes(item.size)}</span>
                         </div>
-                        {item.alt && <p className="text-[10px] text-ink-600 truncate font-arabic">{item.alt}</p>}
+                        {item.alt && <p className="text-2xs text-ink-600 truncate font-arabic">{item.alt}</p>}
                       </div>
                       <div className="flex items-center border-t border-ink-800/40">
                         <button onClick={() => copyUrl(item.url, item.contentId)} title="نسخ الرابط"

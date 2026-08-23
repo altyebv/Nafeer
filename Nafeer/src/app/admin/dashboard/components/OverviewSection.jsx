@@ -23,7 +23,7 @@ function MetricCard({ icon, value, label, sub, accent = false }) {
         {value ?? '—'}
       </p>
       <p className="text-xs font-arabic text-ink-500">{label}</p>
-      {sub && <p className="text-[10px] font-mono text-ink-700 mt-0.5">{sub}</p>}
+      {sub && <p className="text-2xs font-mono text-ink-700 mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -31,7 +31,7 @@ function MetricCard({ icon, value, label, sub, accent = false }) {
 // ── Section label ──────────────────────────────────────────────────────────────
 function Label({ children }) {
   return (
-    <p className="text-[10px] font-mono uppercase tracking-widest mb-4 text-ink-600">{children}</p>
+    <p className="text-2xs font-mono uppercase tracking-widest mb-4 text-ink-600">{children}</p>
   );
 }
 
@@ -44,7 +44,7 @@ function ContributorRow({ c, rank }) {
       className="flex items-center gap-3 py-2.5 transition-colors duration-150 group cursor-default"
       style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
     >
-      <span className="text-[10px] font-mono w-5 text-center shrink-0 text-ink-700">{rank}</span>
+      <span className="text-2xs font-mono w-5 text-center shrink-0 text-ink-700">{rank}</span>
       {c.avatarUrl ? (
         <img src={c.avatarUrl} alt={c.name} className="w-7 h-7 rounded-full object-cover shrink-0" style={{ border: '1px solid rgba(212,137,30,0.3)' }} />
       ) : (
@@ -61,7 +61,7 @@ function ContributorRow({ c, rank }) {
             href={`/contributors/${c.username}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] font-mono text-ink-700 hover:text-sand-400 transition-colors px-1.5 py-0.5 rounded border border-transparent hover:border-ink-700/50"
+            className="text-2xs font-mono text-ink-700 hover:text-sand-400 transition-colors px-1.5 py-0.5 rounded border border-transparent hover:border-ink-700/50"
             title="عرض الملف الشخصي"
           >
             ↗
@@ -136,7 +136,7 @@ function Sparkline({ data }) {
         {/* Today dot */}
         <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="3" fill="#d4891e" />
       </svg>
-      <p className="text-[10px] font-mono text-ink-700 mt-1 text-left" dir="ltr">آخر 30 يوم</p>
+      <p className="text-2xs font-mono text-ink-700 mt-1 text-left" dir="ltr">آخر 30 يوم</p>
     </div>
   );
 }
@@ -151,7 +151,7 @@ function CurriculumBar({ track, label, seeded, total }) {
       <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: colors[track] || '#d4891e' }} />
       </div>
-      <span className="text-[10px] font-mono w-14 text-left shrink-0 text-ink-700" dir="ltr">
+      <span className="text-2xs font-mono w-14 text-left shrink-0 text-ink-700" dir="ltr">
         {seeded}/{total}
       </span>
     </div>
@@ -243,12 +243,12 @@ export function OverviewSection({ allContributors }) {
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-arabic font-bold mb-1 text-ink-100">نظرة عامة</h1>
+          <h1 className="text-2xl font-arabic font-bold mb-1 text-sand-300">نظرة عامة</h1>
           <p className="text-sm font-arabic text-ink-600">{dateStr}</p>
         </div>
         <div dir="ltr" className="text-left shrink-0">
           <p className="text-2xl font-mono font-bold tabular-nums" style={{ color: 'var(--accent)' }}>{timeStr}</p>
-          <p className="text-[10px] font-mono uppercase tracking-widest text-ink-700">NAFEER ADMIN</p>
+          <p className="text-2xs font-mono uppercase tracking-widest text-ink-700">NAFEER ADMIN</p>
         </div>
       </div>
 
@@ -320,10 +320,10 @@ export function OverviewSection({ allContributors }) {
             </div>
             <div dir="rtl">
               {subjects.filter((s) => s.catalogError).length > 0 && (
-                <p className="text-[11px] font-arabic text-red-400">✕ {subjects.filter((s) => s.catalogError).length} خطأ</p>
+                <p className="text-2xs font-arabic text-red-400">✕ {subjects.filter((s) => s.catalogError).length} خطأ</p>
               )}
               {subjects.filter((s) => s.seeded && (s.missingUnits > 0 || s.missingLessons > 0)).length > 0 && (
-                <p className="text-[11px] font-arabic text-amber-400">◎ {subjects.filter((s) => s.seeded && (s.missingUnits > 0 || s.missingLessons > 0)).length} ناقص</p>
+                <p className="text-2xs font-arabic text-amber-400">◎ {subjects.filter((s) => s.seeded && (s.missingUnits > 0 || s.missingLessons > 0)).length} ناقص</p>
               )}
             </div>
           </div>

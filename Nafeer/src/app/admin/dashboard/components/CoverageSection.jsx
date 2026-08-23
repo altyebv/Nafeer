@@ -67,7 +67,7 @@ function InlineEdit({ value, placeholder = '', onSave, className = '', inputClas
       className={`${className} cursor-text group relative`}
     >
       {value || <span className="italic text-ink-600">{placeholder}</span>}
-      <span className="absolute -right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-70 transition-opacity text-ink-600 text-[10px] select-none">✎</span>
+      <span className="absolute -right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-70 transition-opacity text-ink-600 text-2xs select-none">✎</span>
     </span>
   );
 }
@@ -84,7 +84,7 @@ function CoverageBar({ score, level }) {
           style={{ width: `${score}%`, background: c.bar }}
         />
       </div>
-      <span className="text-[11px] font-mono w-6 text-right tabular-nums" style={{ color: c.bar }}>
+      <span className="text-2xs font-mono w-6 text-right tabular-nums" style={{ color: c.bar }}>
         {score}
       </span>
     </div>
@@ -97,7 +97,7 @@ function AvgBadge({ avg }) {
   const l = avgLevel(avg);
   const c = LVL[l];
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full border ${c.pill}`}>
+    <span className={`inline-flex items-center gap-1 text-2xs font-mono px-2 py-0.5 rounded-full border ${c.pill}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
       {avg}%
     </span>
@@ -130,13 +130,13 @@ function SubjectSummaryBar({ data }) {
     <div className="mb-8 rounded-2xl border border-ink-800/60 bg-ink-900/40 p-5 flex flex-wrap items-center gap-6">
       {/* Subject name */}
       <div>
-        <p className="text-[10px] font-mono text-ink-600 mb-0.5 uppercase tracking-widest">المادة</p>
+        <p className="text-2xs font-mono text-ink-600 mb-0.5 uppercase tracking-widest">المادة</p>
         <p className="text-sm font-bold text-sand-300 font-arabic">{nameAr}</p>
       </div>
       <div className="w-px h-8 bg-ink-800/60 shrink-0" />
       {/* Overall coverage */}
       <div>
-        <p className="text-[10px] font-mono text-ink-600 mb-0.5 uppercase tracking-widest">التغطية الكلية</p>
+        <p className="text-2xs font-mono text-ink-600 mb-0.5 uppercase tracking-widest">التغطية الكلية</p>
         <div className="flex items-center gap-2">
           <div className="w-28 h-1.5 rounded-full bg-ink-800 overflow-hidden">
             <div
@@ -150,7 +150,7 @@ function SubjectSummaryBar({ data }) {
       <div className="w-px h-8 bg-ink-800/60 shrink-0" />
       {/* Approval rate */}
       <div>
-        <p className="text-[10px] font-mono text-ink-600 mb-0.5 uppercase tracking-widest">الدروس المعتمدة</p>
+        <p className="text-2xs font-mono text-ink-600 mb-0.5 uppercase tracking-widest">الدروس المعتمدة</p>
         <p className="text-sm font-mono text-sand-400">
           <span className="text-green-400">{approvedLessons}</span>
           <span className="text-ink-600"> / {totalLessons}</span>
@@ -306,7 +306,7 @@ export function CoverageSection() {
           )}
 
           {editMode && (
-            <span className="px-2.5 py-1 rounded-full bg-sand-900/25 border border-sand-700/30 text-sand-500 text-[11px] font-mono">
+            <span className="px-2.5 py-1 rounded-full bg-sand-900/25 border border-sand-700/30 text-sand-500 text-2xs font-mono">
               ✎ انقر على أي عنوان — Enter للحفظ، Esc للإلغاء
             </span>
           )}
@@ -345,13 +345,13 @@ export function CoverageSection() {
                       {/* Collapse hint dot */}
                       <span className={`w-2 h-2 rounded-full shrink-0 ${LVL[al].dot}`} />
 
-                      <h3 className="text-[13px] font-bold text-sand-300 font-arabic">
+                      <h3 className="text-sm font-bold text-sand-300 font-arabic">
                         {editMode ? (
                           <InlineEdit
                             value={unitTitle}
                             onSave={(v) => saveUnitTitle(unit.unitId, unit.mongoId, v)}
-                            className="text-[13px] font-bold text-sand-300 font-arabic"
-                            inputClassName="text-[13px] font-bold font-arabic w-72"
+                            className="text-sm font-bold text-sand-300 font-arabic"
+                            inputClassName="text-sm font-bold font-arabic w-72"
                           />
                         ) : unitTitle}
                       </h3>
@@ -361,7 +361,7 @@ export function CoverageSection() {
                       <div className="flex-1 h-px bg-ink-800/50" />
 
                       {/* Approved count */}
-                      <span className="text-[10px] font-mono text-ink-700 shrink-0">
+                      <span className="text-2xs font-mono text-ink-700 shrink-0">
                         {unit.approvedLessons}/{unit.totalLessons} معتمد
                       </span>
                     </div>
@@ -371,13 +371,13 @@ export function CoverageSection() {
                       <table className="w-full text-xs font-mono">
                         <thead>
                           <tr className="bg-ink-900/70 border-b border-ink-800/40">
-                            <th className="text-right py-2.5 px-4 text-ink-600 font-arabic font-normal text-[11px]">الدرس</th>
-                            <th className="py-2.5 px-3 text-ink-600 text-center text-[11px]">الحالة</th>
-                            <th className="py-2.5 px-3 text-ink-600 text-center text-[11px]" title="أقسام">§</th>
-                            <th className="py-2.5 px-3 text-ink-600 text-center text-[11px]" title="مفاهيم">✦</th>
-                            <th className="py-2.5 px-3 text-ink-600 text-center text-[11px]" title="تغذية">▣</th>
-                            <th className="py-2.5 px-3 text-ink-600 text-center text-[11px]" title="أسئلة">◎</th>
-                            <th className="py-2.5 px-3 text-ink-600 text-center text-[11px] min-w-[120px]">تغطية</th>
+                            <th className="text-right py-2.5 px-4 text-ink-600 font-arabic font-normal text-2xs">الدرس</th>
+                            <th className="py-2.5 px-3 text-ink-600 text-center text-2xs">الحالة</th>
+                            <th className="py-2.5 px-3 text-ink-600 text-center text-2xs" title="أقسام">§</th>
+                            <th className="py-2.5 px-3 text-ink-600 text-center text-2xs" title="مفاهيم">✦</th>
+                            <th className="py-2.5 px-3 text-ink-600 text-center text-2xs" title="تغذية">▣</th>
+                            <th className="py-2.5 px-3 text-ink-600 text-center text-2xs" title="أسئلة">◎</th>
+                            <th className="py-2.5 px-3 text-ink-600 text-center text-2xs min-w-[120px]">تغطية</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -402,15 +402,15 @@ export function CoverageSection() {
                                             value={resolvedGTitle || ''}
                                             placeholder="اسم المجموعة..."
                                             onSave={(v) => saveGroupTitle(groupKey, segment.lessons, v)}
-                                            className="text-[11px] text-sand-500 font-arabic font-medium"
-                                            inputClassName="text-[11px] font-arabic w-52"
+                                            className="text-2xs text-sand-500 font-arabic font-medium"
+                                            inputClassName="text-2xs font-arabic w-52"
                                           />
                                         ) : (
-                                          <span className={`text-[11px] font-arabic font-medium ${resolvedGTitle ? 'text-sand-500' : 'italic text-ink-600'}`}>
+                                          <span className={`text-2xs font-arabic font-medium ${resolvedGTitle ? 'text-sand-500' : 'italic text-ink-600'}`}>
                                             {resolvedGTitle || 'مجموعة بدون اسم'}
                                           </span>
                                         )}
-                                        <span className="text-[10px] text-ink-700 mr-1">
+                                        <span className="text-2xs text-ink-700 mr-1">
                                           ({segment.lessons.length})
                                         </span>
                                       </div>
@@ -431,13 +431,13 @@ export function CoverageSection() {
                                       className={`border-b border-ink-900/60 hover:bg-ink-800/15 transition-colors ${isEven ? '' : 'bg-ink-950/20'}`}
                                     >
                                       {/* Title */}
-                                      <td className={`py-2.5 px-4 font-arabic text-sand-400 text-[12px] max-w-[260px] ${isGrouped ? 'pl-8' : ''}`}>
+                                      <td className={`py-2.5 px-4 font-arabic text-sand-400 text-xs max-w-[260px] ${isGrouped ? 'pl-8' : ''}`}>
                                         {editMode ? (
                                           <InlineEdit
                                             value={lessonTitle}
                                             onSave={(v) => saveLessonTitle(lesson.lessonId, lesson.mongoId, v)}
-                                            className="font-arabic text-sand-400 text-[12px]"
-                                            inputClassName="font-arabic text-[12px] w-60"
+                                            className="font-arabic text-sand-400 text-xs"
+                                            inputClassName="font-arabic text-xs w-60"
                                           />
                                         ) : (
                                           <span className="truncate block" title={lessonTitle}>

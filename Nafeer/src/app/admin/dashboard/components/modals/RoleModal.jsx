@@ -28,7 +28,7 @@ function Label({ children, hint }) {
   return (
     <label className="block mb-1.5">
       <span className="text-xs font-arabic text-ink-400">{children}</span>
-      {hint && <span className="mr-2 text-[11px] text-ink-700 font-arabic">{hint}</span>}
+      {hint && <span className="mr-2 text-2xs text-ink-700 font-arabic">{hint}</span>}
     </label>
   );
 }
@@ -36,7 +36,7 @@ function Label({ children, hint }) {
 function Divider({ label }) {
   return (
     <div className="flex items-center gap-3 pt-1 pb-0.5">
-      <span className="text-[10px] font-mono text-ink-700 tracking-widest uppercase shrink-0">{label}</span>
+      <span className="text-2xs font-mono text-ink-700 tracking-widest uppercase shrink-0">{label}</span>
       <div className="flex-1 h-px bg-ink-800/60" />
     </div>
   );
@@ -51,7 +51,7 @@ function QuestionRow({ q, idx, total, onChange, onRemove, onMove }) {
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center gap-3 px-4 py-3 text-right hover:bg-ink-800/30 transition-colors"
       >
-        <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-mono shrink-0"
+        <span className="w-5 h-5 rounded-md flex items-center justify-center text-2xs font-mono shrink-0"
           style={{ background: 'rgba(212,137,30,0.12)', color: 'rgba(212,137,30,0.9)', border: '1px solid rgba(212,137,30,0.25)' }}>
           {idx + 1}
         </span>
@@ -191,7 +191,7 @@ export function RoleModal({ role = null, onClose, onSaved }) {
             )}
             <div>
               <h2 className="text-sm font-bold text-sand-200 font-arabic leading-tight">{isEdit ? role.name : 'دور جديد'}</h2>
-              {isEdit && <p className="text-[10px] font-mono text-ink-600 mt-0.5">{role.slug}</p>}
+              {isEdit && <p className="text-2xs font-mono text-ink-600 mt-0.5">{role.slug}</p>}
             </div>
           </div>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-600 hover:text-ink-300 hover:bg-ink-800/60 transition-all text-lg leading-none">×</button>
@@ -208,7 +208,7 @@ export function RoleModal({ role = null, onClose, onSaved }) {
                 style={{ color: isActiveTab ? 'rgba(212,137,30,0.9)' : '#6b6559', borderBottom: isActiveTab ? '2px solid rgba(212,137,30,0.8)' : '2px solid transparent', marginBottom: '-1px' }}>
                 {t.label}
                 {badge !== null && (
-                  <span className="mr-1.5 text-[9px] font-mono px-1.5 py-0.5 rounded-full"
+                  <span className="mr-1.5 text-2xs font-mono px-1.5 py-0.5 rounded-full"
                     style={{ background: isActiveTab ? 'rgba(212,137,30,0.2)' : 'rgba(255,255,255,0.05)', color: isActiveTab ? 'rgba(212,137,30,0.9)' : '#6b6559' }}>
                     {badge}
                   </span>
@@ -245,10 +245,10 @@ export function RoleModal({ role = null, onClose, onSaved }) {
                 </div>
                 {category && ['content', 'development', 'design'].includes(category) && (
                   <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-mono text-ink-700">قيمة موروثة:</span>
+                    <span className="text-2xs font-mono text-ink-700">قيمة موروثة:</span>
                     {CATEGORIES.filter((c) => ['content', 'development', 'design'].includes(c.id)).map((cat) => (
                       <button key={cat.id} type="button" onClick={() => setCategory(cat.id)}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-arabic border transition-all ${category === cat.id ? cat.color : 'border-ink-800/40 text-ink-700'}`}>
+                        className={`px-2 py-1 rounded-lg text-2xs font-arabic border transition-all ${category === cat.id ? cat.color : 'border-ink-800/40 text-ink-700'}`}>
                         {cat.label}
                       </button>
                     ))}
@@ -289,7 +289,7 @@ export function RoleModal({ role = null, onClose, onSaved }) {
                 <input type="text" value={portfolioPrompt} onChange={(e) => setPortfolioPrompt(e.target.value)}
                   placeholder="مثلاً: شارك رابط GitHub أو مشروع سابق" className={inp()} />
                 {portfolioPrompt.trim() && (
-                  <p className="text-[10px] font-arabic text-ink-600 mt-1.5">
+                  <p className="text-2xs font-arabic text-ink-600 mt-1.5">
                     سيظهر حقل URL للمتقدمين في هذا الدور مع هذا النص كعنوان.
                   </p>
                 )}
@@ -301,7 +301,7 @@ export function RoleModal({ role = null, onClose, onSaved }) {
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div>
                   <p className="text-xs font-arabic text-ink-300">الدور مفعّل</p>
-                  <p className="text-[10px] font-arabic text-ink-700 mt-0.5">
+                  <p className="text-2xs font-arabic text-ink-700 mt-0.5">
                     {isActive ? 'يظهر في صفحة الانضمام ويقبل الطلبات' : 'مخفي ومعطّل حالياً'}
                   </p>
                 </div>
@@ -343,11 +343,11 @@ export function RoleModal({ role = null, onClose, onSaved }) {
               )}
 
               <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <p className="text-[10px] font-mono text-ink-700 mb-2">نصائح لأسئلة فاعلة</p>
+                <p className="text-2xs font-mono text-ink-700 mb-2">نصائح لأسئلة فاعلة</p>
                 {['اسأل عن تجربة محددة، لا عن نية عامة', 'سؤال عميق واحد أفضل من ثلاثة سطحية', 'استخدم تصفية المادة لمتخصصي المحتوى'].map((tip, i) => (
                   <div key={i} className="flex items-start gap-2 mb-1">
-                    <span className="text-[9px] font-mono text-ink-800 mt-0.5 shrink-0">{i + 1}.</span>
-                    <p className="text-[10px] font-arabic text-ink-700">{tip}</p>
+                    <span className="text-2xs font-mono text-ink-800 mt-0.5 shrink-0">{i + 1}.</span>
+                    <p className="text-2xs font-arabic text-ink-700">{tip}</p>
                   </div>
                 ))}
               </div>
@@ -357,7 +357,7 @@ export function RoleModal({ role = null, onClose, onSaved }) {
           {tab === 'microtask' && (
             <>
               <div className="rounded-xl p-4" style={{ background: 'rgba(212,137,30,0.05)', border: '1px solid rgba(212,137,30,0.12)' }}>
-                <p className="text-[11px] font-arabic text-ink-400 leading-relaxed">
+                <p className="text-xs font-arabic text-ink-400 leading-relaxed">
                   المهمة تأتي في نهاية المقابلة. استخدمها لطلب شيء حقيقي صغير — فقرة، كود، فكرة — يكشف الأسلوب لا مجرد النوايا.
                 </p>
               </div>
@@ -373,12 +373,12 @@ export function RoleModal({ role = null, onClose, onSaved }) {
                   <input type="number" min={30} max={2000} value={microMinChars}
                     onChange={(e) => setMicroMinChars(Number(e.target.value))} className={inp()} />
                 </div>
-                <p className="flex-1 text-[10px] font-arabic text-ink-700 leading-relaxed pt-5">
+                <p className="flex-1 text-xs font-arabic text-ink-700 leading-relaxed pt-5">
                   ١٢٠–٣٠٠ حرف للمهام القصيرة، أكثر للكتابة التفصيلية.
                 </p>
               </div>
               {!microTask.trim() && (
-                <p className="text-[11px] font-arabic text-ink-700 text-center py-2 border border-dashed border-ink-800/40 rounded-xl">
+                <p className="text-2xs font-arabic text-ink-700 text-center py-2 border border-dashed border-ink-800/40 rounded-xl">
                   إذا تُركت فارغة، لن تظهر مهمة لهذا الدور
                 </p>
               )}
@@ -407,7 +407,7 @@ export function RoleModal({ role = null, onClose, onSaved }) {
             className="px-5 py-2 rounded-xl text-xs font-arabic font-bold transition-all flex items-center gap-2"
             style={{ background: saving || hasErrors ? 'rgba(255,255,255,0.05)' : 'rgba(212,137,30,0.9)', color: saving || hasErrors ? '#6b6559' : '#0c0b09', cursor: saving ? 'wait' : 'pointer' }}>
             {saving
-              ? <><span className="animate-pulse font-mono text-[10px]">···</span><span>جاري الحفظ</span></>
+              ? <><span className="animate-pulse font-mono text-2xs">···</span><span>جاري الحفظ</span></>
               : <span>{isEdit ? 'حفظ التعديلات' : 'إنشاء الدور'}</span>}
           </button>
         </div>

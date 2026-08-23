@@ -13,10 +13,10 @@ const C = {
   sunken:       'rgba(0,0,0,0.3)',
   panel:        '#0d0b08',
 
-  accent:       '#d48a1e',
-  accentFaint:  'rgba(212,138,30,0.07)',
-  accentMid:    'rgba(212,138,30,0.13)',
-  accentBorder: 'rgba(212,138,30,0.22)',
+  accent:       '#d4891e',
+  accentFaint:  'rgba(212,137,30,0.07)',
+  accentMid:    'rgba(212,137,30,0.13)',
+  accentBorder: 'rgba(212,137,30,0.22)',
   accentText:   '#e8a93a',
 
   border:       'rgba(255,255,255,0.06)',
@@ -138,7 +138,7 @@ function TopNav({ active, onChange, badges }) {
               {t.label}
               {t.badge > 0 && (
                 <span style={{
-                  fontSize: 10, padding: '1px 6px', borderRadius: 20,
+                  fontSize: 11, padding: '1px 6px', borderRadius: 20,
                   background: C.amberBg, border: `1px solid ${C.amberBorder}`,
                   color: C.accentText, fontVariantNumeric: 'tabular-nums',
                 }}>
@@ -189,7 +189,7 @@ function SearchInput({ value, onChange, placeholder = 'بحث…' }) {
           onClick={() => onChange('')}
           style={{
             position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)',
-            fontSize: 10, color: C.textMuted, background: 'none', border: 'none',
+            fontSize: 11, color: C.textMuted, background: 'none', border: 'none',
             cursor: 'pointer', lineHeight: 1, padding: 2,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.color = C.red; }}
@@ -219,8 +219,8 @@ function Chip({ label, count, active, onClick }) {
     >
       {label}
       <span style={{
-        fontSize: 10, padding: '0 5px', borderRadius: 5,
-        background: active ? 'rgba(212,138,30,0.15)' : 'rgba(255,255,255,0.05)',
+        fontSize: 11, padding: '0 5px', borderRadius: 5,
+        background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.05)',
         color: active ? C.accentText : C.textMuted,
         fontVariantNumeric: 'tabular-nums',
       }}>{count}</span>
@@ -293,7 +293,7 @@ function AvatarStack({ members, max = 4 }) {
           width: 26, height: 26, borderRadius: '50%', marginLeft: -8,
           background: C.surface, border: `1.5px solid ${C.border}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 9, color: C.textMuted, fontWeight: 600,
+          fontSize: 11, color: C.textMuted, fontWeight: 600,
         }}>+{rest}</div>
       )}
     </div>
@@ -404,8 +404,8 @@ function ContributorsScreen({ allContributors, onRefresh }) {
             >
               {t.label}
               <span style={{
-                fontSize: 10, padding: '1px 6px', borderRadius: 5,
-                background: isActive ? 'rgba(212,138,30,0.15)' : 'rgba(255,255,255,0.05)',
+                fontSize: 11, padding: '1px 6px', borderRadius: 5,
+                background: isActive ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.05)',
                 color: isActive ? C.accentText : C.textMuted,
               }}>{t.count}</span>
               {t.alert && (
@@ -718,7 +718,7 @@ function TeamCard({ team, allContributors, onUpdate, onDelete }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{team.name}</span>
                 {team.subject && (
-                  <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: C.blueBg, border: `1px solid ${C.blueBorder}`, color: C.blue }}>{team.subject}</span>
+                  <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: C.blueBg, border: `1px solid ${C.blueBorder}`, color: C.blue }}>{team.subject}</span>
                 )}
               </div>
               {team.description && <p style={{ fontSize: 11, color: C.textMuted, margin: 0, lineHeight: 1.4 }}>{team.description}</p>}
@@ -734,7 +734,7 @@ function TeamCard({ team, allContributors, onUpdate, onDelete }) {
           {leader && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <Avatar url={leader.contributor?.avatarUrl} name={leader.contributor?.name} size={20} />
-              <span style={{ fontSize: 10, color: C.amber }}>قائد</span>
+              <span style={{ fontSize: 11, color: C.amber }}>قائد</span>
             </div>
           )}
 
@@ -769,9 +769,9 @@ function TeamCard({ team, allContributors, onUpdate, onDelete }) {
 
                   {/* Leader badge */}
                   {m.teamRole === 'leader' ? (
-                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: C.amberBg, border: `1px solid ${C.amberBorder}`, color: C.amber }}>⭑ قائد</span>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: C.amberBg, border: `1px solid ${C.amberBorder}`, color: C.amber }}>⭑ قائد</span>
                   ) : (
-                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>عضو</span>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>عضو</span>
                   )}
 
                   {/* Toggle role */}
@@ -779,7 +779,7 @@ function TeamCard({ team, allContributors, onUpdate, onDelete }) {
                     onClick={() => doAction('set_role', { contributorId: m.contributorId, teamRole: m.teamRole === 'leader' ? 'member' : 'leader' })}
                     disabled={!!actionLoading}
                     title={m.teamRole === 'leader' ? 'تحويل إلى عضو' : 'ترقية إلى قائد'}
-                    style={{ padding: '3px 10px', borderRadius: 7, fontSize: 10, background: 'transparent', border: `1px solid ${C.border}`, color: C.textMuted, cursor: 'pointer' }}
+                    style={{ padding: '3px 10px', borderRadius: 7, fontSize: 11, background: 'transparent', border: `1px solid ${C.border}`, color: C.textMuted, cursor: 'pointer' }}
                   >{m.teamRole === 'leader' ? '↓' : '⭑'}</button>
 
                   {/* Remove */}
@@ -787,7 +787,7 @@ function TeamCard({ team, allContributors, onUpdate, onDelete }) {
                     onClick={() => doAction('remove_member', { contributorId: m.contributorId })}
                     disabled={!!actionLoading}
                     title="إزالة من الفريق"
-                    style={{ padding: '3px 8px', borderRadius: 7, fontSize: 10, background: 'transparent', border: `1px solid ${C.border}`, color: C.textMuted, cursor: 'pointer' }}
+                    style={{ padding: '3px 8px', borderRadius: 7, fontSize: 11, background: 'transparent', border: `1px solid ${C.border}`, color: C.textMuted, cursor: 'pointer' }}
                     onMouseEnter={(e) => { e.currentTarget.style.color = C.red; }}
                     onMouseLeave={(e) => { e.currentTarget.style.color = C.textMuted; }}
                   >✕</button>
@@ -937,12 +937,12 @@ function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{role.name}</span>
-              {!role.isActive && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>معطّل</span>}
+              {!role.isActive && <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>معطّل</span>}
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-              <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: meta.bg, border: `1px solid ${meta.border}`, color: meta.color }}>{meta.icon} {meta.label}</span>
-              {role.subcategory && <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>{role.subcategory}</span>}
-              {role.portfolioPrompt && <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>◆ محفظة</span>}
+              <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: meta.bg, border: `1px solid ${meta.border}`, color: meta.color }}>{meta.icon} {meta.label}</span>
+              {role.subcategory && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>{role.subcategory}</span>}
+              {role.portfolioPrompt && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>◆ محفظة</span>}
             </div>
             {role.description && <p style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5, margin: 0 }}>{role.description}</p>}
           </div>
@@ -971,23 +971,23 @@ function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
             <span style={{ fontSize: 11, color: C.textMuted }}>
               <span style={{ fontVariantNumeric: 'tabular-nums', color: C.textSub }}>{qCount}</span> {qCount === 1 ? 'سؤال' : 'أسئلة'}
             </span>
-            {role.microTask?.prompt && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>مهمة ✓</span>}
+            {role.microTask?.prompt && <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 20, background: C.surface, border: `1px solid ${C.border}`, color: C.textMuted }}>مهمة ✓</span>}
           </div>
 
           {confirmDelete ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 11, color: C.red }}>تأكيد الحذف؟</span>
               <button onClick={() => onDelete(role)} style={{
-                fontSize: 10, padding: '2px 8px', borderRadius: 7, cursor: 'pointer',
+                fontSize: 11, padding: '2px 8px', borderRadius: 7, cursor: 'pointer',
                 background: C.redBg, border: `1px solid ${C.redBorder}`, color: C.red,
               }}>{deleting ? '···' : 'حذف'}</button>
-              <button onClick={() => setConfirmDelete(false)} style={{ fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted }}>إلغاء</button>
+              <button onClick={() => setConfirmDelete(false)} style={{ fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted }}>إلغاء</button>
             </div>
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
               style={{
-                fontSize: 10, background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 11, background: 'none', border: 'none', cursor: 'pointer',
                 color: C.textMuted, opacity: hover ? 1 : 0, transition: 'opacity 0.15s',
               }}
             >حذف</button>

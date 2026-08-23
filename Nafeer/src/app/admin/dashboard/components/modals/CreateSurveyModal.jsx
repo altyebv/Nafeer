@@ -337,7 +337,7 @@ function SortableQuestion({ question, index, total, onChange, onRemove }) {
         </button>
 
         {/* Index badge */}
-        <span className="text-[10px] font-mono text-ink-600 shrink-0">
+        <span className="text-2xs font-mono text-ink-600 shrink-0">
           {String(index + 1).padStart(2, '0')}
         </span>
 
@@ -422,7 +422,7 @@ function TypeFields({ question, onChange }) {
       <div className="space-y-2">
         <div className="flex gap-1 flex-wrap">
           {Array.from({ length: 11 }, (_, i) => (
-            <span key={i} className="w-7 text-center py-1 rounded border border-ink-700/40 text-[10px] text-ink-500 bg-ink-900/30">
+            <span key={i} className="w-7 text-center py-1 rounded border border-ink-700/40 text-2xs text-ink-500 bg-ink-900/30">
               {i}
             </span>
           ))}
@@ -465,7 +465,7 @@ function TypeFields({ question, onChange }) {
       <div className="space-y-2">
         {choices.map((c, i) => (
           <div key={i} className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-ink-600 w-4 shrink-0">{i + 1}</span>
+            <span className="text-2xs font-mono text-ink-600 w-4 shrink-0">{i + 1}</span>
             <input
               value={c}
               onChange={(e) => setChoice(i, e.target.value)}
@@ -532,7 +532,7 @@ function ToggleRow({ label, hint, value, onChange }) {
     <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-ink-800/40 border border-ink-700/40">
       <div>
         <p className="text-sm text-ink-200 font-arabic">{label}</p>
-        {hint && <p className="text-[10px] text-ink-600 font-mono mt-0.5">{hint}</p>}
+        {hint && <p className="text-2xs text-ink-600 font-mono mt-0.5">{hint}</p>}
       </div>
       <Toggle value={value} onChange={onChange} />
     </div>

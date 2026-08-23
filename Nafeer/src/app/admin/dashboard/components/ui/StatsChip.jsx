@@ -6,7 +6,7 @@ export function StatChips({ stats }) {
           <span className={`font-bold leading-none ${s.mono ? 'font-mono text-sm' : 'text-base font-mono'} ${s.color}`}>
             {s.count}
           </span>
-          <span className="text-[11px] text-ink-600 font-arabic">{s.label}</span>
+          <span className="text-2xs text-ink-600 font-arabic">{s.label}</span>
         </div>
       ))}
     </div>

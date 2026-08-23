@@ -12,7 +12,7 @@ function TrackBadge({ track }) {
   };
   const labels = { COMMON: 'مشترك', SCIENCE: 'علمي', LITERARY: 'أدبي' };
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${styles[track] || 'border-ink-700 text-ink-500'}`}>
+    <span className={`text-2xs px-2 py-0.5 rounded-full font-mono border ${styles[track] || 'border-ink-700 text-ink-500'}`}>
       {labels[track] || track}
     </span>
   );
@@ -20,12 +20,12 @@ function TrackBadge({ track }) {
 
 function AppStatusBadge({ isPublished, appVersion }) {
   if (!isPublished) return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-ink-700/60 bg-ink-900/40 text-ink-500">
+    <span className="text-2xs px-2 py-0.5 rounded-full font-mono border border-ink-700/60 bg-ink-900/40 text-ink-500">
       غير منشور
     </span>
   );
   return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-sand-800/60 bg-sand-950/40 text-sand-400">
+    <span className="text-2xs px-2 py-0.5 rounded-full font-mono border border-sand-800/60 bg-sand-950/40 text-sand-400">
       v{appVersion}
     </span>
   );
@@ -33,7 +33,7 @@ function AppStatusBadge({ isPublished, appVersion }) {
 
 function RemoteStatusBadge({ enabled }) {
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${
+    <span className={`text-2xs px-2 py-0.5 rounded-full font-mono border ${
       enabled
         ? 'border-green-800/60 bg-green-950/40 text-green-400'
         : 'border-red-800/60 bg-red-950/40 text-red-400'
@@ -46,9 +46,9 @@ function RemoteStatusBadge({ enabled }) {
 function StatChip({ label, val, sub }) {
   return (
     <div className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-      <p className="text-[10px] text-ink-600 font-arabic mb-1">{label}</p>
+      <p className="text-2xs text-ink-600 font-arabic mb-1">{label}</p>
       <p className="text-lg font-bold font-mono" style={{ color: 'var(--accent)' }}>{val}</p>
-      {sub != null && <p className="text-[10px] font-mono text-ink-700">معتمد: {sub}</p>}
+      {sub != null && <p className="text-2xs font-mono text-ink-700">معتمد: {sub}</p>}
     </div>
   );
 }
@@ -63,7 +63,7 @@ function ActionBtn({ onClick, loading, disabled, variant = 'default', children }
     <button
       onClick={onClick}
       disabled={loading || disabled}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-mono border transition-all
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-2xs font-mono border transition-all
         ${variants[variant]} ${loading || disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       {loading && <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
@@ -133,17 +133,17 @@ function SubjectRow({ s, onPublish }) {
             <span className="font-arabic text-sm font-semibold text-ink-200">{s.nameAr}</span>
             <TrackBadge track={s.track} />
             {s.isMajor && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>
+              <span className="text-2xs px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>
             )}
             <AppStatusBadge isPublished={s.isPublished} appVersion={s.appVersion} />
           </div>
           {s.isPublished && s.publishedAt && (
-            <p className="text-[10px] font-mono text-ink-600 mt-0.5">{relativeTime(s.publishedAt)}</p>
+            <p className="text-2xs font-mono text-ink-600 mt-0.5">{relativeTime(s.publishedAt)}</p>
           )}
         </div>
 
         {/* Quick stats */}
-        <div className="flex items-center gap-3 shrink-0 text-[10px] font-mono text-ink-600" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 shrink-0 text-2xs font-mono text-ink-600" onClick={(e) => e.stopPropagation()}>
           <span title="دروس معتمدة">
             <span className="text-ink-400">{s.lessons.approved}</span> درس
           </span>
@@ -159,7 +159,7 @@ function SubjectRow({ s, onPublish }) {
               {busy ? 'جارٍ النشر…' : s.isPublished ? 'نشر تحديث' : 'نشر للتطبيق'}
             </ActionBtn>
           ) : (
-            <span className="text-[10px] font-mono text-ink-700 px-2">لا يوجد محتوى معتمد</span>
+            <span className="text-2xs font-mono text-ink-700 px-2">لا يوجد محتوى معتمد</span>
           )}
         </div>
       </div>
@@ -175,7 +175,7 @@ function SubjectRow({ s, onPublish }) {
 
           {s.isPublished && (
             <div
-              className="p-3 rounded-lg text-[11px] font-mono space-y-1.5"
+              className="p-3 rounded-lg text-2xs font-mono space-y-1.5"
               style={{ background: 'rgba(212,137,30,0.04)', border: '1px solid rgba(212,137,30,0.12)' }}
             >
               <div className="flex justify-between text-ink-500">
@@ -193,7 +193,7 @@ function SubjectRow({ s, onPublish }) {
                   <span>رابط</span>
                   <a
                     href={s.downloadUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-sky-500/70 hover:text-sky-400 truncate text-[10px] max-w-[200px]"
+                    className="text-sky-500/70 hover:text-sky-400 truncate text-2xs max-w-[200px]"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {s.downloadUrl.split('/').pop()}
@@ -226,7 +226,7 @@ function FlagsPanel({ flags, onFlagChange }) {
     >
       <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
         <h3 className="text-xs font-mono text-ink-400 uppercase tracking-wider">Feature Flags</h3>
-        <p className="text-[11px] text-ink-600 font-arabic mt-0.5">تُحدَّث فوراً — التطبيق يقرأها في كل إطلاق</p>
+        <p className="text-2xs text-ink-600 font-arabic mt-0.5">تُحدَّث فوراً — التطبيق يقرأها في كل إطلاق</p>
       </div>
 
       <div className="px-4 py-4 space-y-3">
@@ -234,7 +234,7 @@ function FlagsPanel({ flags, onFlagChange }) {
           <div key={key} className="flex items-center justify-between gap-4">
             <div>
               <p className={`text-sm font-arabic ${warn ? 'text-amber-400/80' : 'text-ink-200'}`}>{label}</p>
-              <p className="text-[10px] text-ink-600 font-arabic">{desc}</p>
+              <p className="text-2xs text-ink-600 font-arabic">{desc}</p>
             </div>
             <button
               onClick={() => onFlagChange(key, !flags[key])}
@@ -271,7 +271,7 @@ function FlagsPanel({ flags, onFlagChange }) {
         {/* Visible subject IDs */}
         <div className="pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
           <p className="text-xs font-arabic text-ink-400 mb-1">مواد مرئية في التطبيق</p>
-          <p className="text-[10px] text-ink-600 font-arabic mb-2">
+          <p className="text-2xs text-ink-600 font-arabic mb-2">
             فارغ = جميع المواد مرئية. أدخل المعرّفات مفصولة بفواصل للإطلاق التدريجي.
           </p>
           <input
@@ -342,7 +342,7 @@ function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEnt
       <div className="px-4 py-3 border-b flex items-center gap-3 flex-wrap" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
         <div className="flex-1 min-w-[240px]">
           <h3 className="text-xs font-mono text-ink-400 uppercase tracking-wider">Remote Manifest</h3>
-          <p className="text-[11px] text-ink-600 font-arabic mt-0.5">عرض وتعديل بيانات Firebase الخاصة بالمواد المنشورة</p>
+          <p className="text-2xs text-ink-600 font-arabic mt-0.5">عرض وتعديل بيانات Firebase الخاصة بالمواد المنشورة</p>
         </div>
         <input
           dir="ltr"
@@ -371,10 +371,10 @@ function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEnt
                     <AppStatusBadge isPublished={!!draft.version} appVersion={draft.version || '-'} />
                     <RemoteStatusBadge enabled={draft.enabled} />
                     {isRemoteOnly && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-amber-800/40 text-amber-500">orphan</span>
+                      <span className="text-2xs px-1.5 py-0.5 rounded font-mono border border-amber-800/40 text-amber-500">orphan</span>
                     )}
                   </div>
-                  <p className="text-[10px] font-mono text-ink-600 mt-1">{draft.id}</p>
+                  <p className="text-2xs font-mono text-ink-600 mt-1">{draft.id}</p>
                 </div>
                 <ActionBtn
                   variant="primary"
@@ -387,7 +387,7 @@ function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEnt
 
               <div className="grid md:grid-cols-2 gap-3 mb-3">
                 <label className="block">
-                  <span className="block text-[10px] font-mono text-ink-600 mb-1">minAppVersion</span>
+                  <span className="block text-2xs font-mono text-ink-600 mb-1">minAppVersion</span>
                   <input
                     dir="ltr"
                     value={draft.minAppVersion}
@@ -396,7 +396,7 @@ function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEnt
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-[10px] font-mono text-ink-600 mb-1">version</span>
+                  <span className="block text-2xs font-mono text-ink-600 mb-1">version</span>
                   <input
                     dir="ltr"
                     value={draft.version}
@@ -407,7 +407,7 @@ function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEnt
               </div>
 
               <label className="block mb-3">
-                <span className="block text-[10px] font-mono text-ink-600 mb-1">downloadUrl</span>
+                <span className="block text-2xs font-mono text-ink-600 mb-1">downloadUrl</span>
                 <input
                   dir="ltr"
                   value={draft.downloadUrl}
@@ -423,7 +423,7 @@ function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEnt
                   ['approvedBlocksCount', 'blocks'],
                 ].map(([field, label]) => (
                   <label key={field} className="block">
-                    <span className="block text-[10px] font-mono text-ink-600 mb-1">{label}</span>
+                    <span className="block text-2xs font-mono text-ink-600 mb-1">{label}</span>
                     <input
                       dir="ltr"
                       type="number"
@@ -444,7 +444,7 @@ function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEnt
                 </label>
               </div>
 
-              <div className="mt-3 text-[10px] font-mono text-ink-600 flex items-center gap-3 flex-wrap">
+              <div className="mt-3 text-2xs font-mono text-ink-600 flex items-center gap-3 flex-wrap">
                 <span>remote updated: {draft.updatedAt ? new Date(draft.updatedAt).toLocaleString('ar-SA') : '—'}</span>
                 {subject && <span>cms approved lessons: {subject.lessons.approved}</span>}
               </div>
@@ -682,7 +682,7 @@ export function PublishSection() {
 
               {/* Manifest info */}
               {manifest?.updatedAt && (
-                <div className="mr-auto flex items-center gap-1.5 text-[10px] font-mono text-ink-600">
+                <div className="mr-auto flex items-center gap-1.5 text-2xs font-mono text-ink-600">
                   <span className="w-1.5 h-1.5 rounded-full bg-sand-600/60 inline-block" />
                   manifest {new Date(manifest.updatedAt).toLocaleDateString('ar-SA')}
                 </div>
@@ -702,7 +702,7 @@ export function PublishSection() {
                   }`}
                 >
                   {f.label}
-                  <span className="font-mono text-[10px] opacity-60">{f.count}</span>
+                  <span className="font-mono text-2xs opacity-60">{f.count}</span>
                 </button>
               ))}
             </div>

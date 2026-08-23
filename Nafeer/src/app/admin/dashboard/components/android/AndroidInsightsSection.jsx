@@ -24,18 +24,18 @@ export default function AndroidInsightsSection() {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-arabic font-semibold text-sand-200">
+            <h1 className="text-xl font-arabic font-bold text-sand-300">
               تحليلات الأندرويد
             </h1>
-            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-teal-700/50 text-teal-500 bg-teal-950/30 tracking-widest">
+            <span className="text-2xs font-mono px-1.5 py-0.5 rounded border border-teal-700/50 text-teal-500 bg-teal-950/30 tracking-widest">
               BETA
             </span>
           </div>
-          <p className="text-sm text-ink-500 font-arabic mt-1">
+          <p className="text-sm text-ink-600 font-arabic mt-1">
             مركز رؤية التطبيق — الاستطلاعات والملاحظات والإعدادات الحيّة
           </p>
         </div>
-        <span className="text-[10px] font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-600">
+        <span className="text-2xs font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-600">
           ANDROID · INSIGHTS
         </span>
       </div>
@@ -153,7 +153,7 @@ function OverviewTab() {
                   <div className={`w-1.5 h-1.5 rounded-full ${val ? 'bg-teal-400' : 'bg-ink-600'}`} />
                   <span className="text-xs font-mono text-ink-400">{key}</span>
                 </div>
-                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                <span className={`text-2xs font-mono px-1.5 py-0.5 rounded border ${
                   val
                     ? 'bg-teal-900/30 border-teal-700/40 text-teal-400'
                     : 'bg-ink-700/30 border-ink-700/30 text-ink-600'
@@ -178,7 +178,7 @@ function OverviewTab() {
                   <div key={tag} className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-ink-400">{tag}</span>
-                      <span className="text-[10px] font-mono text-ink-600">{count}</span>
+                      <span className="text-2xs font-mono text-ink-600">{count}</span>
                     </div>
                     <div className="h-1 w-full bg-ink-800/60 rounded-full overflow-hidden">
                       <div
@@ -210,7 +210,7 @@ function OverviewTab() {
         </Module>
       )}
 
-      <p className="text-[10px] font-mono text-ink-800 text-center">
+      <p className="text-2xs font-mono text-ink-800 text-center">
         آخر تحديث {data.generatedAt ? new Date(data.generatedAt).toLocaleTimeString('ar-SA') : '—'}
       </p>
     </div>
@@ -339,15 +339,15 @@ function SurveyInsightCard({ survey, isExpanded, onToggle }) {
             </div>
           </div>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <span className="text-[10px] font-mono text-ink-600">
+            <span className="text-2xs font-mono text-ink-600">
               {survey.questions?.length ?? 0} سؤال
             </span>
             {Object.entries(typeCounts).map(([type, count]) => (
-              <span key={type} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink-700/40 text-ink-500 border border-ink-700/30">
+              <span key={type} className="text-2xs font-mono px-1.5 py-0.5 rounded bg-ink-700/40 text-ink-500 border border-ink-700/30">
                 {TYPE_SHORT[type] ?? type} ×{count}
               </span>
             ))}
-            <span className="text-[10px] font-mono text-ink-700">{formatDate(survey.publishedAt)}</span>
+            <span className="text-2xs font-mono text-ink-700">{formatDate(survey.publishedAt)}</span>
           </div>
         </div>
 
@@ -384,7 +384,7 @@ function SurveyInsightCard({ survey, isExpanded, onToggle }) {
               {/* Per-question distribution */}
               {respData.total > 0 && Object.keys(respData.distribution).length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-[11px] font-mono text-ink-600 uppercase tracking-widest">
+                  <p className="text-2xs font-mono text-ink-600 uppercase tracking-widest">
                     توزيع الإجابات
                   </p>
                   {(survey.questions ?? []).map((q) => {
@@ -415,14 +415,14 @@ function QuestionDistribution({ question, distribution, total }) {
   return (
     <div className="rounded-lg bg-ink-800/40 border border-ink-700/30 px-4 py-3 space-y-2">
       <div className="flex items-start gap-2">
-        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink-700/40 text-ink-500 border border-ink-700/30 shrink-0">
+        <span className="text-2xs font-mono px-1.5 py-0.5 rounded bg-ink-700/40 text-ink-500 border border-ink-700/30 shrink-0">
           {TYPE_SHORT[question.type] ?? question.type}
         </span>
         <p className="text-xs font-arabic text-ink-300 leading-snug flex-1">{question.text}</p>
       </div>
 
       {entries.length === 0 ? (
-        <p className="text-[11px] font-mono text-ink-700">لا إجابات</p>
+        <p className="text-2xs font-mono text-ink-700">لا إجابات</p>
       ) : (
         <div className="space-y-1.5 pt-1">
           {entries.slice(0, 8).map(([answer, count]) => {
@@ -430,10 +430,10 @@ function QuestionDistribution({ question, distribution, total }) {
             return (
               <div key={answer} className="space-y-0.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-arabic text-ink-400 truncate max-w-[70%]">
+                  <span className="text-2xs font-arabic text-ink-400 truncate max-w-[70%]">
                     {answer || '—'}
                   </span>
-                  <span className="text-[10px] font-mono text-ink-600">
+                  <span className="text-2xs font-mono text-ink-600">
                     {count} ({pct}%)
                   </span>
                 </div>
@@ -447,7 +447,7 @@ function QuestionDistribution({ question, distribution, total }) {
             );
           })}
           {entries.length > 8 && (
-            <p className="text-[10px] font-mono text-ink-700">
+            <p className="text-2xs font-mono text-ink-700">
               +{entries.length - 8} إجابة أخرى
             </p>
           )}
@@ -548,10 +548,10 @@ function FeedbackTab() {
                 .map(([tag, count]) => (
                   <span
                     key={tag}
-                    className="flex items-center gap-1 text-[11px] font-mono px-2 py-1 rounded-full bg-ink-700/40 border border-ink-700/30 text-ink-400"
+                    className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded-full bg-ink-700/40 border border-ink-700/30 text-ink-400"
                   >
                     {tag}
-                    <span className="text-[9px] text-ink-600">{count}</span>
+                    <span className="text-2xs text-ink-600">{count}</span>
                   </span>
                 ))}
             </div>
@@ -570,10 +570,10 @@ function FeedbackTab() {
                 return (
                   <div key={screen} className="space-y-0.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono text-ink-400 truncate max-w-[75%]">
+                      <span className="text-2xs font-mono text-ink-400 truncate max-w-[75%]">
                         {screen}
                       </span>
-                      <span className="text-[10px] font-mono text-ink-600">{count}</span>
+                      <span className="text-2xs font-mono text-ink-600">{count}</span>
                     </div>
                     <div className="h-1 w-full bg-ink-800/60 rounded-full overflow-hidden">
                       <div
@@ -596,9 +596,9 @@ function FeedbackTab() {
             {Object.entries(versionCounts)
               .sort(([, a], [, b]) => b - a)
               .map(([ver, count]) => (
-                <span key={ver} className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1.5 rounded-lg bg-ink-800/40 border border-ink-700/30 text-ink-400">
+                <span key={ver} className="flex items-center gap-1.5 text-2xs font-mono px-2.5 py-1.5 rounded-lg bg-ink-800/40 border border-ink-700/30 text-ink-400">
                   <span className="text-ink-600">v</span>{ver}
-                  <span className="text-[9px] text-ink-600 ml-1">{count}×</span>
+                  <span className="text-2xs text-ink-600 ml-1">{count}×</span>
                 </span>
               ))}
           </div>
@@ -621,7 +621,7 @@ function FeedbackTab() {
           ))
         )}
         {displayed.length > 30 && (
-          <p className="text-[11px] font-mono text-ink-700 text-center">
+          <p className="text-2xs font-mono text-ink-700 text-center">
             يُعرض أحدث 30 عنصراً من {displayed.length}
           </p>
         )}
@@ -645,7 +645,7 @@ function FeedbackCard({ item }) {
           }`}>
             {isBug ? '✕' : '◈'}
           </div>
-          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+          <span className={`text-2xs font-mono px-1.5 py-0.5 rounded border ${
             isBug
               ? 'bg-red-900/20 border-red-800/40 text-red-500'
               : 'bg-teal-900/20 border-teal-800/40 text-teal-500'
@@ -654,7 +654,7 @@ function FeedbackCard({ item }) {
           </span>
         </div>
 
-        <div className="flex items-center gap-2 text-[10px] font-mono text-ink-700 shrink-0">
+        <div className="flex items-center gap-2 text-2xs font-mono text-ink-700 shrink-0">
           {item.screenName && (
             <span className="px-1.5 py-0.5 rounded bg-ink-700/30 border border-ink-700/30">
               {item.screenName}
@@ -675,7 +675,7 @@ function FeedbackCard({ item }) {
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {tags.map((t) => (
-            <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-ink-700/30 border border-ink-700/30 text-ink-500">
+            <span key={t} className="text-2xs font-mono px-1.5 py-0.5 rounded-full bg-ink-700/30 border border-ink-700/30 text-ink-500">
               {t}
             </span>
           ))}
@@ -683,7 +683,7 @@ function FeedbackCard({ item }) {
       )}
 
       {item.createdAt && (
-        <p className="text-[10px] font-mono text-ink-700">
+        <p className="text-2xs font-mono text-ink-700">
           {new Date(item.createdAt).toLocaleString('ar-SA', {
             day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
           })}
@@ -785,7 +785,7 @@ function FlagsTab() {
             التغييرات تنعكس في التطبيق عند أول sync بعد الحفظ
           </p>
         </div>
-        <span className="text-[10px] font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-700">
+        <span className="text-2xs font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-700">
           content_config/manifest
         </span>
       </div>
@@ -826,12 +826,12 @@ function FlagsTab() {
                     {def.label}
                   </p>
                   {def.isMaster && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-sand-800/50 text-sand-600 bg-sand-900/20">
+                    <span className="text-2xs font-mono px-1.5 py-0.5 rounded border border-sand-800/50 text-sand-600 bg-sand-900/20">
                       MASTER
                     </span>
                   )}
                   {isDepBlocked && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-ink-700/40 text-ink-600">
+                    <span className="text-2xs font-mono px-1.5 py-0.5 rounded border border-ink-700/40 text-ink-600">
                       يتطلب مركز التواصل
                     </span>
                   )}
@@ -874,7 +874,7 @@ function FlagsTab() {
           <p className="text-xs font-arabic text-red-400">{saveError}</p>
           <button
             onClick={() => setSaveError(null)}
-            className="mr-auto text-[10px] font-mono text-red-500 hover:text-red-300 transition-colors"
+            className="mr-auto text-2xs font-mono text-red-500 hover:text-red-300 transition-colors"
           >
             إغلاق
           </button>
@@ -901,11 +901,11 @@ function StatCard({ icon, label, value, sub, accent = 'sand' }) {
     <div className={`rounded-xl border ${a.bg} ${a.border} px-4 py-4 space-y-2`}>
       <div className="flex items-center justify-between">
         <span className={`text-lg ${a.icon}`}>{icon}</span>
-        <span className="text-[9px] font-mono text-ink-700 uppercase tracking-widest">{label}</span>
+        <span className="text-2xs font-mono text-ink-700 uppercase tracking-widest">{label}</span>
       </div>
       <div>
         <p className={`text-2xl font-mono font-bold ${a.value}`}>{value}</p>
-        <p className="text-[11px] font-arabic text-ink-600 mt-0.5">{sub}</p>
+        <p className="text-2xs font-arabic text-ink-600 mt-0.5">{sub}</p>
       </div>
     </div>
   );
@@ -917,7 +917,7 @@ function Module({ title, badge, children }) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-ink-700/30">
         <p className="text-xs font-arabic font-medium text-ink-300">{title}</p>
         {badge && (
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-ink-700/40 text-ink-600">
+          <span className="text-2xs font-mono px-1.5 py-0.5 rounded border border-ink-700/40 text-ink-600">
             {badge}
           </span>
         )}
@@ -967,7 +967,7 @@ function Pill({ color = 'gray', children }) {
     red:  'bg-red-900/30 border-red-700/40 text-red-400',
   };
   return (
-    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full border ${colors[color] ?? colors.gray}`}>
+    <span className={`text-2xs font-mono px-1.5 py-0.5 rounded-full border ${colors[color] ?? colors.gray}`}>
       {children}
     </span>
   );

@@ -20,14 +20,14 @@ export default function CommsSection() {
       {/* Section header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-arabic font-semibold text-sand-200">
+          <h1 className="text-xl font-arabic font-bold text-sand-300">
             التواصل والاستطلاعات
           </h1>
-          <p className="text-sm text-ink-500 font-arabic mt-1">
+          <p className="text-sm text-ink-600 font-arabic mt-1">
             إدارة الإعلانات والاستطلاعات المرسلة للمستخدمين
           </p>
         </div>
-        <span className="text-[10px] font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-600">
+        <span className="text-2xs font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-600">
           COMMS
         </span>
       </div>
@@ -198,16 +198,16 @@ function AnnouncementCard({ item, deleting, onDelete, onToggleBanner }) {
 
         {/* Meta row */}
         <div className="flex items-center gap-3 mt-2.5 flex-wrap">
-          <span className="text-[10px] font-mono text-ink-700">
+          <span className="text-2xs font-mono text-ink-700">
             {formatDate(item.publishedAt)}
           </span>
           {item.expiresAt && (
-            <span className="text-[10px] font-mono text-ink-700">
+            <span className="text-2xs font-mono text-ink-700">
               ينتهي {formatDate(item.expiresAt)}
             </span>
           )}
           {item.segmentUserIds?.length > 0 && (
-            <span className="text-[10px] font-mono text-ink-700">
+            <span className="text-2xs font-mono text-ink-700">
               {item.segmentUserIds.length} مستخدم
             </span>
           )}
@@ -362,15 +362,15 @@ function SurveyCard({ item, deleting, onDelete }) {
 
         {/* Question type pills */}
         <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-          <span className="text-[10px] font-mono text-ink-600">
+          <span className="text-2xs font-mono text-ink-600">
             {item.questions?.length ?? 0} سؤال
           </span>
           {Object.entries(typeCounts).map(([type, count]) => (
-            <span key={type} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink-700/40 text-ink-500 border border-ink-700/30">
+            <span key={type} className="text-2xs font-mono px-1.5 py-0.5 rounded bg-ink-700/40 text-ink-500 border border-ink-700/30">
               {TYPE_SHORT[type] ?? type} ×{count}
             </span>
           ))}
-          <span className="text-[10px] font-mono text-ink-700 mr-1">
+          <span className="text-2xs font-mono text-ink-700 mr-1">
             {formatDate(item.publishedAt)}
           </span>
         </div>
@@ -545,12 +545,12 @@ function AppSettingsTab() {
                     {def.label}
                   </p>
                   {def.isMaster && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-sand-800/50 text-sand-600 bg-sand-900/20">
+                    <span className="text-2xs font-mono px-1.5 py-0.5 rounded border border-sand-800/50 text-sand-600 bg-sand-900/20">
                       MASTER
                     </span>
                   )}
                   {isDepBlocked && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-ink-700/40 text-ink-600">
+                    <span className="text-2xs font-mono px-1.5 py-0.5 rounded border border-ink-700/40 text-ink-600">
                       يتطلب مركز التواصل
                     </span>
                   )}
@@ -598,7 +598,7 @@ function AppSettingsTab() {
           <p className="text-xs font-arabic text-red-400">{saveError}</p>
           <button
             onClick={() => setSaveError(null)}
-            className="mr-auto text-[10px] font-mono text-red-500 hover:text-red-300 transition-colors"
+            className="mr-auto text-2xs font-mono text-red-500 hover:text-red-300 transition-colors"
           >
             إغلاق
           </button>
@@ -606,7 +606,7 @@ function AppSettingsTab() {
       )}
 
       {/* Footer note */}
-      <p className="text-[11px] font-mono text-ink-700 text-center">
+      <p className="text-2xs font-mono text-ink-700 text-center">
         التغييرات تنعكس في التطبيق عند أول sync بعد الحفظ
       </p>
     </div>
@@ -622,7 +622,7 @@ function FlagSectionHeader() {
           التحكم في ميزات مركز التواصل — تُطبَّق فوراً على جميع المستخدمين
         </p>
       </div>
-      <span className="text-[10px] font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-700">
+      <span className="text-2xs font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-700">
         content_config/manifest
       </span>
     </div>
@@ -642,7 +642,7 @@ const BADGE_COLOR = {
 
 function Badge({ color = 'gray', children }) {
   return (
-    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full border ${BADGE_COLOR[color]}`}>
+    <span className={`text-2xs font-mono px-1.5 py-0.5 rounded-full border ${BADGE_COLOR[color]}`}>
       {children}
     </span>
   );

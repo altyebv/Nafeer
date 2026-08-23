@@ -8,9 +8,9 @@ const T = {
   surfaceHover: 'rgba(255,255,255,0.04)',
   sunken:       'rgba(0,0,0,0.25)',
   overlay:      '#0e0c09',
-  accent:       '#d48a1e',
-  accentFaint:  'rgba(212,138,30,0.08)',
-  accentBorder: 'rgba(212,138,30,0.22)',
+  accent:       '#d4891e',
+  accentFaint:  'rgba(212,137,30,0.08)',
+  accentBorder: 'rgba(212,137,30,0.22)',
   accentText:   '#e8a93a',
   border:       'rgba(255,255,255,0.07)',
   borderSub:    'rgba(255,255,255,0.04)',
@@ -62,7 +62,7 @@ function Avatar({ url, name, size = 32 }) {
 function RoleBadge({ role }) {
   if (role === 'leader') return (
     <span style={{
-      fontSize: 10, padding: '2px 7px', borderRadius: 20,
+      fontSize: 11, padding: '2px 7px', borderRadius: 20,
       background: T.amberBg, border: `1px solid ${T.amberBorder}`,
       color: T.amber, fontFamily: 'monospace', letterSpacing: '0.03em',
     }}>
@@ -71,7 +71,7 @@ function RoleBadge({ role }) {
   );
   return (
     <span style={{
-      fontSize: 10, padding: '2px 7px', borderRadius: 20,
+      fontSize: 11, padding: '2px 7px', borderRadius: 20,
       background: T.surface, border: `1px solid ${T.border}`,
       color: T.textMuted, fontFamily: 'monospace',
     }}>
@@ -422,7 +422,7 @@ function TeamCard({ team, allContributors, onUpdate, onDelete }) {
                 </span>
                 {team.subject && (
                   <span style={{
-                    fontSize: 10, padding: '2px 7px', borderRadius: 20,
+                    fontSize: 11, padding: '2px 7px', borderRadius: 20,
                     background: T.blueBg, border: `1px solid ${T.blueBorder}`,
                     color: T.blue,
                   }}>
@@ -518,7 +518,7 @@ function TeamCard({ team, allContributors, onUpdate, onDelete }) {
                     })}
                     disabled={!!actionLoading}
                     style={{
-                      padding: '3px 10px', borderRadius: 7, fontSize: 10,
+                      padding: '3px 10px', borderRadius: 7, fontSize: 11,
                       background: 'transparent', border: `1px solid ${T.border}`,
                       color: T.textMuted, cursor: 'pointer',
                     }}
@@ -532,7 +532,7 @@ function TeamCard({ team, allContributors, onUpdate, onDelete }) {
                     onClick={() => doAction('remove_member', { contributorId: m.contributorId })}
                     disabled={!!actionLoading}
                     style={{
-                      padding: '3px 8px', borderRadius: 7, fontSize: 10,
+                      padding: '3px 8px', borderRadius: 7, fontSize: 11,
                       background: 'transparent', border: `1px solid ${T.border}`,
                       color: T.textMuted, cursor: 'pointer',
                     }}

@@ -144,7 +144,7 @@ function AdminCard({ admin, onEdit, onResetPw, onToggle, onDelete, acting }) {
             {admin.displayName || admin.username}
           </span>
           {!admin.isActive && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full border border-ink-700/40 bg-ink-800/40 text-ink-600 font-arabic">
+            <span className="text-2xs px-2 py-0.5 rounded-full border border-ink-700/40 bg-ink-800/40 text-ink-600 font-arabic">
               معطّل
             </span>
           )}
@@ -152,7 +152,7 @@ function AdminCard({ admin, onEdit, onResetPw, onToggle, onDelete, acting }) {
         <p className="text-xs font-mono text-ink-600" dir="ltr">@{admin.username}</p>
         <p className="text-xs font-mono text-ink-700" dir="ltr">{admin.email}</p>
         {admin.lastSignedInAt && (
-          <p className="text-[10px] font-mono text-ink-800 mt-0.5">
+          <p className="text-2xs font-mono text-ink-800 mt-0.5">
             آخر دخول: {new Date(admin.lastSignedInAt).toLocaleDateString('en-GB')}
           </p>
         )}
@@ -169,7 +169,7 @@ function AdminCard({ admin, onEdit, onResetPw, onToggle, onDelete, acting }) {
 
         {confirmDelete ? (
           <div className="flex flex-col gap-1 pt-1 border-t border-ink-800">
-            <p className="text-[10px] text-red-400 font-arabic text-center">تأكيد؟</p>
+            <p className="text-2xs text-red-400 font-arabic text-center">تأكيد؟</p>
             <Btn small variant="red" loading={acting === admin._id + 'delete'} onClick={() => onDelete(admin)}>
               حذف
             </Btn>
@@ -177,7 +177,7 @@ function AdminCard({ admin, onEdit, onResetPw, onToggle, onDelete, acting }) {
           </div>
         ) : (
           <button onClick={() => setConfirmDelete(true)}
-            className="text-[10px] font-mono text-ink-800 hover:text-red-500 transition-colors text-center py-1">
+            className="text-2xs font-mono text-ink-800 hover:text-red-500 transition-colors text-center py-1">
             حذف
           </button>
         )}

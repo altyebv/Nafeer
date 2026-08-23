@@ -29,7 +29,7 @@ function Spinner({ size = 'sm' }) {
 function TrackBadge({ track }) {
   const m = TRACK_META[track] || { label: track, cls: 'border-ink-700 text-ink-500' };
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${m.cls}`}>
+    <span className={`text-2xs px-2 py-0.5 rounded-full font-mono border ${m.cls}`}>
       {m.label}
     </span>
   );
@@ -100,7 +100,7 @@ function InlineField({ value, onSave, placeholder, mono = false, dimmed = false,
             ${className}`}
         />
         {saving && <Spinner />}
-        {error && <span className="text-[10px] text-red-400 shrink-0">{error}</span>}
+        {error && <span className="text-2xs text-red-400 shrink-0">{error}</span>}
       </div>
     );
   }
@@ -117,7 +117,7 @@ function InlineField({ value, onSave, placeholder, mono = false, dimmed = false,
       {value || (
         <span className="text-ink-700 italic text-xs">{placeholder || '—'}</span>
       )}
-      <span className="opacity-0 group-hover:opacity-40 mr-1.5 text-[10px] font-mono text-sand-500">✎</span>
+      <span className="opacity-0 group-hover:opacity-40 mr-1.5 text-2xs font-mono text-sand-500">✎</span>
     </button>
   );
 }
@@ -157,7 +157,7 @@ function LessonRow({ lesson, onPatch, onDelete }) {
   return (
     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.02] transition-colors group">
       {/* Order */}
-      <span className="text-[10px] font-mono text-ink-700 w-5 shrink-0 text-center">{lesson.order}</span>
+      <span className="text-2xs font-mono text-ink-700 w-5 shrink-0 text-center">{lesson.order}</span>
 
       <StatusDot status={lesson.status} />
 
@@ -195,7 +195,7 @@ function LessonRow({ lesson, onPatch, onDelete }) {
 
       {/* Content ID chip */}
       <span
-        className="text-[9px] font-mono text-ink-800 group-hover:text-ink-600 transition-colors shrink-0 hidden lg:block"
+        className="text-2xs font-mono text-ink-800 group-hover:text-ink-600 transition-colors shrink-0 hidden lg:block"
         title={lesson.contentId}
       >
         {lesson.contentId}
@@ -208,13 +208,13 @@ function LessonRow({ lesson, onPatch, onDelete }) {
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="text-[10px] font-mono px-2 py-0.5 rounded border border-red-700/60 text-red-400 hover:bg-red-950/40 transition-colors disabled:opacity-40"
+              className="text-2xs font-mono px-2 py-0.5 rounded border border-red-700/60 text-red-400 hover:bg-red-950/40 transition-colors disabled:opacity-40"
             >
               {deleting ? '…' : 'تأكيد'}
             </button>
             <button
               onClick={() => setConfirm(false)}
-              className="text-[10px] font-mono px-2 py-0.5 rounded border border-ink-700/50 text-ink-500 hover:text-ink-300 transition-colors"
+              className="text-2xs font-mono px-2 py-0.5 rounded border border-ink-700/50 text-ink-500 hover:text-ink-300 transition-colors"
             >
               إلغاء
             </button>
@@ -222,7 +222,7 @@ function LessonRow({ lesson, onPatch, onDelete }) {
         ) : (
           <button
             onClick={() => setConfirm(true)}
-            className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-ink-800/40 text-ink-700 hover:border-red-800/50 hover:text-red-500 transition-colors"
+            className="text-2xs font-mono px-1.5 py-0.5 rounded border border-ink-800/40 text-ink-700 hover:border-red-800/50 hover:text-red-500 transition-colors"
             title="حذف الدرس"
           >
             ✕
@@ -289,7 +289,7 @@ function AddLessonForm({ unit, subjectId, onAdded, onCancel }) {
       className="flex items-center gap-3 px-3 py-2 rounded-lg"
       style={{ background: 'rgba(212,137,30,0.05)', border: '1px dashed rgba(212,137,30,0.2)' }}
     >
-      <span className="text-[10px] font-mono text-ink-700 w-5 shrink-0 text-center">{nextOrder}</span>
+      <span className="text-2xs font-mono text-ink-700 w-5 shrink-0 text-center">{nextOrder}</span>
       <span className="w-1.5 h-1.5 rounded-full bg-ink-700/60 shrink-0" />
       <input
         ref={inputRef}
@@ -300,18 +300,18 @@ function AddLessonForm({ unit, subjectId, onAdded, onCancel }) {
         placeholder="عنوان الدرس الجديد"
         className="flex-1 min-w-0 px-2 py-0.5 rounded text-sm font-arabic bg-ink-800/80 border border-sand-700/50 focus:border-sand-600/70 focus:outline-none text-ink-200 placeholder-ink-700"
       />
-      <span className="text-[9px] font-mono text-ink-800 shrink-0 hidden lg:block">{contentId}</span>
-      {error && <span className="text-[10px] text-red-400 shrink-0">{error}</span>}
+      <span className="text-2xs font-mono text-ink-800 shrink-0 hidden lg:block">{contentId}</span>
+      {error && <span className="text-2xs text-red-400 shrink-0">{error}</span>}
       <button
         onClick={save}
         disabled={saving || !title.trim()}
-        className="text-[10px] font-mono px-2.5 py-1 rounded border border-sand-700/50 text-sand-300 hover:border-sand-600/60 transition-colors disabled:opacity-40"
+        className="text-2xs font-mono px-2.5 py-1 rounded border border-sand-700/50 text-sand-300 hover:border-sand-600/60 transition-colors disabled:opacity-40"
       >
         {saving ? '…' : 'إضافة'}
       </button>
       <button
         onClick={onCancel}
-        className="text-[10px] font-mono px-2 py-1 rounded border border-ink-700/50 text-ink-500 hover:text-ink-300 transition-colors"
+        className="text-2xs font-mono px-2 py-1 rounded border border-ink-700/50 text-ink-500 hover:text-ink-300 transition-colors"
       >
         إلغاء
       </button>
@@ -356,7 +356,7 @@ function UnitCard({ unit, subjectId, onPatchUnit, onPatchLesson, onAddLesson, on
 
         {/* Order badge */}
         <span
-          className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-ink-800/60 text-ink-600 shrink-0"
+          className="text-2xs font-mono px-1.5 py-0.5 rounded border border-ink-800/60 text-ink-600 shrink-0"
         >
           {unit.order}
         </span>
@@ -390,11 +390,11 @@ function UnitCard({ unit, subjectId, onPatchUnit, onPatchLesson, onAddLesson, on
               }}
             />
           </div>
-          <span className="text-[10px] font-mono text-ink-600" dir="ltr">{approvedCount}/{totalCount}</span>
+          <span className="text-2xs font-mono text-ink-600" dir="ltr">{approvedCount}/{totalCount}</span>
           {/* Add lesson — stops propagation so the header doesn't collapse */}
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(true); setAdding(true); }}
-            className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-ink-800/50 text-ink-600 hover:border-sand-700/50 hover:text-sand-400 transition-colors"
+            className="text-2xs font-mono px-1.5 py-0.5 rounded border border-ink-800/50 text-ink-600 hover:border-sand-700/50 hover:text-sand-400 transition-colors"
             title="إضافة درس جديد"
           >
             + درس
@@ -407,7 +407,7 @@ function UnitCard({ unit, subjectId, onPatchUnit, onPatchLesson, onAddLesson, on
         <div className="border-t px-2 py-1" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
           {/* Unit description */}
           <div className="px-3 py-2 border-b mb-1" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-            <p className="text-[9px] font-mono text-ink-700 mb-1 uppercase tracking-widest">وصف الوحدة</p>
+            <p className="text-2xs font-mono text-ink-700 mb-1 uppercase tracking-widest">وصف الوحدة</p>
             <InlineField
               value={unit.description}
               placeholder="وصف الوحدة (اختياري)"
@@ -421,11 +421,11 @@ function UnitCard({ unit, subjectId, onPatchUnit, onPatchLesson, onAddLesson, on
               <>
                 {/* Column headers */}
                 <div className="flex items-center gap-3 px-3 py-1">
-                  <span className="w-5 text-[9px] font-mono text-ink-800">#</span>
+                  <span className="w-5 text-2xs font-mono text-ink-800">#</span>
                   <span className="w-2" />
-                  <span className="flex-1 text-[9px] font-mono text-ink-700 uppercase tracking-widest">عنوان الدرس / المجموعة</span>
-                  <span className="w-14 text-[9px] font-mono text-ink-700">دقائق</span>
-                  <span className="hidden lg:block text-[9px] font-mono text-ink-800">contentId</span>
+                  <span className="flex-1 text-2xs font-mono text-ink-700 uppercase tracking-widest">عنوان الدرس / المجموعة</span>
+                  <span className="w-14 text-2xs font-mono text-ink-700">دقائق</span>
+                  <span className="hidden lg:block text-2xs font-mono text-ink-800">contentId</span>
                   <span className="w-16" />
                 </div>
 
@@ -453,9 +453,9 @@ function UnitCard({ unit, subjectId, onPatchUnit, onPatchLesson, onAddLesson, on
             ) : (
               <button
                 onClick={() => setAdding(true)}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-arabic text-ink-700 hover:text-sand-400 hover:bg-white/[0.015] transition-colors mt-0.5"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-2xs font-arabic text-ink-700 hover:text-sand-400 hover:bg-white/[0.015] transition-colors mt-0.5"
               >
-                <span className="text-[9px]">＋</span>
+                <span className="text-2xs">＋</span>
                 {unit.lessons.length === 0 ? 'إضافة أول درس' : 'إضافة درس'}
               </button>
             )}
@@ -480,7 +480,7 @@ function SubjectPicker({ selected, onSelect }) {
       style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.07)' }}
     >
       <div className="px-3 py-2.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-        <p className="text-[10px] font-mono text-ink-600 uppercase tracking-widest">المواد</p>
+        <p className="text-2xs font-mono text-ink-600 uppercase tracking-widest">المواد</p>
       </div>
 
       <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
@@ -488,7 +488,7 @@ function SubjectPicker({ selected, onSelect }) {
           <div key={track}>
             <div className="flex items-center gap-1.5 px-3 py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
               <span className={`w-1.5 h-1.5 rounded-full ${TRACK_META[track]?.dot || 'bg-ink-600'}`} />
-              <span className="text-[9px] font-mono text-ink-700 uppercase tracking-widest">
+              <span className="text-2xs font-mono text-ink-700 uppercase tracking-widest">
                 {TRACK_META[track]?.label || track}
               </span>
             </div>
@@ -505,7 +505,7 @@ function SubjectPicker({ selected, onSelect }) {
                     : { borderRight: '2px solid transparent' }}
                 >
                   <span className="font-arabic text-xs truncate">{s.nameAr}</span>
-                  {s.isMajor && <span className="mr-auto text-[8px] font-mono text-ink-700 shrink-0">★</span>}
+                  {s.isMajor && <span className="mr-auto text-2xs font-mono text-ink-700 shrink-0">★</span>}
                 </button>
               );
             })}
@@ -660,10 +660,10 @@ function CurriculumPanel({ subjectId }) {
             <h2 className="font-arabic text-xl font-bold text-ink-100">{subject.nameAr}</h2>
             <TrackBadge track={subject.path} />
             {subject.isMajor && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>
+              <span className="text-2xs px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>
             )}
           </div>
-          <p className="text-[11px] font-mono text-ink-700" dir="ltr">{subject.subjectId}</p>
+          <p className="text-2xs font-mono text-ink-700" dir="ltr">{subject.subjectId}</p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -674,12 +674,12 @@ function CurriculumPanel({ subjectId }) {
           ].map(({ label, val }) => (
             <div key={label} className="text-center">
               <p className="text-lg font-mono font-bold" style={{ color: 'var(--accent)' }}>{val}</p>
-              <p className="text-[10px] font-arabic text-ink-600">{label}</p>
+              <p className="text-2xs font-arabic text-ink-600">{label}</p>
             </div>
           ))}
           <button
             onClick={load}
-            className="text-[11px] font-mono text-ink-600 hover:text-ink-300 px-2.5 py-1 rounded border border-ink-800/50 hover:border-ink-700/60 transition-colors"
+            className="text-2xs font-mono text-ink-600 hover:text-ink-300 px-2.5 py-1 rounded border border-ink-800/50 hover:border-ink-700/60 transition-colors"
           >
             ↻
           </button>
@@ -692,7 +692,7 @@ function CurriculumPanel({ subjectId }) {
         style={{ background: 'rgba(212,137,30,0.04)', border: '1px solid rgba(212,137,30,0.12)' }}
       >
         <span className="text-sand-600 text-sm">✎</span>
-        <p className="text-[11px] font-arabic text-ink-500">
+        <p className="text-2xs font-arabic text-ink-500">
           انقر على أي عنوان لتعديله مباشرة — الحفظ فوري عند الضغط على Enter أو مغادرة الحقل.
           <span className="font-mono text-ink-700 mr-2">contentId</span> لا يمكن تعديله (يُستخدم كمرجع ثابت في التطبيق).
         </p>
@@ -703,7 +703,7 @@ function CurriculumPanel({ subjectId }) {
         {units.length === 0 && !addingUnit ? (
           <div className="py-10 text-center rounded-xl border" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             <p className="font-arabic text-ink-600 text-sm mb-2">لا يوجد وحدات</p>
-            <p className="text-[11px] font-mono text-ink-800 mb-4">
+            <p className="text-2xs font-mono text-ink-800 mb-4">
               استخدم «إضافة وحدة» أدناه أو اذهب إلى «إدارة البذر» للمواد الكاملة
             </p>
           </div>
@@ -739,17 +739,17 @@ function CurriculumPanel({ subjectId }) {
               placeholder="عنوان الوحدة الجديدة"
               className="flex-1 min-w-0 px-3 py-1.5 rounded-lg text-sm font-arabic bg-ink-800/80 border border-sand-700/50 focus:border-sand-600/70 focus:outline-none text-ink-200 placeholder-ink-700"
             />
-            {addUnitError && <span className="text-[10px] text-red-400 shrink-0">{addUnitError}</span>}
+            {addUnitError && <span className="text-2xs text-red-400 shrink-0">{addUnitError}</span>}
             <button
               onClick={handleAddUnit}
               disabled={addUnitSaving || !addUnitTitle.trim()}
-              className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-sand-700/50 text-sand-300 hover:border-sand-600/60 transition-colors disabled:opacity-40"
+              className="text-2xs font-mono px-3 py-1.5 rounded-lg border border-sand-700/50 text-sand-300 hover:border-sand-600/60 transition-colors disabled:opacity-40"
             >
               {addUnitSaving ? <Spinner /> : 'إضافة'}
             </button>
             <button
               onClick={() => { setAddingUnit(false); setAddUnitTitle(''); setAddUnitError(null); }}
-              className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-ink-700/50 text-ink-500 hover:text-ink-300 transition-colors"
+              className="text-2xs font-mono px-3 py-1.5 rounded-lg border border-ink-700/50 text-ink-500 hover:text-ink-300 transition-colors"
             >
               إلغاء
             </button>
@@ -757,7 +757,7 @@ function CurriculumPanel({ subjectId }) {
         ) : (
           <button
             onClick={() => setAddingUnit(true)}
-            className="w-full py-2.5 rounded-xl border text-[11px] font-arabic text-ink-700 hover:text-sand-400 hover:border-sand-800/50 transition-colors"
+            className="w-full py-2.5 rounded-xl border text-2xs font-arabic text-ink-700 hover:text-sand-400 hover:border-sand-800/50 transition-colors"
             style={{ borderColor: 'rgba(255,255,255,0.05)', borderStyle: 'dashed' }}
           >
             + إضافة وحدة

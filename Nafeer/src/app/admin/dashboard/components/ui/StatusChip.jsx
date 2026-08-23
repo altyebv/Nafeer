@@ -7,7 +7,7 @@ export function StatusChip({ status }) {
   const LABELS = { approved: 'معتمد', review: 'للمراجعة', draft: 'مسودة' };
   const s = status || 'draft';
   return (
-    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] border font-arabic ${CFG[s] || CFG.draft}`}>
+    <span className={`inline-block px-1.5 py-0.5 rounded text-2xs border font-arabic ${CFG[s] || CFG.draft}`}>
       {LABELS[s] || s}
     </span>
   );

@@ -95,8 +95,8 @@ function InfoPill({ label, value }) {
   const isBool  = typeof value === 'boolean';
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[9px] font-mono text-ink-700 uppercase tracking-wider">{label}</span>
-      <span className="text-[11px] font-arabic" style={{ color: isBool ? (value ? T.green : T.red) : T.textSub }}>{display}</span>
+      <span className="text-2xs font-mono text-ink-700 uppercase tracking-wider">{label}</span>
+      <span className="text-2xs font-arabic" style={{ color: isBool ? (value ? T.green : T.red) : T.textSub }}>{display}</span>
     </div>
   );
 }
@@ -106,9 +106,9 @@ function StatBadge({ icon, count, label }) {
   return (
     <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
       style={{ background: T.accentFaint, border: `1px solid ${T.accentBorder}` }}>
-      <span className="text-[11px]">{icon}</span>
+      <span className="text-2xs">{icon}</span>
       <span className="text-sm font-bold font-mono tabular-nums" style={{ color: T.accent }}>{count}</span>
-      <span className="text-[10px] text-ink-600 font-arabic">{label}</span>
+      <span className="text-2xs text-ink-600 font-arabic">{label}</span>
     </div>
   );
 }
@@ -124,14 +124,14 @@ function InlineLinkBox({ link, label, expiry }) {
   return (
     <div className="mt-3 p-3 rounded-xl" style={{ background: T.accentFaint, border: `1px solid ${T.accentBorder}` }}>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] font-mono" style={{ color: T.accent }}>{label}</span>
-        {expiry && <span className="text-[9px] text-ink-700 font-arabic">{expiry}</span>}
+        <span className="text-2xs font-mono" style={{ color: T.accent }}>{label}</span>
+        {expiry && <span className="text-2xs text-ink-700 font-arabic">{expiry}</span>}
       </div>
       <div className="flex items-center gap-2">
-        <p dir="ltr" className="flex-1 text-[10px] font-mono text-ink-500 break-all truncate select-all">{link}</p>
+        <p dir="ltr" className="flex-1 text-2xs font-mono text-ink-500 break-all truncate select-all">{link}</p>
         <button
           onClick={copy}
-          className="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-arabic font-semibold transition-all"
+          className="shrink-0 px-2.5 py-1 rounded-lg text-2xs font-arabic font-semibold transition-all"
           style={{
             background: copied ? T.greenFaint : T.accentFaint,
             color:      copied ? T.green : T.accent,
@@ -150,7 +150,7 @@ function TeamChip({ teamName, teamRole }) {
   const isLeader = teamRole === 'leader';
   return (
     <span
-      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-arabic"
+      className="inline-flex items-center gap-1 text-2xs px-2 py-0.5 rounded-full font-arabic"
       style={{
         background: isLeader ? 'rgba(167,139,250,0.08)' : 'rgba(255,255,255,0.04)',
         border:     isLeader ? '1px solid rgba(167,139,250,0.25)' : `1px solid ${T.border}`,
@@ -159,7 +159,7 @@ function TeamChip({ teamName, teamRole }) {
     >
       {isLeader ? '⬡' : '◦'} {teamName}
       {isLeader && (
-        <span className="text-[8px] font-mono" style={{ color: 'rgba(167,139,250,0.6)', marginRight: 2 }}>
+        <span className="text-2xs font-mono" style={{ color: 'rgba(167,139,250,0.6)', marginRight: 2 }}>
           قائد
         </span>
       )}
@@ -205,7 +205,7 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
         >
           {hint.length > 0 && (
             <div className="px-3 pt-2.5 pb-1.5" style={{ borderBottom: `1px solid ${T.border}` }}>
-              <p className="text-[9px] font-mono text-ink-700 uppercase tracking-wider mb-1.5">اهتمامات المساهم</p>
+              <p className="text-2xs font-mono text-ink-700 uppercase tracking-wider mb-1.5">اهتمامات المساهم</p>
               <div className="flex flex-wrap gap-1">
                 {hint.map((sid) => {
                   const s = SUBJECTS_CATALOG_REF.find((x) => x.id === sid);
@@ -214,7 +214,7 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
                     <button
                       key={sid}
                       onClick={() => { onAssign(sid); setOpen(false); }}
-                      className="text-[10px] px-2 py-0.5 rounded-full font-arabic transition-all"
+                      className="text-2xs px-2 py-0.5 rounded-full font-arabic transition-all"
                       style={{ background: T.accentFaint, color: T.accent, border: `1px solid ${T.accentBorder}` }}
                     >
                       ✦ {s.nameAr}
@@ -227,12 +227,12 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
           <div className="py-1.5 max-h-64 overflow-y-auto">
             {grouped.map(({ track, subjects }) => (
               <div key={track}>
-                <p className="text-[9px] font-mono text-ink-800 uppercase tracking-wider px-3 pt-2 pb-1">{TRACK_LABELS[track]}</p>
+                <p className="text-2xs font-mono text-ink-800 uppercase tracking-wider px-3 pt-2 pb-1">{TRACK_LABELS[track]}</p>
                 {subjects.map((s) => (
                   <button
                     key={s.id}
                     onClick={() => { onAssign(s.id); setOpen(false); }}
-                    className="w-full text-right px-3 py-1.5 text-[11px] font-arabic flex items-center gap-2 transition-colors"
+                    className="w-full text-right px-3 py-1.5 text-2xs font-arabic flex items-center gap-2 transition-colors"
                     style={{
                       color:      s.id === current ? T.accent : T.textSub,
                       background: s.id === current ? T.accentFaint : 'transparent',
@@ -249,7 +249,7 @@ function SubjectPicker({ current, hint = [], onAssign, loading }) {
             <div style={{ borderTop: `1px solid ${T.border}` }}>
               <button
                 onClick={() => { onAssign(''); setOpen(false); }}
-                className="w-full text-right px-3 py-2 text-[10px] font-arabic transition-colors"
+                className="w-full text-right px-3 py-2 text-2xs font-arabic transition-colors"
                 style={{ color: 'rgba(239,68,68,0.5)' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = T.red; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(239,68,68,0.5)'; }}
@@ -301,7 +301,7 @@ function RolePicker({ currentRoleId, roles = [], onAssign, loading }) {
               <button
                 key={r._id}
                 onClick={() => { onAssign(r._id); setOpen(false); }}
-                className="w-full text-right px-3 py-2 text-[11px] font-arabic flex items-center gap-2 transition-colors"
+                className="w-full text-right px-3 py-2 text-2xs font-arabic flex items-center gap-2 transition-colors"
                 style={{
                   color:      r._id === currentRoleId ? 'rgba(200,180,140,1)' : T.textSub,
                   background: r._id === currentRoleId ? 'rgba(200,180,140,0.06)' : 'transparent',
@@ -316,7 +316,7 @@ function RolePicker({ currentRoleId, roles = [], onAssign, loading }) {
             <div style={{ borderTop: `1px solid ${T.border}` }}>
               <button
                 onClick={() => { onAssign(null); setOpen(false); }}
-                className="w-full text-right px-3 py-2 text-[10px] font-arabic"
+                className="w-full text-right px-3 py-2 text-2xs font-arabic"
                 style={{ color: 'rgba(239,68,68,0.45)' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = T.red; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(239,68,68,0.45)'; }}
@@ -362,8 +362,8 @@ function UsernameEditor({ contributorId, currentUsername, onSaved }) {
     return (
       <div className="flex items-center gap-1.5">
         {currentUsername
-          ? <span dir="ltr" className="text-[11px] font-mono" style={{ color: 'rgba(212,137,30,0.6)' }}>@{currentUsername}</span>
-          : <span className="text-[10px] font-mono" style={{ color: T.textMuted }}>بدون username</span>
+          ? <span dir="ltr" className="text-2xs font-mono" style={{ color: 'rgba(212,137,30,0.6)' }}>@{currentUsername}</span>
+          : <span className="text-2xs font-mono" style={{ color: T.textMuted }}>بدون username</span>
         }
         <button
           onClick={open}
@@ -384,13 +384,13 @@ function UsernameEditor({ contributorId, currentUsername, onSaved }) {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-mono" style={{ color: 'rgba(212,137,30,0.5)' }}>@</span>
+        <span className="text-2xs font-mono" style={{ color: 'rgba(212,137,30,0.5)' }}>@</span>
         <input
           autoFocus dir="ltr" value={value}
           onChange={(e) => { setValue(e.target.value); setError(null); }}
           onKeyDown={handleKey}
           placeholder="username"
-          className="text-[11px] font-mono outline-none rounded-lg transition-all"
+          className="text-2xs font-mono outline-none rounded-lg transition-all"
           style={{
             width: 110, padding: '3px 8px',
             background:  T.accentFaint,
@@ -409,7 +409,7 @@ function UsernameEditor({ contributorId, currentUsername, onSaved }) {
           ✕
         </button>
       </div>
-      {error && <p className="text-[9px] font-mono" style={{ color: T.red, paddingRight: 14 }}>{error}</p>}
+      {error && <p className="text-2xs font-mono" style={{ color: T.red, paddingRight: 14 }}>{error}</p>}
     </div>
   );
 }
@@ -484,9 +484,9 @@ function AnnouncePanel({ contributor, contributorTeams = [], onClose, onSent }) 
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-mono uppercase tracking-wider" style={{ color: T.accent }}>✦ إعلان جديد</span>
+        <span className="text-2xs font-mono uppercase tracking-wider" style={{ color: T.accent }}>✦ إعلان جديد</span>
         <button onClick={onClose}
-          className="text-[10px] font-mono transition-colors"
+          className="text-2xs font-mono transition-colors"
           style={{ color: T.textMuted }}
           onMouseEnter={(e) => e.currentTarget.style.color = T.red}
           onMouseLeave={(e) => e.currentTarget.style.color = T.textMuted}>
@@ -496,7 +496,7 @@ function AnnouncePanel({ contributor, contributorTeams = [], onClose, onSent }) 
 
       {/* Audience picker */}
       <div>
-        <p className="text-[9px] font-mono text-ink-700 uppercase tracking-wider mb-1.5">الجمهور المستهدف</p>
+        <p className="text-2xs font-mono text-ink-700 uppercase tracking-wider mb-1.5">الجمهور المستهدف</p>
         <div className="flex flex-wrap gap-1.5">
           {audienceOptions.map((opt) => {
             const active = audience === opt.id;
@@ -504,7 +504,7 @@ function AnnouncePanel({ contributor, contributorTeams = [], onClose, onSent }) 
               <button
                 key={opt.id}
                 onClick={() => setAudience(opt.id)}
-                className="inline-flex items-center gap-1.5 text-[10px] font-arabic px-2.5 py-1 rounded-full transition-all"
+                className="inline-flex items-center gap-1.5 text-2xs font-arabic px-2.5 py-1 rounded-full transition-all"
                 style={{
                   background: active ? `${opt.color}15` : T.surface,
                   border:     active ? `1px solid ${opt.color}55` : `1px solid ${T.border}`,
@@ -515,7 +515,7 @@ function AnnouncePanel({ contributor, contributorTeams = [], onClose, onSent }) 
                 <span style={{ fontSize: 9 }}>{opt.icon}</span>
                 {opt.label}
                 {opt.isTeam && (
-                  <span className="text-[8px] font-mono" style={{ opacity: 0.6 }}>فريق</span>
+                  <span className="text-2xs font-mono" style={{ opacity: 0.6 }}>فريق</span>
                 )}
               </button>
             );
@@ -525,7 +525,7 @@ function AnnouncePanel({ contributor, contributorTeams = [], onClose, onSent }) 
 
       {/* Type picker */}
       <div>
-        <p className="text-[9px] font-mono text-ink-700 uppercase tracking-wider mb-1.5">نوع الإعلان</p>
+        <p className="text-2xs font-mono text-ink-700 uppercase tracking-wider mb-1.5">نوع الإعلان</p>
         <div className="flex gap-1.5">
           {ANN_TYPES.map((t) => {
             const active = annType === t.id;
@@ -533,7 +533,7 @@ function AnnouncePanel({ contributor, contributorTeams = [], onClose, onSent }) 
               <button
                 key={t.id}
                 onClick={() => setAnnType(t.id)}
-                className="inline-flex items-center gap-1 text-[10px] font-arabic px-2.5 py-1 rounded-full transition-all"
+                className="inline-flex items-center gap-1 text-2xs font-arabic px-2.5 py-1 rounded-full transition-all"
                 style={{
                   background: active ? t.bg : T.surface,
                   border:     active ? `1px solid ${t.border}` : `1px solid ${T.border}`,
@@ -593,11 +593,11 @@ function AnnouncePanel({ contributor, contributorTeams = [], onClose, onSent }) 
           <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)}
             className="rounded"
             style={{ accentColor: T.accent }} />
-          <span className="text-[10px] font-arabic" style={{ color: T.textMuted }}>تثبيت الإعلان</span>
+          <span className="text-2xs font-arabic" style={{ color: T.textMuted }}>تثبيت الإعلان</span>
         </label>
 
         <div className="flex items-center gap-2">
-          {error && <p className="text-[9px] font-mono" style={{ color: T.red }}>{error}</p>}
+          {error && <p className="text-2xs font-mono" style={{ color: T.red }}>{error}</p>}
           <button
             onClick={handleSend}
             disabled={sending}
@@ -677,32 +677,32 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
             <span className="font-bold text-sand-200 font-arabic text-sm">{c.name}</span>
-            {c.gender === 'female' && <span className="text-[9px] text-ink-700 font-arabic">أنثى</span>}
-            {c.gender === 'male'   && <span className="text-[9px] text-ink-700 font-arabic">ذكر</span>}
+            {c.gender === 'female' && <span className="text-2xs text-ink-700 font-arabic">أنثى</span>}
+            {c.gender === 'male'   && <span className="text-2xs text-ink-700 font-arabic">ذكر</span>}
           </div>
-          <p dir="ltr" className="text-[11px] font-mono text-ink-500 mb-1.5">{c.email}</p>
+          <p dir="ltr" className="text-2xs font-mono text-ink-500 mb-1.5">{c.email}</p>
           <div className="flex items-center gap-1.5 flex-wrap">
             {stage && (
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-arabic ${stage.color}`}>{stage.label}</span>
+              <span className={`text-2xs px-2 py-0.5 rounded-full border font-arabic ${stage.color}`}>{stage.label}</span>
             )}
             {c.status === 'rejected' && (
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-arabic ${st.badge}`}>مرفوض</span>
+              <span className={`text-2xs px-2 py-0.5 rounded-full border font-arabic ${st.badge}`}>مرفوض</span>
             )}
             {c.roleId?.name && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full border border-sand-800/40 bg-sand-900/20 text-sand-500 font-arabic">
+              <span className="text-2xs px-2 py-0.5 rounded-full border border-sand-800/40 bg-sand-900/20 text-sand-500 font-arabic">
                 ◆ {c.roleId.name}
               </span>
             )}
             {subj && (
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
+              <span className={`text-2xs px-2 py-0.5 rounded-full border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
                 {subj.nameAr}
               </span>
             )}
           </div>
         </div>
         <div className="shrink-0 text-left">
-          <p className="text-[10px] font-mono text-ink-700">{relativeTime(c.createdAt)}</p>
-          <p className="text-[9px] font-mono text-ink-800">{shortDate(c.createdAt)}</p>
+          <p className="text-2xs font-mono text-ink-700">{relativeTime(c.createdAt)}</p>
+          <p className="text-2xs font-mono text-ink-800">{shortDate(c.createdAt)}</p>
         </div>
       </div>
 
@@ -725,8 +725,8 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
                          : T.textMuted,
             }}
           >
-            <span className="text-[10px]">{icon}</span>
-            <span className="text-[10px] font-arabic">{label}</span>
+            <span className="text-2xs">{icon}</span>
+            <span className="text-2xs font-arabic">{label}</span>
           </button>
         ))}
       </div>
@@ -744,10 +744,10 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
           </div>
           {c.aiToolsList?.length > 0 && (
             <div className="mb-3">
-              <p className="text-[9px] font-mono text-ink-700 uppercase tracking-wider mb-1.5">أدوات الذكاء الاصطناعي</p>
+              <p className="text-2xs font-mono text-ink-700 uppercase tracking-wider mb-1.5">أدوات الذكاء الاصطناعي</p>
               <div className="flex flex-wrap gap-1">
                 {c.aiToolsList.map((t) => (
-                  <span key={t} className="text-[10px] px-2 py-0.5 rounded-full font-mono"
+                  <span key={t} className="text-2xs px-2 py-0.5 rounded-full font-mono"
                     style={{ background: T.blueFaint, color: T.blue, border: `1px solid ${T.blueBorder}` }}>
                     {AI_TOOL_LABELS[t] || t}
                   </span>
@@ -757,9 +757,9 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
           )}
           {c.portfolioUrl && (
             <div>
-              <p className="text-[9px] font-mono text-ink-700 uppercase tracking-wider mb-1">Portfolio</p>
+              <p className="text-2xs font-mono text-ink-700 uppercase tracking-wider mb-1">Portfolio</p>
               <a href={c.portfolioUrl} target="_blank" rel="noreferrer" dir="ltr"
-                className="text-[11px] font-mono hover:underline truncate block max-w-xs" style={{ color: T.accent }}>
+                className="text-2xs font-mono hover:underline truncate block max-w-xs" style={{ color: T.accent }}>
                 {c.portfolioUrl}
               </a>
             </div>
@@ -776,17 +776,17 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
             <div className="space-y-4">
               {(c.dynamicAnswers || []).map((a, i) => (
                 <div key={i} className="pr-3 border-r-2" style={{ borderColor: T.accentBorder }}>
-                  <p className="text-[10px] font-mono text-ink-600 mb-1 leading-snug">{a.question}</p>
-                  <p className="text-xs text-ink-400 leading-loose font-arabic whitespace-pre-wrap">{a.answer}</p>
+                  <p className="text-2xs font-mono text-ink-600 mb-1 leading-snug">{a.question}</p>
+                  <p className="text-sm text-ink-400 leading-loose font-arabic whitespace-pre-wrap">{a.answer}</p>
                 </div>
               ))}
               {c.dynamicMicroTask && (
                 <div className="pr-3 border-r-2" style={{ borderColor: T.accentBorder }}>
-                  <p className="text-[10px] font-mono text-ink-600 mb-1">المهمة التطبيقية</p>
-                  <p className="text-xs text-ink-400 leading-loose font-arabic whitespace-pre-wrap">{c.dynamicMicroTask}</p>
+                  <p className="text-2xs font-mono text-ink-600 mb-1">المهمة التطبيقية</p>
+                  <p className="text-sm text-ink-400 leading-loose font-arabic whitespace-pre-wrap">{c.dynamicMicroTask}</p>
                 </div>
               )}
-              <p className="text-[9px] font-mono text-ink-800">أُرسلت: {shortDate(c.dynamicAnswersSubmittedAt)}</p>
+              <p className="text-2xs font-mono text-ink-800">أُرسلت: {shortDate(c.dynamicAnswersSubmittedAt)}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -796,12 +796,12 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
                 const display = key === 'weeklyCommitment' ? (COMMITMENT_LABELS[val] || val) : val;
                 return (
                   <div key={key} className="pr-3 border-r-2" style={{ borderColor: T.accentBorder }}>
-                    <p className="text-[10px] font-mono text-ink-600 mb-1">{label}</p>
-                    <p className="text-xs text-ink-400 leading-loose font-arabic whitespace-pre-wrap">{display}</p>
+                    <p className="text-2xs font-mono text-ink-600 mb-1">{label}</p>
+                    <p className="text-sm text-ink-400 leading-loose font-arabic whitespace-pre-wrap">{display}</p>
                   </div>
                 );
               })}
-              <p className="text-[9px] font-mono text-ink-800">أُرسلت: {shortDate(c.interviewAnswers?.submittedAt)}</p>
+              <p className="text-2xs font-mono text-ink-800">أُرسلت: {shortDate(c.interviewAnswers?.submittedAt)}</p>
             </div>
           )}
         </div>
@@ -842,13 +842,13 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
         <div className="flex-1" />
         {deleteConfirm ? (
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-red-400 font-arabic">تأكيد؟</span>
+            <span className="text-2xs text-red-400 font-arabic">تأكيد؟</span>
             <Btn small variant="red" loading={actionLoading === c._id + 'delete'} onClick={() => onDelete(c._id)}>حذف</Btn>
             <Btn small variant="ghost" onClick={() => setDeleteConfirm(false)}>لا</Btn>
           </div>
         ) : (
           <button onClick={() => setDeleteConfirm(true)}
-            className="text-[10px] font-mono text-ink-800 hover:text-red-500 transition-colors px-1">حذف</button>
+            className="text-2xs font-mono text-ink-800 hover:text-red-500 transition-colors px-1">حذف</button>
         )}
       </div>
     </div>
@@ -946,16 +946,16 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-bold text-sand-200 font-arabic text-sm">{c.name}</span>
             {c.onboarded
-              ? <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-green-900/50 bg-green-950/30 text-green-500 font-arabic">مكتمل</span>
-              : <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-amber-900/50 bg-amber-950/30 text-amber-500 font-arabic">ينتظر التأهيل</span>
+              ? <span className="text-2xs px-1.5 py-0.5 rounded-full border border-green-900/50 bg-green-950/30 text-green-500 font-arabic">مكتمل</span>
+              : <span className="text-2xs px-1.5 py-0.5 rounded-full border border-amber-900/50 bg-amber-950/30 text-amber-500 font-arabic">ينتظر التأهيل</span>
             }
             {subj && (
-              <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
+              <span className={`text-2xs px-1.5 py-0.5 rounded-full border font-arabic ${TRACK_CONFIG[subj.track]?.badge || 'border-ink-700 text-ink-400'}`}>
                 {subj.nameAr}
               </span>
             )}
             {c.roleId?.name && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-sand-800/40 bg-sand-900/20 text-sand-500 font-arabic">
+              <span className="text-2xs px-1.5 py-0.5 rounded-full border border-sand-800/40 bg-sand-900/20 text-sand-500 font-arabic">
                 ◆ {c.roleId.name}
               </span>
             )}
@@ -963,7 +963,7 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
 
           {/* Email + username */}
           <div className="flex items-center gap-2 flex-wrap mb-1.5">
-            <p dir="ltr" className="text-[11px] font-mono text-ink-500">{c.email}</p>
+            <p dir="ltr" className="text-2xs font-mono text-ink-500">{c.email}</p>
             <div style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.08)' }} />
             <UsernameEditor contributorId={c._id} currentUsername={c.username} onSaved={() => onAct(c._id, '_noop')} />
           </div>
@@ -983,15 +983,15 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
           <div className="text-left">
             {stats.lastActiveAt ? (
               <>
-                <p className="text-[9px] font-mono text-ink-800">آخر نشاط</p>
-                <p className="text-[10px] font-mono text-ink-600">{relativeTime(stats.lastActiveAt)}</p>
+                <p className="text-2xs font-mono text-ink-800">آخر نشاط</p>
+                <p className="text-2xs font-mono text-ink-600">{relativeTime(stats.lastActiveAt)}</p>
               </>
             ) : (
-              <p className="text-[10px] font-mono text-ink-800">لم ينشط</p>
+              <p className="text-2xs font-mono text-ink-800">لم ينشط</p>
             )}
             {c.username && (
               <a href={`/contributors/${c.username}`} target="_blank" rel="noreferrer"
-                className="text-[9px] font-mono mt-0.5 transition-colors block"
+                className="text-2xs font-mono mt-0.5 transition-colors block"
                 style={{ color: 'rgba(212,137,30,0.45)', textDecoration: 'none' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = T.accent; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(212,137,30,0.45)'; }}>
@@ -1004,7 +1004,7 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
           <button
             onClick={() => setMode((v) => v === 'announce' ? 'view' : 'announce')}
             title="إرسال إعلان"
-            className="flex items-center gap-1 px-2 py-1 rounded-lg transition-all text-[10px] font-arabic"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg transition-all text-2xs font-arabic"
             style={{
               background: mode === 'announce' ? T.accentFaint : T.surface,
               border:     mode === 'announce' ? `1px solid ${T.accentBorder}` : `1px solid ${T.border}`,
@@ -1050,12 +1050,12 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
             marginTop: hasStats ? 0 : 8, marginBottom: 4,
           }}
         >
-          <span style={{ fontSize: 11 }}>⚠</span>
-          <p className="text-[10px] font-arabic flex-1" style={{ color: T.red }}>
+          <span style={{ fontSize: 13 }}>⚠</span>
+          <p className="text-xs font-arabic flex-1" style={{ color: T.red }}>
             لم تُعيَّن مادة — لن يتمكن من الوصول للمحرر حتى يتم التعيين
           </p>
           {(c.subjectsOfInterest?.length || 0) > 0 && (
-            <span className="text-[9px] font-mono text-ink-700 shrink-0">
+            <span className="text-2xs font-mono text-ink-700 shrink-0">
               اختار {c.subjectsOfInterest.length} أثناء التسجيل
             </span>
           )}
@@ -1077,7 +1077,7 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
           loading={assigningRole}
         />
         {(assigningSubject || assigningRole) && (
-          <span className="text-[9px] font-mono text-ink-700">جارٍ الحفظ…</span>
+          <span className="text-2xs font-mono text-ink-700">جارٍ الحفظ…</span>
         )}
       </div>
 
@@ -1110,13 +1110,13 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
         <div className="flex-1" />
         {deleteConfirm ? (
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-red-400 font-arabic">تأكيد؟</span>
+            <span className="text-2xs text-red-400 font-arabic">تأكيد؟</span>
             <Btn small variant="red" loading={actionLoading === c._id + 'delete'} onClick={() => onDelete(c._id)}>حذف</Btn>
             <Btn small variant="ghost" onClick={() => setDeleteConfirm(false)}>لا</Btn>
           </div>
         ) : (
           <button onClick={() => setDeleteConfirm(true)}
-            className="text-[10px] font-mono text-ink-800 hover:text-red-500 transition-colors px-1">حذف</button>
+            className="text-2xs font-mono text-ink-800 hover:text-red-500 transition-colors px-1">حذف</button>
         )}
       </div>
     </div>

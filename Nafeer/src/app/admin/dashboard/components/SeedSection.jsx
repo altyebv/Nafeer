@@ -6,17 +6,17 @@ import { SectionHeader } from './ui/shared';
 
 function StatusBadge({ seeded, missingUnits, missingLessons, staleUnits, staleLessons, catalogError }) {
   if (catalogError) return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-red-800/60 bg-red-950/40 text-red-400">خطأ</span>
+    <span className="text-2xs px-2 py-0.5 rounded-full font-mono border border-red-800/60 bg-red-950/40 text-red-400">خطأ</span>
   );
   if (!seeded) return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-ink-700/60 bg-ink-900/40 text-ink-500">فارغ</span>
+    <span className="text-2xs px-2 py-0.5 rounded-full font-mono border border-ink-700/60 bg-ink-900/40 text-ink-500">فارغ</span>
   );
   const hasIssues = missingUnits > 0 || missingLessons > 0 || staleUnits > 0 || staleLessons > 0;
   if (hasIssues) return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-amber-800/60 bg-amber-950/40 text-amber-400">ناقص</span>
+    <span className="text-2xs px-2 py-0.5 rounded-full font-mono border border-amber-800/60 bg-amber-950/40 text-amber-400">ناقص</span>
   );
   return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono border border-green-800/60 bg-green-950/40 text-green-400">مكتمل</span>
+    <span className="text-2xs px-2 py-0.5 rounded-full font-mono border border-green-800/60 bg-green-950/40 text-green-400">مكتمل</span>
   );
 }
 
@@ -24,7 +24,7 @@ function TrackBadge({ track }) {
   const styles = { COMMON: 'border-sky-800/50 text-sky-400/80', SCIENCE: 'border-emerald-800/50 text-emerald-400/80', LITERARY: 'border-purple-800/50 text-purple-400/80' };
   const labels = { COMMON: 'مشترك', SCIENCE: 'علمي', LITERARY: 'أدبي' };
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${styles[track] || 'border-ink-700 text-ink-500'}`}>
+    <span className={`text-2xs px-2 py-0.5 rounded-full font-mono border ${styles[track] || 'border-ink-700 text-ink-500'}`}>
       {labels[track] || track}
     </span>
   );
@@ -50,7 +50,7 @@ function ActionBtn({ onClick, loading, disabled, variant = 'default', children }
     <button
       onClick={onClick}
       disabled={loading || disabled}
-      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono border transition-all ${variants[variant]} ${loading || disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono border transition-all ${variants[variant]} ${loading || disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       {loading && <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
       {children}
@@ -89,12 +89,12 @@ function SubjectRow({ s, onAction }) {
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-arabic text-sm font-semibold text-ink-200">{s.nameAr}</span>
             <TrackBadge track={s.track} />
-            {s.isMajor && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>}
+            {s.isMajor && <span className="text-2xs px-1.5 py-0.5 rounded font-mono border border-sand-800/40 text-sand-600">رئيسي</span>}
             <StatusBadge {...s} />
           </div>
           <div className="flex items-center gap-3">
             <Bar value={s.dbLessons} max={s.expectedLessons} />
-            <span className="text-[10px] font-mono text-ink-600 shrink-0 w-12 text-left" dir="ltr">{s.dbLessons}/{s.expectedLessons}</span>
+            <span className="text-2xs font-mono text-ink-600 shrink-0 w-12 text-left" dir="ltr">{s.dbLessons}/{s.expectedLessons}</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -108,7 +108,7 @@ function SubjectRow({ s, onAction }) {
             <ActionBtn variant="red" loading={busy === 'wipe_stale'} onClick={() => run('wipe_stale')}>حذف قديم</ActionBtn>
           )}
           {s.source === 'atlas' && (
-            <span className="text-[9px] px-2 py-0.5 rounded font-mono border border-purple-800/40 text-purple-500/70">DEV</span>
+            <span className="text-2xs px-2 py-0.5 rounded font-mono border border-purple-800/40 text-purple-500/70">DEV</span>
           )}
         </div>
       </div>
@@ -127,31 +127,31 @@ function SubjectRow({ s, onAction }) {
               { label: 'معتمد',   db: s.approvedLessons, expected: s.dbLessons       },
             ].map(({ label, db, expected }) => (
               <div key={label} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                <p className="text-[10px] text-ink-600 font-arabic mb-1">{label}</p>
+                <p className="text-2xs text-ink-600 font-arabic mb-1">{label}</p>
                 <p className="text-lg font-bold font-mono" style={{ color: 'var(--accent)' }}>{db}</p>
-                {expected > 0 && <p className="text-[10px] font-mono text-ink-700">/ {expected}</p>}
+                {expected > 0 && <p className="text-2xs font-mono text-ink-700">/ {expected}</p>}
               </div>
             ))}
           </div>
 
           {(hasMissing || hasStale) && (
             <div className="space-y-1.5 mb-4">
-              {s.missingUnits   > 0 && <p className="text-[11px] font-arabic text-amber-400/80">◎ {s.missingUnits} وحدة ناقصة</p>}
-              {s.missingLessons > 0 && <p className="text-[11px] font-arabic text-amber-400/80">◎ {s.missingLessons} درس ناقص</p>}
-              {s.staleUnits     > 0 && <p className="text-[11px] font-arabic text-red-400/80">✕ {s.staleUnits} وحدة قديمة</p>}
-              {s.staleLessons   > 0 && <p className="text-[11px] font-arabic text-red-400/80">✕ {s.staleLessons} درس قديم</p>}
+              {s.missingUnits   > 0 && <p className="text-2xs font-arabic text-amber-400/80">◎ {s.missingUnits} وحدة ناقصة</p>}
+              {s.missingLessons > 0 && <p className="text-2xs font-arabic text-amber-400/80">◎ {s.missingLessons} درس ناقص</p>}
+              {s.staleUnits     > 0 && <p className="text-2xs font-arabic text-red-400/80">✕ {s.staleUnits} وحدة قديمة</p>}
+              {s.staleLessons   > 0 && <p className="text-2xs font-arabic text-red-400/80">✕ {s.staleLessons} درس قديم</p>}
               
             </div>
           )}
           {s.source === 'atlas' && (
-            <div className="mb-4 rounded-lg px-3 py-2.5 text-[11px] font-arabic text-sky-400/80"
+            <div className="mb-4 rounded-lg px-3 py-2.5 text-2xs font-arabic text-sky-400/80"
               style={{ background: 'rgba(56,189,248,0.04)', border: '1px solid rgba(56,189,248,0.12)' }}>
               مادة تجريبية — أضف وحدات ودروساً من قسم «إدارة المنهج» في لوحة التحكم.
             </div>
           )}
 
           <div className="p-3 rounded-lg" style={{ background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.12)' }}>
-            <p className="text-[10px] font-mono text-red-500/60 mb-2 uppercase tracking-wider">منطقة الخطر</p>
+            <p className="text-2xs font-mono text-red-500/60 mb-2 uppercase tracking-wider">منطقة الخطر</p>
             <div className="flex gap-2 flex-wrap">
               {s.seeded && (
                 <ActionBtn variant="amber" loading={busy === 'reseed'} onClick={() => run('reseed')}>إعادة بذر</ActionBtn>
@@ -309,7 +309,7 @@ export function SeedSection() {
                     filter === f.key ? 'bg-sand-800/40 text-sand-300 border border-sand-700/50' : 'text-ink-500 hover:text-ink-300 border border-ink-800/60'
                   }`}>
                   {f.label}
-                  <span className="font-mono text-[10px] opacity-60">{f.count}</span>
+                  <span className="font-mono text-2xs opacity-60">{f.count}</span>
                 </button>
               ))}
             </div>

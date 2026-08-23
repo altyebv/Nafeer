@@ -19,9 +19,9 @@ const T = {
   surfaceHover: 'rgba(255,255,255,0.04)',
   sunken:       'rgba(0,0,0,0.25)',
   overlay:      '#0e0c09',
-  accent:       '#d48a1e',
-  accentFaint:  'rgba(212,138,30,0.08)',
-  accentBorder: 'rgba(212,138,30,0.22)',
+  accent:       '#d4891e',
+  accentFaint:  'rgba(212,137,30,0.08)',
+  accentBorder: 'rgba(212,137,30,0.22)',
   accentText:   '#e8a93a',
   border:       'rgba(255,255,255,0.07)',
   borderSub:    'rgba(255,255,255,0.04)',
@@ -79,7 +79,7 @@ function SearchBar({ value, onChange, placeholder }) {
         style={{
           width: '100%', paddingRight: 32, paddingLeft: 12, paddingTop: 7, paddingBottom: 7,
           borderRadius: 10, fontSize: 12, outline: 'none', boxSizing: 'border-box',
-          background: focused ? 'rgba(212,138,30,0.04)' : T.surface,
+          background: focused ? 'rgba(212,137,30,0.04)' : T.surface,
           border: `1px solid ${focused ? T.accentBorder : T.border}`,
           color: T.textPrimary,
           transition: 'border-color 0.15s, background 0.15s',
@@ -90,7 +90,7 @@ function SearchBar({ value, onChange, placeholder }) {
           onClick={() => onChange('')}
           style={{
             position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-            fontSize: 10, color: T.textMuted, background: 'none', border: 'none',
+            fontSize: 11, color: T.textMuted, background: 'none', border: 'none',
             cursor: 'pointer', lineHeight: 1,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.color = T.red; }}
@@ -121,7 +121,7 @@ function TabBtn({ label, count, active, onClick, alert }) {
       {label}
       <span style={{
         fontFamily: 'monospace', fontSize: 11, padding: '1px 7px', borderRadius: 6,
-        background: active ? 'rgba(212,138,30,0.18)' : 'rgba(255,255,255,0.06)',
+        background: active ? 'rgba(212,137,30,0.18)' : 'rgba(255,255,255,0.06)',
         color: active ? T.accentText : T.textMuted,
         transition: 'all 0.15s',
       }}>{count}</span>
@@ -154,11 +154,11 @@ function FilterChip({ label, icon, count, active, onClick }) {
         transition: 'all 0.15s',
       }}
     >
-      <span style={{ fontSize: 9, opacity: active ? 1 : 0.5 }}>{icon}</span>
+      <span style={{ fontSize: 11, opacity: active ? 1 : 0.5 }}>{icon}</span>
       {label}
       <span style={{
-        fontFamily: 'monospace', fontSize: 10, padding: '0 5px', borderRadius: 5,
-        background: active ? 'rgba(212,138,30,0.15)' : 'rgba(255,255,255,0.05)',
+        fontFamily: 'monospace', fontSize: 11, padding: '0 5px', borderRadius: 5,
+        background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.05)',
         color: active ? T.accentText : T.textMuted,
       }}>{count}</span>
     </button>
@@ -325,7 +325,7 @@ export function ContributorsSection({ allContributors, onRefresh }) {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '10px 14px', borderRadius: 12,
-                  background: 'rgba(212,138,30,0.06)', border: `1px solid ${T.accentBorder}`,
+                  background: 'rgba(212,137,30,0.06)', border: `1px solid ${T.accentBorder}`,
                 }}>
                   <span style={{ fontSize: 14 }}>◎</span>
                   <span style={{ fontSize: 12, color: T.accentText }}>

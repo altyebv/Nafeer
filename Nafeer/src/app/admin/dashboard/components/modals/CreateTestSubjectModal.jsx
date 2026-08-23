@@ -103,14 +103,14 @@ export function CreateTestSubjectModal({ onClose, onCreated }) {
               ✕
             </button>
           </div>
-          <p className="text-[11px] font-arabic text-ink-500 mt-1">
+          <p className="text-2xs font-arabic text-ink-500 mt-1">
             تُنشئ مادة في قاعدة البيانات مع وحدة ودرس معتمد — جاهزة للنشر الفوري لاختبار Delta Sync
           </p>
         </div>
 
         {/* subjectId */}
         <div className="mb-4">
-          <label className="block text-[10px] font-mono text-ink-600 mb-1">
+          <label className="block text-2xs font-mono text-ink-600 mb-1">
             معرّف المادة (subjectId)
             <span className="text-ink-700 mr-1">— UPPER_SNAKE_CASE</span>
           </label>
@@ -121,14 +121,14 @@ export function CreateTestSubjectModal({ onClose, onCreated }) {
             placeholder="TEST_DELTA_01"
             className="w-full bg-ink-900/60 border border-ink-800/80 rounded-lg px-3 py-2 text-sm font-mono text-ink-200 placeholder:text-ink-700 focus:outline-none focus:border-sand-700/60"
           />
-          <p className="text-[10px] font-mono text-ink-700 mt-1">
+          <p className="text-2xs font-mono text-ink-700 mt-1">
             مثال: TEST_DELTA_01 · TEST_PHYSICS_DEV · STAGING_MATH
           </p>
         </div>
 
         {/* nameAr */}
         <div className="mb-4">
-          <label className="block text-[10px] font-mono text-ink-600 mb-1">
+          <label className="block text-2xs font-mono text-ink-600 mb-1">
             الاسم العربي
           </label>
           <input
@@ -142,7 +142,7 @@ export function CreateTestSubjectModal({ onClose, onCreated }) {
 
         {/* Track picker */}
         <div className="mb-4">
-          <label className="block text-[10px] font-mono text-ink-600 mb-2">المسار</label>
+          <label className="block text-2xs font-mono text-ink-600 mb-2">المسار</label>
           <div className="flex gap-2">
             {TRACKS.map((t) => (
               <button
@@ -177,7 +177,7 @@ export function CreateTestSubjectModal({ onClose, onCreated }) {
             />
             <div>
               <p className="text-xs font-arabic text-ink-200">بذر وحدة ودرس معتمد</p>
-              <p className="text-[10px] font-arabic text-ink-500 mt-0.5">
+              <p className="text-2xs font-arabic text-ink-500 mt-0.5">
                 يضيف درساً بحالة "معتمد" لتفعيل زر النشر فوراً.
                 {!seedContent && ' بدونه ستحتاج إضافة درس يدوياً قبل النشر.'}
               </p>
@@ -197,7 +197,7 @@ export function CreateTestSubjectModal({ onClose, onCreated }) {
 
         {/* Delta test guide */}
         <div
-          className="mb-5 rounded-xl border px-3 py-2.5 text-[10px] font-mono text-ink-600 space-y-1"
+          className="mb-5 rounded-xl border px-3 py-2.5 text-2xs font-mono text-ink-600 space-y-1"
           style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.015)' }}
           dir="ltr"
         >

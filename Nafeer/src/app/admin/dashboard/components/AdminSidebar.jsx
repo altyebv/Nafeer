@@ -9,11 +9,11 @@ export function AdminSidebar({ section, badges, onSelect, onCreateContributor, o
       <div className="px-5 pt-6 pb-5 border-b border-ink-800/60">
         <div className="flex items-center gap-2.5">
           <span className="text-xl font-arabic font-bold text-sand-400">نفير</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-sand-900/50 border border-sand-800/60 text-sand-600 tracking-widest">
+          <span className="text-2xs px-1.5 py-0.5 rounded font-mono bg-sand-900/50 border border-sand-800/60 text-sand-600 tracking-widest">
             ADMIN
           </span>
         </div>
-        <p className="text-[11px] text-ink-600 font-mono mt-1">لوحة التحكم</p>
+        <p className="text-2xs text-ink-600 font-mono mt-1">لوحة التحكم</p>
       </div>
 
       {/* Nav */}
@@ -36,7 +36,7 @@ export function AdminSidebar({ section, badges, onSelect, onCreateContributor, o
               </span>
               <span className="flex-1 font-arabic">{item.label}</span>
               {count != null && count > 0 && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-900/50 border border-amber-700/40 text-amber-400">
+                <span className="text-2xs font-mono px-1.5 py-0.5 rounded-full bg-amber-900/50 border border-amber-700/40 text-amber-400">
                   {count}
                 </span>
               )}
