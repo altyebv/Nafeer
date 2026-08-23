@@ -144,7 +144,7 @@ function Sparkline({ data }) {
 // ── Curriculum bar ─────────────────────────────────────────────────────────────
 function CurriculumBar({ track, label, seeded, total }) {
   const pct = total > 0 ? Math.round((seeded / total) * 100) : 0;
-  const colors = { COMMON: '#38bdf8', SCIENCE: '#4ade80', LITERARY: '#c084fc' };
+  const colors = { COMMON: '#e4a83a', SCIENCE: '#60a5fa', LITERARY: '#c084fc' };
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs font-arabic w-14 shrink-0 text-ink-500">{label}</span>

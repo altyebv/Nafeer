@@ -7,9 +7,9 @@ import { SectionHeader, StatusChip, EmptyState, Spinner } from './ui/shared';
 
 const LVL = {
   high:   { bar: '#22c55e', pill: 'bg-green-900/25 text-green-400 border-green-800/40',   dot: 'bg-green-500'  },
-  medium: { bar: '#f59e0b', pill: 'bg-amber-900/25 text-amber-400 border-amber-800/40',   dot: 'bg-amber-400'  },
+  medium: { bar: '#fbbf24', pill: 'bg-amber-900/25 text-amber-400 border-amber-800/40',   dot: 'bg-amber-400'  },
   low:    { bar: '#f97316', pill: 'bg-orange-900/25 text-orange-400 border-orange-800/40', dot: 'bg-orange-500' },
-  none:   { bar: '#2d3748', pill: 'bg-ink-800/40 text-ink-600 border-ink-700/30',          dot: 'bg-ink-700'   },
+  none:   { bar: '#534d44', pill: 'bg-ink-800/40 text-ink-600 border-ink-700/30',          dot: 'bg-ink-700'   },
 };
 
 const avgLevel = (avg) => avg >= 80 ? 'high' : avg >= 40 ? 'medium' : avg > 0 ? 'low' : 'none';

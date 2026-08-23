@@ -60,10 +60,10 @@ function StatPill({ label, value, accent }) {
 function Tag({ children, color = 'default' }) {
   const colors = {
     default: { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.10)', text: 'var(--ink-500, #888)' },
-    amber:   { bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.25)',  text: '#f59e0b' },
+    amber:   { bg: 'rgba(251,191,36,0.08)',  border: 'rgba(251,191,36,0.25)',  text: '#fbbf24' },
     green:   { bg: 'rgba(34,197,94,0.07)',   border: 'rgba(34,197,94,0.22)',   text: '#4ade80' },
     red:     { bg: 'rgba(239,68,68,0.07)',   border: 'rgba(239,68,68,0.22)',   text: '#f87171' },
-    blue:    { bg: 'rgba(99,102,241,0.08)',  border: 'rgba(99,102,241,0.22)',  text: '#818cf8' },
+    blue:    { bg: 'rgba(96,165,250,0.08)',  border: 'rgba(96,165,250,0.22)',  text: '#60a5fa' },
   };
   const c = colors[color] || colors.default;
   return (
@@ -300,7 +300,7 @@ function RemoteOnlyPanel({ subjectId, onImported, onRemoteDeleted }) {
       {/* Import card */}
       <div
         className="rounded-xl border p-4 flex items-center justify-between gap-4"
-        style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.18)' }}
+        style={{ background: 'rgba(251,191,36,0.05)', borderColor: 'rgba(251,191,36,0.18)' }}
       >
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -736,7 +736,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
           >
             <div
               className="w-12 h-12 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl"
-              style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)' }}
+              style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.18)' }}
             >
               ☁
             </div>
