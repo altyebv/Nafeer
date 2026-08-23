@@ -7,6 +7,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontSize: {
+        '2xs': ['11px', { lineHeight: '1rem' }],
+      },
       fontFamily: {
         arabic:  ['Noto Naskh Arabic', 'serif'],
         display: ['Playfair Display', 'serif'],
