@@ -50,7 +50,7 @@ function StatPill({ label, value, accent }) {
       <span className="font-mono text-sm font-semibold" style={{ color: accent ? 'var(--accent, #d4891e)' : 'var(--ink-300, #ccc)' }}>
         {value}
       </span>
-      <span className="text-[10px] font-arabic" style={{ color: 'var(--ink-500, #888)' }}>
+      <span className="text-2xs font-arabic" style={{ color: 'var(--ink-500, #888)' }}>
         {label}
       </span>
     </div>
@@ -68,7 +68,7 @@ function Tag({ children, color = 'default' }) {
   const c = colors[color] || colors.default;
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono border"
+      className="inline-flex items-center px-2 py-0.5 rounded-md text-2xs font-mono border"
       style={{ background: c.bg, borderColor: c.border, color: c.text }}
     >
       {children}
@@ -157,7 +157,7 @@ function WorkspaceLoading() {
       <div className="p-5 space-y-4">
         <div className="flex items-center gap-2 text-sand-400">
           <Spinner size={3} />
-          <span className="text-[11px] font-mono text-ink-500">loading workspace...</span>
+          <span className="text-2xs font-mono text-ink-500">loading workspace...</span>
         </div>
         <SkeletonBlock className="h-8 w-48" />
         {[0, 1, 2].map((item) => (
@@ -191,7 +191,7 @@ function WorkspaceError({ message, onRetry }) {
         </div>
         <div>
           <p className="font-arabic text-sm text-red-400">{message}</p>
-          <p className="text-[11px] font-mono text-ink-600 mt-1">workspace failed to load</p>
+          <p className="text-2xs font-mono text-ink-600 mt-1">workspace failed to load</p>
         </div>
         <button
           onClick={onRetry}
@@ -228,7 +228,7 @@ function WorkspaceRefreshBanner({ refreshing, error, onRetry, onDismiss }) {
         ) : (
           <span className="text-red-400 text-xs">!</span>
         )}
-        <span className={`text-[11px] font-arabic truncate ${error ? 'text-red-300' : 'text-sand-300'}`}>
+        <span className={`text-2xs font-arabic truncate ${error ? 'text-red-300' : 'text-sand-300'}`}>
           {error || 'جار تحديث مساحة العمل في الخلفية...'}
         </span>
       </div>
@@ -236,7 +236,7 @@ function WorkspaceRefreshBanner({ refreshing, error, onRetry, onDismiss }) {
         {error && (
           <button
             onClick={onRetry}
-            className="text-[10px] font-mono text-red-300/80 hover:text-red-200 transition-colors"
+            className="text-2xs font-mono text-red-300/80 hover:text-red-200 transition-colors"
           >
             retry
           </button>
@@ -244,7 +244,7 @@ function WorkspaceRefreshBanner({ refreshing, error, onRetry, onDismiss }) {
         {error && (
           <button
             onClick={onDismiss}
-            className="text-[10px] font-mono text-ink-600 hover:text-ink-400 transition-colors"
+            className="text-2xs font-mono text-ink-600 hover:text-ink-400 transition-colors"
           >
             dismiss
           </button>
@@ -305,13 +305,13 @@ function RemoteOnlyPanel({ subjectId, onImported, onRemoteDeleted }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <Tag color="amber">remote-only</Tag>
-            <span className="text-[11px] font-mono text-ink-600">not in Atlas</span>
+            <span className="text-2xs font-mono text-ink-600">not in Atlas</span>
           </div>
           <p className="font-arabic text-sm text-amber-300/90">استيراد للتحرير</p>
-          <p className="text-[11px] font-arabic text-ink-500 mt-0.5">
+          <p className="text-2xs font-arabic text-ink-500 mt-0.5">
             يحوّل هذه المادة إلى بيانات Atlas محلية قابلة للتعديل والنشر.
           </p>
-          {importError && <p className="text-[11px] font-arabic text-red-400 mt-1">{importError}</p>}
+          {importError && <p className="text-2xs font-arabic text-red-400 mt-1">{importError}</p>}
         </div>
         <ActionBtn onClick={doImport} loading={importing} disabled={deleteBusy} variant="primary">
           {importing ? 'جارٍ الاستيراد…' : 'استيراد'}
@@ -325,10 +325,10 @@ function RemoteOnlyPanel({ subjectId, onImported, onRemoteDeleted }) {
       >
         <div className="min-w-0">
           <p className="font-arabic text-sm text-red-400/90">حذف من Remote</p>
-          <p className="text-[11px] font-arabic text-ink-500 mt-0.5">
+          <p className="text-2xs font-arabic text-ink-500 mt-0.5">
             يحذف سجل Firebase والملف المنشور من Supabase. مناسب للمواد التجريبية.
           </p>
-          {deleteError && <p className="text-[11px] font-arabic text-red-400 mt-1">{deleteError}</p>}
+          {deleteError && <p className="text-2xs font-arabic text-red-400 mt-1">{deleteError}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {deletePending ? (
@@ -408,11 +408,11 @@ function ReSyncStrip({ subjectId, hasRemote, onReloaded, onRemoteDeleted }) {
       style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
     >
       <div className="min-w-0">
-        {importError   && <p className="text-[11px] font-arabic text-red-400">{importError}</p>}
-        {importSuccess && <p className="text-[11px] font-arabic text-green-400">✓ تم سحب آخر نسخة منشورة</p>}
-        {deleteError   && <p className="text-[11px] font-arabic text-red-400">{deleteError}</p>}
+        {importError   && <p className="text-2xs font-arabic text-red-400">{importError}</p>}
+        {importSuccess && <p className="text-2xs font-arabic text-green-400">✓ تم سحب آخر نسخة منشورة</p>}
+        {deleteError   && <p className="text-2xs font-arabic text-red-400">{deleteError}</p>}
         {!importError && !importSuccess && !deleteError && (
-          <p className="text-[10px] font-mono text-ink-600">remote sync — replaces Atlas with latest published</p>
+          <p className="text-2xs font-mono text-ink-600">remote sync — replaces Atlas with latest published</p>
         )}
       </div>
 
@@ -619,9 +619,9 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
           <div className="min-w-0">
             {/* Breadcrumb */}
             <div className="flex items-center gap-1.5 mb-1.5">
-              <span className="text-[9px] font-mono text-ink-700 uppercase tracking-widest">Workspace</span>
-              <span className="text-[9px] text-ink-800">/</span>
-              <span className="text-[9px] font-mono text-ink-600 uppercase tracking-widest">{subjectId}</span>
+              <span className="text-2xs font-mono text-ink-700 uppercase tracking-widest">Workspace</span>
+              <span className="text-2xs text-ink-800">/</span>
+              <span className="text-2xs font-mono text-ink-600 uppercase tracking-widest">{subjectId}</span>
             </div>
 
             {/* Subject name */}
@@ -636,7 +636,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
               ) : (
                 <Tag color="green">atlas ✓</Tag>
               )}
-              <span className="text-[10px] font-mono text-ink-700">
+              <span className="text-2xs font-mono text-ink-700">
                 {remoteOnly
                   ? 'published file — not yet in Atlas'
                   : 'editable — changes sync to MongoDB'}
@@ -683,7 +683,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
                     <p className={`font-arabic text-xs leading-none ${active ? 'text-sand-300' : 'text-ink-400'}`}>
                       {item.labelAr}
                     </p>
-                    <p className="text-[8px] font-mono text-ink-700 mt-0.5">{item.labelEn}</p>
+                    <p className="text-2xs font-mono text-ink-700 mt-0.5">{item.labelEn}</p>
                   </div>
                   {active && (
                     <span
@@ -741,7 +741,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
               ☁
             </div>
             <p className="font-arabic text-base text-ink-200 mb-1.5">استوردها للبدء بالتعديل</p>
-            <p className="text-[12px] font-arabic text-ink-500 max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs font-arabic text-ink-500 max-w-sm mx-auto leading-relaxed">
               هذه المادة متاحة من الملف المنشور فقط. بعد الاستيراد إلى Atlas ستُفتح نفس أدوات التحرير
               للدروس والمفاهيم والتغذية والأسئلة مع حفظ ونشر فعليين.
             </p>
