@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { SUBJECTS_CATALOG }    from '@/shared/curriculum';
 
@@ -26,9 +27,12 @@ function Avatar({ profile, size }) {
 
   if (profile?.avatarUrl) {
     return (
-      <img
+      <Image
         src={profile.avatarUrl}
         alt={profile.name}
+        width={size}
+        height={size}
+        priority
         style={{
           width: size, height: size,
           borderRadius: '50%',

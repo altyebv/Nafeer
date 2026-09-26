@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -21,6 +22,11 @@ function prefersReducedMotion() {
 function Avatar({ avatarUrl, name, size = 'md' }) {
   const dims = { sm: 'w-11 h-11 text-sm', md: 'w-16 h-16 text-xl', lg: 'w-24 h-24 text-3xl' };
 
+  // next/image needs real numbers, not Tailwind classes. These mirror `dims`
+  // above — w-11/16/24 are 44/64/96px — and are what reserve the space before
+  // the avatar loads.
+  const px = { sm: 44, md: 64, lg: 96 };
+
   const initials = (name || '؟')
     .split(' ')
     .slice(0, 2)
@@ -29,9 +35,11 @@ function Avatar({ avatarUrl, name, size = 'md' }) {
 
   if (avatarUrl) {
     return (
-      <img
+      <Image
         src={avatarUrl}
         alt={name}
+        width={px[size]}
+        height={px[size]}
         className={`${dims[size]} rounded-full object-cover shrink-0`}
         style={{ border: '2px solid var(--accent)' }}
       />
