@@ -1,556 +1,70 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { useParams }           from 'next/navigation';
-import { SUBJECTS_CATALOG }    from '@/shared/curriculum';
+import { notFound }              from 'next/navigation';
+import { getPublicContributor }  from '@/lib/api/contributors';
+import { pageMetadata }          from '@/lib/seo';
+import { SUBJECTS_CATALOG }      from '@/shared/curriculum';
+import { SYSTEM_SEED_USERNAME }  from '@/lib/SeedActor';
+import ProfileView               from './ProfileView';
+
+// ── Contributor profile ───────────────────────────────────────────────────────
+//
+// Server component so each profile can carry its own title, description and
+// canonical, and so a username that doesn't exist returns a real 404 instead of
+// a 200 with an empty shell. The visible UI lives in ProfileView.
+//
+// Revalidated hourly: profiles change when someone contributes, which is often
+// enough to matter and rare enough that per-request DB reads would be waste.
+
+export const revalidate = 3600;
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
-// ── Stat definitions ──────────────────────────────────────────────────────────
-const STAT_META = [
-  { key: 'lessons',   labelAr: 'درس',    labelEn: 'Lessons',   icon: '◈' },
-  { key: 'concepts',  labelAr: 'مفهوم',  labelEn: 'Concepts',  icon: '✦' },
-  { key: 'feedItems', labelAr: 'بطاقة',  labelEn: 'Feed',      icon: '▣' },
-  { key: 'questions', labelAr: 'سؤال',   labelEn: 'Questions', icon: '◎' },
-];
-
-const ROLE_LABELS = {
-  contributor: { ar: 'مساهم',       en: 'Contributor'    },
-  reviewer:    { ar: 'مراجع',       en: 'Reviewer'       },
-  lead:        { ar: 'قائد مجتمع',  en: 'Community Lead' },
-  editor:      { ar: 'محرر',        en: 'Editor'         },
+const ROLE_AR = {
+  contributor: 'مساهم',
+  reviewer:    'مراجع',
+  lead:        'قائد مجتمع',
+  editor:      'محرر',
 };
 
-// ── Avatar ────────────────────────────────────────────────────────────────────
-function Avatar({ profile, size }) {
-  const initials = (profile?.name || 'م')
-    .split(' ').slice(0, 2).map((w) => w[0]).join('');
+// Prefer the contributor's own bio. Failing that, build a sentence from the
+// role and subject — a generated line still beats every profile inheriting the
+// site-wide description.
+function describe(c) {
+  if (c.bio) return c.bio;
 
-  if (profile?.avatarUrl) {
-    return (
-      <img
-        src={profile.avatarUrl}
-        alt={profile.name}
-        style={{
-          width: size, height: size,
-          borderRadius: '50%',
-          objectFit: 'cover',
-          border: '3px solid rgba(212,137,30,0.4)',
-          boxShadow: '0 0 0 6px rgba(212,137,30,0.07), 0 16px 40px rgba(0,0,0,0.5)',
-        }}
-      />
-    );
-  }
-  return (
-    <div style={{
-      width: size, height: size,
-      borderRadius: '50%',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, rgba(212,137,30,0.85) 0%, rgba(120,60,10,0.7) 100%)',
-      border: '3px solid rgba(212,137,30,0.4)',
-      boxShadow: '0 0 0 6px rgba(212,137,30,0.07), 0 16px 40px rgba(0,0,0,0.5)',
-      fontSize: size * 0.35,
-      fontWeight: 800,
-      color: '#1a0f00',
-      fontFamily: 'var(--font-arabic, serif)',
-      flexShrink: 0,
-    }}>
-      {initials}
-    </div>
-  );
+  const role    = ROLE_AR[c.role] || ROLE_AR.contributor;
+  const subject = SUBJECT_MAP[c.subject]?.nameAr;
+
+  return subject
+    ? `${c.name} — ${role} في نفير، يساهم في محتوى ${subject} لطلاب الشهادة السودانية.`
+    : `${c.name} — ${role} في نفير، يساهم في بناء محتوى الشهادة السودانية.`;
 }
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
-function StatCard({ icon, value, labelAr, labelEn, delay }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
+export async function generateMetadata({ params }) {
+  const { username }  = await params;
+  const contributor   = await getPublicContributor(username);
 
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-      padding: '20px 16px',
-      borderRadius: 16,
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.07)',
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(12px)',
-      transition: 'opacity 0.5s ease, transform 0.5s ease',
-      flex: 1,
-      minWidth: 0,
-    }}>
-      <span style={{ fontSize: 16, fontFamily: 'monospace', color: 'rgba(212,137,30,0.7)' }}>{icon}</span>
-      <span style={{
-        fontSize: 36, fontWeight: 800, fontFamily: 'monospace',
-        color: '#e8d5a8', lineHeight: 1,
-        letterSpacing: '-0.03em',
-      }}>
-        {value ?? '—'}
-      </span>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: 13, fontFamily: 'var(--font-arabic, serif)', color: 'rgba(255,255,255,0.55)', lineHeight: 1.3 }}>{labelAr}</p>
-        <p style={{ fontSize: 10, fontFamily: 'monospace', color: 'rgba(255,255,255,0.2)', marginTop: 2, letterSpacing: '0.08em' }}>{labelEn}</p>
-      </div>
-    </div>
-  );
+  // Metadata resolves before the page body, so this runs for unknown usernames
+  // too. The page then calls notFound(), and Next renders not-found.jsx with its
+  // own noindex — so this branch exists to avoid dereferencing null, not to set
+  // the 404's tags.
+  if (!contributor) return { title: 'مساهم غير موجود' };
+
+  return pageMetadata({
+    title:       `${contributor.name} — مساهم في نفير`,
+    ogTitle:     `${contributor.name} · نفير`,
+    description: describe(contributor),
+    path:        `/contributor/${contributor.username}`,
+    // Real page, real content — but a synthetic account, so keep it out of
+    // search results. It still renders for anyone following a link.
+    noindex:     contributor.username === SYSTEM_SEED_USERNAME,
+  });
 }
 
-// ── Team badge on profile ─────────────────────────────────────────────────────
-function TeamBadge({ team, teamRole, delay }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
+export default async function ContributorProfilePage({ params }) {
+  const { username }  = await params;
+  const contributor   = await getPublicContributor(username);
 
-  const isLeader = teamRole === 'leader';
+  if (!contributor) notFound();
 
-  return (
-    <div style={{
-      display:    'flex',
-      alignItems: 'center',
-      gap:        12,
-      padding:    '12px 16px',
-      borderRadius: 14,
-      background: isLeader
-        ? 'rgba(167,139,250,0.06)'
-        : 'rgba(255,255,255,0.03)',
-      border: isLeader
-        ? '1px solid rgba(167,139,250,0.2)'
-        : '1px solid rgba(255,255,255,0.07)',
-      opacity:   visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(8px)',
-      transition: 'opacity 0.4s ease, transform 0.4s ease',
-      boxShadow: isLeader ? '0 2px 16px rgba(167,139,250,0.08)' : 'none',
-    }}>
-      {/* Icon */}
-      <div style={{
-        width: 36, height: 36,
-        borderRadius: '50%',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: isLeader ? 'rgba(167,139,250,0.12)' : 'rgba(255,255,255,0.05)',
-        border: isLeader ? '1px solid rgba(167,139,250,0.25)' : '1px solid rgba(255,255,255,0.08)',
-        fontSize: 14,
-        color: isLeader ? '#a78bfa' : 'rgba(255,255,255,0.3)',
-        flexShrink: 0,
-      }}>
-        {isLeader ? '⬡' : '◦'}
-      </div>
-
-      {/* Info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{
-          margin: 0,
-          fontSize: 13,
-          fontWeight: 600,
-          color: 'rgba(255,255,255,0.8)',
-          fontFamily: 'var(--font-arabic, serif)',
-          marginBottom: 2,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
-          {team.name}
-        </p>
-        {team.description && (
-          <p style={{
-            margin: 0,
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.3)',
-            fontFamily: 'var(--font-arabic, serif)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}>
-            {team.description}
-          </p>
-        )}
-      </div>
-
-      {/* Role badge */}
-      <span style={{
-        fontSize: 10,
-        fontFamily: 'var(--font-arabic, serif)',
-        padding: '3px 10px',
-        borderRadius: 20,
-        background: isLeader ? 'rgba(167,139,250,0.12)' : 'rgba(255,255,255,0.04)',
-        border: isLeader ? '1px solid rgba(167,139,250,0.3)' : '1px solid rgba(255,255,255,0.08)',
-        color: isLeader ? '#a78bfa' : 'rgba(255,255,255,0.3)',
-        flexShrink: 0,
-        fontWeight: isLeader ? 600 : 400,
-      }}>
-        {isLeader ? 'قائد الفريق' : 'عضو'}
-      </span>
-    </div>
-  );
-}
-
-// ── Share button ──────────────────────────────────────────────────────────────
-function ShareBtn() {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* ignore */ }
-  };
-  return (
-    <button
-      onClick={copy}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 7,
-        padding: '8px 16px', borderRadius: 10,
-        background: copied ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${copied ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.1)'}`,
-        color: copied ? '#34d399' : 'rgba(255,255,255,0.45)',
-        fontSize: 12, fontFamily: 'monospace',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-      }}
-    >
-      {copied ? (
-        <><span>✓</span><span>تم النسخ</span></>
-      ) : (
-        <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span>مشاركة الملف</span></>
-      )}
-    </button>
-  );
-}
-
-// ── Not found / Loading ───────────────────────────────────────────────────────
-function NotFound() {
-  return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 16,
-      background: '#080704', color: 'rgba(255,255,255,0.3)',
-      fontFamily: 'monospace',
-    }}>
-      <span style={{ fontSize: 40, opacity: 0.2 }}>◈</span>
-      <p style={{ fontSize: 14 }}>لم يُعثر على هذا المساهم</p>
-      <p style={{ fontSize: 11, opacity: 0.5 }}>contributor not found</p>
-    </div>
-  );
-}
-
-function Loading() {
-  return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#080704',
-    }}>
-      <div style={{
-        width: 32, height: 32, borderRadius: '50%',
-        border: '2px solid rgba(212,137,30,0.3)',
-        borderTopColor: '#d4891e',
-        animation: 'spin 0.8s linear infinite',
-      }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PAGE
-// ═══════════════════════════════════════════════════════════════════════════════
-export default function ContributorProfilePage() {
-  const params   = useParams();
-  const username = params?.username;
-
-  const [profile,     setProfile]     = useState(null);
-  const [activity,    setActivity]    = useState(null);
-  const [teams,       setTeams]       = useState([]);   // contributor's team memberships
-  const [loading,     setLoading]     = useState(true);
-  const [notFound,    setNotFound]    = useState(false);
-  const [heroVisible, setHeroVisible] = useState(false);
-
-  useEffect(() => {
-    if (!username) return;
-    (async () => {
-      try {
-        const res = await fetch(`/api/contributors/public?username=${encodeURIComponent(username)}`);
-        if (res.status === 404) { setNotFound(true); setLoading(false); return; }
-        const data = await res.json();
-        if (!data.ok || !data.contributor) { setNotFound(true); setLoading(false); return; }
-        setProfile(data.contributor);
-
-        // Load activity stats — non-blocking
-        fetch(`/api/contributors/activity?username=${encodeURIComponent(username)}`)
-          .then((r) => r.json())
-          .then((d) => { if (d.ok) setActivity(d.activity); })
-          .catch(() => {});
-
-        // Load team memberships — non-blocking
-        // Teams endpoint returns all teams; we filter on client to find this contributor's teams
-        fetch(`/api/contributors/teams?username=${encodeURIComponent(username)}`)
-          .then((r) => r.json())
-          .then((d) => { if (d.ok && d.teams) setTeams(d.teams); })
-          .catch(() => {});
-
-      } catch {
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-        setTimeout(() => setHeroVisible(true), 60);
-      }
-    })();
-  }, [username]);
-
-  if (loading)  return <Loading />;
-  if (notFound) return <NotFound />;
-
-  const subject   = SUBJECT_MAP[profile.subject];
-  const roleLabel = ROLE_LABELS[profile.role] || ROLE_LABELS.contributor;
-  const joinYear  = profile.createdAt ? new Date(profile.createdAt).getFullYear() : null;
-
-  const stats = STAT_META.map((m) => ({
-    ...m,
-    value: activity?.[m.key] ?? profile.stats?.[m.key] ?? null,
-  }));
-
-  return (
-    <div dir="rtl" style={{
-      minHeight: '100vh',
-      background: '#080704',
-      fontFamily: 'var(--font-arabic, serif)',
-      overflowX: 'hidden',
-    }}>
-
-      {/* ── Ambient background ── */}
-      <div style={{
-        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        background: 'radial-gradient(ellipse 80% 60% at 60% -10%, rgba(212,137,30,0.09) 0%, transparent 60%)',
-      }} />
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, height: '40vh',
-        pointerEvents: 'none', zIndex: 0,
-        background: 'radial-gradient(ellipse 100% 80% at 50% 120%, rgba(212,137,30,0.05) 0%, transparent 70%)',
-      }} />
-
-      {/* ── Grain texture ── */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.025,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-        backgroundSize: '128px 128px',
-      }} />
-
-      {/* ── Main content ── */}
-      <div style={{
-        position: 'relative', zIndex: 1,
-        maxWidth: 640, margin: '0 auto',
-        padding: '64px 24px 80px',
-      }}>
-
-        <div style={{
-          opacity: heroVisible ? 1 : 0,
-          transform: heroVisible ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'opacity 0.6s ease, transform 0.6s ease',
-        }}>
-
-          {/* Top decoration line */}
-          <div style={{
-            width: 40, height: 3, borderRadius: 2,
-            background: 'linear-gradient(90deg, #d4891e, rgba(212,137,30,0.2))',
-            marginBottom: 40,
-          }} />
-
-          {/* Avatar + identity */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 28, marginBottom: 40 }}>
-            <Avatar profile={profile} size={88} />
-
-            <div style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
-              <h1 style={{
-                fontSize: 'clamp(22px, 5vw, 30px)',
-                fontWeight: 800,
-                color: '#f0e6d0',
-                lineHeight: 1.2,
-                margin: '0 0 6px',
-                fontFamily: 'var(--font-arabic, serif)',
-              }}>
-                {profile.name}
-              </h1>
-
-              {profile.username && (
-                <p style={{
-                  fontSize: 13, fontFamily: 'monospace',
-                  color: 'rgba(212,137,30,0.6)',
-                  margin: '0 0 12px',
-                  letterSpacing: '0.04em',
-                }}>
-                  @{profile.username}
-                </p>
-              )}
-
-              {/* Role + subject + join year chips */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                <span style={{
-                  fontSize: 11, fontFamily: 'monospace',
-                  padding: '4px 10px', borderRadius: 6,
-                  background: 'rgba(212,137,30,0.1)',
-                  border: '1px solid rgba(212,137,30,0.25)',
-                  color: '#d4891e',
-                  letterSpacing: '0.06em',
-                }}>
-                  {roleLabel.ar} · {roleLabel.en}
-                </span>
-
-                {subject && (
-                  <span style={{
-                    fontSize: 11, fontFamily: 'var(--font-arabic, serif)',
-                    padding: '4px 10px', borderRadius: 6,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: 'rgba(255,255,255,0.5)',
-                  }}>
-                    {subject.nameAr}
-                    {subject.nameEn && (
-                      <span style={{ fontFamily: 'monospace', fontSize: 9, marginRight: 5, opacity: 0.6 }}>
-                        {subject.nameEn}
-                      </span>
-                    )}
-                  </span>
-                )}
-
-                {joinYear && (
-                  <span style={{
-                    fontSize: 11, fontFamily: 'monospace',
-                    padding: '4px 10px', borderRadius: 6,
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    color: 'rgba(255,255,255,0.25)',
-                    letterSpacing: '0.04em',
-                  }}>
-                    منذ {joinYear}
-                  </span>
-                )}
-
-                {/* Team count chip — quick glance */}
-                {teams.length > 0 && (
-                  <span style={{
-                    fontSize: 11, fontFamily: 'var(--font-arabic, serif)',
-                    padding: '4px 10px', borderRadius: 6,
-                    background: 'rgba(167,139,250,0.08)',
-                    border: '1px solid rgba(167,139,250,0.2)',
-                    color: '#a78bfa',
-                    display: 'flex', alignItems: 'center', gap: 5,
-                  }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 9 }}>⬡</span>
-                    {teams.length === 1 ? `${teams[0].team.name}` : `${teams.length} فرق`}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Bio */}
-          {profile.bio && (
-            <p style={{
-              fontSize: 15, lineHeight: 1.8,
-              color: 'rgba(255,255,255,0.5)',
-              marginBottom: 40,
-              fontFamily: 'var(--font-arabic, serif)',
-              borderRight: '2px solid rgba(212,137,30,0.25)',
-              paddingRight: 16,
-            }}>
-              {profile.bio}
-            </p>
-          )}
-
-          {/* Divider */}
-          <div style={{
-            height: 1, marginBottom: 32,
-            background: 'linear-gradient(90deg, rgba(255,255,255,0.07), transparent)',
-          }} />
-
-          {/* Stats */}
-          <div style={{ marginBottom: 40 }}>
-            <p style={{
-              fontSize: 10, fontFamily: 'monospace',
-              color: 'rgba(255,255,255,0.2)',
-              letterSpacing: '0.14em', textTransform: 'uppercase',
-              marginBottom: 16,
-            }}>
-              المساهمات · Contributions
-            </p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {stats.map((s, i) => (
-                <StatCard
-                  key={s.key}
-                  icon={s.icon}
-                  value={s.value}
-                  labelAr={s.labelAr}
-                  labelEn={s.labelEn}
-                  delay={200 + i * 80}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* ── Teams section ── */}
-          {teams.length > 0 && (
-            <div style={{ marginBottom: 40 }}>
-              {/* Section label */}
-              <p style={{
-                fontSize: 10, fontFamily: 'monospace',
-                color: 'rgba(255,255,255,0.2)',
-                letterSpacing: '0.14em', textTransform: 'uppercase',
-                marginBottom: 14,
-                display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <span>الفرق · Teams</span>
-                <span style={{
-                  fontSize: 9, padding: '1px 6px', borderRadius: 4,
-                  background: 'rgba(167,139,250,0.1)',
-                  border: '1px solid rgba(167,139,250,0.2)',
-                  color: '#a78bfa',
-                  textTransform: 'none', letterSpacing: 0,
-                }}>
-                  {teams.length}
-                </span>
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {teams.map((membership, i) => (
-                  <TeamBadge
-                    key={membership.team._id || i}
-                    team={membership.team}
-                    teamRole={membership.teamRole}
-                    delay={350 + i * 80}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Footer row */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            flexWrap: 'wrap', gap: 12,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{
-                fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-arabic, serif)',
-                color: 'rgba(212,137,30,0.5)',
-              }}>نفير</span>
-              <span style={{
-                fontSize: 9, fontFamily: 'monospace',
-                color: 'rgba(255,255,255,0.15)',
-                letterSpacing: '0.14em',
-              }}>CONTRIBUTOR</span>
-            </div>
-
-            <ShareBtn />
-          </div>
-        </div>
-      </div>
-
-      <style>{`
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-    </div>
-  );
+  return <ProfileView profile={contributor} />;
 }
