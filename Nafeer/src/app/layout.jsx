@@ -58,12 +58,11 @@ export const metadata = {
     apple: '/logo.png',
   },
 
+  // No index/follow here: that is already the default, and an explicit tag on
+  // the root layout cascaded into the 404 boundary and contradicted the noindex
+  // Next emits there. These directives only widen how results may be displayed.
   robots: {
-    index:  true,
-    follow: true,
     googleBot: {
-      index:  true,
-      follow: true,
       // Lets Google use a full-size image in results instead of a thumbnail.
       'max-image-preview': 'large',
       'max-snippet':       -1,
