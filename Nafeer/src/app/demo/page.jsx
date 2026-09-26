@@ -1,10 +1,14 @@
 import DemoApp from '@/components/demo/DemoApp';
 import Link from 'next/link';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'جرّب بشير — معاينة تفاعلية',
-  description: 'معاينة تفاعلية لتطبيق بشير قبل إطلاقه على متجر Google Play',
-};
+export const metadata = pageMetadata({
+  title:       'جرّب بشير — معاينة تفاعلية',
+  description:
+    'جرّب تطبيق بشير من المتصفح قبل إطلاقه على Google Play — تصفّح الدروس، ' +
+    'بطاقات المراجعة وبنك الأسئلة كما ستظهر على هاتفك.',
+  path:        '/demo',
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DemoPage
