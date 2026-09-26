@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB }    from '@/lib/db';
-import { Contributor }  from '@/lib/models/Contributor';
+import { getPublicContributor, listPublicContributors } from '@/lib/api/contributors';
 
 // ─── GET /api/contributors/public ─────────────────────────────────────────────
 // Public — when called with ?username=xxx returns a single contributor profile.
@@ -8,44 +7,26 @@ import { Contributor }  from '@/lib/models/Contributor';
 
 export async function GET(request) {
   try {
-    await connectDB();
-
     const { searchParams } = new URL(request.url);
     const username = searchParams.get('username');
 
     // ── Single contributor lookup (used by the profile page) ──────────────────
     if (username) {
-      const contributor = await Contributor.findOne(
-        { username, status: 'approved', onboarded: true },
-        {
-          name: 1, username: 1, avatarUrl: 1, bio: 1,
-          subject: 1, role: 1, stats: 1, createdAt: 1,
-        }
-      ).lean();
+      const contributor = await getPublicContributor(username);
 
       if (!contributor) {
         return NextResponse.json({ ok: false, contributor: null }, { status: 404 });
       }
 
-      return NextResponse.json({
-        ok: true,
-        contributor: { ...contributor, _id: contributor._id.toString() },
-      });
+      return NextResponse.json({ ok: true, contributor });
     }
 
     // ── Full list (leaderboard / directory) ───────────────────────────────────
-    const contributors = await Contributor.find(
-      { status: 'approved', onboarded: true },
-      {
-        name: 1, username: 1, avatarUrl: 1, bio: 1,
-        subject: 1, role: 1, stats: 1, createdAt: 1,
-      }
-    ).lean();
+    const contributors = await listPublicContributors();
 
     // Sort by contribution score descending
     const scored = contributors.map((c) => ({
       ...c,
-      _id: c._id.toString(),
       _score:
         (c.stats?.lessonsCreated   || 0) * 3 +
         (c.stats?.questionsAdded   || 0) * 1 +
