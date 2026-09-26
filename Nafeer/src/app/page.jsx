@@ -10,6 +10,14 @@ import Visionsection from '@/components/landing/Visionsection';
 import Futuresection from '@/components/landing/Futuresection';
 import FinalCTA from '@/components/landing/Finalcta';
 import VisitTracker from '@/components/VisitTracker';
+import { absoluteUrl } from '@/lib/seo';
+
+// Declared here, not in the root layout: a canonical set on the layout would
+// cascade into every descendant route, making noindex pages such as /join and
+// /admin/login point their canonical at the homepage.
+export const metadata = {
+  alternates: { canonical: absoluteUrl('/') },
+};
 
 export default function HomePage() {
   return (
