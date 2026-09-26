@@ -4,6 +4,8 @@ import { pageMetadata }          from '@/lib/seo';
 import { SUBJECTS_CATALOG }      from '@/shared/curriculum';
 import { SYSTEM_SEED_USERNAME }  from '@/lib/SeedActor';
 import ProfileView               from './ProfileView';
+import JsonLd                    from '@/components/JsonLd';
+import { contributorProfilePage } from '@/lib/jsonld';
 
 // ── Contributor profile ───────────────────────────────────────────────────────
 //
@@ -66,5 +68,19 @@ export default async function ContributorProfilePage({ params }) {
 
   if (!contributor) notFound();
 
-  return <ProfileView profile={contributor} />;
+  // Structured data mirrors what the page actually shows — the same role and
+  // subject rendered in the chips, the same description used for the meta tag.
+  const jsonLd = contributorProfilePage({
+    contributor,
+    description: describe(contributor),
+    jobTitle:    ROLE_AR[contributor.role] || ROLE_AR.contributor,
+    knowsAbout:  SUBJECT_MAP[contributor.subject]?.nameAr,
+  });
+
+  return (
+    <>
+      {contributor.username !== SYSTEM_SEED_USERNAME && <JsonLd data={jsonLd} />}
+      <ProfileView profile={contributor} />
+    </>
+  );
 }

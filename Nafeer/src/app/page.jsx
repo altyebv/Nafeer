@@ -11,6 +11,8 @@ import Futuresection from '@/components/landing/Futuresection';
 import FinalCTA from '@/components/landing/Finalcta';
 import VisitTracker from '@/components/VisitTracker';
 import { absoluteUrl } from '@/lib/seo';
+import { homeGraph } from '@/lib/jsonld';
+import JsonLd from '@/components/JsonLd';
 
 // Declared here, not in the root layout: a canonical set on the layout would
 // cascade into every descendant route, making noindex pages such as /join and
@@ -22,6 +24,7 @@ export const metadata = {
 export default function HomePage() {
   return (
     <div className="grain">
+      <JsonLd data={homeGraph()} />
       <VisitTracker />
       <Navbar />
       <Hero />
