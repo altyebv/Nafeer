@@ -1,9 +1,13 @@
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 
+// Synthetic account that seeded content is attributed to. Not a person, so it
+// is kept out of the sitemap and its profile page is noindex.
+export const SYSTEM_SEED_USERNAME = 'system_seed';
+
 const SYSTEM_CONTRIBUTOR = {
   email: 'system.seed@nafeer.local',
-  username: 'system_seed',
+  username: SYSTEM_SEED_USERNAME,
   name: 'System Seed',
 };
 
