@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPublicContributor, listPublicContributors } from '@/lib/api/contributors';
+import { computeContributorScore } from '@/lib/contributorScore';
 
 // ─── GET /api/contributors/public ─────────────────────────────────────────────
 // Public — when called with ?username=xxx returns a single contributor profile.
@@ -27,11 +28,7 @@ export async function GET(request) {
     // Sort by contribution score descending
     const scored = contributors.map((c) => ({
       ...c,
-      _score:
-        (c.stats?.lessonsCreated   || 0) * 3 +
-        (c.stats?.questionsAdded   || 0) * 1 +
-        (c.stats?.feedItemsCreated || 0) * 2 +
-        (c.stats?.blocksAdded      || 0) * 0.5,
+      _score: computeContributorScore(c.stats),
     }));
 
     scored.sort((a, b) => b._score - a._score);
