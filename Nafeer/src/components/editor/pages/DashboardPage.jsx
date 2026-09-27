@@ -91,11 +91,14 @@ function StatCard({ icon, value, label, delay = 0 }) {
       }}
     >
       <Icon size={22} strokeWidth={1.8} style={{ color: 'var(--accent)' }} />
+      {/* Latin digits, not ar-EG: JetBrains Mono carries no Arabic-Indic
+          glyphs (U+0660–0669), so every stat rendered as tofu. The rest of
+          the editor counts in Latin digits too. */}
       <span
         className="text-3xl font-bold font-mono tabular-nums leading-none"
         style={{ color: 'var(--accent)' }}
       >
-        {animated.toLocaleString('ar-EG')}
+        {animated.toLocaleString('en-US')}
       </span>
       <span
         className="text-xs font-arabic leading-snug"

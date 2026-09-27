@@ -67,14 +67,17 @@ export default function LessonPreviewModal({ lesson, sections, blocks, questions
           </button>
         </div>
 
-        {/* Phone frame */}
+        {/* Phone frame — width was hardcoded at 360px, which together with the
+            3px border and the wrapper's p-4 pushed the frame ~42px off the
+            left edge on a 375px phone. Now it shrinks to fit the viewport and
+            drops the bezel chrome when there is no room for it. */}
         <div
           className="relative flex flex-col overflow-hidden"
           style={{
-            width: 360,
-            height: 'min(780px, 88vh)',
+            width: 'min(360px, calc(100vw - 2rem))',
+            height: 'min(780px, 88dvh)',
             background: '#0e0c09',
-            borderRadius: 40,
+            borderRadius: 'clamp(16px, 8vw, 40px)',
             border: '3px solid #2a2520',
             boxShadow: '0 0 0 1px #1a1713, 0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)',
           }}
@@ -177,7 +180,7 @@ export default function LessonPreviewModal({ lesson, sections, blocks, questions
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 text-[10px] text-ink-700 font-arabic">
+        <div className="flex items-center gap-4 text-[10px] text-ink-500 font-arabic">
           <span className="inline-flex items-center gap-1"><Zap size={11} strokeWidth={1.9} /> تفاعلي</span>
           <span className="inline-flex items-center gap-1"><Brain size={11} strokeWidth={1.9} /> فهم · <Save size={11} strokeWidth={1.9} /> حفظ</span>
           <span className="inline-flex items-center gap-1"><Target size={11} strokeWidth={1.9} /> نقطة تحقق</span>

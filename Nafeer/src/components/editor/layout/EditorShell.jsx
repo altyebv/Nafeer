@@ -11,7 +11,7 @@ import FeedItemsPage      from '@/components/editor/pages/FeedItemsPage';
 import QuizBankPage       from '@/components/editor/pages/QuizBankPage';
 import MediaPage          from '@/components/editor/pages/MediaPage';
 import { Check, TriangleAlert } from 'lucide-react';
-// ExportPage import removed — export section hidden for now
+// Export section is not shipped; ExportPage.jsx was removed (see git history).
 
 // Sidebar widths — must match EditorSidebar constants
 const RAIL_W     = 60;
@@ -74,6 +74,7 @@ export default function EditorShell({ contributor }) {
             onBackToOverview={() => navigateTo('lessons')}
             onNavigateLesson={(lessonId, unitId) => navigateTo('editor', { lessonId, unitId })}
             onOpenGlobal={(page) => navigateTo(page)}
+            currentUser={contributor}
             isSyncing={isSyncing}
             syncError={syncError}
             lastSynced={lastSynced}
@@ -175,9 +176,9 @@ export function SyncBar({ isSyncing, syncError, lastSynced, inline = false }) {
   if (inline) {
     return (
       <div className="flex items-center gap-1.5">
-        {syncError  && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#f87171' }} />}
-        {isSyncing  && <span className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse" style={{ background: '#fbbf24' }} />}
-        {!syncError && !isSyncing && lastSynced && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#34d399' }} />}
+        {syncError  && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--danger)' }} />}
+        {isSyncing  && <span className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse" style={{ background: 'var(--warn)' }} />}
+        {!syncError && !isSyncing && lastSynced && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--success)' }} />}
         <span style={{ fontSize: 10, fontFamily: 'var(--font-arabic, serif)', color: 'rgba(255,255,255,0.4)' }}>
           {syncError ? 'خطأ في الحفظ' : isSyncing ? 'جاري الحفظ…' : 'محفوظ'}
         </span>
@@ -185,36 +186,42 @@ export function SyncBar({ isSyncing, syncError, lastSynced, inline = false }) {
     );
   }
 
+  // Status colours are tokens, not Tailwind's emerald/red/amber — those have
+  // no light-theme variant, and `text-emerald-600` on the cream page measured
+  // 2.64:1 against a 4.5:1 requirement.
   if (syncError) return (
     <div
       className="px-6 py-2 flex items-center justify-between shrink-0"
-      style={{ background: 'rgba(127,29,29,0.12)', borderBottom: '1px solid rgba(239,68,68,0.15)' }}
+      style={{ background: 'var(--danger-surface)', borderBottom: '1px solid var(--danger-border)' }}
     >
-      <span className="inline-flex items-center gap-1.5 text-red-400 text-xs font-arabic">
+      <span className="inline-flex items-center gap-1.5 text-xs font-arabic" style={{ color: 'var(--danger)' }}>
         <TriangleAlert size={13} strokeWidth={2} />
         {syncError}
       </span>
-      <span className="text-red-500 text-xs font-arabic opacity-70">محفوظ محلياً</span>
+      <span className="text-xs font-arabic" style={{ color: 'var(--danger)', opacity: 0.8 }}>محفوظ محلياً</span>
     </div>
   );
 
   if (isSyncing) return (
     <div
       className="px-6 py-2 flex items-center gap-2 shrink-0"
-      style={{ background: 'rgba(212,137,30,0.04)', borderBottom: '1px solid var(--border-subtle)' }}
+      style={{ background: 'var(--warn-surface)', borderBottom: '1px solid var(--border-subtle)' }}
     >
-      <span className="inline-block w-3 h-3 border-2 border-sand-600 border-t-transparent rounded-full animate-spin" />
-      <span className="text-sand-500 text-xs font-arabic">جاري الحفظ…</span>
+      <span
+        className="inline-block w-3 h-3 border-2 rounded-full animate-spin"
+        style={{ borderColor: 'var(--warn)', borderTopColor: 'transparent' }}
+      />
+      <span className="text-xs font-arabic" style={{ color: 'var(--warn)' }}>جاري الحفظ…</span>
     </div>
   );
 
   if (lastSynced) return (
     <div
       className="px-6 py-1.5 flex items-center gap-2 shrink-0"
-      style={{ background: 'rgba(16,185,129,0.03)', borderBottom: '1px solid rgba(16,185,129,0.08)' }}
+      style={{ background: 'var(--success-surface)', borderBottom: '1px solid var(--success-border)' }}
     >
-      <Check size={13} strokeWidth={2.2} className="text-emerald-500" />
-      <span className="text-emerald-600 text-xs font-arabic">
+      <Check size={13} strokeWidth={2.2} style={{ color: 'var(--success)' }} />
+      <span className="text-xs font-arabic" style={{ color: 'var(--success)' }}>
         محفوظ · {new Date(lastSynced).toLocaleTimeString('ar-SD')}
       </span>
     </div>

@@ -35,7 +35,7 @@ const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 const FIELD =
   'w-full px-4 py-3 bg-ink-950 border border-ink-800 rounded-xl text-sand-200 ' +
   'focus:ring-1 focus:ring-sand-600 focus:border-sand-700 focus:outline-none ' +
-  'font-arabic placeholder-ink-700 text-sm leading-relaxed transition-colors ' +
+  'font-arabic placeholder-ink-600 text-sm leading-relaxed transition-colors ' +
   'hover:border-ink-700';
 
 const TABS = [
@@ -220,8 +220,12 @@ export default function LessonEditorPage({
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-ink-950/98 backdrop-blur-md border-b border-ink-800/70">
 
-        {/* Row 1 */}
-        <div className="flex items-center gap-3 px-5 h-12">
+        {/* Row 1 — wraps below sm. Eleven controls in one non-wrapping row
+            crushed the lesson title to width 0 on a phone and pushed the
+            last 28px past the viewport. Wrapping gives the title its own
+            line and lets the actions flow underneath until the Phase 3
+            header restructure replaces this outright. */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 px-5 py-2 sm:py-0 sm:h-12">
           <button
             onClick={onBack}
             className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-sand-400 transition-colors font-arabic shrink-0 group"
@@ -230,9 +234,9 @@ export default function LessonEditorPage({
             <span className="hidden sm:inline">{unit?.title ?? 'الدروس'}</span>
           </button>
 
-          <span className="text-ink-400 text-xs">›</span>
+          <span className="text-ink-400 text-xs shrink-0">›</span>
 
-          <h1 className="flex-1 text-sm font-semibold text-sand-200 font-arabic truncate min-w-0">
+          <h1 className="flex-1 basis-auto min-w-[8rem] text-sm font-semibold text-sand-200 font-arabic truncate">
             {lesson.title}
           </h1>
 
@@ -260,7 +264,7 @@ export default function LessonEditorPage({
               <button
                 onClick={handleApprove}
                 disabled={isSyncing}
-                className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-green-400 text-xs font-semibold rounded-lg border border-green-800/50 bg-green-900/20 hover:bg-green-800/30 disabled:opacity-40 font-arabic transition-colors"
+                className="flex items-center gap-1.5 px-3 h-8 sm:h-7 text-green-400 text-xs font-semibold rounded-lg border border-green-800/50 bg-green-900/20 hover:bg-green-800/30 disabled:opacity-40 font-arabic transition-colors"
               >
                 {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الاعتماد</> : <><Check size={13} strokeWidth={2} /> اعتماد مباشر</>}
               </button>
@@ -268,7 +272,7 @@ export default function LessonEditorPage({
               <button
                 onClick={handleSubmitForReview}
                 disabled={isSyncing}
-                className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-amber-400 text-xs font-semibold rounded-lg border border-amber-800/50 bg-amber-900/20 hover:bg-amber-800/30 disabled:opacity-40 font-arabic transition-colors"
+                className="flex items-center gap-1.5 px-3 h-8 sm:h-7 text-amber-400 text-xs font-semibold rounded-lg border border-amber-800/50 bg-amber-900/20 hover:bg-amber-800/30 disabled:opacity-40 font-arabic transition-colors"
               >
                 {reviewSuccess ? <><Check size={13} strokeWidth={2} /> أُرسل</> : <><Send size={13} strokeWidth={1.9} /> مراجعة</>}
               </button>
@@ -279,7 +283,7 @@ export default function LessonEditorPage({
             <button
               onClick={handleApprove}
               disabled={isSyncing}
-              className="hidden sm:flex items-center gap-1.5 px-3 h-7 text-sand-400 text-xs font-semibold rounded-lg border border-sand-800/50 bg-sand-900/20 hover:bg-sand-800/30 disabled:opacity-40 font-arabic transition-colors"
+              className="flex items-center gap-1.5 px-3 h-8 sm:h-7 text-sand-400 text-xs font-semibold rounded-lg border border-sand-800/50 bg-sand-900/20 hover:bg-sand-800/30 disabled:opacity-40 font-arabic transition-colors"
             >
               {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الحفظ</> : <><Upload size={13} strokeWidth={1.9} /> حفظ + اعتماد</>}
             </button>
@@ -340,7 +344,9 @@ export default function LessonEditorPage({
         )}
 
         {/* Row 2: tabs */}
-        <div className="flex items-end gap-0 px-5 border-t border-ink-800/50">
+        {/* overflow-x-auto: at 375px this strip measures 417px, so the last
+            tab and the lesson counter were clipped with no way to reach them. */}
+        <div className="flex items-end gap-0 px-5 border-t border-ink-800/50 overflow-x-auto scrollbar-none">
           {TABS.map((tab, i) => {
             const isActive = i === activeTab;
             const isDone   = tabDone(tab);
@@ -628,7 +634,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
               value={versionLabel}
               onChange={(e) => onVersionLabelChange(e.target.value.slice(0, 80))}
               placeholder="مثال: مراجعة بعد الفيدباك، تصحيح أمثلة…"
-              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-700 focus:outline-none focus:border-sand-700 transition-colors"
+              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-600 focus:outline-none focus:border-sand-700 transition-colors"
             />
             {versionLabel && (
               <p className="text-xs text-ink-500 font-mono mt-1 text-left">{versionLabel.length}/80</p>
@@ -941,7 +947,7 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
                 {/* Unlink */}
                 <button
                   onClick={() => onUnlink(v.contentId)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity
+                  className="hover-reveal transition-opacity
                     text-ink-500 hover:text-red-500 text-sm px-2 py-1 rounded
                     hover:bg-red-900/20 font-arabic"
                   title="إلغاء الربط"
@@ -1084,13 +1090,13 @@ function OrientationInput({ value = [], onChange }) {
         <div key={i} className="flex items-start gap-2 group">
           <span className="text-sand-700 text-sm mt-2.5 shrink-0">•</span>
           <span className="flex-1 text-sm text-ink-200 font-arabic py-1.5 leading-relaxed">{item}</span>
-          <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-ink-500 hover:text-red-500 text-xs mt-2"><X size={13} strokeWidth={1.9} /></button>
+          <button onClick={() => removeItem(i)} className="hover-reveal transition-opacity text-ink-500 hover:text-red-500 text-xs mt-2"><X size={13} strokeWidth={1.9} /></button>
         </div>
       ))}
       <div className="flex gap-2">
         <input value={draft} onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
-          className="flex-1 px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-700 focus:outline-none focus:border-sand-700 transition-colors"
+          className="flex-1 px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-600 focus:outline-none focus:border-sand-700 transition-colors"
           placeholder="ستتعلم في هذا الدرس… ثم اضغط Enter" />
         <button onClick={addItem} className="px-3 py-2 bg-ink-800 border border-ink-700 rounded-lg text-ink-400 hover:text-sand-400 text-sm transition-colors">+</button>
       </div>
