@@ -92,7 +92,7 @@ function AvatarPicker({ currentUrl, name, onUploaded, onRemoved }) {
     form.append('avatar', file);
 
     try {
-      const res  = await fetch('/api/contributor/avatar', { method: 'POST', body: form });
+      const res  = await fetch('/api/contributors/avatar', { method: 'POST', body: form });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'فشل الرفع'); setPreview(currentUrl); return; }
       setPreview(data.avatarUrl);
@@ -104,7 +104,7 @@ function AvatarPicker({ currentUrl, name, onUploaded, onRemoved }) {
   const handleRemove = async () => {
     setLoading(true); setError('');
     try {
-      const res = await fetch('/api/contributor/avatar', { method: 'DELETE' });
+      const res = await fetch('/api/contributors/avatar', { method: 'DELETE' });
       if (res.ok) { setPreview(null); onRemoved(); }
     } catch { setError('حدث خطأ'); }
     finally { setLoading(false); }
@@ -232,7 +232,7 @@ export default function ProfilePage({ user }) {
   useEffect(() => {
     (async () => {
       try {
-        const res  = await fetch('/api/contributor/profile');
+        const res  = await fetch('/api/contributors/profile');
         const data = await res.json();
         if (res.ok && data.profile) {
           const p = data.profile;
@@ -249,7 +249,7 @@ export default function ProfilePage({ user }) {
   const saveProfile = async () => {
     setSaving(true);
     try {
-      const res  = await fetch('/api/contributor/profile', {
+      const res  = await fetch('/api/contributors/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, username, bio }),

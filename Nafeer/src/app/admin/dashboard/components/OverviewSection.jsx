@@ -58,7 +58,7 @@ function ContributorRow({ c, rank }) {
         <span className="text-xs font-mono" style={{ color: 'var(--accent)' }}>{total}</span>
         {c.username && (
           <a
-            href={`/contributors/${c.username}`}
+            href={`/contributor/${c.username}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-2xs font-mono text-ink-700 hover:text-sand-400 transition-colors px-1.5 py-0.5 rounded border border-transparent hover:border-ink-700/50"

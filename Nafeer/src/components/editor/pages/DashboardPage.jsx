@@ -431,7 +431,7 @@ function WelcomeHero({ contributor, isFirstVisit }) {
         {/* Profile link */}
         {contributor.username && (
           <a
-            href={`/contributors/${contributor.username}`}
+            href={`/contributor/${contributor.username}`}
             target="_blank"
             rel="noreferrer"
             className="shrink-0 hidden sm:flex items-center gap-1.5 text-xs font-arabic px-3 py-2 rounded-xl transition-all duration-200"

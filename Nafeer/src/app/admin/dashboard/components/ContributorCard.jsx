@@ -990,7 +990,7 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
               <p className="text-2xs font-mono text-ink-800">لم ينشط</p>
             )}
             {c.username && (
-              <a href={`/contributors/${c.username}`} target="_blank" rel="noreferrer"
+              <a href={`/contributor/${c.username}`} target="_blank" rel="noreferrer"
                 className="text-2xs font-mono mt-0.5 transition-colors block"
                 style={{ color: 'rgba(212,137,30,0.45)', textDecoration: 'none' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = T.accent; }}

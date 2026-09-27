@@ -163,7 +163,7 @@ function FeaturedCard({ contributor }) {
           >
             {contributor.username ? (
               <a
-                href={`/contributors/${contributor.username}`}
+                href={`/contributor/${contributor.username}`}
                 className="hover:underline transition-opacity duration-200 hover:opacity-80"
                 style={{ color: 'inherit', textDecoration: 'none' }}
               >
@@ -173,7 +173,7 @@ function FeaturedCard({ contributor }) {
           </h3>
           {contributor.username && (
             <p className="text-sm font-mono mb-2.5" style={{ color: 'var(--text-muted)' }}>
-              <a href={`/contributors/${contributor.username}`} className="hover:opacity-80 transition-opacity" style={{ color: 'inherit' }}>
+              <a href={`/contributor/${contributor.username}`} className="hover:opacity-80 transition-opacity" style={{ color: 'inherit' }}>
                 @{contributor.username}
               </a>
             </p>
@@ -248,13 +248,13 @@ function ContributorCard({ contributor, rank }) {
         <div className="min-w-0">
           <h3 className="font-arabic font-bold text-base truncate" style={{ color: 'var(--text-primary)' }}>
             {contributor.username
-              ? <a href={`/contributors/${contributor.username}`} className="hover:opacity-75 transition-opacity" style={{ color: 'inherit' }}>{contributor.name}</a>
+              ? <a href={`/contributor/${contributor.username}`} className="hover:opacity-75 transition-opacity" style={{ color: 'inherit' }}>{contributor.name}</a>
               : contributor.name
             }
           </h3>
           {contributor.username && (
             <p className="text-xs font-mono truncate" style={{ color: 'var(--text-muted)' }}>
-              <a href={`/contributors/${contributor.username}`} className="hover:opacity-75 transition-opacity" style={{ color: 'inherit' }}>
+              <a href={`/contributor/${contributor.username}`} className="hover:opacity-75 transition-opacity" style={{ color: 'inherit' }}>
                 @{contributor.username}
               </a>
             </p>
