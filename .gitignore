@@ -27,3 +27,5 @@ build/
 # Cache
 .cache/
 .eslintcache
+
+.claude
