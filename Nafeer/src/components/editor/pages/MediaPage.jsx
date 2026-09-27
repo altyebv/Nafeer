@@ -6,9 +6,11 @@ import { Check, Copy, ExternalLink, Image as ImageIcon, TriangleAlert, Upload, X
 
 const ACCEPT = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml';
 
+// Theme-aware status colours — the raw green/purple here had no light variant
+// and measured 1.44:1 on the cream page.
 const TYPE_BADGE = {
-  IMAGE: { label: 'صورة',       bg: 'bg-green-900/40',  text: 'text-green-400',  border: 'border-green-800/50'  },
-  GIF:   { label: 'متحرك',      bg: 'bg-purple-900/40', text: 'text-purple-400', border: 'border-purple-800/50' },
+  IMAGE: { label: 'صورة',  bg: 'bg-success-surface', text: 'text-success', border: 'border-success-border' },
+  GIF:   { label: 'متحرك', bg: 'bg-special-surface', text: 'text-special', border: 'border-special-border' },
 };
 
 function formatBytes(bytes) {
@@ -169,7 +171,7 @@ export default function MediaPage({ subjectId, contributor }) {
                   value={uploadAlt}
                   onChange={(e) => setUploadAlt(e.target.value)}
                   placeholder="وصف الصورة للقارئات الصوتية…"
-                  className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm placeholder-ink-700 focus:ring-1 focus:ring-sand-600 focus:outline-none"
+                  className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm placeholder-ink-600 focus:ring-1 focus:ring-sand-600 focus:outline-none"
                 />
               </div>
             </div>
@@ -202,7 +204,7 @@ export default function MediaPage({ subjectId, contributor }) {
                 <>
                   <Upload size={28} strokeWidth={1.6} className="text-ink-600" />
                   <span className="text-ink-400 text-sm">اسحب الملفات هنا أو اضغط للتصفح</span>
-                  <span className="text-ink-700 text-xs">JPEG · PNG · GIF · WebP · SVG — حتى 10 ميغابايت</span>
+                  <span className="text-ink-500 text-xs">JPEG · PNG · GIF · WebP · SVG — حتى 10 ميغابايت</span>
                 </>
               )}
             </div>
@@ -263,7 +265,7 @@ export default function MediaPage({ subjectId, contributor }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="بحث في الأسماء…"
-          className="flex-1 min-w-[160px] px-3 py-1.5 bg-ink-900 border border-ink-800 rounded-lg text-ink-300 text-xs placeholder-ink-700 focus:ring-1 focus:ring-sand-600 focus:outline-none"
+          className="flex-1 min-w-[160px] px-3 py-1.5 bg-ink-900 border border-ink-800 rounded-lg text-ink-300 text-xs placeholder-ink-600 focus:ring-1 focus:ring-sand-600 focus:outline-none"
         />
       </div>
 
@@ -337,7 +339,7 @@ export default function MediaPage({ subjectId, contributor }) {
                             {subjectLabel(item.subjectId)}
                           </span>
                         )}
-                        <span className="text-[10px] text-ink-700 mr-auto">{formatBytes(item.size)}</span>
+                        <span className="text-[10px] text-ink-500 mr-auto">{formatBytes(item.size)}</span>
                       </div>
                     </div>
 
@@ -387,7 +389,7 @@ export default function MediaPage({ subjectId, contributor }) {
                           <button
                             onClick={() => setConfirmDelete(item.contentId)}
                             title="حذف"
-                            className="flex-1 flex items-center justify-center py-1.5 text-xs text-ink-700 hover:text-red-500 transition-colors"
+                            className="flex-1 flex items-center justify-center py-1.5 text-xs text-ink-500 hover:text-red-500 transition-colors"
                           >
                             <X size={14} strokeWidth={1.9} />
                           </button>

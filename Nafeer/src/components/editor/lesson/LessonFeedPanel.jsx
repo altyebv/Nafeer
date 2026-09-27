@@ -140,7 +140,7 @@ export default function LessonFeedPanel({ lessonId, unitId, lessonConceptIds, on
                     )}
                     <button
                       onClick={() => handleDelete(item.id)}
-                      className="opacity-0 group-hover:opacity-100 text-ink-600 hover:text-red-500 transition-all p-0.5 shrink-0"
+                      className="hover-reveal text-ink-600 hover:text-red-500 transition-all p-0.5 shrink-0"
                     >
                       <X size={13} strokeWidth={1.9} />
                     </button>
@@ -181,7 +181,7 @@ export default function LessonFeedPanel({ lessonId, unitId, lessonConceptIds, on
                 <label className="block text-xs text-ink-600 mb-1 font-arabic">
                   المفهوم المرتبط
                   {linkedConcepts.length > 0 && (
-                    <span className="text-ink-700 mr-1">(مفاهيم هذا الدرس أولاً)</span>
+                    <span className="text-ink-500 mr-1">(مفاهيم هذا الدرس أولاً)</span>
                   )}
                 </label>
                 <select

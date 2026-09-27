@@ -64,7 +64,7 @@ export default function ExamsTab({
                   <span className="text-xs text-ink-600 font-arabic">
                     {srcCfg?.icon} {srcCfg?.label}
                   </span>
-                  {exam.year && <span className="text-xs text-ink-700 font-mono">{exam.year}</span>}
+                  {exam.year && <span className="text-xs text-ink-500 font-mono">{exam.year}</span>}
                   {typeCfg && <span className={`text-xs font-arabic ${typeCfg.color}`}>{typeCfg.label}</span>}
                   <span className="text-xs text-ink-600 font-arabic">
                     {(exam.questionIds || []).length} سؤال
@@ -112,7 +112,7 @@ export default function ExamsTab({
               <p className="text-xs text-ink-600 mb-2 font-arabic">إضافة أسئلة من البنك:</p>
               <div className="max-h-48 overflow-y-auto space-y-1 p-2 bg-ink-950 border border-ink-800 rounded-lg">
                 {availableToAdd.length === 0 ? (
-                  <p className="text-xs text-ink-700 text-center py-2 font-arabic">كل الأسئلة مضافة</p>
+                  <p className="text-xs text-ink-500 text-center py-2 font-arabic">كل الأسئلة مضافة</p>
                 ) : (
                   availableToAdd.map((q) => {
                     const cfg = QUESTION_TYPE_CONFIG[q.type];
@@ -142,13 +142,13 @@ export default function ExamsTab({
                     key={q.id}
                     className="flex items-center gap-3 px-3 py-2.5 bg-ink-900 rounded-lg border border-ink-800 group"
                   >
-                    <span className="text-xs text-ink-700 font-mono w-5">{i + 1}</span>
+                    <span className="text-xs text-ink-500 font-mono w-5">{i + 1}</span>
                     <span className="font-mono text-xs text-ink-600">{cfg?.icon}</span>
                     <span className="flex-1 text-sm text-ink-300 line-clamp-1 font-arabic">{q.textAr}</span>
-                    <span className="text-xs text-ink-700 font-arabic">{q.points}نقطة</span>
+                    <span className="text-xs text-ink-500 font-arabic">{q.points}نقطة</span>
                     <button
                       onClick={() => onRemoveQuestion(selectedExam.id, q.id)}
-                      className="opacity-0 group-hover:opacity-100 text-ink-600 hover:text-red-500 transition-all p-1 font-arabic"
+                      className="hover-reveal text-ink-600 hover:text-red-500 transition-all p-1 font-arabic"
                       aria-label="إزالة السؤال"
                     >
                       <X size={14} strokeWidth={2} />
@@ -157,7 +157,7 @@ export default function ExamsTab({
                 );
               })}
               {examQuestions.length === 0 && (
-                <p className="text-xs text-ink-700 text-center py-4 font-arabic">
+                <p className="text-xs text-ink-500 text-center py-4 font-arabic">
                   لا توجد أسئلة في هذا الامتحان — أضف من الأعلى
                 </p>
               )}

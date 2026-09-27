@@ -256,7 +256,7 @@ export default function FormulaEditor({
             onClick={() => insertSnippet(item.latex)}
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-ink-800 bg-ink-950 text-ink-500 hover:bg-amber-950/40 hover:border-amber-800/60 hover:text-amber-400 transition-all"
           >
-            <span className="text-[10px] font-arabic text-ink-700">{item.label}</span>
+            <span className="text-[10px] font-arabic text-ink-500">{item.label}</span>
             <span className="font-mono text-[11px] direction-ltr" dir="ltr">
               {item.latex.length > 18 ? item.latex.slice(0, 16) + '…' : item.latex}
             </span>
@@ -268,7 +268,7 @@ export default function FormulaEditor({
       <div className="grid grid-cols-2">
         {/* LaTeX textarea — DOM first = visual RIGHT in RTL */}
         <div className="p-3 border-l border-ink-800">
-          <p className="text-[10px] text-ink-700 uppercase tracking-wide mb-1.5 font-arabic">LaTeX</p>
+          <p className="text-[10px] text-ink-500 uppercase tracking-wide mb-1.5 font-arabic">LaTeX</p>
           <textarea
             ref={textareaRef}
             value={value}
@@ -278,7 +278,7 @@ export default function FormulaEditor({
             dir="ltr"
             rows={4}
             placeholder={`\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}`}
-            className="w-full px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sand-100 font-mono text-[13px] leading-relaxed resize-none focus:ring-1 focus:ring-sand-700 focus:border-sand-700 focus:outline-none placeholder-ink-800 hover:border-ink-700 transition-colors"
+            className="w-full px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sand-100 font-mono text-[13px] leading-relaxed resize-none focus:ring-1 focus:ring-sand-700 focus:border-sand-700 focus:outline-none placeholder-ink-600 hover:border-ink-700 transition-colors"
             style={{ unicodeBidi: 'plaintext' }}
           />
         </div>
@@ -286,7 +286,7 @@ export default function FormulaEditor({
         {/* Live preview */}
         <div className="p-3 flex flex-col">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] text-ink-700 uppercase tracking-wide font-arabic">معاينة</p>
+            <p className="text-[10px] text-ink-500 uppercase tracking-wide font-arabic">معاينة</p>
             <button
               onClick={() => setPreviewRtl(r => !r)}
               title={previewRtl ? 'عرض من اليسار لليمين' : 'عرض من اليمين لليسار'}
@@ -324,7 +324,7 @@ export default function FormulaEditor({
       {/* ── Arabic superscript hint ──────────────────────────────────────────── */}
       <div className="px-3 py-2 border-t border-ink-800/60 bg-ink-900/40 flex items-start gap-2">
         <span className="text-amber-600/70 text-[11px] mt-px shrink-0">ℹ</span>
-        <p className="text-[11px] text-ink-700 font-arabic leading-relaxed">
+        <p className="text-[11px] text-ink-500 font-arabic leading-relaxed">
           للأس على يسار الحرف العربي استخدم{' '}
           <code className="font-mono text-ink-500 bg-ink-900 px-1 rounded" dir="ltr">{'{}^{2}س'}</code>
           {' '}بدلاً من{' '}

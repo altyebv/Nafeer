@@ -97,7 +97,7 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
   // ── render ────────────────────────────────────────────────────────────────
   if (!imageUrl) {
     return (
-      <div className="flex items-center justify-center py-10 border border-dashed border-ink-800 rounded-xl text-ink-700 text-sm font-arabic">
+      <div className="flex items-center justify-center py-10 border border-dashed border-ink-800 rounded-xl text-ink-500 text-sm font-arabic">
         اختر صورة أولاً لتتمكن من إضافة العلامات
       </div>
     );
@@ -121,7 +121,7 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
             {placingMode ? 'انقر على الصورة لإضافة علامة' : 'إضافة علامة'}
           </button>
 
-          <span className="text-xs text-ink-700">
+          <span className="text-xs text-ink-500">
             {markers.length === 0
               ? 'لا توجد علامات'
               : `${markers.length} ${markers.length === 1 ? 'علامة' : 'علامات'}`}
@@ -268,10 +268,10 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
                 {i + 1}
               </span>
               <span className="flex-1 truncate">
-                {m.label || <span className="text-ink-700 italic">بدون عنوان</span>}
+                {m.label || <span className="text-ink-500 italic">بدون عنوان</span>}
               </span>
               {m.description && (
-                <span className="text-ink-700 text-[10px] truncate max-w-[120px]">{m.description}</span>
+                <span className="text-ink-500 text-[10px] truncate max-w-[120px]">{m.description}</span>
               )}
               <span className="text-[10px] text-ink-800 font-mono shrink-0">
                 ({(m.x * 100).toFixed(0)}%, {(m.y * 100).toFixed(0)}%)
@@ -297,7 +297,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
         <span className="text-xs text-sand-400 font-semibold">
           علامة {index + 1} من {total}
         </span>
-        <span className="text-[10px] text-ink-700 font-mono mr-auto">
+        <span className="text-[10px] text-ink-500 font-mono mr-auto">
           ({(marker.x * 100).toFixed(1)}%, {(marker.y * 100).toFixed(1)}%)
         </span>
         <button
@@ -317,7 +317,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
             type="text"
             value={marker.label}
             onChange={(e) => onChange({ label: e.target.value })}
-            className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-800 hover:border-ink-700 transition-colors"
+            className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-600 hover:border-ink-700 transition-colors"
             placeholder="مثال: النواة، الغشاء الخلوي…"
           />
         </div>
@@ -328,7 +328,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
             value={marker.description}
             onChange={(e) => onChange({ description: e.target.value })}
             rows={2}
-            className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-800 resize-none hover:border-ink-700 transition-colors"
+            className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-600 resize-none hover:border-ink-700 transition-colors"
             placeholder="وصف مختصر يوضح أهمية هذا الجزء…"
           />
         </div>
@@ -339,7 +339,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
           <div className="flex gap-2">
             <div className="flex-1">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-ink-700 font-mono w-3">X</span>
+                <span className="text-[10px] text-ink-500 font-mono w-3">X</span>
                 <input
                   type="number"
                   min="0" max="100" step="0.1"
@@ -351,7 +351,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-ink-700 font-mono w-3">Y</span>
+                <span className="text-[10px] text-ink-500 font-mono w-3">Y</span>
                 <input
                   type="number"
                   min="0" max="100" step="0.1"

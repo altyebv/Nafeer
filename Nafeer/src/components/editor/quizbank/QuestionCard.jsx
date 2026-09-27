@@ -71,7 +71,7 @@ export default function QuestionCard({ question, subjectId, onEdit, onDelete, on
           </button>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+        <div className="flex shrink-0 items-center gap-1 hover-reveal">
           {(!question.atlasStatus || question.atlasStatus === 'draft') && subjectId && (
             <button
               type="button"

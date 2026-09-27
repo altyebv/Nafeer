@@ -154,7 +154,7 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
           {/* Edit title */}
           <button
             onClick={(e) => { e.stopPropagation(); setTitleDraft(unit.title); setEditingTitle(true); }}
-            className="rounded transition-all duration-150 opacity-0 group-hover:opacity-100"
+            className="rounded transition-all duration-150 hover-reveal"
             style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)';   e.currentTarget.style.background = 'transparent'; }}
@@ -189,8 +189,8 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
               <p className="font-arabic" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 لا توجد دروس بعد
               </p>
-              <p className="font-arabic mt-1 group-hover:opacity-100 transition-opacity"
-                style={{ fontSize: 11, color: 'var(--accent)', opacity: 0 }}>
+              <p className="font-arabic mt-1 hover-reveal"
+                style={{ fontSize: 11, color: 'var(--accent)' }}>
                 اضغط لإضافة درس
               </p>
             </div>

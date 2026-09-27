@@ -29,7 +29,7 @@ export default function MatchPairs({ pairs, onChange }) {
             className="min-w-0 rounded-lg border border-ink-800 bg-ink-900 px-3 py-2 text-sm text-sand-200 outline-none transition-colors placeholder:text-ink-600 focus:border-sand-700 focus:ring-1 focus:ring-sand-800 font-arabic"
             placeholder={`أ${index + 1}`}
           />
-          <span className="text-ink-700">↔</span>
+          <span className="text-ink-500">↔</span>
           <input
             type="text"
             value={pair.left}

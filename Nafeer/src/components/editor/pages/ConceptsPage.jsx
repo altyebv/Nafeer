@@ -214,7 +214,7 @@ export default function ConceptsPage({ subjectId }) {
           className="font-arabic font-semibold flex items-center gap-1.5 transition-colors"
           style={{
             padding: '8px 16px', borderRadius: 10, fontSize: 13,
-            background: 'var(--accent)', color: '#fff',
+            background: 'var(--accent)', color: 'rgb(var(--ink-950))',
           }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-hover)'}
           onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
@@ -324,7 +324,7 @@ export default function ConceptsPage({ subjectId }) {
               className="font-arabic"
               style={{
                 marginTop: 12, padding: '8px 20px', borderRadius: 10, fontSize: 13,
-                background: 'var(--accent)', color: '#fff', cursor: 'pointer',
+                background: 'var(--accent)', color: 'rgb(var(--ink-950))', cursor: 'pointer',
                 border: 'none',
               }}
             >
@@ -413,7 +413,7 @@ export default function ConceptsPage({ subjectId }) {
 
                   {/* Actions */}
                   <div
-                    className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    className="flex gap-1 hover-reveal transition-opacity flex-shrink-0"
                     style={{ paddingTop: 2 }}
                   >
                     {(!concept.atlasStatus || concept.atlasStatus === 'draft') && subjectId && (
@@ -659,8 +659,10 @@ function FilterPill({ active, onClick, label, count, color, icon: Icon }) {
         background: active
           ? (color ? `${color}18` : 'var(--accent-dim)')
           : 'var(--bg-card)',
+        // --accent-text, not --accent: the active pill's label sits on an
+        // --accent-dim wash, where plain --accent measured 4.07:1 in light.
         color: active
-          ? (color || 'var(--accent)')
+          ? (color || 'var(--accent-text)')
           : 'var(--text-muted)',
         border: `1px solid ${active ? (color ? `${color}50` : 'var(--accent)') : 'var(--border-subtle)'}`,
         display: 'inline-flex', alignItems: 'center', gap: 5,

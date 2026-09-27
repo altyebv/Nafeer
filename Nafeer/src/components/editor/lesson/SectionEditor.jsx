@@ -159,7 +159,7 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
       <div className="flex items-center gap-2.5 px-4 py-3 bg-ink-800/20">
 
         {/* Drag handle (for section reorder — wired by parent) */}
-        <span className="text-ink-700 cursor-grab text-xs select-none leading-none">⋮⋮</span>
+        <span className="text-ink-500 cursor-grab text-xs select-none leading-none">⋮⋮</span>
 
         {/* Collapse toggle */}
         <button
@@ -191,7 +191,7 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
 
         {/* Block count */}
         {!collapsed && sectionBlocks.length > 0 && (
-          <span className="text-[10px] font-mono text-ink-700 shrink-0">{sectionBlocks.length}</span>
+          <span className="text-[10px] font-mono text-ink-500 shrink-0">{sectionBlocks.length}</span>
         )}
 
         {/* Learning type selector */}
@@ -206,7 +206,7 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
                 onClick={() => updateSection(section.id, { learningType: key })}
                 title={`${cfg.label} — ${cfg.hint}`}
                 className={`px-2 py-1 rounded-md text-xs transition-all
-                  ${active ? `${sty.pill} border` : 'text-ink-700 hover:text-ink-400'}`}
+                  ${active ? `${sty.pill} border` : 'text-ink-500 hover:text-ink-400'}`}
               >
                 {cfg.icon}
               </button>
@@ -220,13 +220,13 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
             <button
               onClick={() => setPartIndex(-1)}
               disabled={partIndex === 0}
-              className="w-5 h-5 flex items-center justify-center text-ink-700 hover:text-sand-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-xs rounded"
+              className="w-5 h-5 flex items-center justify-center text-ink-500 hover:text-sand-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-xs rounded"
               title="نقل للجزء السابق"
             >‹</button>
             <span className="text-[10px] font-mono text-ink-600 w-4 text-center">{partIndex + 1}</span>
             <button
               onClick={() => setPartIndex(1)}
-              className="w-5 h-5 flex items-center justify-center text-ink-700 hover:text-sand-400 transition-colors text-xs rounded"
+              className="w-5 h-5 flex items-center justify-center text-ink-500 hover:text-sand-400 transition-colors text-xs rounded"
               title="نقل للجزء التالي"
             >›</button>
           </div>
@@ -250,7 +250,7 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
             ))}
             <button
               onClick={() => setShowConceptLinker(!showConceptLinker)}
-              className="text-xs text-ink-700 hover:text-sand-400 transition-colors font-arabic mr-auto"
+              className="text-xs text-ink-500 hover:text-sand-400 transition-colors font-arabic mr-auto"
             >
               {showConceptLinker ? '← إغلاق' : '+ ربط مفهوم'}
             </button>
@@ -316,7 +316,7 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
           ) : (
             <button
               onClick={() => setShowAddBlock(true)}
-              className="w-full py-2.5 border border-dashed border-ink-800/50 rounded-lg text-ink-700 hover:border-sand-800/40 hover:text-sand-600 hover:bg-sand-900/5 transition-colors text-xs font-arabic"
+              className="w-full py-2.5 border border-dashed border-ink-800/50 rounded-lg text-ink-500 hover:border-sand-800/40 hover:text-sand-600 hover:bg-sand-900/5 transition-colors text-xs font-arabic"
             >
               + إضافة عنصر
             </button>

@@ -220,7 +220,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                     )}
                     <button
                       onClick={() => handleDelete(q.id)}
-                      className="opacity-0 group-hover:opacity-100 text-ink-600 hover:text-red-500 transition-all p-0.5 shrink-0"
+                      className="hover-reveal text-ink-600 hover:text-red-500 transition-all p-0.5 shrink-0"
                     >
                       <X size={13} strokeWidth={1.9} />
                     </button>

@@ -79,7 +79,7 @@ function Cell({ value, onChange, isHeader, isEditable, onToggleEditable, quizMod
         dir="rtl"
         className={`
           w-full px-3 py-2.5 bg-transparent text-sm font-arabic text-center outline-none
-          placeholder-ink-700 transition-colors
+          placeholder-ink-600 transition-colors
           ${isHeader ? 'font-semibold text-sand-300' : 'text-ink-200'}
           ${focused ? 'bg-ink-800/50' : ''}
           ${readOnly ? 'cursor-default' : ''}
@@ -94,7 +94,7 @@ function Cell({ value, onChange, isHeader, isEditable, onToggleEditable, quizMod
           title={isEditable ? 'خلية فارغة (يملأها الطالب)' : 'خلية ثابتة'}
           className={`
             absolute top-1 left-1 w-4 h-4 rounded-sm text-xs flex items-center justify-center
-            opacity-0 group-hover:opacity-100 transition-opacity border
+            hover-reveal transition-opacity border
             ${isEditable
               ? 'bg-sand-800 border-sand-600 text-sand-400'
               : 'bg-ink-700 border-ink-600 text-ink-500'
@@ -172,7 +172,7 @@ export function LessonTableEditor({ value, onChange }) {
                   <button
                     onClick={() => removeCol(ci)}
                     disabled={cols <= 1}
-                    className="text-ink-700 hover:text-red-500 transition-colors disabled:opacity-20 text-xs px-1"
+                    className="text-ink-500 hover:text-red-500 transition-colors disabled:opacity-20 text-xs px-1"
                     title="حذف العمود"
                   >
                     <X size={13} strokeWidth={1.9} />
@@ -186,7 +186,7 @@ export function LessonTableEditor({ value, onChange }) {
           <tbody>
             {/* Header row */}
             <tr className="border-b border-ink-700">
-              <td className="w-6 bg-ink-900/30 text-center text-xs text-ink-700 font-mono px-1">H</td>
+              <td className="w-6 bg-ink-900/30 text-center text-xs text-ink-500 font-mono px-1">H</td>
               {table.headers.map((h, ci) => (
                 <Cell key={ci} value={h} onChange={v => setHeader(ci, v)} isHeader />
               ))}
@@ -196,7 +196,7 @@ export function LessonTableEditor({ value, onChange }) {
             {/* Data rows */}
             {table.rows.map((row, ri) => (
               <tr key={ri} className="border-b border-ink-700/50 last:border-b-0">
-                <td className="w-6 bg-ink-900/30 text-center text-xs text-ink-700 font-mono px-1">
+                <td className="w-6 bg-ink-900/30 text-center text-xs text-ink-500 font-mono px-1">
                   {ri + 1}
                 </td>
                 {row.map((cell, ci) => (
@@ -206,7 +206,7 @@ export function LessonTableEditor({ value, onChange }) {
                   <button
                     onClick={() => removeRow(ri)}
                     disabled={table.rows.length <= 1}
-                    className="text-ink-700 hover:text-red-500 transition-colors disabled:opacity-20 text-xs"
+                    className="text-ink-500 hover:text-red-500 transition-colors disabled:opacity-20 text-xs"
                     title="حذف الصف"
                   >
                     <X size={13} strokeWidth={1.9} />
@@ -232,7 +232,7 @@ export function LessonTableEditor({ value, onChange }) {
         >
           + عمود
         </button>
-        <span className="text-xs text-ink-700 self-center font-arabic mr-auto">
+        <span className="text-xs text-ink-500 self-center font-arabic mr-auto">
           {cols} أعمدة · {table.rows.length} صفوف
         </span>
       </div>
@@ -342,7 +342,7 @@ export function QuizTableEditor({ value, onChange }) {
                   <button
                     onClick={() => removeCol(ci)}
                     disabled={cols <= 1}
-                    className="text-ink-700 hover:text-red-500 transition-colors disabled:opacity-20 text-xs px-1"
+                    className="text-ink-500 hover:text-red-500 transition-colors disabled:opacity-20 text-xs px-1"
                   >
                     <X size={13} strokeWidth={1.9} />
                   </button>
@@ -355,7 +355,7 @@ export function QuizTableEditor({ value, onChange }) {
           <tbody>
             {/* Header row */}
             <tr className="border-b border-ink-700">
-              <td className="w-6 bg-ink-900/30 text-center text-xs text-ink-700 font-mono px-1">H</td>
+              <td className="w-6 bg-ink-900/30 text-center text-xs text-ink-500 font-mono px-1">H</td>
               {table.headers.map((h, ci) => (
                 <Cell key={ci} value={h} onChange={v => setHeader(ci, v)} isHeader quizMode />
               ))}
@@ -364,7 +364,7 @@ export function QuizTableEditor({ value, onChange }) {
 
             {table.rows.map((row, ri) => (
               <tr key={ri} className="border-b border-ink-700/50 last:border-b-0">
-                <td className="w-6 bg-ink-900/30 text-center text-xs text-ink-700 font-mono px-1">
+                <td className="w-6 bg-ink-900/30 text-center text-xs text-ink-500 font-mono px-1">
                   {ri + 1}
                 </td>
                 {row.map((cell, ci) => (
@@ -381,7 +381,7 @@ export function QuizTableEditor({ value, onChange }) {
                   <button
                     onClick={() => removeRow(ri)}
                     disabled={table.rows.length <= 1}
-                    className="text-ink-700 hover:text-red-500 transition-colors disabled:opacity-20 text-xs"
+                    className="text-ink-500 hover:text-red-500 transition-colors disabled:opacity-20 text-xs"
                   >
                     <X size={13} strokeWidth={1.9} />
                   </button>

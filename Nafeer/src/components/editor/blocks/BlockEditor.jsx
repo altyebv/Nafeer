@@ -30,7 +30,7 @@ import {
 const ta =
   'w-full px-3 py-2.5 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm ' +
   'focus:ring-1 focus:ring-sand-600 focus:border-sand-700 focus:outline-none ' +
-  'font-arabic placeholder-ink-800 resize-y transition-colors hover:border-ink-700';
+  'font-arabic placeholder-ink-600 resize-y transition-colors hover:border-ink-700';
 
 const HL_COLORS = {
   DEFINITION: { border: 'border-blue-700', bg: 'bg-blue-950/60', label: 'text-blue-400', ring: 'bg-blue-900/50 text-blue-400 border-blue-800' },
@@ -43,7 +43,7 @@ const HL_COLORS = {
 function DragHandle({ dragHandleProps, className = '' }) {
   return (
     <span
-      className={`flex items-center justify-center w-6 h-6 rounded cursor-grab active:cursor-grabbing text-ink-700 hover:text-ink-400 hover:bg-ink-800/60 transition-colors select-none ${className}`}
+      className={`flex items-center justify-center w-6 h-6 rounded cursor-grab active:cursor-grabbing text-ink-500 hover:text-ink-400 hover:bg-ink-800/60 transition-colors select-none ${className}`}
       title="سحب لإعادة الترتيب"
       {...(dragHandleProps || {})}
     >
@@ -152,7 +152,7 @@ function BlockPreview({ block }) {
       return (
         <div className="mx-4 my-3 flex items-center gap-3">
           <div className="flex-1 h-px bg-ink-800" />
-          <span className="text-ink-700 text-xs font-mono select-none">— —</span>
+          <span className="text-ink-500 text-xs font-mono select-none">— —</span>
           <div className="flex-1 h-px bg-ink-800" />
         </div>
       );
@@ -243,7 +243,7 @@ export default function BlockEditor({ block, subjectId, dragHandleProps, lessonI
         >
           {preview ?? (
             <div className="px-4 py-4 text-center">
-              <span className="text-xs text-ink-700 font-arabic opacity-50">{config.icon} فارغ</span>
+              <span className="text-xs text-ink-500 font-arabic opacity-50">{config.icon} فارغ</span>
             </div>
           )}
         </div>
@@ -329,10 +329,10 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
                 H{l}
               </button>
             ))}
-            <span className="text-xs text-ink-700 font-arabic self-center mr-2">{HEADING_LEVELS[level]?.label}</span>
+            <span className="text-xs text-ink-500 font-arabic self-center mr-2">{HEADING_LEVELS[level]?.label}</span>
           </div>
           <input autoFocus type="text" value={block.content} onChange={(e) => update({ content: e.target.value })}
-            className={`w-full px-3 py-2.5 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-800 hover:border-ink-700 transition-colors ${level === 2 ? 'text-xl font-bold' : 'text-lg font-semibold'}`}
+            className={`w-full px-3 py-2.5 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-600 hover:border-ink-700 transition-colors ${level === 2 ? 'text-xl font-bold' : 'text-lg font-semibold'}`}
             placeholder={level === 2 ? 'عنوان رئيسي…' : 'عنوان فرعي…'} />
         </div>
       );
@@ -363,7 +363,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
           <div className={`border-r-4 ${colors.border} ${colors.bg} rounded-lg p-3`}>
             <p className={`text-xs mb-2 font-arabic ${colors.label}`}>{HIGHLIGHT_STYLES[style]?.icon} {HIGHLIGHT_STYLES[style]?.label}</p>
             <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
-              className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-sand-200 text-sm font-arabic placeholder-ink-800"
+              className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-sand-200 text-sm font-arabic placeholder-ink-600"
               placeholder="النص المهم الذي تريد إبرازه…" autoFocus />
           </div>
         </div>
@@ -388,7 +388,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
               <button onClick={() => setInteractive(false)} className={`px-3 py-1 text-xs font-arabic transition-colors ${!interactive ? 'bg-teal-900/50 text-teal-400' : 'bg-ink-900 text-ink-600 hover:text-ink-400'}`}>عادي</button>
               <button onClick={() => setInteractive(true)} className={`px-3 py-1 text-xs font-arabic transition-colors border-r border-ink-800 inline-flex items-center gap-1 ${interactive ? 'bg-teal-900/50 text-teal-400' : 'bg-ink-900 text-ink-600 hover:text-ink-400'}`}><Zap size={12} strokeWidth={1.9} /> تفاعلي</button>
             </div>
-            {interactive && <span className="text-[11px] text-ink-700 font-arabic">كل خطوة تُكشف بنقرة</span>}
+            {interactive && <span className="text-[11px] text-ink-500 font-arabic">كل خطوة تُكشف بنقرة</span>}
           </div>
           {!interactive ? (
             <div className="bg-teal-950/40 border-r-4 border-teal-700 rounded-lg p-3">
@@ -403,7 +403,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
                 <div key={i} className="flex gap-2 items-start">
                   <div className="w-6 h-6 rounded-full bg-teal-900/50 border border-teal-800/50 text-teal-500 text-[10px] font-mono flex items-center justify-center shrink-0 mt-1.5">{i + 1}</div>
                   <textarea value={step} onChange={(e) => updateStep(i, e.target.value)} className={`${ta} flex-1 min-h-[60px]`} placeholder={`الخطوة ${i + 1}…`} autoFocus />
-                  <button onClick={() => removeStep(i)} className="text-ink-700 hover:text-red-500 transition-colors mt-2 text-sm"><X size={14} strokeWidth={1.9} /></button>
+                  <button onClick={() => removeStep(i)} className="text-ink-500 hover:text-red-500 transition-colors mt-2 text-sm"><X size={14} strokeWidth={1.9} /></button>
                 </div>
               ))}
               <button onClick={addStep} className="w-full py-2 border border-dashed border-teal-900 rounded-lg text-teal-800 hover:text-teal-600 hover:border-teal-800 transition-colors text-xs font-arabic">+ إضافة خطوة</button>
@@ -419,7 +419,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
         <div className="bg-ember-900/20 border-r-4 border-ember-500/70 rounded-lg p-3">
           <p className="text-xs text-ember-400 mb-2 font-arabic">◈ نصيحة</p>
           <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
-            className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-ink-200 text-sm font-arabic placeholder-ink-800"
+            className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-ink-200 text-sm font-arabic placeholder-ink-600"
             placeholder="اكتب النصيحة هنا…" />
         </div>
       );
@@ -438,7 +438,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
           </div>
           <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
             className={`${ta} min-h-[100px]`} placeholder="كل سطر = عنصر في القائمة…" autoFocus />
-          <p className="text-[11px] text-ink-700 font-arabic">كل سطر سيظهر كعنصر منفصل</p>
+          <p className="text-[11px] text-ink-500 font-arabic">كل سطر سيظهر كعنصر منفصل</p>
         </div>
       );
     }
@@ -450,7 +450,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return (
         <div className="border-r-4 border-ink-700 pr-4">
           <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
-            className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-ink-300 text-sm italic font-arabic placeholder-ink-800"
+            className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-ink-300 text-sm italic font-arabic placeholder-ink-600"
             placeholder="الاقتباس…" autoFocus />
         </div>
       );
@@ -459,7 +459,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return (
         <div className="flex items-center gap-3 py-3">
           <div className="flex-1 h-px bg-ink-800" />
-          <span className="text-ink-700 text-xs font-mono select-none">— فاصل —</span>
+          <span className="text-ink-500 text-xs font-mono select-none">— فاصل —</span>
           <div className="flex-1 h-px bg-ink-800" />
         </div>
       );
@@ -511,7 +511,7 @@ function MediaBlockEditor({ block, update, subjectId }) {
           <span>{hasUrl ? 'تغيير الصورة من المكتبة' : 'اختر صورة من المكتبة'}</span>
         </button>
         <input type="text" value={block.caption || ''} onChange={(e) => update({ caption: e.target.value })}
-          className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-800 hover:border-ink-700 transition-colors"
+          className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-600 hover:border-ink-700 transition-colors"
           placeholder="وصف الصورة (اختياري)…" />
         {!isGif && (
           <div className={`rounded-lg border overflow-hidden ${isInteractive ? 'border-sand-700/50' : 'border-ink-800'}`}>
@@ -527,7 +527,7 @@ function MediaBlockEditor({ block, update, subjectId }) {
             {isInteractive && (
               <div className="p-3 bg-ink-950/30">
                 {!hasUrl
-                  ? <p className="text-xs text-ink-700 font-arabic text-center py-3">اختر صورة أولاً لإضافة العلامات</p>
+                  ? <p className="text-xs text-ink-500 font-arabic text-center py-3">اختر صورة أولاً لإضافة العلامات</p>
                   : <ImageMarkerEditor imageUrl={block.content} markers={markers}
                     onChange={(next) => update({ metadata: { ...(block.metadata || {}), markers: next } })} />}
               </div>
@@ -535,13 +535,13 @@ function MediaBlockEditor({ block, update, subjectId }) {
           </div>
         )}
         <details className="group/det">
-          <summary className="text-[11px] text-ink-700 hover:text-ink-500 cursor-pointer select-none font-arabic transition-colors list-none flex items-center gap-1">
+          <summary className="text-[11px] text-ink-500 hover:text-ink-500 cursor-pointer select-none font-arabic transition-colors list-none flex items-center gap-1">
             <span className="font-mono text-[10px] transition-transform group-open/det:rotate-90">▶</span>
             أو أدخل رابطاً / مساراً يدوياً
           </summary>
           <div className="mt-1.5">
             <input type="text" value={block.content} onChange={(e) => update({ content: e.target.value })}
-              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-mono placeholder-ink-800 hover:border-ink-700 transition-colors"
+              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-mono placeholder-ink-600 hover:border-ink-700 transition-colors"
               placeholder="https://… أو images/diagram.png" dir="ltr" />
             <p className="text-[10px] text-ink-800 mt-1 font-arabic">رابط Supabase أو مسار نسبي من مجلد assets في التطبيق</p>
           </div>

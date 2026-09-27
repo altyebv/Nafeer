@@ -152,7 +152,7 @@ export default function LessonItem({ lesson, index, onEdit, onAddVariation, cove
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={(e) => { e.stopPropagation(); setTitleDraft(lesson.title); setEditingTitle(true); }}
-            className="rounded transition-all duration-150 opacity-0 group-hover:opacity-100"
+            className="rounded transition-all duration-150 hover-reveal"
             style={{
               width: 22, height: 22,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -169,7 +169,7 @@ export default function LessonItem({ lesson, index, onEdit, onAddVariation, cove
           {!isVariation && onAddVariation && (
             <button
               onClick={(e) => { e.stopPropagation(); onAddVariation(); }}
-              className="flex items-center gap-1 rounded-md font-arabic transition-all opacity-0 group-hover:opacity-100"
+              className="flex items-center gap-1 rounded-md font-arabic transition-all hover-reveal"
               style={{
                 padding:    '3px 7px',
                 fontSize:   11,
@@ -195,7 +195,7 @@ export default function LessonItem({ lesson, index, onEdit, onAddVariation, cove
 
           <button
             onClick={onEdit}
-            className="flex items-center gap-1 rounded-md font-arabic transition-all opacity-0 group-hover:opacity-100"
+            className="flex items-center gap-1 rounded-md font-arabic transition-all hover-reveal"
             style={{
               padding:    '3px 8px',
               fontSize:   11,

@@ -94,10 +94,10 @@ export default function MediaPicker({ type, subjectId, onSelect, onClose }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="بحث…"
-            className="flex-1 px-3 py-1 bg-ink-900 border border-ink-800 rounded-lg text-ink-300 text-xs placeholder-ink-700 focus:ring-1 focus:ring-sand-600 focus:outline-none"
+            className="flex-1 px-3 py-1 bg-ink-900 border border-ink-800 rounded-lg text-ink-300 text-xs placeholder-ink-600 focus:ring-1 focus:ring-sand-600 focus:outline-none"
           />
 
-          <span className="text-[10px] text-ink-700 font-mono shrink-0">{filtered.length}</span>
+          <span className="text-[10px] text-ink-500 font-mono shrink-0">{filtered.length}</span>
         </div>
 
         {/* Grid */}
@@ -167,7 +167,7 @@ export default function MediaPicker({ type, subjectId, onSelect, onClose }) {
         </div>
 
         {/* Footer hint */}
-        <div className="px-4 py-2.5 border-t border-ink-800/50 text-[10px] text-ink-700 text-center">
+        <div className="px-4 py-2.5 border-t border-ink-800/50 text-[10px] text-ink-500 text-center">
           اضغط على صورة لاختيارها · ESC للإغلاق
         </div>
       </div>

@@ -49,20 +49,20 @@ function relativeTime(dateStr) {
 }
 
 function formatValue(field, val) {
-  if (val === null || val === undefined || val === '') return <span className="text-ink-700 italic text-[11px]">فارغ</span>;
+  if (val === null || val === undefined || val === '') return <span className="text-ink-500 italic text-[11px]">فارغ</span>;
   if (field === 'estimatedMinutes') return <span>{val} دقيقة</span>;
   if (field === 'status') return <span>{STATUS_LABELS[val] ?? val}</span>;
   if (Array.isArray(val)) {
-    if (val.length === 0) return <span className="text-ink-700 italic text-[11px]">فارغ</span>;
+    if (val.length === 0) return <span className="text-ink-500 italic text-[11px]">فارغ</span>;
     return (
       <ul className="space-y-0.5 list-none">
-        {val.map((v, i) => <li key={i} className="flex gap-1"><span className="text-ink-700">•</span>{v}</li>)}
+        {val.map((v, i) => <li key={i} className="flex gap-1"><span className="text-ink-500">•</span>{v}</li>)}
       </ul>
     );
   }
   // Truncate long strings in the diff view
   const str = String(val);
-  if (str.length > 120) return <span>{str.slice(0, 120)}<span className="text-ink-700">…</span></span>;
+  if (str.length > 120) return <span>{str.slice(0, 120)}<span className="text-ink-500">…</span></span>;
   return <span>{str}</span>;
 }
 
@@ -135,7 +135,7 @@ function HistoryEntry({ entry, isLast }) {
 
           <div className="flex-1" />
 
-          <span className="text-[10px] text-ink-700 font-mono shrink-0">
+          <span className="text-[10px] text-ink-500 font-mono shrink-0">
             {relativeTime(entry.timestamp)}
           </span>
         </div>
@@ -271,7 +271,7 @@ export default function LessonHistoryDrawer({ lessonId, onClose }) {
             <div className="py-12 text-center">
               <ScrollText size={34} strokeWidth={1.5} className="mx-auto mb-3 opacity-30" />
               <p className="text-sm text-ink-600 font-arabic">لا يوجد سجل بعد</p>
-              <p className="text-xs text-ink-700 font-arabic mt-1">يبدأ السجل عند أول تعديل</p>
+              <p className="text-xs text-ink-500 font-arabic mt-1">يبدأ السجل عند أول تعديل</p>
             </div>
           )}
 

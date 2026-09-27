@@ -68,7 +68,7 @@ function NoteCard({ note, currentUser, onResolve, onDelete }) {
               <Icon size={11} strokeWidth={1.9} className="inline ml-1" /> {cfg.label}
             </span>
           </div>
-          <span className="text-[10px] text-ink-700 font-mono">{relativeTime(note.createdAt)}</span>
+          <span className="text-[10px] text-ink-500 font-mono">{relativeTime(note.createdAt)}</span>
         </div>
 
         {/* Actions */}
@@ -86,7 +86,7 @@ function NoteCard({ note, currentUser, onResolve, onDelete }) {
           {canDelete && (
             <button
               onClick={() => onDelete(note._id)}
-              className="text-[10px] px-1.5 py-1 rounded-lg border border-transparent text-ink-700 hover:text-red-400 hover:border-red-900/40 transition-colors"
+              className="text-[10px] px-1.5 py-1 rounded-lg border border-transparent text-ink-500 hover:text-red-400 hover:border-red-900/40 transition-colors"
               title="حذف الملاحظة"
             >
               <X size={12} strokeWidth={1.9} />
@@ -264,7 +264,7 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
                 {filter === 'all' ? 'لا توجد ملاحظات بعد' : 'لا توجد ملاحظات في هذا التصنيف'}
               </p>
               {filter === 'all' && (
-                <p className="text-xs text-ink-700 font-arabic mt-1">
+                <p className="text-xs text-ink-500 font-arabic mt-1">
                   أضف أول ملاحظة أدناه
                 </p>
               )}
@@ -318,11 +318,11 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
             }}
             placeholder="أضف ملاحظة… (Ctrl+Enter للإرسال)"
             rows={3}
-            className="w-full px-3 py-2.5 bg-ink-950 border border-ink-700 rounded-xl text-sm text-ink-100 font-arabic placeholder-ink-700 focus:outline-none focus:border-sand-700 resize-none leading-relaxed transition-colors"
+            className="w-full px-3 py-2.5 bg-ink-950 border border-ink-700 rounded-xl text-sm text-ink-100 font-arabic placeholder-ink-600 focus:outline-none focus:border-sand-700 resize-none leading-relaxed transition-colors"
           />
 
           <div className="flex items-center gap-2">
-            <span className={`text-[10px] font-mono ${draft.length > 900 ? 'text-amber-500' : 'text-ink-700'}`}>
+            <span className={`text-[10px] font-mono ${draft.length > 900 ? 'text-amber-500' : 'text-ink-500'}`}>
               {draft.length}/1000
             </span>
             <div className="flex-1" />

@@ -97,7 +97,7 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
               onChange={(e) => { setQuery(e.target.value); setSelectedId(null); }}
               placeholder="ابحث عن درس بالعنوان…"
               className="w-full px-3 py-2 text-sm rounded-lg border font-arabic
-                bg-ink-950 text-sand-200 placeholder-ink-700
+                bg-ink-950 text-sand-200 placeholder-ink-600
                 focus:outline-none focus:border-sand-700 transition-colors"
               style={{ borderColor: 'var(--border-subtle)' }}
             />
@@ -105,7 +105,7 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
             {/* Results list */}
             <div className="mt-2 max-h-40 overflow-y-auto space-y-0.5">
               {candidates.length === 0 && (
-                <p className="text-xs text-ink-700 font-arabic text-center py-3">
+                <p className="text-xs text-ink-500 font-arabic text-center py-3">
                   {query ? 'لا توجد نتائج' : 'ابدأ بالكتابة للبحث'}
                 </p>
               )}
@@ -173,7 +173,7 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
               onChange={(e) => setVariationNote(e.target.value.slice(0, 200))}
               placeholder="مثال: مكتوب بأسلوب مبسط للطلاب المبتدئين…"
               className="w-full px-3 py-2 text-sm rounded-lg border font-arabic
-                bg-ink-950 text-sand-200 placeholder-ink-700
+                bg-ink-950 text-sand-200 placeholder-ink-600
                 focus:outline-none focus:border-sand-700 transition-colors"
               style={{ borderColor: 'var(--border-subtle)' }}
             />

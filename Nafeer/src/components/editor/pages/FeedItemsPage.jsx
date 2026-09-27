@@ -205,7 +205,7 @@ export default function FeedItemsPage({ subjectId }) {
           className="font-arabic font-semibold flex items-center gap-1.5"
           style={{
             padding: '8px 16px', borderRadius: 10, fontSize: 13,
-            background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
+            background: 'var(--accent)', color: 'rgb(var(--ink-950))', border: 'none', cursor: 'pointer',
           }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-hover)'}
           onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
@@ -329,7 +329,7 @@ export default function FeedItemsPage({ subjectId }) {
               className="font-arabic"
               style={{
                 marginTop: 12, padding: '8px 20px', borderRadius: 10, fontSize: 13,
-                background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
+                background: 'var(--accent)', color: 'rgb(var(--ink-950))', border: 'none', cursor: 'pointer',
               }}
             >
               أضف أول بطاقة
@@ -778,7 +778,7 @@ function ConceptGroup({ conceptId, conceptTitle, items, onEdit, onDelete, onRevi
                 </div>
 
                 {/* Row actions */}
-                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-0.5 hover-reveal transition-opacity">
                   {(!item.atlasStatus || item.atlasStatus === 'draft') && subjectId && (
                     <ActionBtn onClick={() => onReview(item.id)} title="إرسال للمراجعة" color="#f59e0b"><Send size={13} strokeWidth={1.9} /></ActionBtn>
                   )}

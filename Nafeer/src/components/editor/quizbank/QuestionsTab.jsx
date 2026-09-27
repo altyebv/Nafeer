@@ -122,7 +122,7 @@ export default function QuestionsTab({
 
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-ink-800 bg-ink-900/40 px-4 py-16 text-center">
-          <p className="text-3xl text-ink-700">؟</p>
+          <p className="text-3xl text-ink-500">؟</p>
           <p className="mt-3 text-sm text-ink-400 font-arabic">
             {questions.length === 0 ? 'لا توجد أسئلة بعد' : 'لا توجد نتائج مطابقة'}
           </p>

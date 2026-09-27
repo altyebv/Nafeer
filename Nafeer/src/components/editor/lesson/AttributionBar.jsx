@@ -68,7 +68,7 @@ function AttributionChip({ label, person, dateStr, accent }) {
         <span className="text-[11px] text-ink-400 font-arabic">{person.name}</span>
       )}
       {dateStr && (
-        <span className="text-[10px] text-ink-700 font-mono">{relativeTime(dateStr)}</span>
+        <span className="text-[10px] text-ink-500 font-mono">{relativeTime(dateStr)}</span>
       )}
     </div>
   );
@@ -121,7 +121,7 @@ export default function AttributionBar({ lesson, attribution }) {
 
       {/* Version pill — far end */}
       <div className="mr-auto shrink-0">
-        <span className="text-[10px] font-mono text-ink-700 bg-ink-800/40 px-1.5 py-0.5 rounded">
+        <span className="text-[10px] font-mono text-ink-500 bg-ink-800/40 px-1.5 py-0.5 rounded">
           v{lesson.version ?? 1}
         </span>
       </div>
