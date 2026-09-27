@@ -1,5 +1,6 @@
 import './globals.css';
 import { SITE_URL, SITE_NAME, LOCALE, OG_IMAGE } from '@/lib/seo';
+import ThemeSync from '@/components/theme/ThemeSync';
 
 // ── Site-wide metadata ────────────────────────────────────────────────────────
 //
@@ -73,7 +74,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" dir="rtl" data-theme="dark">
+    // data-theme is owned entirely by the pre-paint script below. Hard-coding
+    // it here contradicted that script and produced a React hydration mismatch
+    // on every load in light mode; suppressHydrationWarning is the documented
+    // pattern for an attribute that is legitimately set before React boots.
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
         {/* Icons come from `metadata.icons` above — declaring them here too
             emitted every <link rel="icon"> twice. */}
@@ -83,14 +88,17 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
-        {/* Runs before first paint — avoids theme flash */}
+        {/* Runs before first paint — avoids theme flash. Normalises anything
+            unexpected in storage to 'dark' so the attribute is always exactly
+            'dark' or 'light'. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('nafeer-theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('nafeer-theme');t=(t==='light')?'light':'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
           }}
         />
       </head>
       <body className="font-arabic antialiased">
+        <ThemeSync />
         {children}
       </body>
     </html>

@@ -16,30 +16,69 @@ module.exports = {
         mono:    ['JetBrains Mono', 'monospace'],
       },
       colors: {
+        // ── Theme-aware scales ───────────────────────────────────────────────
+        // Backed by CSS variables defined in src/app/globals.css, which
+        // redefines both ramps under :root[data-theme="light"]. The
+        // `<alpha-value>` placeholder keeps opacity modifiers working, so
+        // `bg-ink-900/20` and `border-sand-700/50` behave exactly as before.
+        //
+        // This indirection is what makes the ~900 existing `ink-*`/`sand-*`
+        // usages across the editor respond to the theme without editing them.
         sand: {
-          50:  '#fdf8f0',
-          100: '#faefd9',
-          200: '#f4dba8',
-          300: '#ecc26e',
-          400: '#e4a83a',
-          500: '#d4891e',
-          600: '#b86c14',
-          700: '#924f12',
-          800: '#773f16',
-          900: '#623516',
+          50:  'rgb(var(--sand-50)  / <alpha-value>)',
+          100: 'rgb(var(--sand-100) / <alpha-value>)',
+          200: 'rgb(var(--sand-200) / <alpha-value>)',
+          300: 'rgb(var(--sand-300) / <alpha-value>)',
+          400: 'rgb(var(--sand-400) / <alpha-value>)',
+          500: 'rgb(var(--sand-500) / <alpha-value>)',
+          600: 'rgb(var(--sand-600) / <alpha-value>)',
+          700: 'rgb(var(--sand-700) / <alpha-value>)',
+          800: 'rgb(var(--sand-800) / <alpha-value>)',
+          900: 'rgb(var(--sand-900) / <alpha-value>)',
         },
         ink: {
-          50:  '#f5f4f2',
-          100: '#e8e6e1',
-          200: '#d3cfc6',
-          300: '#b7b0a3',
-          400: '#978e7e',
-          500: '#7d7366',
-          600: '#665e52',
-          700: '#534d44',
-          800: '#46403a',
-          900: '#1a1713',
-          950: '#0e0c09',
+          50:  'rgb(var(--ink-50)  / <alpha-value>)',
+          100: 'rgb(var(--ink-100) / <alpha-value>)',
+          200: 'rgb(var(--ink-200) / <alpha-value>)',
+          300: 'rgb(var(--ink-300) / <alpha-value>)',
+          400: 'rgb(var(--ink-400) / <alpha-value>)',
+          500: 'rgb(var(--ink-500) / <alpha-value>)',
+          600: 'rgb(var(--ink-600) / <alpha-value>)',
+          700: 'rgb(var(--ink-700) / <alpha-value>)',
+          800: 'rgb(var(--ink-800) / <alpha-value>)',
+          900: 'rgb(var(--ink-900) / <alpha-value>)',
+          950: 'rgb(var(--ink-950) / <alpha-value>)',
+        },
+        // ── Status palette ───────────────────────────────────────────────────
+        // Replaces raw Tailwind emerald/amber/red/blue/purple for anything that
+        // conveys state. Those have no light-theme variant, so status badges
+        // rendered as bright-on-bright on the cream page (the literary track
+        // badge measured 1.11:1). No <alpha-value> here — these already carry
+        // their own alpha where needed.
+        success: {
+          DEFAULT: 'var(--success)',
+          surface: 'var(--success-surface)',
+          border:  'var(--success-border)',
+        },
+        warn: {
+          DEFAULT: 'var(--warn)',
+          surface: 'var(--warn-surface)',
+          border:  'var(--warn-border)',
+        },
+        danger: {
+          DEFAULT: 'var(--danger)',
+          surface: 'var(--danger-surface)',
+          border:  'var(--danger-border)',
+        },
+        info: {
+          DEFAULT: 'var(--info)',
+          surface: 'var(--info-surface)',
+          border:  'var(--info-border)',
+        },
+        special: {
+          DEFAULT: 'var(--special)',
+          surface: 'var(--special-surface)',
+          border:  'var(--special-border)',
         },
         ember: {
           400: '#f97316',

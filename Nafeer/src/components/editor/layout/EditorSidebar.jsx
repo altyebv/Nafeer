@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link                 from 'next/link';
 import { useDataStore }    from '@/store/dataStore';
 import { useMediaStore }   from '@/store/mediaStore';
+import { useThemeStore }   from '@/store/themeStore';
 import { useRouter }       from 'next/navigation';
 import { BookOpen, CircleHelp, Image, LayoutDashboard, Menu, Sparkles, Smartphone } from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
@@ -25,20 +26,14 @@ const NAV = [
   // export hidden: { id: 'export', label: 'تصدير', sub: 'Export' },
 ];
 
-// ── Theme hook ─────────────────────────────────────────────────────────────────
+// ── Theme ──────────────────────────────────────────────────────────────────────
+// Was a local hook duplicated here and in MobileBottomNav, each with its own
+// useState and each writing dataset.theme = '' for dark (inconsistent with
+// layout.jsx, which writes 'dark'). Now a single shared store — see
+// src/store/themeStore.js.
 function useTheme() {
-  const [theme, setTheme] = useState('dark');
-  useEffect(() => {
-    const stored = localStorage.getItem('nafeer-theme') || 'dark';
-    setTheme(stored);
-    document.documentElement.dataset.theme = stored === 'light' ? 'light' : '';
-  }, []);
-  const toggle = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem('nafeer-theme', next);
-    document.documentElement.dataset.theme = next === 'light' ? 'light' : '';
-  };
+  const theme  = useThemeStore((s) => s.theme);
+  const toggle = useThemeStore((s) => s.toggleTheme);
   return { theme, toggle };
 }
 
@@ -71,9 +66,9 @@ function Avatar({ contributor, size = 28 }) {
 
 // ── Sync dot ──────────────────────────────────────────────────────────────────
 function SyncDot({ isSyncing, syncError, lastSynced }) {
-  if (syncError)  return <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#f87171' }} />;
-  if (isSyncing)  return <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: '#fbbf24' }} />;
-  if (lastSynced) return <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#34d399' }} />;
+  if (syncError)  return <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'var(--danger)' }} />;
+  if (isSyncing)  return <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: 'var(--warn)' }} />;
+  if (lastSynced) return <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'var(--success)' }} />;
   return null;
 }
 
@@ -84,9 +79,9 @@ function ThemeToggle({ theme, toggle }) {
     <button onClick={toggle}
       title={isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
       className="shrink-0 rounded-lg flex items-center justify-center transition-all duration-150"
-      style={{ width: 30, height: 30, color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)', background: 'transparent' }}
-      onMouseEnter={(e) => { e.currentTarget.style.color = isDark ? '#fcd34d' : '#92400e'; e.currentTarget.style.background = isDark ? 'rgba(252,211,77,0.08)' : 'rgba(146,64,14,0.08)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)'; e.currentTarget.style.background = 'transparent'; }}
+      style={{ width: 30, height: 30, color: 'var(--chrome-text-dim)', background: 'transparent' }}
+      onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--warn)'; e.currentTarget.style.background = 'var(--warn-surface)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--chrome-text-dim)'; e.currentTarget.style.background = 'transparent'; }}
     >
       {isDark ? (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -141,18 +136,22 @@ export function DesktopSidebar({
   const w        = expanded ? EXPANDED_W : RAIL_W;
   const isDark   = theme === 'dark';
 
-  const sidebarBg     = isDark ? '#090806'                 : '#faf5eb';
-  const sidebarBorder = isDark ? 'rgba(255,255,255,0.065)' : 'rgba(146,79,18,0.12)';
-  const sidebarPanel  = isDark ? 'rgba(255,248,237,0.035)' : 'rgba(255,255,255,0.42)';
-  const sidebarPanelHover = isDark ? 'rgba(212,137,30,0.08)' : 'rgba(154,85,15,0.09)';
+  // Colours come from tokens now (globals.css → --chrome-*), not isDark
+  // ternaries: one definition shared with MobileBottomNav, and the text values
+  // inherit the ink ramp's audited contrast. `textDim` in particular used to be
+  // rgba(…,0.38) in both themes, which measured 2.6:1 against the sidebar.
+  const sidebarBg         = 'var(--chrome-bg)';
+  const sidebarBorder     = 'var(--chrome-border)';
+  const sidebarPanel      = 'var(--chrome-panel)';
+  const sidebarPanelHover = 'var(--chrome-panel-hover)';
   const sidebarShadow = expanded
     ? isDark ? '-8px 0 40px rgba(0,0,0,0.6)' : '-8px 0 40px rgba(0,0,0,0.10)'
     : 'none';
 
-  const textDim    = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
-  const textMid    = isDark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.62)';
-  const textActive = isDark ? '#e8d5a8'                : '#7c3c10';
-  const accent     = '#d4891e';
+  const textDim    = 'var(--chrome-text-dim)';
+  const textMid    = 'var(--chrome-text-mid)';
+  const textActive = 'var(--chrome-text-active)';
+  const accent     = 'rgb(var(--sand-500))';
   const profileHref = contributor?.username ? `/contributor/${encodeURIComponent(contributor.username)}` : null;
 
   const counts = {
@@ -207,7 +206,7 @@ export function DesktopSidebar({
             cursor: profileHref ? 'pointer' : 'default',
             background: sidebarPanel,
             border: `1px solid ${sidebarBorder}`,
-            boxShadow: isDark ? 'inset 0 1px 0 rgba(255,255,255,0.035)' : 'inset 0 1px 0 rgba(255,255,255,0.55)',
+            boxShadow: 'inset 0 1px 0 rgb(255 255 255 / 0.06)',
           }}
           onClick={(e) => { if (!profileHref) e.preventDefault(); }}
           onMouseEnter={(e) => {
@@ -425,7 +424,7 @@ export function DesktopSidebar({
             justifyContent: expanded ? 'flex-start' : 'center',
             gap: 7,
             borderTop: `1px solid ${sidebarBorder}`,
-            background: isDark ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.03)',
+            background: 'rgb(0 0 0 / 0.08)',
           }}
         >
           <SyncDot isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
@@ -462,7 +461,7 @@ export function DesktopSidebar({
             title="تسجيل الخروج"
             className="shrink-0 transition-all duration-150 rounded-lg flex items-center gap-2 px-3 py-1.5"
             style={{ color: textDim, background: 'transparent', fontSize: 11, fontFamily: 'var(--font-arabic, serif)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'var(--danger-surface)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = textDim; e.currentTarget.style.background = 'transparent'; }}
           >
             <SignOutIcon />
@@ -477,7 +476,7 @@ export function DesktopSidebar({
             title="تسجيل الخروج"
             className="flex items-center justify-center transition-colors"
             style={{ width: 30, height: 30, color: textDim }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#f87171')}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--danger)')}
             onMouseLeave={(e) => (e.currentTarget.style.color = textDim)}
           >
             <SignOutIcon />
@@ -499,14 +498,14 @@ export function MobileBottomNav({
   moreOpen, onToggleMore,
 }) {
   const router = useRouter();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
-  const navBg      = isDark ? 'rgba(9,8,6,0.97)'      : 'rgba(250,245,235,0.97)';
-  const border     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(146,79,18,0.12)';
-  const textDim    = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
-  const textActive = isDark ? '#e8d5a8'                : '#7c3c10';
-  const accent     = '#d4891e';
+  // Same tokens the desktop sidebar uses — these were a duplicated set of
+  // isDark ternaries that could (and did) drift from their desktop twins.
+  const navBg      = 'color-mix(in srgb, var(--chrome-bg) 97%, transparent)';
+  const border     = 'var(--chrome-border)';
+  const textDim    = 'var(--chrome-text-dim)';
+  const textActive = 'var(--chrome-text-active)';
+  const accent     = 'rgb(var(--sand-500))';
 
   const primaryNav = NAV.filter((n) => MOBILE_PRIMARY.includes(n.id));
 
@@ -573,7 +572,7 @@ export function MobileBottomNav({
           <div
             className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl overflow-hidden"
             style={{
-              background: isDark ? '#100e0b' : '#f5ede0',
+              background: 'var(--chrome-bg)',
               border: `1px solid ${border}`,
               borderBottom: 'none',
               boxShadow: '0 -16px 48px rgba(0,0,0,0.4)',
@@ -581,7 +580,7 @@ export function MobileBottomNav({
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full" style={{ background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.15)' }} />
+              <div className="w-10 h-1 rounded-full" style={{ background: 'var(--chrome-text-dim)' }} />
             </div>
 
             <div className="px-4 pb-5 space-y-1.5">
@@ -618,7 +617,7 @@ export function MobileBottomNav({
                 >
                   <Avatar contributor={contributor} size={40} />
                   <div className="flex-1 min-w-0">
-                    <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-arabic, serif)', color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-arabic, serif)', color: 'var(--chrome-text-mid)' }}>
                       {contributor.name}
                     </p>
                     {contributor.username && (
@@ -629,7 +628,7 @@ export function MobileBottomNav({
                     onClick={async () => { await fetch('/api/auth/signout', { method: 'POST' }); router.push('/'); }}
                     className="flex items-center justify-center rounded-lg transition-colors"
                     style={{ width: 38, height: 38, color: textDim }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.color = textDim; }}
                   >
                     <SignOutIcon />

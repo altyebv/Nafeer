@@ -29,9 +29,12 @@ export const TRACKS = {
 };
 
 export const TRACK_CONFIG = {
-  COMMON:   { label: 'مشترك', color: 'text-sand-400',   badge: 'bg-sand-900/40 border-sand-700/40 text-sand-400'      },
-  SCIENCE:  { label: 'علمي',  color: 'text-blue-400',   badge: 'bg-blue-900/40 border-blue-700/40 text-blue-400'      },
-  LITERARY: { label: 'أدبي',  color: 'text-purple-400', badge: 'bg-purple-900/40 border-purple-700/40 text-purple-400' },
+  // Theme-aware status colours, not raw Tailwind blue/purple — those are
+  // dark-only, so on the light theme these badges rendered bright-on-cream
+  // (the literary badge measured 1.11:1 against a 4.5:1 requirement).
+  COMMON:   { label: 'مشترك', color: 'text-sand-400', badge: 'bg-warn-surface border-warn-border text-warn'          },
+  SCIENCE:  { label: 'علمي',  color: 'text-info',     badge: 'bg-info-surface border-info-border text-info'          },
+  LITERARY: { label: 'أدبي',  color: 'text-special',  badge: 'bg-special-surface border-special-border text-special' },
 };
 
 // ─── Subject Catalog ─────────────────────────────────────────────────────────

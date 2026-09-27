@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useThemeStore } from '@/store/themeStore';
 import { gsap } from '@/lib/gsap';
 
 function SunIcon() {
@@ -44,7 +45,8 @@ const navLinks = [
 
 export default function Navbar() {
   const [scrolled, setScrolled]    = useState(false);
-  const [theme, setTheme]          = useState('dark');
+  const theme       = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const [menuOpen, setMenuOpen]    = useState(false);
   const [activeSection, setActive] = useState('');
 
@@ -57,8 +59,8 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem('nafeer-theme') || 'dark';
-    setTheme(saved);
+    // Theme is read from the shared store now; ThemeSync in the root layout
+    // reconciles it with the pre-paint script, so no localStorage read here.
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -80,12 +82,7 @@ export default function Navbar() {
     return () => observers.forEach(o => o.disconnect());
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('nafeer-theme', next);
-  }, [theme]);
+  // toggleTheme now comes from the shared store (see the declarations above).
 
   return (
     <>

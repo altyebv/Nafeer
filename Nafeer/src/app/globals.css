@@ -21,7 +21,91 @@
   }
 
   :root {
+    /* ── Typography tokens ───────────────────────────────────────────────────
+       Referenced in ~110 places as var(--font-arabic, serif) but never
+       defined, so every one of those silently fell back to the browser's
+       default serif. Values mirror tailwind.config.js → theme.fontFamily.
+    ──────────────────────────────────────────────────────────────────────── */
+    --font-arabic:  'Noto Naskh Arabic', serif;
+    --font-display: 'Playfair Display', serif;
+    --font-mono:    'JetBrains Mono', monospace;
+    --font-sans:    'Noto Naskh Arabic', system-ui, sans-serif;
+
     --grain-opacity: 0.035;
+
+    /* ── Neutral ramp (dark) ─────────────────────────────────────────────────
+       Channel triplets, not hex: tailwind.config.js consumes these as
+       rgb(var(--ink-900) / <alpha-value>) so opacity modifiers like
+       `bg-ink-900/20` keep working. Backing the Tailwind scale with variables
+       is what makes ~900 existing `ink-*` class usages theme-aware without
+       touching the call sites.
+
+       The ramp has two zones, matching how the editor actually uses it:
+         50–600  text and foreground (light → dark)
+         700–950 borders and surfaces (mid → darkest)
+
+       Values are tuned so 200/400/500 clear WCAG AA on --ink-900 cards.
+       The previous 500 (#7d7366) sat at 3.7:1 and 600 (#665e52) at 2.6:1 —
+       both failed, and between them they carried 200 usages of body copy.
+    ────────────────────────────────────────────────────────────────────────── */
+    --ink-50:  250 249 247;
+    --ink-100: 238 236 231;
+    --ink-200: 221 216 207;   /* primary text     — 12.4:1 on ink-900 */
+    --ink-300: 195 188 175;
+    --ink-400: 167 158 142;   /* secondary text   —  7.9:1 */
+    --ink-500: 141 132 116;   /* muted text       —  5.4:1 */
+    --ink-600: 134 126 110;   /* faint text — 4.6:1 (was 114 106 92 = 3.5:1, yet carried 99 small-text usages) */
+    --ink-700: 86 80 70;      /* strong border */
+    --ink-800: 59 54 48;      /* border, hover surface */
+    --ink-900: 23 20 15;      /* card surface */
+    --ink-950: 14 12 9;       /* page surface */
+
+    /* ── Accent ramp (dark) ──────────────────────────────────────────────── */
+    --sand-50:  253 248 240;
+    --sand-100: 250 239 217;
+    --sand-200: 244 219 168;
+    --sand-300: 236 194 110;
+    --sand-400: 228 168 58;
+    --sand-500: 212 137 30;
+    --sand-600: 197 121 22;   /* solid button bg — 6.0:1 with ink-950 text */
+    --sand-700: 176 103 18;
+    --sand-800: 119 63 22;
+    --sand-900: 98 53 22;
+
+    /* ── Editor chrome (sidebar / bottom nav) ────────────────────────────────
+       The sidebar used to compute every one of these as an `isDark ? a : b`
+       ternary, duplicated between DesktopSidebar and MobileBottomNav. Hoisting
+       them to tokens means one definition, no JS colour branching, and the
+       text values inherit the ink ramp's audited contrast.
+    ────────────────────────────────────────────────────────────────────────── */
+    --chrome-bg:           #090806;
+    --chrome-border:       rgb(var(--ink-800) / 0.55);
+    --chrome-panel:        rgb(var(--ink-100) / 0.035);
+    --chrome-panel-hover:  rgb(var(--sand-500) / 0.08);
+    --chrome-text-dim:     rgb(var(--ink-500));   /* was rgba(…,0.38) — 2.6:1 */
+    --chrome-text-mid:     rgb(var(--ink-400));
+    --chrome-text-active:  rgb(var(--sand-200));
+
+    /* ── Status ──────────────────────────────────────────────────────────────
+       Sync state, lesson status and validation all used Tailwind's built-in
+       emerald/amber/red, which have no light-theme variant — `text-emerald-600`
+       on the cream page measured 2.64:1. These are tuned per theme.
+    ────────────────────────────────────────────────────────────────────────── */
+    --success:        #34d399;
+    --success-surface: rgb(52 211 153 / 0.10);
+    --success-border:  rgb(52 211 153 / 0.24);
+    --warn:           #fbbf24;
+    --warn-surface:    rgb(251 191 36 / 0.10);
+    --warn-border:     rgb(251 191 36 / 0.24);
+    --danger:         #f87171;
+    --danger-surface:  rgb(248 113 113 / 0.10);
+    --danger-border:   rgb(248 113 113 / 0.24);
+    --info:           #60a5fa;
+    --info-surface:    rgb(96 165 250 / 0.10);
+    --info-border:     rgb(96 165 250 / 0.24);
+    --special:        #c084fc;
+    --special-surface: rgb(192 132 252 / 0.10);
+    --special-border:  rgb(192 132 252 / 0.24);
 
     /* ── Dark theme (default) ─────────────────────────────────────────────── */
     --bg-primary:    #15110d;
@@ -32,9 +116,12 @@
     --text-primary:  #fff8ed;
     --text-secondary:#d8cdbb;
     --text-muted:    #b3a590;
-    --accent:        #d4891e;
-    --accent-hover:  #e4a83a;
-    --accent-dim:    rgba(212,137,30,0.10);
+    --accent:        rgb(var(--sand-500));
+    --accent-hover:  rgb(var(--sand-400));
+    --accent-dim:    rgb(var(--sand-500) / 0.10);
+    /* Accent tuned for TEXT sitting on an --accent-dim wash, where plain
+       --accent only reached 4.07:1 in the light theme. */
+    --accent-text:   rgb(var(--sand-300));
     --mesh-1:        rgba(212,137,30,0.07);
     --mesh-2:        rgba(146,79,18,0.05);
     --watermark:     rgba(255,248,237,0.035);
@@ -53,6 +140,72 @@
   :root[data-theme="light"] {
     --grain-opacity: 0.025;
 
+    /* ── Neutral ramp (light) ────────────────────────────────────────────────
+       Same slots, inverted meaning. Because the Tailwind scale reads these,
+       `bg-ink-900` becomes a cream card and `text-ink-500` a readable brown
+       without a single component changing. This is the whole reason light
+       mode was half-broken: pages built on `ink-*` had no light values at all
+       and stayed dark on a cream page.
+
+       50–600 stay foreground (now dark → mid), 700–950 stay borders and
+       surfaces (now mid → lightest). Text slots are tuned against the
+       --ink-900 card (#f8f2e6).
+    ────────────────────────────────────────────────────────────────────────── */
+    --ink-50:  28 20 8;
+    --ink-100: 42 31 15;
+    --ink-200: 51 38 15;      /* primary text     — 13.1:1 on ink-900 */
+    --ink-300: 74 55 23;
+    --ink-400: 94 71 32;      /* secondary text   —  7.4:1 */
+    --ink-500: 102 78 36;     /* muted text  — 5.3:1 on the page, 6.9:1 on cards */
+    --ink-600: 110 85 40;     /* faint text  — 4.8:1 (was 149 119 65 = 3.3:1) */
+    --ink-700: 192 168 120;   /* strong border */
+    --ink-800: 217 200 164;   /* border, hover surface */
+    --ink-900: 248 242 230;   /* card surface */
+    --ink-950: 236 224 203;   /* page surface */
+
+    /* ── Accent ramp (light) ─────────────────────────────────────────────────
+       Darkened relative to dark mode so accent text clears AA on cream and
+       solid accent buttons keep enough contrast against light foreground.
+    ────────────────────────────────────────────────────────────────────────── */
+    --sand-50:  56 30 6;
+    --sand-100: 74 40 8;
+    --sand-200: 92 50 10;     /* accent text on cream — 8.6:1 */
+    --sand-300: 116 60 12;
+    --sand-400: 140 76 14;
+    --sand-500: 138 74 12;    /* accent text — 4.7:1 on cream (was 154 85 15 = 3.5:1) */
+    --sand-600: 140 78 12;    /* solid button — 5.0:1 with ink-950 text (was 3.8:1) */
+    --sand-700: 176 103 18;
+    --sand-800: 216 178 126;
+    --sand-900: 238 222 194;  /* dim accent wash */
+
+    /* ── Editor chrome (light) ───────────────────────────────────────────── */
+    --chrome-bg:           #faf5eb;
+    --chrome-border:       rgb(var(--ink-700) / 0.45);
+    --chrome-panel:        rgb(255 255 255 / 0.55);
+    --chrome-panel-hover:  rgb(var(--sand-500) / 0.10);
+    --chrome-text-dim:     rgb(var(--ink-500));
+    --chrome-text-mid:     rgb(var(--ink-400));
+    --chrome-text-active:  rgb(var(--sand-200));
+
+    /* ── Status (light) ──────────────────────────────────────────────────────
+       Darkened so each clears AA as text on the cream page and cream cards.
+    ────────────────────────────────────────────────────────────────────────── */
+    --success:        #065f46;   /* #047857 measured 3.46:1 on its own wash */
+    --success-surface: rgb(6 95 70 / 0.10);
+    --success-border:  rgb(6 95 70 / 0.28);
+    --warn:           #92580a;
+    --warn-surface:    rgb(146 88 10 / 0.10);
+    --warn-border:     rgb(146 88 10 / 0.28);
+    --danger:         #b3261e;
+    --danger-surface:  rgb(179 38 30 / 0.10);
+    --danger-border:   rgb(179 38 30 / 0.28);
+    --info:           #1d4ed8;
+    --info-surface:    rgb(29 78 216 / 0.10);
+    --info-border:     rgb(29 78 216 / 0.28);
+    --special:        #6b21a8;
+    --special-surface: rgb(107 33 168 / 0.10);
+    --special-border:  rgb(107 33 168 / 0.28);
+
     --bg-primary:    #ead8b8;           /* deeper warm paper, not stark white */
     --bg-secondary:  #ddc49d;           /* stronger section separation        */
     --bg-card:       rgba(255,247,231,0.86); /* amber-tinted card surface    */
@@ -61,9 +214,10 @@
     --text-primary:  #130d06;           /* warm near-black for body contrast  */
     --text-secondary:#34210d;           /* compact copy stays readable        */
     --text-muted:    #5c3d18;           /* subdued, but no longer washed out  */
-    --accent:        #9a550f;
-    --accent-hover:  #743c0c;
-    --accent-dim:    rgba(154,85,15,0.14);
+    --accent:        rgb(var(--sand-500));   /* was #9a550f — a second, dimmer accent definition */
+    --accent-hover:  rgb(var(--sand-300));
+    --accent-dim:    rgb(var(--sand-500) / 0.14);
+    --accent-text:   rgb(var(--sand-200));
     --mesh-1:        rgba(154,85,15,0.12);
     --mesh-2:        rgba(116,60,12,0.09);
     --watermark:     rgba(19,13,6,0.045);
@@ -147,6 +301,26 @@
     border: 1px solid var(--border-subtle);
   }
 
+  /* ── Reveal-on-hover row actions ────────────────────────────────────────
+     Replaces `opacity-0 group-hover:opacity-100`, which left every row
+     action permanently invisible on touch devices — including the "تحرير"
+     button that is the only way into the lesson editor.
+
+     Hidden only where a real hover pointer exists. On touch the control
+     stays visible; on desktop it still fades in on row hover, and it is
+     always revealed on keyboard focus.
+  ─────────────────────────────────────────────────────────────────────── */
+  .hover-reveal { opacity: 1; transition: opacity 0.15s ease; }
+
+  @media (hover: hover) and (pointer: fine) {
+    .hover-reveal { opacity: 0; }
+    .group:hover .hover-reveal,
+    .hover-reveal:hover,
+    .hover-reveal:focus,
+    .hover-reveal:focus-visible,
+    .hover-reveal:focus-within { opacity: 1; }
+  }
+
   .stagger-1 { animation-delay: 0.1s; }
   .stagger-2 { animation-delay: 0.2s; }
   .stagger-3 { animation-delay: 0.3s; }
@@ -162,6 +336,17 @@
 }
 
 @layer utilities {
+  /* Both names were already in use across the editor (AttributionBar,
+     FormulaEditor, the lesson tab strip) but neither was ever defined —
+     no tailwind-scrollbar plugin, no CSS. They were silent no-ops. */
+  .scrollbar-none,
+  .scrollbar-hide {
+    scrollbar-width: none;            /* Firefox */
+    -ms-overflow-style: none;         /* legacy Edge */
+  }
+  .scrollbar-none::-webkit-scrollbar,
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
   .text-balance { text-wrap: balance; }
   .writing-vertical { writing-mode: vertical-rl; }
   .ms-auto { margin-inline-start: auto; }
@@ -196,6 +381,6 @@ html {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
