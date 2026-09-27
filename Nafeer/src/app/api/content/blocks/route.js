@@ -21,9 +21,9 @@ export async function POST(request) {
 
     const results = await batchUpsertBlocks(blocks, actorId);
 
-    // Track stat — count new blocks only (approximate via batch size)
+    // Track stat — every block in the batch is credited, not just one per save.
     if (results.length > 0) {
-      trackStat(actorId, 'blocksAdded');
+      trackStat(actorId, 'blocksAdded', { amount: results.length });
     }
 
     return ok(results, { total: results.length });
