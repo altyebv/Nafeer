@@ -5,6 +5,7 @@ import { LessonHistory } from '@/lib/models/LessonHistory';
 import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
+import { trackStat } from '@/lib/trackStat';
 
 // ─── writeHistory ─────────────────────────────────────────────────────────────
 // Fire-and-forget helper. Never throws — history failure must not block the edit.
@@ -198,6 +199,11 @@ export async function updateLessonStatus(
     note,
     diff:         null,
   });
+
+  // Credit the original author of the lesson, not whoever approved it.
+  if (newStatus === 'approved') {
+    trackStat(current.createdBy, 'publishedLessons');
+  }
 
   return updated;
 }
