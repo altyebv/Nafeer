@@ -1,6 +1,7 @@
 import { requireSubjectAccess, ok, err } from '@/lib/api/guard';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { getExamsForSubject, createExam } from '@/lib/api/questions';
+import { trackStat } from '@/lib/trackStat';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -36,6 +37,8 @@ export async function POST(request) {
       { ...body, contentId: body.contentId || generateId('exam') },
       actorId
     );
+
+    trackStat(actorId, 'examsCreated');
 
     return ok(exam);
   } catch (e) {
