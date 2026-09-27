@@ -3,6 +3,7 @@ import { Lesson }   from '@/lib/models/Lesson';
 import { Concept }  from '@/lib/models/Concept';
 import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
+import { trackStat } from '@/lib/trackStat';
 
 // ─── getReviewQueue ───────────────────────────────────────────────────────────
 // Returns all content items with status='review', optionally filtered by subjectId.
@@ -92,6 +93,13 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
       changelog:  [...existing.slice(-9), entry],
     },
   });
+
+  // Credit the original author, not the reviewing admin — a lesson shipping is
+  // the author's effort paying off, and the only stat contributors see on their
+  // own profile for "did this actually make it out the door".
+  if (newStatus === 'approved' && type === 'lesson') {
+    trackStat(doc.createdBy, 'publishedLessons');
+  }
 
   return { contentId, status: newStatus };
 }
