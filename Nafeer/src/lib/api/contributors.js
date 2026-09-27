@@ -13,7 +13,7 @@ export const PUBLIC_FIELDS = {
   subject: 1, role: 1, stats: 1, createdAt: 1, updatedAt: 1,
 };
 
-const PUBLIC_FILTER = { status: 'approved', onboarded: true };
+export const PUBLIC_FILTER = { status: 'approved', onboarded: true };
 
 // Mongo documents cross into React Server Components, so ObjectId and Date have
 // to become plain strings before they do.
