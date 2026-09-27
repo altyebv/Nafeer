@@ -2,6 +2,8 @@ import { requireContributor, ok, err } from '@/lib/api/guard';
 import { connectDB } from '@/lib/db';
 import { Lesson } from '@/lib/models/Lesson';
 import { addLessonNote } from '@/lib/api/lessons';
+import { trackStat } from '@/lib/trackStat';
+import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 
 // GET /api/content/lessons/[id]/notes
 // Returns notes for a lesson. Auth-gated to any contributor.
@@ -43,6 +45,12 @@ export async function POST(request, { params }) {
     });
 
     if (!note) return err('الدرس غير موجود', 404);
+
+    // Track — fire-and-forget. 'flag' notes are peer quality-review; everything
+    // else is a comment. Admins don't have a Contributor _id.
+    const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
+    trackStat(actorId, noteType === 'flag' ? 'reviewsSubmitted' : 'commentsPosted');
+
     return ok(note, { status: 201 });
   } catch (e) {
     if (e instanceof Response) return e;
