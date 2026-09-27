@@ -12,8 +12,17 @@ const StatsSchema = new mongoose.Schema(
     questionsAdded:   { type: Number, default: 0 },
     feedItemsCreated: { type: Number, default: 0 },
     blocksAdded:      { type: Number, default: 0 },
-    reviewsSubmitted: { type: Number, default: 0 },
+    examsCreated:     { type: Number, default: 0 },
     publishedLessons: { type: Number, default: 0 },
+
+    // Peer quality-control notes left on lessons (src/lib/api/lessons.js addLessonNote).
+    // 'flag' notes mark something needing attention — the closest thing this
+    // platform has to a contributor-submitted review, so they're credited here.
+    reviewsSubmitted: { type: Number, default: 0 },
+    commentsPosted:   { type: Number, default: 0 },
+
+    editsMade:        { type: Number, default: 0 },
+
     totalTimeMs:      { type: Number, default: 0 },
     lastActiveAt:     { type: Date,   default: null },
   },
