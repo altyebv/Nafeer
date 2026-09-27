@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { trackStat } from '@/lib/trackStat';
 
 // ─── Versioning Mixin ─────────────────────────────────────────────────────────
 // Spread into any content schema that needs authorship + status tracking.
@@ -150,6 +151,10 @@ export function applyVersionBump(
   updates.changelog = [...existing.slice(-4), entry];
 
   const diff = action === 'edited' ? computeDiff(currentDoc, updates) : null;
+
+  // Every content type's update path (lesson/concept/question/feedItem/tag/exam)
+  // funnels through here for 'edited' bumps — single choke point to credit effort.
+  if (action === 'edited') trackStat(contributorId, 'editsMade');
 
   return { updates, diff };
 }
