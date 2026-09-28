@@ -2,6 +2,7 @@
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { sanitiseMarkers } from '@/lib/markerUtils';
 
@@ -100,7 +101,13 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
     deleteExam,
     addQuestionToExam,
     removeQuestionFromExam,
-  } = useDataStore();
+  } = useDataStore(useShallow((s) => ({
+    questions: s.questions, exams: s.exams, concepts: s.concepts,
+    units: s.units, lessons: s.lessons,
+    addQuestion: s.addQuestion, updateQuestion: s.updateQuestion, deleteQuestion: s.deleteQuestion,
+    addExam: s.addExam, updateExam: s.updateExam, deleteExam: s.deleteExam,
+    addQuestionToExam: s.addQuestionToExam, removeQuestionFromExam: s.removeQuestionFromExam,
+  })));
 
   const visibleQuestions = subjectId
     ? questions.filter((q) => q.subjectId === subjectId)
