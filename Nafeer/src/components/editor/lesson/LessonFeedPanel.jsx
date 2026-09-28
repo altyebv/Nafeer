@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import {
   FEED_ITEM_TYPES, FEED_ITEM_TYPE_CONFIG,
@@ -49,7 +50,9 @@ const emptyForm = {
 };
 
 export default function LessonFeedPanel({ lessonId, unitId, lessonConceptIds, onOpenGlobal, subjectId }) {
-  const { feedItems, concepts, addFeedItem, deleteFeedItem } = useDataStore();
+  const { feedItems, concepts, addFeedItem, deleteFeedItem } = useDataStore(
+    useShallow((s) => ({ feedItems: s.feedItems, concepts: s.concepts, addFeedItem: s.addFeedItem, deleteFeedItem: s.deleteFeedItem })),
+  );
   const { deleteFeedItem: atlasDeleteFeedItem } = useAtlasSync();
 
   // Feed items that belong to this lesson
