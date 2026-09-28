@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useDataStore }      from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Lightbulb, X } from 'lucide-react';
 
 export default function ConceptLinker({ sectionId }) {
-  const { concepts, sections, linkConceptToSection, unlinkConceptFromSection } = useDataStore();
+  const { concepts, sections, linkConceptToSection, unlinkConceptFromSection } = useDataStore(
+    useShallow((s) => ({ concepts: s.concepts, sections: s.sections, linkConceptToSection: s.linkConceptToSection, unlinkConceptFromSection: s.unlinkConceptFromSection })),
+  );
   const [search, setSearch] = useState('');
 
   const section    = sections.find((s) => s.id === sectionId);
