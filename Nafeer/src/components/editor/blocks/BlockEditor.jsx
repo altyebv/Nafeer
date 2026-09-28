@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { BLOCK_TYPE_CONFIG, HIGHLIGHT_STYLES, HEADING_LEVELS, QUESTION_TYPE_CONFIG } from '@/shared/constants';
 import { LessonTableEditor } from '@/components/editor/blocks/TableEditor';
@@ -164,7 +165,9 @@ function BlockPreview({ block }) {
 
 // ─── BlockEditor ─────────────────────────────────────────────────────────────
 export default function BlockEditor({ block, subjectId, dragHandleProps, lessonId, unitId, sectionId }) {
-  const { concepts, updateBlock, deleteBlock } = useDataStore();
+  const { concepts, updateBlock, deleteBlock } = useDataStore(
+    useShallow((s) => ({ concepts: s.concepts, updateBlock: s.updateBlock, deleteBlock: s.deleteBlock })),
+  );
   const { deleteBlock: atlasDeleteBlock } = useAtlasSync();
 
   const config = BLOCK_TYPE_CONFIG[block.type] || BLOCK_TYPE_CONFIG.TEXT;
@@ -556,7 +559,9 @@ function MediaBlockEditor({ block, update, subjectId }) {
 const CHECKPOINT_TYPES = ['MCQ', 'TRUE_FALSE'];
 
 function CheckpointBlockEditor({ block, update, subjectId , lessonId, unitId, sectionId}) {
-  const { questions, addQuestion, updateQuestion, deleteQuestion } = useDataStore();
+  const { questions, addQuestion, updateQuestion, deleteQuestion } = useDataStore(
+    useShallow((s) => ({ questions: s.questions, addQuestion: s.addQuestion, updateQuestion: s.updateQuestion, deleteQuestion: s.deleteQuestion })),
+  );
   const { syncQuestion } = useAtlasSync()
   const linked = questions.find((q) => q.id === block.content && q.isCheckpoint);
 
