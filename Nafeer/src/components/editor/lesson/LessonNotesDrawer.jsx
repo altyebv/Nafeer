@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Check, ClipboardList, Flag, MessageCircle, RotateCcw, Send, X } from 'lucide-react';
+import Drawer from '@/components/editor/shared/Drawer';
 
 // ─── LessonNotesDrawer ────────────────────────────────────────────────────────
 // Slide-in panel from the right. Loads notes from API, supports:
@@ -203,15 +204,7 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
   const flagCount = notes.filter((n) => n.noteType === 'flag').length;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-ink-950/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div className="fixed top-0 left-0 h-full w-full max-w-sm z-50 flex flex-col bg-ink-900 border-r border-ink-800 shadow-2xl">
+    <Drawer onClose={onClose} labelledBy="notes-drawer-title">
 
         {/* Header */}
         <div className="flex items-center gap-3 px-4 h-12 border-b border-ink-800 shrink-0">
@@ -221,7 +214,7 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
           >
             <X size={16} strokeWidth={1.9} />
           </button>
-          <h2 className="text-sm font-semibold text-sand-300 font-arabic">ملاحظات الدرس</h2>
+          <h2 id="notes-drawer-title" className="text-sm font-semibold text-sand-300 font-arabic">ملاحظات الدرس</h2>
           {notes.length > 0 && (
             <span className="text-[11px] font-mono text-ink-600 bg-ink-800/60 px-1.5 py-0.5 rounded">
               {notes.length}
@@ -337,7 +330,6 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
             </button>
           </div>
         </div>
-      </div>
-    </>
+    </Drawer>
   );
 }
