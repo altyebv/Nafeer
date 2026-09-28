@@ -12,7 +12,7 @@ import { X } from 'lucide-react';
 //   onCreated(newLessonId) — called after store update, so caller can open editor
 //   onClose()
 export default function AddVariationModal({ parentLesson, unitId, onCreated, onClose }) {
-  const { addLesson } = useDataStore();
+  const addLesson = useDataStore((s) => s.addLesson);
 
   const [variationType, setVariationType] = useState('alternative');
   const [title,         setTitle]         = useState('');
