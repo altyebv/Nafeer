@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useDataStore }  from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import StatusBadge       from '@/components/editor/shared/StatusBadge';
 import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
@@ -17,7 +18,12 @@ const STATUS_BORDER = {
 };
 
 export default function LessonItem({ lesson, index, onAddVariation, coverageLevel, isVariation }) {
-  const { sections, blocks, updateLesson } = useDataStore();
+  // Narrow selector: this renders once per lesson (58 on the geography
+  // subject), so subscribing to the whole store meant every one of them
+  // re-rendered on any change in any store.
+  const { sections, blocks, updateLesson } = useDataStore(
+    useShallow((s) => ({ sections: s.sections, blocks: s.blocks, updateLesson: s.updateLesson })),
+  );
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft,   setTitleDraft]   = useState(lesson.title);
