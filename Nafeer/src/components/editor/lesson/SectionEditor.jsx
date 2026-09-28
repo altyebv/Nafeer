@@ -17,6 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { LEARNING_TYPES, LEARNING_TYPE_CONFIG } from '@/shared/constants';
 import BlockEditor    from '@/components/editor/blocks/BlockEditor';
@@ -85,7 +86,9 @@ function SortableBlockItem({ block, subjectId, lessonId, unitId, sectionId }) {
 
 // ─── SectionEditor ────────────────────────────────────────────────────────────
 export default function SectionEditor({ section, maxPart = 0, subjectId, lessonId, unitId }) {
-  const { blocks, concepts, updateSection, deleteSection, addBlock, reorderBlocks } = useDataStore();
+  const { blocks, concepts, updateSection, deleteSection, addBlock, reorderBlocks } = useDataStore(
+    useShallow((s) => ({ blocks: s.blocks, concepts: s.concepts, updateSection: s.updateSection, deleteSection: s.deleteSection, addBlock: s.addBlock, reorderBlocks: s.reorderBlocks })),
+  );
   const { deleteSection: atlasDeleteSection } = useAtlasSync();
 
   const [isEditingTitle,    setIsEditingTitle]    = useState(
