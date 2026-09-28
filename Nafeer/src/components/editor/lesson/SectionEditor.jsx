@@ -226,7 +226,7 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
             <span className="text-[10px] font-mono text-ink-600 w-4 text-center">{partIndex + 1}</span>
             <button
               onClick={() => setPartIndex(1)}
-              className="w-5 h-5 flex items-center justify-center text-ink-500 hover:text-sand-400 transition-colors text-xs rounded"
+              className="touch-target w-5 h-5 flex items-center justify-center text-ink-500 hover:text-sand-400 transition-colors text-xs rounded"
               title="نقل للجزء التالي"
             >›</button>
           </div>
