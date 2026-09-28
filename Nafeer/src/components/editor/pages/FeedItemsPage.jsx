@@ -2,6 +2,7 @@
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import {
   FEED_ITEM_TYPES, FEED_ITEM_TYPE_CONFIG,
@@ -70,7 +71,9 @@ function typeBg(type) {
 }
 
 export default function FeedItemsPage({ subjectId }) {
-  const { feedItems, concepts, questions, units, lessons, addFeedItem, updateFeedItem, deleteFeedItem } = useDataStore();
+  const { feedItems, concepts, questions, units, lessons, addFeedItem, updateFeedItem, deleteFeedItem } = useDataStore(
+    useShallow((s) => ({ feedItems: s.feedItems, concepts: s.concepts, questions: s.questions, units: s.units, lessons: s.lessons, addFeedItem: s.addFeedItem, updateFeedItem: s.updateFeedItem, deleteFeedItem: s.deleteFeedItem })),
+  );
   const { syncFeedItem, submitForReview, deleteFeedItem: atlasDeleteFeedItem } = useAtlasSync();
 
   const [showModal,       setShowModal]       = useState(false);
