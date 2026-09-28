@@ -501,7 +501,7 @@ function MediaBlockEditor({ block, update, subjectId }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={block.content} alt={block.metadata?.alt || ''} className="max-h-48 w-auto mx-auto object-contain py-2"
               onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            <button onClick={handleClear} className="absolute top-2 left-2 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-red-400 hover:bg-black/80 transition-all opacity-0 group-hover/thumb:opacity-100 text-xs"><X size={14} strokeWidth={1.9} /></button>
+            <button onClick={handleClear} className="touch-target absolute top-2 left-2 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-red-400 hover:bg-black/80 transition-all opacity-0 group-hover/thumb:opacity-100 text-xs"><X size={14} strokeWidth={1.9} /></button>
             {isGif && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-900/80 text-purple-300 text-[10px] font-bold rounded">GIF</span>}
             {isInteractive && markers.length > 0 && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-sand-900/80 text-sand-300 text-[10px] font-bold rounded border border-sand-700/60 inline-flex items-center gap-1"><Sparkles size={10} strokeWidth={1.8} /> {markers.length}</span>}
           </div>
