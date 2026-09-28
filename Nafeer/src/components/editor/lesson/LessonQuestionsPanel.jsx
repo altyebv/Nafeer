@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import {
   QUESTION_TYPES, QUESTION_TYPE_CONFIG,
@@ -62,7 +63,9 @@ function MCQQuickForm({ options, correctIndex, onOptionsChange, onCorrectChange 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, subjectId }) {
-  const { questions, sections, concepts, addQuestion, deleteQuestion } = useDataStore();
+  const { questions, sections, concepts, addQuestion, deleteQuestion } = useDataStore(
+    useShallow((s) => ({ questions: s.questions, sections: s.sections, concepts: s.concepts, addQuestion: s.addQuestion, deleteQuestion: s.deleteQuestion })),
+  );
   const { deleteQuestion: atlasDeleteQuestion, syncQuestion } = useAtlasSync();
 
   const lessonQuestions = questions.filter((q) => q.lessonId === lessonId);
