@@ -15,13 +15,25 @@ import { useQuizStore } from '@/store/quizStore';
 // ReferenceError that silently killed every create/update for those three types.
 //
 export function useAtlasSync() {
-  const { setSyncStatus } = useEditorStore();
-  const { lessons, updateLesson, loadFromAtlas } = useSubjectStore();
-  const { sections, blocks } = useContentStore();
-  const { updateConcept } = useConceptStore();
-  const { updateFeedItem } = useFeedStore();
-  const { exams, updateQuestion } = useQuizStore();
-  const { isSyncing, syncError, lastSynced } = useEditorStore();
+  // ── Non-reactive by design ──────────────────────────────────────────────────
+  // This used to call useEditorStore(), useSubjectStore(), useContentStore(),
+  // useConceptStore(), useFeedStore() and useQuizStore() with no selectors —
+  // six whole-store subscriptions. The hook is used by eleven components,
+  // including BlockEditor, which renders once per block, so a keystroke in any
+  // block re-rendered every block editor, every panel and the shell.
+  //
+  // Nothing here needs to be reactive: the actions are stable for the life of
+  // the store, and the data is only read when a sync callback actually fires.
+  // Reading via getState() gives the callbacks stable identities too, which
+  // stops their dependency arrays from invalidating on every data change.
+  //
+  // Components that need to *display* sync state read it from editorStore
+  // directly — see SyncBanner.
+  const { setSyncStatus }              = useEditorStore.getState();
+  const { updateLesson, loadFromAtlas } = useSubjectStore.getState();
+  const { updateConcept }              = useConceptStore.getState();
+  const { updateFeedItem }             = useFeedStore.getState();
+  const { updateQuestion }             = useQuizStore.getState();
 
   // ── Internal helpers ────────────────────────────────────────────────────────
 
@@ -176,6 +188,9 @@ export function useAtlasSync() {
 
   // ── Sync lesson meta + content ───────────────────────────────────────────────
   const syncAll = useCallback(async (lessonId, subjectId) => {
+    // Read at call time, not render time — see the note at the top of the hook.
+    const { lessons }          = useSubjectStore.getState();
+    const { sections, blocks } = useContentStore.getState();
     const lesson = lessons.find((l) => l.id === lessonId);
     if (!lesson) return;
     const lessonSections = sections.filter((s) => s.lessonId === lessonId);
@@ -259,10 +274,11 @@ export function useAtlasSync() {
       setError(`فشل الحفظ: ${e.message}`);
       throw e;
     }
-  }, [lessons, sections, blocks, apiFetch, setLoading, setDone, setError, updateLesson]);
+  }, [apiFetch, setLoading, setDone, setError, updateLesson]);
 
  // ── syncLesson ───────────────────────────────────────────────────────────────
 const syncLesson = useCallback(async (lessonId, subjectId) => {
+  const { lessons } = useSubjectStore.getState();
   const lesson = lessons.find((l) => l.id === lessonId);
   if (!lesson) return;
   try {
@@ -316,10 +332,11 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
     setError(`فشل حفظ الدرس: ${e.message}`);
     throw e;
   }
-}, [lessons, apiFetch, setLoading, setDone, setError, updateLesson]);
+}, [apiFetch, setLoading, setDone, setError, updateLesson]);
 
   // ── Sync sections + blocks ────────────────────────────────────────────────
   const syncLessonContent = useCallback(async (lessonId, subjectId) => {
+    const { sections, blocks } = useContentStore.getState();
     const lessonSections = sections.filter((s) => s.lessonId === lessonId);
     const sectionIds = lessonSections.map((s) => s.id);
     const lessonBlocks = blocks.filter((b) => sectionIds.includes(b.sectionId));
@@ -355,7 +372,7 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
       setError(`فشل حفظ المحتوى: ${e.message}`);
       throw e;
     }
-  }, [sections, blocks, apiFetch, setLoading, setDone, setError]);
+  }, [apiFetch, setLoading, setDone, setError]);
 
   // ── Sync concept ─────────────────────────────────────────────────────────────
   const syncConcept = useCallback(async (conceptId, subjectId, approve = false) => {
@@ -508,6 +525,7 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
 
   // ── Sync exam ────────────────────────────────────────────────────────────
   const syncExam = useCallback(async (examId, subjectId) => {
+    const { exams } = useQuizStore.getState();
     const exam = exams.find((e) => e.id === examId);
     if (!exam) return;
     try {
@@ -533,7 +551,7 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
     } catch (e) {
       console.warn(`[syncExam] ${examId} failed:`, e.message);
     }
-  }, [exams, apiFetch]);
+  }, [apiFetch]);
 
   // ── Submit for review ─────────────────────────────────────────────────────
   const submitForReview = useCallback(async (contentId, type) => {
@@ -577,8 +595,10 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
     catch (e) { console.warn(`[deleteRemote] ${url} failed:`, e.message); }
   }, [apiFetch]);
 
+  // No isSyncing/syncError/lastSynced here — returning them would make this
+  // hook reactive again and re-render all eleven consumers on every sync tick.
+  // Read them from editorStore with a selector instead (see SyncBanner).
   return {
-    isSyncing, syncError, lastSynced,
     bootstrapSubject, syncLesson, syncLessonContent, syncAll,
     syncConcept,
     syncConceptAndApprove: (conceptId, subjectId) => syncConcept(conceptId, subjectId, true),

@@ -478,7 +478,10 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
   const resetQuiz     = useQuizStore((s) => s.resetQuiz);
   const resetMedia    = useMediaStore((s) => s.resetMedia);
 
-  const { isSyncing, syncError, lastSynced } = useAtlasSync();
+  useAtlasSync();   // non-reactive; kept for the bootstrap side effects
+  // Sync state comes from editorStore directly — useAtlasSync no longer
+  // returns it, so that eleven components stop re-rendering on every tick.
+  const isSyncing = useEditorStore((s) => s.isSyncing);
 
   const [loading,        setLoading]        = useState(() => useSubjectStore.getState().subject?.id !== subjectId);
   const [refreshing,     setRefreshing]     = useState(false);
@@ -570,12 +573,8 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
             subjectId={subjectId}
             currentUser={{ role: 'admin' }}
             onBack={() => navigateTo('lessons')}
-            onBackToOverview={() => navigateTo('lessons')}
             onNavigateLesson={(lessonId, unitId) => navigateTo('editor', { lessonId, unitId })}
             onOpenGlobal={(page) => navigateTo(page)}
-            isSyncing={isSyncing}
-            syncError={syncError}
-            lastSynced={lastSynced}
           />
         );
       case 'concepts':  return <ConceptsPage  subjectId={subjectId} isAdmin />;

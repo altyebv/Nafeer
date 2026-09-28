@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useDataStore }    from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync }    from '@/hooks/useAtlasSync';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import SectionEditor        from '@/components/editor/lesson/SectionEditor';
@@ -70,7 +71,11 @@ export default function LessonEditorPage({
   const {
     units, lessons, sections, blocks, questions, feedItems,
     updateLesson, addSection,
-  } = useDataStore();
+  } = useDataStore(useShallow((s) => ({
+    units: s.units, lessons: s.lessons, sections: s.sections, blocks: s.blocks,
+    questions: s.questions, feedItems: s.feedItems,
+    updateLesson: s.updateLesson, addSection: s.addSection,
+  })));
   const { syncAll, submitForReview, approveAndSync } = useAtlasSync();
   const isSyncing  = useEditorStore((s) => s.isSyncing);
   const syncError  = useEditorStore((s) => s.syncError);
