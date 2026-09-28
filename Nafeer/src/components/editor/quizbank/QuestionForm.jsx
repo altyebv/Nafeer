@@ -56,7 +56,7 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons }
   const renderAnswerEditor = () => {
     if (form.type === 'TRUE_FALSE') {
       return (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[
             ['true', 'صح', 'border-emerald-700 bg-emerald-900/30 text-emerald-300'],
             ['false', 'خطأ', 'border-red-700 bg-red-900/30 text-red-300'],

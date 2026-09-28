@@ -369,7 +369,7 @@ export default function FeedItemsPage({ subjectId }) {
         <div className="space-y-4">
           {/* Lesson assignment */}
           <div
-            className="grid grid-cols-2 gap-3 p-3"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3"
             style={{
               background: 'var(--bg-secondary)',
               border: '1px solid var(--border-mid)',
@@ -427,8 +427,8 @@ export default function FeedItemsPage({ subjectId }) {
           </FormField>
 
           {/* Type + Priority */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
               <FormField label="نوع البطاقة">
                 <select
                   value={form.type}
@@ -489,7 +489,7 @@ export default function FeedItemsPage({ subjectId }) {
           {isInteractive(form.type) && (
             <>
               <FormField label="نوع التفاعل">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {Object.entries(INTERACTION_TYPES).map(([key, value]) => {
                     const cfg = INTERACTION_TYPE_CONFIG[key];
                     const active = form.interactionType === value;

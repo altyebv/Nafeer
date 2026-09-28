@@ -44,7 +44,7 @@ export default function ExamModal({ isOpen, onClose, editingId, form, setForm, o
         </div>
 
         {/* Source / type */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className={labelClass}>المصدر</label>
             <select
@@ -73,7 +73,8 @@ export default function ExamModal({ isOpen, onClose, editingId, form, setForm, o
         </div>
 
         {/* Year / duration / total points */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Three short numeric fields — two across is fine on a phone. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div>
             <label className={labelClass}>السنة</label>
             <input

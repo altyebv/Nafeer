@@ -135,7 +135,7 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
           {/* ── Step 2: Variation type ─────────────────────────────────────── */}
           <div>
             <label className="block text-xs text-ink-500 font-arabic mb-2">٢. نوع العلاقة</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {Object.entries(VARIATION_CONFIG).map(([type, cfg]) => {
                 const Icon = cfg.icon;
                 return (

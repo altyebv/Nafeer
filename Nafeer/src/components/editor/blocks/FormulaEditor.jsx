@@ -265,9 +265,11 @@ export default function FormulaEditor({
       </div>
 
       {/* ── Input + Preview ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2">
+      {/* Stacks below sm — side-by-side LaTeX and preview leaves each about
+          160px on a phone, too narrow for either. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2">
         {/* LaTeX textarea — DOM first = visual RIGHT in RTL */}
-        <div className="p-3 border-l border-ink-800">
+        <div className="p-3 border-b sm:border-b-0 sm:border-l border-ink-800">
           <p className="text-[10px] text-ink-500 uppercase tracking-wide mb-1.5 font-arabic">LaTeX</p>
           <textarea
             ref={textareaRef}

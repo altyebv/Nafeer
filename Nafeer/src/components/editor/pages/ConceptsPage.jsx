@@ -447,7 +447,7 @@ export default function ConceptsPage({ subjectId }) {
         size="lg"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="العنوان بالعربية *">
               <input
                 type="text"
@@ -475,7 +475,7 @@ export default function ConceptsPage({ subjectId }) {
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="النوع">
               <select
                 value={form.type}

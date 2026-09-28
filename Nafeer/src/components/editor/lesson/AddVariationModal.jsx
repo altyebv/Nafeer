@@ -110,7 +110,7 @@ export default function AddVariationModal({ parentLesson, unitId, onCreated, onC
             >
               نوع التنويع
             </p>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {Object.entries(VARIATION_CONFIG).map(([type, c]) => {
                 const Icon = c.icon;
                 return (
