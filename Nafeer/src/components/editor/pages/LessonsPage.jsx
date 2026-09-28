@@ -1,5 +1,6 @@
 'use client';
 import { useDataStore }                    from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { SUBJECTS_BY_ID, TRACK_CONFIG }    from '@/shared/curriculum';
 import { computeProgress }                 from '@/lib/LessonStatus';
 import { useCoverageData }                 from '@/hooks/useCoverageData';
@@ -9,7 +10,9 @@ import EditorPage                          from '@/components/editor/layout/Edit
 // Lessons no longer takes an onEditLesson callback — LessonItem links straight
 // to /editor/lessons/[id], so the route is the navigation.
 export default function LessonsPage() {
-  const { subject, units, lessons, sections, blocks } = useDataStore();
+  const { subject, units, lessons, sections, blocks } = useDataStore(
+    useShallow((s) => ({ subject: s.subject, units: s.units, lessons: s.lessons, sections: s.sections, blocks: s.blocks })),
+  );
   const { coverageMap, unitMap } = useCoverageData(subject?.id);
 
   const sortedUnits  = [...units].sort((a, b) => a.order - b.order);
