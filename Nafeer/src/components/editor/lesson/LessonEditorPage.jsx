@@ -57,7 +57,15 @@ const PART_NUMS_AR  = ['١', '٢', '٣', '٤', '٥', '٦'];
 // Navigation props are gone: the lesson has its own route, so "back" and
 // "next lesson" are real URL moves and unitId is derived from the lesson
 // rather than carried alongside it. Sync state is read from editorStore.
-export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
+export default function LessonEditorPage({
+  lessonId, subjectId, currentUser,
+  // Optional navigation overrides. The contributor editor leaves these unset
+  // and gets router navigation. The admin dashboard embeds this component
+  // inside its own switch-based workspace (AdminEditorWorkspace) and passes
+  // its own handlers — without them, "back" would push the contributor route
+  // and eject an admin out of the dashboard entirely.
+  onBack, onNavigateLesson, onOpenGlobal,
+}) {
   const router = useRouter();
   const {
     units, lessons, sections, blocks, questions, feedItems,
@@ -87,9 +95,9 @@ export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
   const unitId         = lesson?.unitId ?? null;
   const unit           = units.find((u) => u.id === unitId);
 
-  const goBack         = () => router.push('/editor/lessons');
-  const goToLesson     = (id) => router.push(lessonHref(id));
-  const openGlobal     = (page) => router.push(NAV_BY_ID[page]?.href ?? '/editor');
+  const goBack     = onBack           ?? (() => router.push('/editor/lessons'));
+  const goToLesson = onNavigateLesson ?? ((id) => router.push(lessonHref(id)));
+  const openGlobal = onOpenGlobal     ?? ((page) => router.push(NAV_BY_ID[page]?.href ?? '/editor'));
 
   // Fetch attribution + notesCount once when the lesson changes
   useEffect(() => {
@@ -227,32 +235,35 @@ export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-ink-950/98 backdrop-blur-md border-b border-ink-800/70">
 
-        {/* Row 1 — wraps below sm. Eleven controls in one non-wrapping row
-            crushed the lesson title to width 0 on a phone and pushed the
-            last 28px past the viewport. Wrapping gives the title its own
-            line and lets the actions flow underneath until the Phase 3
-            header restructure replaces this outright. */}
-        {/* Wraps until xl. The old `sm:flex-nowrap` assumed this row had the
-            whole viewport, which was true while the lesson editor escaped the
-            shell; inside it the sidebar rail takes 60px and eleven controls
-            stopped fitting well above 640px. */}
-        <div className="flex flex-wrap xl:flex-nowrap items-center gap-x-3 gap-y-2 px-5 py-2 xl:py-0 xl:h-12">
-          <button
-            onClick={goBack}
-            className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-sand-400 transition-colors font-arabic shrink-0 group"
-          >
-            <span className="group-hover:translate-x-0.5 transition-transform inline-block">→</span>
-            <span className="hidden sm:inline">{unit?.title ?? 'الدروس'}</span>
-          </button>
+        {/* Two groups — identity and actions — that wrap as units rather than
+            eleven loose flex children. Below xl the actions drop to their own
+            line (and scroll horizontally if they still don't fit); at xl the
+            two groups share one row, as before. Previously everything sat in
+            one row and the title was the item that collapsed. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 sm:px-5 py-2 xl:py-0 xl:h-12">
 
-          <span className="text-ink-400 text-xs shrink-0">›</span>
+          {/* ── Identity ──
+              w-full below xl: with `flex-1` alone the group's flex-basis is 0,
+              so it never triggers a wrap — it just collapsed to nothing while
+              the action group kept its width. */}
+          <div className="flex w-full min-w-0 items-center gap-2 xl:w-auto xl:flex-1">
+            <button
+              onClick={goBack}
+              aria-label={`العودة إلى ${unit?.title ?? 'الدروس'}`}
+              className="touch-target flex items-center gap-1.5 text-sm text-ink-400 hover:text-sand-400 transition-colors font-arabic shrink-0 group"
+            >
+              <span className="group-hover:translate-x-0.5 transition-transform inline-block">→</span>
+              <span className="hidden sm:inline">{unit?.title ?? 'الدروس'}</span>
+            </button>
 
-          <h1 className="flex-1 basis-auto min-w-[8rem] text-sm font-semibold text-sand-200 font-arabic truncate">
-            {lesson.title}
-          </h1>
+            <span className="text-ink-400 text-xs shrink-0">›</span>
 
-          <SyncDot size={6} />
-          {lesson.atlasStatus && <StatusBadge status={lesson.atlasStatus} />}
+            <h1 className="min-w-0 flex-1 text-sm font-semibold text-sand-200 font-arabic truncate">
+              {lesson.title}
+            </h1>
+
+            <SyncDot size={6} />
+            {lesson.atlasStatus && <StatusBadge status={lesson.atlasStatus} />}
 
           {/* Progress ring */}
           <div className="relative w-6 h-6 shrink-0">
@@ -269,13 +280,18 @@ export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
               {completedChecks}
             </span>
           </div>
+          </div>
+
+          {/* ── Actions — scroll horizontally rather than clip if they
+              still overflow on a very narrow phone. ── */}
+          <div className="flex w-full shrink-0 items-center gap-2 overflow-x-auto scrollbar-none -mx-1 px-1 xl:w-auto">
 
           {(!lesson.atlasStatus || lesson.atlasStatus === 'draft') && (
             currentUser?.role === 'admin' ? (
               <button
                 onClick={handleApprove}
                 disabled={isSyncing}
-                className="flex items-center gap-1.5 px-3 h-8 sm:h-7 text-green-400 text-xs font-semibold rounded-lg border border-green-800/50 bg-green-900/20 hover:bg-green-800/30 disabled:opacity-40 font-arabic transition-colors"
+                className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-8 sm:h-7 text-green-400 text-xs font-semibold rounded-lg border border-green-800/50 bg-green-900/20 hover:bg-green-800/30 disabled:opacity-40 font-arabic transition-colors"
               >
                 {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الاعتماد</> : <><Check size={13} strokeWidth={2} /> اعتماد مباشر</>}
               </button>
@@ -283,7 +299,7 @@ export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
               <button
                 onClick={handleSubmitForReview}
                 disabled={isSyncing}
-                className="flex items-center gap-1.5 px-3 h-8 sm:h-7 text-amber-400 text-xs font-semibold rounded-lg border border-amber-800/50 bg-amber-900/20 hover:bg-amber-800/30 disabled:opacity-40 font-arabic transition-colors"
+                className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-8 sm:h-7 text-amber-400 text-xs font-semibold rounded-lg border border-amber-800/50 bg-amber-900/20 hover:bg-amber-800/30 disabled:opacity-40 font-arabic transition-colors"
               >
                 {reviewSuccess ? <><Check size={13} strokeWidth={2} /> أُرسل</> : <><Send size={13} strokeWidth={1.9} /> مراجعة</>}
               </button>
@@ -294,7 +310,7 @@ export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
             <button
               onClick={handleApprove}
               disabled={isSyncing}
-              className="flex items-center gap-1.5 px-3 h-8 sm:h-7 text-sand-400 text-xs font-semibold rounded-lg border border-sand-800/50 bg-sand-900/20 hover:bg-sand-800/30 disabled:opacity-40 font-arabic transition-colors"
+              className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-8 sm:h-7 text-sand-400 text-xs font-semibold rounded-lg border border-sand-800/50 bg-sand-900/20 hover:bg-sand-800/30 disabled:opacity-40 font-arabic transition-colors"
             >
               {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الحفظ</> : <><Upload size={13} strokeWidth={1.9} /> حفظ + اعتماد</>}
             </button>
@@ -302,7 +318,7 @@ export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
 
           <button
             onClick={() => setShowHistory(true)}
-            className="flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
+            className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
             title="سجل الإصدارات"
           >
             <Clock3 size={13} strokeWidth={1.9} />
@@ -311,7 +327,7 @@ export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
 
           <button
             onClick={() => setShowNotes(true)}
-            className="relative flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
+            className="touch-target shrink-0 relative flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
           >
             <NotebookPen size={13} strokeWidth={1.9} />
             <span className="hidden sm:inline">ملاحظات</span>
@@ -324,7 +340,7 @@ export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
 
           <button
             onClick={() => setShowPreview(true)}
-            className="flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
+            className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
           >
             <Eye size={13} strokeWidth={1.9} />
             <span className="hidden sm:inline">معاينة</span>
@@ -333,17 +349,23 @@ export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
           <button
             onClick={handleSave}
             disabled={isSyncing}
-            className="flex items-center gap-1.5 px-4 h-7 bg-sand-700 hover:bg-sand-600 disabled:opacity-40 text-ink-950 text-xs font-bold rounded-lg transition-colors font-arabic"
+            className="touch-target shrink-0 flex items-center gap-1.5 px-4 h-7 bg-sand-700 hover:bg-sand-600 disabled:opacity-40 text-ink-950 text-xs font-bold rounded-lg transition-colors font-arabic"
           >
             {isSyncing
               ? <><span className="w-3 h-3 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" />حفظ…</>
               : saveSuccess ? <><Check size={13} strokeWidth={2} /> تم</> : <><Upload size={13} strokeWidth={1.9} /> حفظ</>}
           </button>
+          </div>
         </div>
 
-        {/* Attribution bar */}
+        {/* Attribution bar — hidden on phones. It is supplementary metadata
+            (author, version) and cost 35px of a sticky header that was already
+            taking a quarter of the screen; the same information is in the
+            version history drawer. */}
         {(attribution || lesson.version > 1) && (
-          <AttributionBar lesson={lesson} attribution={attribution} />
+          <div className="hidden sm:block">
+            <AttributionBar lesson={lesson} attribution={attribution} />
+          </div>
         )}
 
         {/* Sync error */}
@@ -512,7 +534,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
               className={`${FIELD} resize-y min-h-[88px]`}
               placeholder="ملخص قصير يصف محتوى الدرس — يظهر في قائمة الدروس…" />
           </Field>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="الوقت المقدر">
               <div className="flex items-center gap-2">
                 <input type="number" value={lesson.estimatedMinutes || 15}
@@ -555,7 +577,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
       <Card>
         <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="تجميع الدروس" hint="اختياري — يُنظِّم الدروس في مجموعات داخل الوحدة" />
         <div className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="معرّف المجموعة" hint="ثابت — مثال: ARABIC_U1_G1">
               <input
                 type="text"
@@ -624,7 +646,7 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
             </div>
             <span className="text-sm font-mono text-ink-500">{completedChecks}/6</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {checklist.map((item) => (
               <div key={item.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-arabic
                 ${item.done ? 'bg-emerald-900/15 border-emerald-800/30 text-emerald-500' : 'bg-ink-800/15 border-ink-800/60 text-ink-400'}`}>
@@ -772,7 +794,7 @@ function StepQuestions({ lessonId, unitId, subjectId, lessonSections, lessonQues
       <Card>
         <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="نظرة عامة" />
         <div className="p-5">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <StatCard
               label="نقاط تحقق"
               sublabel="مدمجة في الأقسام"
@@ -972,7 +994,7 @@ function StepVariations({ lesson, variations, onOpenLinkModal, onUnlink, onPrev 
       )}
 
       {/* Type legend */}
-      <div className="grid grid-cols-2 gap-2 pt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
         {Object.entries(VARIATION_CONFIG).map(([type, cfg]) => {
           const Icon = cfg.icon;
           return (
