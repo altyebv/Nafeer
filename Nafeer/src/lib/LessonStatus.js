@@ -1,6 +1,6 @@
 /**
  * Lesson completion status — single source of truth.
- * Used in SubjectOverview dots, UnitView cards, and LessonEditorPage checklist.
+ * Used in UnitCard dots, LessonItem badges, and the LessonEditorPage checklist.
  */
 
 export const LESSON_STATUS = {
