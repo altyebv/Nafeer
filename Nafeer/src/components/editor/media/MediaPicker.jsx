@@ -62,7 +62,7 @@ export default function MediaPicker({ type, subjectId, onSelect, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center text-ink-600 hover:text-ink-300 transition-colors text-base"
+            className="touch-target w-7 h-7 flex items-center justify-center text-ink-600 hover:text-ink-300 transition-colors text-base"
           >
             <X size={16} strokeWidth={1.9} />
           </button>
