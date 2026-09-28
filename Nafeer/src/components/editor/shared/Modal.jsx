@@ -27,7 +27,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
           <h2 className="text-base font-semibold text-sand-200">{title}</h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center text-ink-500 hover:text-ink-200 hover:bg-ink-800 rounded-lg transition-colors text-lg"
+            className="touch-target w-7 h-7 flex items-center justify-center text-ink-500 hover:text-ink-200 hover:bg-ink-800 rounded-lg transition-colors text-lg"
             aria-label="إغلاق"
           >
             <X size={16} strokeWidth={2} />
