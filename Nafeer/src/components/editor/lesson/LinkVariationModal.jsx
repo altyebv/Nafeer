@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { ArrowDown, ArrowLeft, ArrowUp, Check, Shuffle, X } from 'lucide-react';
 
 // ─── Variation type config ────────────────────────────────────────────────────
@@ -24,7 +25,7 @@ const VARIATION_DESCRIPTIONS = {
 //   onLink(targetContentId, variationType, variationNote) — called on confirm
 //   onClose()
 export default function LinkVariationModal({ currentLessonId, onLink, onClose }) {
-  const { lessons, units } = useDataStore();
+  const { lessons, units } = useDataStore(useShallow((s) => ({ lessons: s.lessons, units: s.units })));
 
   const [query,         setQuery]         = useState('');
   const [selectedId,    setSelectedId]    = useState(null);
