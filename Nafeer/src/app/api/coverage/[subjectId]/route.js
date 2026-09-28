@@ -16,7 +16,8 @@ import { SUBJECTS_BY_ID }       from '@/shared/curriculum';
 // questions) fetched from their respective collections, plus a computed
 // coverageScore (0-100) and coverageLevel label.
 //
-// Scoring formula (aligned with CoveragePanel.jsx dimension weights):
+// Scoring formula — dimension weights are defined inline below and are the
+// single source of truth since CoveragePanel.jsx was removed.
 //   Content  — max 40 pts: sections>0 AND blocks>0 → 40; sections>0 only → 20
 //   Feed     — max 30 pts: min(30, round(feedItems / concepts × 30))   [0 if no concepts]
 //   Questions — max 30 pts: min(30, round(questions / (concepts×2) × 30)) [0 if no concepts]
@@ -95,7 +96,7 @@ export async function GET(_request, { params }) {
           (sum, sid) => sum + (blocksBySectionId[sid] || 0), 0
         );
 
-        // ── Coverage score (matches CoveragePanel.jsx dimension weights) ──────
+        // ── Coverage score (dimension weights per the header comment) ────────
         let score = 0;
 
         // Content dimension — 40 pts
