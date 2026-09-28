@@ -2,6 +2,7 @@
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { useState } from 'react';
 import { useDataStore }  from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync }  from '@/hooks/useAtlasSync';
 import { CONCEPT_TYPES, CONCEPT_TYPE_CONFIG }  from '@/shared/constants';
 import Modal from '@/components/editor/shared/Modal';
@@ -106,7 +107,9 @@ function DifficultyDots({ n = 1, max = 5 }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ConceptsPage({ subjectId }) {
-  const { concepts, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore();
+  const { concepts, tags, addConcept, updateConcept, deleteConcept, addTag } = useDataStore(
+    useShallow((s) => ({ concepts: s.concepts, tags: s.tags, addConcept: s.addConcept, updateConcept: s.updateConcept, deleteConcept: s.deleteConcept, addTag: s.addTag })),
+  );
   const { syncConcept, syncTag, submitForReview, deleteConcept: atlasDeleteConcept } = useAtlasSync();
 
   const [showModal,   setShowModal]   = useState(false);
