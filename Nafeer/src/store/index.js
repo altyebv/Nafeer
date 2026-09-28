@@ -13,21 +13,100 @@ export { useFeedStore }    from './feedStore';
 export { useQuizStore }    from './quizStore';
 export { useMediaStore }   from './mediaStore';
 
+import { useSyncExternalStore, useCallback, useRef } from 'react';
+import { useShallow }      from 'zustand/react/shallow';
 import { useSubjectStore } from './subjectStore';
 import { useContentStore } from './contentStore';
 import { useConceptStore } from './conceptStore';
 import { useFeedStore }    from './feedStore';
 import { useQuizStore }    from './quizStore';
 
+const STORES = [useSubjectStore, useContentStore, useConceptStore, useFeedStore, useQuizStore];
+
+// ─── Merged snapshot cache ────────────────────────────────────────────────────
+// buildMerged() allocates a fresh ~60-key object. useSyncExternalStore requires
+// getSnapshot to return a referentially stable value between store changes, or
+// it re-renders forever, so the result is cached and invalidated by a single
+// subscription to all five stores.
+let mergedCache = null;
+
+function subscribeAll(onChange) {
+  const unsubs = STORES.map((s) => s.subscribe(() => { mergedCache = null; onChange(); }));
+  return () => unsubs.forEach((u) => u());
+}
+
+function getMerged() {
+  if (mergedCache === null) mergedCache = buildMerged();
+  return mergedCache;
+}
+
+// ─── Server snapshot ──────────────────────────────────────────────────────────
+// React calls getServerSnapshot during SSR *and* again while hydrating on the
+// client. The domain stores use zustand's persist middleware, which rehydrates
+// from localStorage before React boots — so handing React the live snapshot
+// during hydration compares server HTML built from empty arrays against client
+// state already holding 58 lessons, and the tree is thrown away.
+//
+// This returns the empty shape the server actually rendered. Real data arrives
+// on the first post-hydration store notification.
+const EMPTY_DATA = {
+  subject: null, units: [], lessons: [], sections: [], blocks: [],
+  concepts: [], tags: [], feedItems: [], questions: [], exams: [],
+};
+let serverCache = null;
+
+function getServerMerged() {
+  if (serverCache === null) serverCache = { ...buildMerged(), ...EMPTY_DATA };
+  return serverCache;
+}
+
 // ─── useDataStore ─────────────────────────────────────────────────────────────
-// Composite hook. Merges all domain stores. Backward compat for existing components.
-// New components should import from individual stores.
+// Composite hook over the five domain stores.
+//
+// This used to call each store's hook with no selector, subscribing every
+// consumer to all five stores, then rebuild the merged object on every render
+// and apply the caller's selector to the *result*. The selector therefore did
+// nothing for subscription purposes: any change anywhere re-rendered every
+// consumer, and 18 of 22 call sites passed no selector at all.
+//
+// Now the selector runs against a cached snapshot and its output is compared
+// shallowly, so `useDataStore((s) => s.concepts)` re-renders only when
+// concepts actually change. Call sites that pass an object literal should wrap
+// it in useShallow (re-exported below) — or just use the domain store directly.
 export function useDataStore(selector) {
-  const subject  = useSubjectStore();
-  const content  = useContentStore();
-  const concepts = useConceptStore();
-  const feed     = useFeedStore();
-  const quiz     = useQuizStore();
+  // Cache the selected value against the snapshot it came from, so a selector
+  // returning a fresh object doesn't hand useSyncExternalStore a new reference
+  // on every read (which would loop).
+  const live   = useRef({ from: null, value: undefined });
+  const server = useRef({ from: null, value: undefined });
+
+  const getSelection = useCallback(() => {
+    const merged = getMerged();
+    if (live.current.from !== merged) {
+      live.current = { from: merged, value: selector ? selector(merged) : merged };
+    }
+    return live.current.value;
+  }, [selector]);
+
+  const getServerSelection = useCallback(() => {
+    const merged = getServerMerged();
+    if (server.current.from !== merged) {
+      server.current = { from: merged, value: selector ? selector(merged) : merged };
+    }
+    return server.current.value;
+  }, [selector]);
+
+  return useSyncExternalStore(subscribeAll, getSelection, getServerSelection);
+}
+
+export { useShallow };
+
+function buildMerged() {
+  const subject  = useSubjectStore.getState();
+  const content  = useContentStore.getState();
+  const concepts = useConceptStore.getState();
+  const feed     = useFeedStore.getState();
+  const quiz     = useQuizStore.getState();
 
   const merged = {
     // ── Data ────────────────────────────────────────────────────────────────
@@ -180,7 +259,7 @@ export function useDataStore(selector) {
     },
   };
 
-  return selector ? selector(merged) : merged;
+  return merged;
 }
 
 // ─── assembleExportData ───────────────────────────────────────────────────────
