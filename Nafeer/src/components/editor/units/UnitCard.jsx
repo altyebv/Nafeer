@@ -2,6 +2,7 @@
 import { X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useDataStore }    from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { computeProgress } from '@/lib/LessonStatus';
 import LessonItem          from '@/components/editor/lesson/LessonItem';
 import AddVariationModal   from '@/components/editor/lesson/AddVariationModal';
@@ -12,7 +13,9 @@ const ARABIC_ORDINALS = ['الأولى','الثانية','الثالثة','ال�
 
 // No onEditLesson prop: LessonItem links straight to the lesson route.
 export default function UnitCard({ unit, index, coverageMap, unitCoverage }) {
-  const { lessons, sections, blocks, updateUnit, addLesson } = useDataStore();
+  const { lessons, sections, blocks, updateUnit, addLesson } = useDataStore(
+    useShallow((s) => ({ lessons: s.lessons, sections: s.sections, blocks: s.blocks, updateUnit: s.updateUnit, addLesson: s.addLesson })),
+  );
 
   const [expanded,      setExpanded]      = useState(true);
   const [editingTitle,  setEditingTitle]  = useState(false);
