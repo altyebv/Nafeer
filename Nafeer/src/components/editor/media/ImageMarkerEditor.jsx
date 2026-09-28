@@ -302,7 +302,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
         </span>
         <button
           onClick={onClose}
-          className="text-ink-600 hover:text-ink-400 transition-colors text-xs w-5 h-5 flex items-center justify-center"
+          className="touch-target text-ink-600 hover:text-ink-400 transition-colors text-xs w-5 h-5 flex items-center justify-center"
         >
           <X size={15} strokeWidth={1.9} />
         </button>
