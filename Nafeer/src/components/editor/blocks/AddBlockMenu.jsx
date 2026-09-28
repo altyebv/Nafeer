@@ -90,14 +90,14 @@ export default function AddBlockMenu({ onSelect, onClose }) {
         </span>
         <button
           onClick={onClose}
-          className="text-ink-500 hover:text-ink-400 transition-colors text-sm w-5 h-5 flex items-center justify-center"
+          className="touch-target text-ink-500 hover:text-ink-400 transition-colors text-sm w-5 h-5 flex items-center justify-center"
         >
           <X size={15} strokeWidth={1.9} />
         </button>
       </div>
 
       {/* Content blocks grid */}
-      <div className="grid grid-cols-6 gap-px bg-ink-800/40 p-px">
+      <div className="grid grid-cols-4 sm:grid-cols-6 gap-px bg-ink-800/40 p-px">
         {contentTypes.map(renderButton)}
       </div>
 
@@ -110,7 +110,7 @@ export default function AddBlockMenu({ onSelect, onClose }) {
             </span>
             <div className="flex-1 h-px bg-amber-900/20" />
           </div>
-          <div className="grid grid-cols-6 gap-px bg-ink-800/40 p-px">
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-px bg-ink-800/40 p-px">
             {checkpointTypes.map(renderButton)}
           </div>
         </>
