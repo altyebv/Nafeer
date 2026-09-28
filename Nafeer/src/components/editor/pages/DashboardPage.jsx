@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Blocks, BookOpen, Circle, CircleHelp, ExternalLink, Globe2, Search, Sparkles, TriangleAlert } from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
+import EditorPage from '@/components/editor/layout/EditorPage';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
@@ -557,11 +558,7 @@ export default function DashboardPage({ contributor }) {
   const stats = contributor?.stats || {};
 
   return (
-    <div
-      className="max-w-4xl mx-auto py-6 px-1"
-      dir="rtl"
-      style={{ color: 'var(--text-primary)' }}
-    >
+    <EditorPage width="content" className="text-[color:var(--text-primary)]">
       {/* ── Welcome hero ── */}
       <WelcomeHero contributor={contributor} isFirstVisit={isFirstVisit} />
 
@@ -630,6 +627,6 @@ export default function DashboardPage({ contributor }) {
           </div>
         )}
       </div>
-    </div>
+    </EditorPage>
   );
 }

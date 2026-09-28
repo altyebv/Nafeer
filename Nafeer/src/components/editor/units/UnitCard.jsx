@@ -10,7 +10,8 @@ import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
 const ARABIC_ORDINALS = ['الأولى','الثانية','الثالثة','الرابعة','الخامسة',
                          'السادسة','السابعة','الثامنة','التاسعة','العاشرة'];
 
-export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitCoverage }) {
+// No onEditLesson prop: LessonItem links straight to the lesson route.
+export default function UnitCard({ unit, index, coverageMap, unitCoverage }) {
   const { lessons, sections, blocks, updateUnit, addLesson } = useDataStore();
 
   const [expanded,      setExpanded]      = useState(true);
@@ -218,7 +219,6 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
                           <LessonItem
                             lesson={lesson}
                             index={globalIndex}
-                            onEdit={() => onEditLesson(lesson.id, unit.id)}
                             onAddVariation={() => setVariationTarget(lesson)}
                             coverageLevel={cvLevel}
                           />
@@ -227,7 +227,6 @@ export default function UnitCard({ unit, index, onEditLesson, coverageMap, unitC
                               key={child.id}
                               lesson={child}
                               index={unitLessons.findIndex((l) => l.id === child.id)}
-                              onEdit={() => onEditLesson(child.id, unit.id)}
                               coverageLevel={coverageMap?.[child.id]?.level ?? null}
                               isVariation
                             />

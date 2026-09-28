@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMediaStore } from '@/store/mediaStore';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
+import EditorPage from '@/components/editor/layout/EditorPage';
 import { Check, Copy, ExternalLink, Image as ImageIcon, TriangleAlert, Upload, X } from 'lucide-react';
 
 const ACCEPT = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml';
@@ -125,7 +126,7 @@ export default function MediaPage({ subjectId, contributor }) {
   };
 
   return (
-    <div className="space-y-8 font-arabic" dir="rtl">
+    <EditorPage width="wide" className="space-y-8 font-arabic">
 
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
@@ -403,6 +404,6 @@ export default function MediaPage({ subjectId, contributor }) {
           )}
         </>
       )}
-    </div>
+    </EditorPage>
   );
 }

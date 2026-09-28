@@ -1,3 +1,5 @@
+'use client';
+import EditorPage from '@/components/editor/layout/EditorPage';
 import { useState } from 'react';
 import { useDataStore }  from '@/store/dataStore';
 import { useAtlasSync }  from '@/hooks/useAtlasSync';
@@ -198,7 +200,7 @@ export default function ConceptsPage({ subjectId }) {
   }, {});
 
   return (
-    <div>
+    <EditorPage width="content">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between mb-7">
         <div>
@@ -631,7 +633,7 @@ export default function ConceptsPage({ subjectId }) {
           </div>
         </div>
       </Modal>
-    </div>
+    </EditorPage>
   );
 }
 

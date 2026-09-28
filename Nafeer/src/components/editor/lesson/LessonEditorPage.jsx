@@ -30,6 +30,12 @@ import {
   X,
 } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+import { useEditorStore } from '@/store/editorStore';
+import EditorPage from '@/components/editor/layout/EditorPage';
+import { SyncDot } from '@/components/editor/layout/SyncBanner';
+import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
+
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 
 const FIELD =
@@ -48,17 +54,18 @@ const TABS = [
 const PART_NAMES_AR = ['الأوَّل', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
 const PART_NUMS_AR  = ['١', '٢', '٣', '٤', '٥', '٦'];
 
-export default function LessonEditorPage({
-  lessonId, unitId, subjectId,
-  onBack, onBackToOverview, onNavigateLesson, onOpenGlobal,
-  isSyncing, syncError, lastSynced,
-  currentUser,
-}) {
+// Navigation props are gone: the lesson has its own route, so "back" and
+// "next lesson" are real URL moves and unitId is derived from the lesson
+// rather than carried alongside it. Sync state is read from editorStore.
+export default function LessonEditorPage({ lessonId, subjectId, currentUser }) {
+  const router = useRouter();
   const {
     units, lessons, sections, blocks, questions, feedItems,
     updateLesson, addSection,
   } = useDataStore();
   const { syncAll, submitForReview, approveAndSync } = useAtlasSync();
+  const isSyncing  = useEditorStore((s) => s.isSyncing);
+  const syncError  = useEditorStore((s) => s.syncError);
 
   const [activeTab,     setActiveTab]     = useState(0);
   const [saveSuccess,   setSaveSuccess]   = useState(false);
@@ -75,7 +82,14 @@ export default function LessonEditorPage({
   const [attribution,      setAttribution]      = useState(null);
 
   const lesson         = lessons.find((l) => l.id === lessonId);
+  // unitId used to arrive as a prop alongside lessonId; with a single-segment
+  // route it is simply the lesson's own unit.
+  const unitId         = lesson?.unitId ?? null;
   const unit           = units.find((u) => u.id === unitId);
+
+  const goBack         = () => router.push('/editor/lessons');
+  const goToLesson     = (id) => router.push(lessonHref(id));
+  const openGlobal     = (page) => router.push(NAV_BY_ID[page]?.href ?? '/editor');
 
   // Fetch attribution + notesCount once when the lesson changes
   useEffect(() => {
@@ -200,22 +214,15 @@ export default function LessonEditorPage({
     <div className="text-center py-32">
       <NotebookPen size={42} strokeWidth={1.5} className="mx-auto mb-4 text-ink-600" />
       <h2 className="text-lg font-medium text-ink-400 mb-4 font-arabic">الدرس غير موجود</h2>
-      <button onClick={onBack} className="px-6 py-2 bg-sand-700 text-ink-950 rounded-lg font-arabic">العودة</button>
+      <button onClick={goBack} className="px-6 py-2 bg-sand-700 text-ink-950 rounded-lg font-arabic">العودة</button>
     </div>
   );
 
-  const syncDot = isSyncing
-    ? <span className="w-1.5 h-1.5 rounded-full bg-sand-500 animate-pulse" />
-    : syncError
-      ? <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-      : lastSynced
-        ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-        : null;
-
+  // The third hand-rolled sync indicator is gone — SyncDot reads editorStore.
   const circumference = 2 * Math.PI * 9;
 
   return (
-    <div className="min-h-screen flex flex-col bg-ink-950">
+    <EditorPage width="full" bleed className="flex min-h-[100dvh] flex-col">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-ink-950/98 backdrop-blur-md border-b border-ink-800/70">
@@ -225,9 +232,13 @@ export default function LessonEditorPage({
             last 28px past the viewport. Wrapping gives the title its own
             line and lets the actions flow underneath until the Phase 3
             header restructure replaces this outright. */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 px-5 py-2 sm:py-0 sm:h-12">
+        {/* Wraps until xl. The old `sm:flex-nowrap` assumed this row had the
+            whole viewport, which was true while the lesson editor escaped the
+            shell; inside it the sidebar rail takes 60px and eleven controls
+            stopped fitting well above 640px. */}
+        <div className="flex flex-wrap xl:flex-nowrap items-center gap-x-3 gap-y-2 px-5 py-2 xl:py-0 xl:h-12">
           <button
-            onClick={onBack}
+            onClick={goBack}
             className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-sand-400 transition-colors font-arabic shrink-0 group"
           >
             <span className="group-hover:translate-x-0.5 transition-transform inline-block">→</span>
@@ -240,7 +251,7 @@ export default function LessonEditorPage({
             {lesson.title}
           </h1>
 
-          {syncDot && <span className="shrink-0 flex items-center">{syncDot}</span>}
+          <SyncDot size={6} />
           {lesson.atlasStatus && <StatusBadge status={lesson.atlasStatus} />}
 
           {/* Progress ring */}
@@ -410,7 +421,7 @@ export default function LessonEditorPage({
         {activeTab === 2 && (
           <StepQuestions
             lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonSections={lessonSections}
-            lessonQuestions={lessonQuestions} onOpenGlobal={onOpenGlobal}
+            lessonQuestions={lessonQuestions} onOpenGlobal={openGlobal}
             onPrev={() => setActiveTab(1)} onNext={() => setActiveTab(3)}
           />
         )}
@@ -418,8 +429,8 @@ export default function LessonEditorPage({
           <StepFeed
             lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonConceptIds={lessonConceptIds}
             lessonFeedItems={lessonFeedItems} prevLesson={prevLesson} nextLesson={nextLesson}
-            units={units} onOpenGlobal={onOpenGlobal} onPrev={() => setActiveTab(2)}
-            onNavigateLesson={onNavigateLesson} onBack={onBack}
+            units={units} onOpenGlobal={openGlobal} onPrev={() => setActiveTab(2)}
+            onNavigateLesson={goToLesson} onBack={goBack}
           />
         )}
         {activeTab === 4 && (
@@ -463,7 +474,7 @@ export default function LessonEditorPage({
           onClose={() => setShowLinkVariation(false)}
         />
       )}
-    </div>
+    </EditorPage>
   );
 }
 
@@ -1094,11 +1105,14 @@ function OrientationInput({ value = [], onChange }) {
         </div>
       ))}
       <div className="flex gap-2">
+        {/* min-w-0: a flex item defaults to min-width:auto, so this input
+            refused to shrink below its placeholder's intrinsic width and
+            pushed itself and the + button off the edge on a phone. */}
         <input value={draft} onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
-          className="flex-1 px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-600 focus:outline-none focus:border-sand-700 transition-colors"
+          className="min-w-0 flex-1 px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-600 focus:outline-none focus:border-sand-700 transition-colors"
           placeholder="ستتعلم في هذا الدرس… ثم اضغط Enter" />
-        <button onClick={addItem} className="px-3 py-2 bg-ink-800 border border-ink-700 rounded-lg text-ink-400 hover:text-sand-400 text-sm transition-colors">+</button>
+        <button onClick={addItem} className="shrink-0 px-3 py-2 bg-ink-800 border border-ink-700 rounded-lg text-ink-400 hover:text-sand-400 text-sm transition-colors">+</button>
       </div>
     </div>
   );

@@ -6,6 +6,8 @@ import StatusBadge       from '@/components/editor/shared/StatusBadge';
 import { COVERAGE_LEVEL_CONFIG } from '@/hooks/useCoverageData';
 import { VARIATION_CONFIG } from '@/components/editor/lesson/LinkVariationModal';
 import { StickyNote } from 'lucide-react';
+import Link from 'next/link';
+import { lessonHref } from '@/components/editor/layout/nav';
 
 const STATUS_BORDER = {
   empty:   'var(--border-subtle)',
@@ -14,7 +16,7 @@ const STATUS_BORDER = {
   done:    '#10b981',
 };
 
-export default function LessonItem({ lesson, index, onEdit, onAddVariation, coverageLevel, isVariation }) {
+export default function LessonItem({ lesson, index, onAddVariation, coverageLevel, isVariation }) {
   const { sections, blocks, updateLesson } = useDataStore();
 
   const [editingTitle, setEditingTitle] = useState(false);
@@ -193,8 +195,11 @@ export default function LessonItem({ lesson, index, onEdit, onAddVariation, cove
             </button>
           )}
 
-          <button
-            onClick={onEdit}
+          {/* A real link, not an onClick — the lesson has its own URL now, so
+              this is middle-clickable, openable in a new tab and shareable. */}
+          <Link
+            href={lessonHref(lesson.id)}
+            aria-label={`تحرير ${lesson.title}`}
             className="flex items-center gap-1 rounded-md font-arabic transition-all hover-reveal"
             style={{
               padding:    '3px 8px',
@@ -216,7 +221,7 @@ export default function LessonItem({ lesson, index, onEdit, onAddVariation, cove
           >
             تحرير
             <span style={{ fontSize: 9, opacity: 0.6 }}>←</span>
-          </button>
+          </Link>
         </div>
       </div>
     </div>

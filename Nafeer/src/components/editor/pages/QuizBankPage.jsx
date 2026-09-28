@@ -1,4 +1,5 @@
 'use client';
+import EditorPage from '@/components/editor/layout/EditorPage';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
@@ -227,7 +228,7 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <EditorPage width="wide">
       <header className="mb-5 rounded-2xl border border-ink-800 bg-ink-900/60 px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -331,7 +332,7 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
         setForm={setExamForm}
         onSave={handleSaveExam}
       />
-    </div>
+    </EditorPage>
   );
 }
 

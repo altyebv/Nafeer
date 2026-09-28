@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SyncBar } from '@/components/editor/layout/EditorShell';
+import SyncBanner from '@/components/editor/layout/SyncBanner';
 import LessonsPage from '@/components/editor/pages/LessonsPage';
 import LessonEditorPage from '@/components/editor/lesson/LessonEditorPage';
 import ConceptsPage from '@/components/editor/pages/ConceptsPage';
@@ -699,7 +699,8 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
       </div>
 
       {/* ══ SYNC BAR ══════════════════════════════════════════════════════════ */}
-      <SyncBar isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
+      {/* Reads editorStore directly — useAtlasSync above writes the same state. */}
+      <SyncBanner />
       <WorkspaceRefreshBanner
         refreshing={refreshing}
         error={refreshError}

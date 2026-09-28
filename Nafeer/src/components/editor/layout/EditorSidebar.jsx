@@ -5,8 +5,11 @@ import { useDataStore }    from '@/store/dataStore';
 import { useMediaStore }   from '@/store/mediaStore';
 import { useThemeStore }   from '@/store/themeStore';
 import { useRouter }       from 'next/navigation';
-import { BookOpen, CircleHelp, Image, LayoutDashboard, Menu, Sparkles, Smartphone } from 'lucide-react';
+import { Menu }            from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
+import { NAV, MOBILE_PRIMARY } from '@/components/editor/layout/nav';
+import { SyncDot, SyncPill }   from '@/components/editor/layout/SyncBanner';
+import { useLayout }           from '@/hooks/useBreakpoint';
 
 const SUBJECT_LABEL = Object.fromEntries(
   SUBJECTS_CATALOG.map((s) => [s.id, { ar: s.nameAr, en: s.nameEn }])
@@ -15,16 +18,9 @@ const SUBJECT_LABEL = Object.fromEntries(
 const RAIL_W     = 60;   // slightly wider rail for comfort
 const EXPANDED_W = 260;  // slightly wider expanded for readability
 
-// Export item removed from NAV — hidden for now
-const NAV = [
-  { id: 'dashboard', icon: LayoutDashboard, label: 'الرئيسية',  sub: 'Dashboard' },
-  { id: 'lessons',   icon: BookOpen,         label: 'الدروس',    sub: 'Lessons'   },
-  { id: 'feeds',     icon: Smartphone,       label: 'التغذية',   sub: 'Feed'      },
-  { id: 'quizbank',  icon: CircleHelp,       label: 'الأسئلة',   sub: 'Quiz Bank' },
-  { id: 'concepts',  icon: Sparkles,         label: 'المفاهيم',  sub: 'Concepts'  },
-  { id: 'media',     icon: Image,            label: 'الوسائط',   sub: 'Media'     },
-  // export hidden: { id: 'export', label: 'تصدير', sub: 'Export' },
-];
+// NAV lives in ./nav.js now, shared with the route tree. Each item carries the
+// href it points at, so navigation is real <Link> traversal rather than an
+// onNavigate(id) callback mutating state at a single URL.
 
 // ── Theme ──────────────────────────────────────────────────────────────────────
 // Was a local hook duplicated here and in MobileBottomNav, each with its own
@@ -64,13 +60,8 @@ function Avatar({ contributor, size = 28 }) {
   );
 }
 
-// ── Sync dot ──────────────────────────────────────────────────────────────────
-function SyncDot({ isSyncing, syncError, lastSynced }) {
-  if (syncError)  return <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'var(--danger)' }} />;
-  if (isSyncing)  return <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: 'var(--warn)' }} />;
-  if (lastSynced) return <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'var(--success)' }} />;
-  return null;
-}
+// SyncDot / SyncPill come from ./SyncBanner — they read editorStore directly,
+// so sync state no longer needs threading down from the shell.
 
 // ── Theme toggle icon ─────────────────────────────────────────────────────────
 function ThemeToggle({ theme, toggle }) {
@@ -114,11 +105,7 @@ function SignOutIcon() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESKTOP SIDEBAR (md+)
 // ═══════════════════════════════════════════════════════════════════════════════
-export function DesktopSidebar({
-  currentPage, onNavigate, contributor,
-  isSyncing, syncError, lastSynced,
-  isOpen, onToggle,
-}) {
+export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
   const { subject, lessons, concepts, feedItems, questions } = useDataStore();
   const { media } = useMediaStore();
   const router = useRouter();
@@ -164,13 +151,6 @@ export function DesktopSidebar({
   };
 
   const subjectInfo = contributor?.subject ? SUBJECT_LABEL[contributor.subject] : null;
-
-  const syncLabel = syncError
-    ? 'خطأ في الحفظ'
-    : isSyncing ? 'جاري الحفظ…'
-    : lastSynced
-      ? `محفوظ · ${new Date(lastSynced).toLocaleTimeString('ar-SD', { hour: '2-digit', minute: '2-digit' })}`
-    : null;
 
   return (
     <aside
@@ -344,14 +324,16 @@ export function DesktopSidebar({
       {/* ── Nav ─────────────────────────────────────────────────────── */}
       <nav className="flex-1 flex flex-col py-2 w-full overflow-hidden">
         {NAV.map((item) => {
-          const active = currentPage === item.id || (currentPage === 'editor' && item.id === 'lessons');
+          const active = currentPage === item.id;
           const count  = counts[item.id];
           const Icon = item.icon;
 
           return (
-            <button
+            <Link
               key={item.id}
-              onClick={() => onNavigate(item.id)}
+              href={item.href}
+              aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
               title={!expanded ? item.label : undefined}
               className="relative flex items-center w-full transition-all duration-150 group"
               style={{
@@ -410,31 +392,26 @@ export function DesktopSidebar({
                   {count > 99 ? '99+' : count}
                 </span>
               )}
-            </button>
+            </Link>
           );
         })}
       </nav>
 
-      {/* ── Sync row ────────────────────────────────────────────────── */}
-      {(isSyncing || syncError || lastSynced) && (
-        <div className="shrink-0 overflow-hidden transition-all duration-300 flex items-center"
-          style={{
-            height: expanded ? 30 : 26,
-            padding: expanded ? '0 14px' : '0',
-            justifyContent: expanded ? 'flex-start' : 'center',
-            gap: 7,
-            borderTop: `1px solid ${sidebarBorder}`,
-            background: 'rgb(0 0 0 / 0.08)',
-          }}
-        >
-          <SyncDot isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
-          {expanded && syncLabel && (
-            <span style={{ fontSize: 11, fontFamily: 'var(--font-arabic, serif)', color: textDim, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-              {syncLabel}
-            </span>
-          )}
-        </div>
-      )}
+      {/* ── Sync row ──────────────────────────────────────────────────
+          SyncPill/SyncDot render nothing when there is no sync state, so
+          `empty:hidden` collapses the row rather than gating it on props. */}
+      <div className="shrink-0 overflow-hidden transition-all duration-300 flex items-center empty:hidden"
+        style={{
+          height: expanded ? 30 : 26,
+          padding: expanded ? '0 14px' : '0',
+          justifyContent: expanded ? 'flex-start' : 'center',
+          gap: 7,
+          borderTop: `1px solid ${sidebarBorder}`,
+          background: 'rgb(0 0 0 / 0.08)',
+        }}
+      >
+        {expanded ? <SyncPill /> : <SyncDot />}
+      </div>
 
       {/* ── Profile footer (sign out + theme, collapsed) ─────────────── */}
       <div className="shrink-0 flex items-center overflow-hidden"
@@ -490,13 +467,9 @@ export function DesktopSidebar({
 // ═══════════════════════════════════════════════════════════════════════════════
 // MOBILE BOTTOM NAV (< md)
 // ═══════════════════════════════════════════════════════════════════════════════
-const MOBILE_PRIMARY = ['dashboard', 'lessons', 'quizbank', 'concepts', 'feeds'];
+// MOBILE_PRIMARY is imported from ./nav.js alongside NAV.
 
-export function MobileBottomNav({
-  currentPage, onNavigate, contributor,
-  isSyncing, syncError, lastSynced,
-  moreOpen, onToggleMore,
-}) {
+export function MobileBottomNav({ currentPage, contributor, moreOpen, onToggleMore }) {
   const router = useRouter();
 
   // Same tokens the desktop sidebar uses — these were a duplicated set of
@@ -511,11 +484,14 @@ export function MobileBottomNav({
 
   return (
     <>
-      {/* Bottom bar */}
+      {/* Bottom bar — padded for the iOS home indicator, which the fixed
+          64px bar used to sit underneath. */}
       <nav
+        aria-label="التنقل الرئيسي"
         className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch"
         style={{
-          height: 64,
+          height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           background: navBg,
           borderTop: `1px solid ${border}`,
           backdropFilter: 'blur(16px)',
@@ -523,14 +499,17 @@ export function MobileBottomNav({
         }}
       >
         {primaryNav.map((item) => {
-          const active = currentPage === item.id || (currentPage === 'editor' && item.id === 'lessons');
+          const active = currentPage === item.id;
           const Icon = item.icon;
           return (
-            <button
+            <Link
               key={item.id}
-              onClick={() => { onNavigate(item.id); if (moreOpen) onToggleMore(); }}
+              href={item.href}
+              aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
+              onClick={() => { if (moreOpen) onToggleMore(); }}
               className="flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-150 relative"
-              style={{ color: active ? textActive : textDim }}
+              style={{ color: active ? textActive : textDim, minHeight: 44 }}
             >
               {active && (
                 <span className="absolute bottom-0 rounded-t-sm"
@@ -541,21 +520,21 @@ export function MobileBottomNav({
               <span style={{ fontSize: 10.5, fontFamily: 'var(--font-arabic, serif)', fontWeight: active ? 700 : 400, lineHeight: 1 }}>
                 {item.label}
               </span>
-            </button>
+            </Link>
           );
         })}
 
         {/* More button */}
         <button
           onClick={onToggleMore}
+          aria-label="المزيد"
+          aria-expanded={moreOpen}
           className="flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-150 relative"
-          style={{ color: moreOpen ? textActive : textDim }}
+          style={{ color: moreOpen ? textActive : textDim, minHeight: 44 }}
         >
-          {(isSyncing || syncError || lastSynced) && (
-            <span className="absolute top-2 right-[calc(50%-10px)]">
-              <SyncDot isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
-            </span>
-          )}
+          <span className="absolute top-2 right-[calc(50%-10px)]">
+            <SyncDot />
+          </span>
           <Menu size={18} strokeWidth={2} style={{ color: moreOpen ? accent : 'inherit' }} />
           <span style={{ fontSize: 10.5, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1 }}>المزيد</span>
         </button>
@@ -589,9 +568,11 @@ export function MobileBottomNav({
                 const active = currentPage === item.id;
                 const Icon = item.icon;
                 return (
-                  <button
+                  <Link
                     key={item.id}
-                    onClick={() => { onNavigate(item.id); onToggleMore(); }}
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    onClick={onToggleMore}
                     className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-150"
                     style={{
                       background: active ? 'rgba(212,137,30,0.10)' : 'rgba(255,255,255,0.03)',
@@ -604,7 +585,7 @@ export function MobileBottomNav({
                       <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-arabic, serif)', color: 'inherit' }}>{item.label}</span>
                       <span style={{ fontSize: 11, fontFamily: 'monospace', color: textDim }}>{item.sub}</span>
                     </div>
-                  </button>
+                  </Link>
                 );
               })}
 
@@ -637,14 +618,9 @@ export function MobileBottomNav({
               )}
 
               {/* Sync status */}
-              {(isSyncing || syncError || lastSynced) && (
-                <div className="flex items-center gap-2 px-4 py-2">
-                  <SyncDot isSyncing={isSyncing} syncError={syncError} lastSynced={lastSynced} />
-                  <span style={{ fontSize: 12, fontFamily: 'var(--font-arabic, serif)', color: textDim }}>
-                    {syncError ? 'خطأ في الحفظ' : isSyncing ? 'جاري الحفظ…' : lastSynced ? `محفوظ · ${new Date(lastSynced).toLocaleTimeString('ar-SD', { hour: '2-digit', minute: '2-digit' })}` : ''}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 px-4 py-2 empty:hidden">
+                <SyncPill />
+              </div>
             </div>
           </div>
         </>
@@ -658,15 +634,9 @@ export function MobileBottomNav({
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function EditorSidebar(props) {
   const [moreOpen, setMoreOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    setIsMobile(mq.matches);
-    const handler = (e) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
+  // Was a local matchMedia + useState pair; the shared hook keeps this in step
+  // with the rest of the layout and gives a stable server snapshot.
+  const { isMobile } = useLayout();
 
   if (isMobile) {
     return (

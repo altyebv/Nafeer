@@ -4,8 +4,11 @@ import { SUBJECTS_BY_ID, TRACK_CONFIG }    from '@/shared/curriculum';
 import { computeProgress }                 from '@/lib/LessonStatus';
 import { useCoverageData }                 from '@/hooks/useCoverageData';
 import UnitCard                            from '@/components/editor/units/UnitCard';
+import EditorPage                          from '@/components/editor/layout/EditorPage';
 
-export default function LessonsPage({ onEditLesson }) {
+// Lessons no longer takes an onEditLesson callback — LessonItem links straight
+// to /editor/lessons/[id], so the route is the navigation.
+export default function LessonsPage() {
   const { subject, units, lessons, sections, blocks } = useDataStore();
   const { coverageMap, unitMap } = useCoverageData(subject?.id);
 
@@ -28,7 +31,7 @@ export default function LessonsPage({ onEditLesson }) {
   }
 
   return (
-    <div className="w-full">
+    <EditorPage width="wide">
 
       {/* ── Subject masthead ──────────────────────────────────────────────── */}
       <header className="mb-8">
@@ -138,7 +141,6 @@ export default function LessonsPage({ onEditLesson }) {
                 <UnitCard
                   unit={unit}
                   index={index}
-                  onEditLesson={onEditLesson}
                   coverageMap={coverageMap}
                   unitCoverage={unitMap[unit.contentId]}
                 />
@@ -148,7 +150,7 @@ export default function LessonsPage({ onEditLesson }) {
         })()}
       </div>
 
-    </div>
+    </EditorPage>
   );
 }
 
