@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link                 from 'next/link';
 import { useDataStore }    from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useMediaStore }   from '@/store/mediaStore';
 import { useThemeStore }   from '@/store/themeStore';
 import { useRouter }       from 'next/navigation';
@@ -106,7 +107,9 @@ function SignOutIcon() {
 // DESKTOP SIDEBAR (md+)
 // ═══════════════════════════════════════════════════════════════════════════════
 export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
-  const { subject, lessons, concepts, feedItems, questions } = useDataStore();
+  const { subject, lessons, concepts, feedItems, questions } = useDataStore(
+    useShallow((s) => ({ subject: s.subject, lessons: s.lessons, concepts: s.concepts, feedItems: s.feedItems, questions: s.questions })),
+  );
   const { media } = useMediaStore();
   const router = useRouter();
   const { theme, toggle: toggleTheme } = useTheme();
