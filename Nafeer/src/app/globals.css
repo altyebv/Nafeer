@@ -321,6 +321,19 @@
     .hover-reveal:focus-within { opacity: 1; }
   }
 
+  /* ── Touch targets ──────────────────────────────────────────────────────
+     The editor is dense by design — 28px toolbar buttons read well with a
+     mouse. On a touch screen the same controls fall well under the 44px
+     minimum, and the editor has ~30 of them.
+
+     Keyed on `hover: none` rather than a width breakpoint, so a tablet gets
+     thumb-sized controls while a narrow desktop window keeps the compact
+     ones. Pair it with the designed height: `h-7 touch-target`.
+  ─────────────────────────────────────────────────────────────────────── */
+  @media (hover: none) {
+    .touch-target { min-height: 44px; min-width: 44px; }
+  }
+
   .stagger-1 { animation-delay: 0.1s; }
   .stagger-2 { animation-delay: 0.2s; }
   .stagger-3 { animation-delay: 0.3s; }
