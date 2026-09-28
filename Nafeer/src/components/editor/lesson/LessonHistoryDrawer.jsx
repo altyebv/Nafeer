@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { ScrollText, X } from 'lucide-react';
+import Drawer from '@/components/editor/shared/Drawer';
 
 // ─── LessonHistoryDrawer ──────────────────────────────────────────────────────
 // Slide-in panel from the right showing the full lesson audit trail.
@@ -81,7 +82,7 @@ function DiffBlock({ diff }) {
           <p className="text-[10px] text-ink-600 font-medium tracking-wide">
             {FIELD_LABELS[field] ?? field}
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* From */}
             <div className="bg-red-950/20 border border-red-900/20 rounded-lg px-2.5 py-1.5 text-red-300/80 leading-relaxed">
               <span className="text-[9px] text-red-700 block mb-0.5 font-mono">من</span>
@@ -207,15 +208,7 @@ export default function LessonHistoryDrawer({ lessonId, onClose }) {
   const approveCount = history.filter((e) => e.action === 'approved').length;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-ink-950/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div className="fixed top-0 left-0 h-full w-full max-w-sm z-50 flex flex-col bg-ink-900 border-r border-ink-800 shadow-2xl">
+    <Drawer onClose={onClose} labelledBy="history-drawer-title">
 
         {/* Header */}
         <div className="flex items-center gap-3 px-4 h-12 border-b border-ink-800 shrink-0">
@@ -225,7 +218,7 @@ export default function LessonHistoryDrawer({ lessonId, onClose }) {
           >
             <X size={16} strokeWidth={1.9} />
           </button>
-          <h2 className="text-sm font-semibold text-sand-300 font-arabic">سجل الإصدارات</h2>
+          <h2 id="history-drawer-title" className="text-sm font-semibold text-sand-300 font-arabic">سجل الإصدارات</h2>
           {!loading && history.length > 0 && (
             <span className="text-[11px] font-mono text-ink-600 bg-ink-800/60 px-1.5 py-0.5 rounded">
               {history.length} إصدار
@@ -283,7 +276,6 @@ export default function LessonHistoryDrawer({ lessonId, onClose }) {
             />
           ))}
         </div>
-      </div>
-    </>
+    </Drawer>
   );
 }
