@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // ─── Shared color/label tokens ────────────────────────────────────────────────
-// Used by CoveragePanel, LessonItem (dot), UnitCard (badge), Admin matrix.
+// Used by LessonItem (dot), UnitCard (badge), Admin matrix.
 // Single source of truth — import from here.
 
 export const COVERAGE_LEVEL_CONFIG = {
