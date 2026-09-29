@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { persistConfig } from './persistConfig';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -82,6 +83,6 @@ export const useConceptStore = create(
       // ── Reset ─────────────────────────────────────────────────────────────
       resetConcepts: () => set({ concepts: [], tags: [] }),
     }),
-    { name: 'basheer-concepts' }
+    persistConfig('basheer-concepts', { concepts: [], tags: [] })
   )
 );
