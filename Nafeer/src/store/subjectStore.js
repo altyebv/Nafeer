@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { persistConfig } from './persistConfig';
 import { buildSubjectScaffold } from '@/shared/curriculum';
 
 const generateId = (prefix) =>
@@ -131,6 +132,6 @@ export const useSubjectStore = create(
       // ── Reset ─────────────────────────────────────────────────────────────
       resetSubject: () => set({ subject: null, units: [], lessons: [] }),
     }),
-    { name: 'basheer-subject' }
+    persistConfig('basheer-subject', { subject: null, units: [], lessons: [] })
   )
 );
