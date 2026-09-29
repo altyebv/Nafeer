@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Blocks, BookOpen, Circle, CircleHelp, ExternalLink, Globe2, Search, Sparkles, TriangleAlert } from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 import EditorPage from '@/components/editor/layout/EditorPage';
+import { useAnnouncementStore } from '@/store/announcementStore';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
@@ -523,8 +524,11 @@ function ImpactBar({ stats }) {
 
 // ─── Main dashboard ───────────────────────────────────────────────────────────
 export default function DashboardPage({ contributor }) {
-  const [announcements,  setAnnouncements]  = useState([]);
-  const [annoLoading,    setAnnoLoading]    = useState(true);
+  // Shared with the sidebar's nav badge — both used to fetch this endpoint
+  // independently on every dashboard load.
+  const announcements      = useAnnouncementStore((s) => s.announcements);
+  const annoLoading        = useAnnouncementStore((s) => !s.loaded);
+  const fetchAnnouncements = useAnnouncementStore((s) => s.fetchAnnouncements);
   const [activityMap,    setActivityMap]    = useState({});
   // "first visit" flag — shown once per session via sessionStorage
   const [isFirstVisit,   setIsFirstVisit]   = useState(false);
@@ -537,14 +541,8 @@ export default function DashboardPage({ contributor }) {
     }
   }, []);
 
-  // Fetch announcements
-  useEffect(() => {
-    fetch('/api/contributors/announcement')
-      .then((r) => r.json())
-      .then((d) => { if (d.ok) setAnnouncements(d.data); })
-      .catch(() => {})
-      .finally(() => setAnnoLoading(false));
-  }, []);
+  // No-op when the sidebar already fetched this session.
+  useEffect(() => { fetchAnnouncements(); }, [fetchAnnouncements]);
 
   // Fetch activity heatmap data
   // Wire up: GET /api/contributors/activity returns { ok, data: { 'YYYY-MM-DD': count } }

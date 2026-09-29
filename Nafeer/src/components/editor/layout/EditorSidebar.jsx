@@ -5,6 +5,7 @@ import { useDataStore }    from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useMediaStore }   from '@/store/mediaStore';
 import { useThemeStore }   from '@/store/themeStore';
+import { useAnnouncementStore } from '@/store/announcementStore';
 import { useRouter }       from 'next/navigation';
 import { Menu }            from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
@@ -113,14 +114,12 @@ export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
   const { media } = useMediaStore();
   const router = useRouter();
   const { theme, toggle: toggleTheme } = useTheme();
-  const [annoCount, setAnnoCount] = useState(0);
+  // Shared store — the dashboard reads the same fetch instead of issuing
+  // its own. See src/store/announcementStore.js.
+  const annoCount = useAnnouncementStore((s) => s.announcements.length);
+  const fetchAnnouncements = useAnnouncementStore((s) => s.fetchAnnouncements);
 
-  useEffect(() => {
-    fetch('/api/contributors/announcement')
-      .then((r) => r.json())
-      .then((d) => { if (d.ok) setAnnoCount(d.data.length); })
-      .catch(() => {});
-  }, []);
+  useEffect(() => { fetchAnnouncements(); }, [fetchAnnouncements]);
 
   const expanded = isOpen;
   const w        = expanded ? EXPANDED_W : RAIL_W;
