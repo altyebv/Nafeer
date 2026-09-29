@@ -406,7 +406,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
                 <div key={i} className="flex gap-2 items-start">
                   <div className="w-6 h-6 rounded-full bg-teal-900/50 border border-teal-800/50 text-teal-500 text-[10px] font-mono flex items-center justify-center shrink-0 mt-1.5">{i + 1}</div>
                   <textarea value={step} onChange={(e) => updateStep(i, e.target.value)} className={`${ta} flex-1 min-h-[60px]`} placeholder={`الخطوة ${i + 1}…`} autoFocus />
-                  <button onClick={() => removeStep(i)} className="text-ink-500 hover:text-red-500 transition-colors mt-2 text-sm"><X size={14} strokeWidth={1.9} /></button>
+                  <button onClick={() => removeStep(i)} aria-label="حذف الخطوة" className="text-ink-500 hover:text-red-500 transition-colors mt-2 text-sm"><X size={14} strokeWidth={1.9} /></button>
                 </div>
               ))}
               <button onClick={addStep} className="w-full py-2 border border-dashed border-teal-900 rounded-lg text-teal-800 hover:text-teal-600 hover:border-teal-800 transition-colors text-xs font-arabic">+ إضافة خطوة</button>
@@ -504,7 +504,7 @@ function MediaBlockEditor({ block, update, subjectId }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={block.content} alt={block.metadata?.alt || ''} className="max-h-48 w-auto mx-auto object-contain py-2"
               onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            <button onClick={handleClear} className="touch-target absolute top-2 left-2 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-red-400 hover:bg-black/80 transition-all opacity-0 group-hover/thumb:opacity-100 text-xs"><X size={14} strokeWidth={1.9} /></button>
+            <button onClick={handleClear} aria-label="إزالة الصورة" className="touch-target absolute top-2 left-2 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-red-400 hover:bg-black/80 transition-all opacity-0 group-hover/thumb:opacity-100 text-xs"><X size={14} strokeWidth={1.9} /></button>
             {isGif && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-900/80 text-purple-300 text-[10px] font-bold rounded">GIF</span>}
             {isInteractive && markers.length > 0 && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-sand-900/80 text-sand-300 text-[10px] font-bold rounded border border-sand-700/60 inline-flex items-center gap-1"><Sparkles size={10} strokeWidth={1.8} /> {markers.length}</span>}
           </div>

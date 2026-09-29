@@ -1128,7 +1128,7 @@ function OrientationInput({ value = [], onChange }) {
         <div key={i} className="flex items-start gap-2 group">
           <span className="text-sand-700 text-sm mt-2.5 shrink-0">•</span>
           <span className="flex-1 text-sm text-ink-200 font-arabic py-1.5 leading-relaxed">{item}</span>
-          <button onClick={() => removeItem(i)} className="hover-reveal transition-opacity text-ink-500 hover:text-red-500 text-xs mt-2"><X size={13} strokeWidth={1.9} /></button>
+          <button onClick={() => removeItem(i)} aria-label="حذف البند" className="hover-reveal transition-opacity text-ink-500 hover:text-red-500 text-xs mt-2"><X size={13} strokeWidth={1.9} /></button>
         </div>
       ))}
       <div className="flex gap-2">

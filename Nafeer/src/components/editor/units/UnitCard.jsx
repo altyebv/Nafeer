@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useDataStore }    from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
+import { clickableProps } from '@/components/editor/shared/clickable';
 import { computeProgress } from '@/lib/LessonStatus';
 import LessonItem          from '@/components/editor/lesson/LessonItem';
 import AddVariationModal   from '@/components/editor/lesson/AddVariationModal';
@@ -75,7 +76,10 @@ export default function UnitCard({ unit, index, coverageMap, unitCoverage }) {
       <div
         className="flex items-center gap-4 px-5 py-3.5 cursor-pointer select-none group"
         style={{ borderBottom: expanded ? '1px solid var(--border-subtle)' : 'none' }}
-        onClick={() => !editingTitle && setExpanded((v) => !v)}
+        {...clickableProps(
+          () => !editingTitle && setExpanded((v) => !v),
+          { expanded, label: `${expanded ? 'طي' : 'توسيع'} ${unit.title}` },
+        )}
       >
         {/* Unit number */}
         <span

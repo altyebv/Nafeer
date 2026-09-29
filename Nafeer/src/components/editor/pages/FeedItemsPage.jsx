@@ -3,6 +3,7 @@ import EditorPage from '@/components/editor/layout/EditorPage';
 import { useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
+import { clickableProps } from '@/components/editor/shared/clickable';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import {
   FEED_ITEM_TYPES, FEED_ITEM_TYPE_CONFIG,
@@ -673,7 +674,10 @@ function ConceptGroup({ conceptId, conceptTitle, items, onEdit, onDelete, onRevi
       <div
         className="flex items-center justify-between px-4 py-3 cursor-pointer"
         style={{ borderBottom: collapsed ? 'none' : '1px solid var(--border-subtle)' }}
-        onClick={() => setCollapsed((v) => !v)}
+        {...clickableProps(
+          () => setCollapsed((v) => !v),
+          { expanded: !collapsed, label: `${collapsed ? 'توسيع' : 'طي'} ${conceptTitle}` },
+        )}
       >
         <div className="flex items-center gap-2">
           <Lightbulb size={15} strokeWidth={1.8} style={{ color: 'var(--accent)' }} />
