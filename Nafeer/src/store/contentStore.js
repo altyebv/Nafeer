@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { persistConfig } from './persistConfig';
 import { BLOCK_TYPE_CONFIG } from '@/shared/constants';
 
 const generateId = (prefix) =>
@@ -129,6 +130,6 @@ export const useContentStore = create(
       // ── Reset ─────────────────────────────────────────────────────────────
       resetContent: () => set({ sections: [], blocks: [] }),
     }),
-    { name: 'basheer-content' }
+    persistConfig('basheer-content', { sections: [], blocks: [] })
   )
 );
