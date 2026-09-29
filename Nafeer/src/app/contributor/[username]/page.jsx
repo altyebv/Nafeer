@@ -1,8 +1,7 @@
 import { notFound }              from 'next/navigation';
-import { getPublicContributor }  from '@/lib/api/contributors';
+import { getPublicContributor, isIndexableContributor } from '@/lib/api/contributors';
 import { pageMetadata }          from '@/lib/seo';
 import { SUBJECTS_CATALOG }      from '@/shared/curriculum';
-import { SYSTEM_SEED_USERNAME }  from '@/lib/SeedActor';
 import ProfileView               from './ProfileView';
 import JsonLd                    from '@/components/JsonLd';
 import { contributorProfilePage } from '@/lib/jsonld';
@@ -53,12 +52,17 @@ export async function generateMetadata({ params }) {
 
   return pageMetadata({
     title:       `${contributor.name} — مساهم في نفير`,
+    // Already names the brand, so it opts out of the root layout's
+    // `%s — نفير` template rather than shipping "… — مساهم في نفير — نفير".
+    absoluteTitle: true,
     ogTitle:     `${contributor.name} · نفير`,
     description: describe(contributor),
     path:        `/contributor/${contributor.username}`,
-    // Real page, real content — but a synthetic account, so keep it out of
-    // search results. It still renders for anyone following a link.
-    noindex:     contributor.username === SYSTEM_SEED_USERNAME,
+    // Real page, real content — but not necessarily enough of it to deserve a
+    // search result. isIndexableContributor is the single source of truth for
+    // that call, shared with the sitemap so the two can't contradict. A profile
+    // that fails still renders for anyone following a link.
+    noindex:     !isIndexableContributor(contributor),
   });
 }
 
@@ -79,7 +83,9 @@ export default async function ContributorProfilePage({ params }) {
 
   return (
     <>
-      {contributor.username !== SYSTEM_SEED_USERNAME && <JsonLd data={jsonLd} />}
+      {/* Same predicate as the noindex above: a profile Google is told not to
+          index has no business emitting Person structured data either. */}
+      {isIndexableContributor(contributor) && <JsonLd data={jsonLd} />}
       <ProfileView profile={contributor} />
     </>
   );

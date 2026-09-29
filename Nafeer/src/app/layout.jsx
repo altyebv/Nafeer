@@ -12,22 +12,46 @@ import ThemeSync from '@/components/theme/ThemeSync';
 // URL. Without it Next emits a relative og:image and every social scraper
 // silently drops the card.
 
-const TITLE = 'بشير — رفيق الشهادة السودانية';
+// Two titles, same words, different order — and the split is deliberate.
+//
+// SEARCH_TITLE leads with the query. "بشير" is a brand with no recognition yet,
+// so spending the first slot of the <title> on it wastes the position that
+// carries the most weight and is the part a searcher scans first. The head term
+// goes first; the brand still closes the line.
+//
+// SOCIAL_TITLE keeps the original brand-first order. An OG card is seen by
+// someone a friend already sent the link to — they are not scanning a results
+// page, and brand-first reads as a name rather than a search result. The OG
+// image itself (app/opengraph-image.js) is brand-led for the same reason.
+const SEARCH_TITLE = 'الشهادة السودانية — بشير، رفيق المنهج';
+const SOCIAL_TITLE = 'بشير — رفيق الشهادة السودانية';
+
 const DESCRIPTION =
   'بشير يشرح منهج الشهادة السودانية بلغة واضحة — دروس مبسطة، بطاقات مراجعة، ' +
   'وبنك أسئلة. يعمل بدون إنترنت، مجاناً، على أي هاتف أندرويد.';
+
+// Set GOOGLE_SITE_VERIFICATION in the Vercel project (and .env.local) to the
+// token from the Search Console "HTML tag" method. Conditionally spread rather
+// than passed as undefined so no empty <meta> is emitted before it is set.
+const GSC_TOKEN = process.env.GOOGLE_SITE_VERIFICATION;
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
 
   title: {
-    default:  TITLE,
+    default:  SEARCH_TITLE,
     template: `%s — ${SITE_NAME}`,
   },
   description: DESCRIPTION,
   applicationName: SITE_NAME,
 
+  ...(GSC_TOKEN && { verification: { google: GSC_TOKEN } }),
 
+  // Kept for completeness, but do not mistake this for the keyword strategy:
+  // Google dropped meta keywords as a ranking signal in 2009 and Bing treats a
+  // stuffed one as a spam signal. What the site actually ranks for is decided by
+  // the <title>, the h1 and the body copy — see SEARCH_TITLE above and the h1 in
+  // components/landing/Hero.jsx.
   keywords: [
     'الشهادة السودانية',
     'منهج الشهادة السودانية',
@@ -39,7 +63,7 @@ export const metadata = {
 
   openGraph: {
     type:        'website',
-    title:       TITLE,
+    title:       SOCIAL_TITLE,
     description: DESCRIPTION,
     url:         SITE_URL,
     siteName:    SITE_NAME,
@@ -49,7 +73,7 @@ export const metadata = {
 
   twitter: {
     card:        'summary_large_image',
-    title:       TITLE,
+    title:       SOCIAL_TITLE,
     description: DESCRIPTION,
     images:      [OG_IMAGE],
   },
