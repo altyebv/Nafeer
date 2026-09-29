@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { persistConfig } from './persistConfig';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -146,6 +147,6 @@ export const useQuizStore = create(
 
       resetQuiz: () => set({ questions: [], exams: [] }),
     }),
-    { name: 'basheer-quiz' }
+    persistConfig('basheer-quiz', { questions: [], exams: [] })
   )
 );
