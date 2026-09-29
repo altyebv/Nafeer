@@ -349,6 +349,23 @@
 }
 
 @layer utilities {
+  /* ── Focus ────────────────────────────────────────────────────────────────
+     The editor had no focus styling of its own: 41 call sites carry Tailwind's
+     `focus:outline-none`, which swaps the outline for a ring or border colour
+     that most of them never actually define. Tabbing through the tool gave no
+     reliable indication of where you were.
+
+     In the utilities layer, not base — Tailwind's Preflight puts
+     `:focus-visible { outline: auto }` in base, and a sibling rule there does
+     not reliably win. Utilities are emitted last.
+
+     :focus-visible rather than :focus, so clicking a button does not leave a
+     ring behind but keyboard focus always shows one. Longhands rather than the
+     `outline` shorthand: an unresolved var() invalidates the whole shorthand,
+     which silently dropped the colour back to currentColor — invisible against
+     same-coloured text.
+  ─────────────────────────────────────────────────────────────────────────── */
+
   /* Both names were already in use across the editor (AttributionBar,
      FormulaEditor, the lesson tab strip) but neither was ever defined —
      no tailwind-scrollbar plugin, no CSS. They were silent no-ops. */
@@ -397,3 +414,35 @@ html {
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+
+/* ── Focus ──────────────────────────────────────────────────────────────────
+   Deliberately outside every @layer.
+
+   The editor had no focus styling of its own: 41 call sites carry Tailwind's
+   `focus:outline-none`, which trades the outline for a ring or border colour
+   that most of them never define. Tabbing through the tool showed nothing
+   reliable.
+
+   Tailwind's Preflight sets `:focus-visible { outline: auto }`, and Chrome
+   renders `outline-style: auto` with its own width and colour. Placing this
+   rule in @layer base or @layer utilities did not beat it — unlayered
+   declarations sit above all layered ones in the cascade, so that is where
+   this lives.
+
+   Longhands rather than the `outline` shorthand: an unresolved var()
+   invalidates the whole shorthand, which silently dropped the colour back to
+   currentColor and made the ring vanish against same-coloured text.
+─────────────────────────────────────────────────────────────────────────── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline-width: 2px !important;
+  outline-style: solid !important;
+  outline-color: rgb(var(--sand-500)) !important;
+  outline-offset: 2px !important;
+}
