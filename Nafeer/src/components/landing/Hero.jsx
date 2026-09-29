@@ -183,26 +183,50 @@ export default function Hero() {
           قيد البناء — نبحث عن مساهمين
         </div>
 
-        {/* Eyebrow */}
-        <p
-          className="gsap-hero-eyebrow text-lg sm:text-sm font-mono mb-3 sm:mb-4 tracking-widest uppercase"
-          style={{ color: 'var(--accent)', opacity: 0, transform: 'translateY(12px)' }}
-        >
-          رفيق الشهادة السودانية
-        </p>
+        {/* ── Headline block ───────────────────────────────────────────────────
+            One <h1> spanning the eyebrow and the wordmark, so the page's only
+            top-level heading reads "رفيق الشهادة السودانية بَشير" — the head term
+            plus the brand — rather than a bare brand name nobody searches for
+            yet. The eyebrow moved inside it; it used to be a sibling <p>.
 
-        {/* Headline block */}
+            Nothing about the visual hierarchy changes: both lines are now
+            block-level spans carrying exactly the type scale, colour and margins
+            they had as a <p> and an <h1>. The h1 itself is reset to a neutral
+            box (`m-0 p-0 font-normal text-base`) so it contributes no size of its
+            own and each span sizes itself.
+
+            Why spans and not `display: contents` on the h1 — the entrance
+            timeline animates .gsap-hero-eyebrow and .gsap-hero-title as two
+            separate steps with their own transforms, and a `contents` parent
+            drops out of the layout tree in a way that breaks clip-path on the
+            child. Each span therefore keeps its original gsap-* class and
+            pre-hidden inline style untouched. */}
         <div className="mb-5 sm:mb-7">
-          <h1
-            className="gsap-hero-title pt-1.5 text-6xl sm:text-7xl md:text-[9rem] font-arabic font-bold leading-none"
-            style={{
-              color:    'var(--text-primary)',
-              opacity:  0,
-              transform: 'translateY(55px)',
-              clipPath: 'inset(0% 0% 100% 0%)',
-            }}
-          >
-            بَشير
+          <h1 className="m-0 p-0 font-normal text-base">
+            <span
+              className="gsap-hero-eyebrow block text-lg sm:text-sm font-mono mb-3 sm:mb-4 tracking-widest uppercase"
+              style={{ color: 'var(--accent)', opacity: 0, transform: 'translateY(12px)' }}
+            >
+              رفيق الشهادة السودانية
+            </span>
+
+            {/* Explicit space: JSX strips the newline between two elements, so
+                without it the h1's text content is "…السودانيةبَشير" — one glued
+                token. Between two block-level spans this whitespace text node
+                collapses away, so it costs nothing visually. */}
+            {' '}
+
+            <span
+              className="gsap-hero-title block pt-1.5 text-6xl sm:text-7xl md:text-[9rem] font-arabic font-bold leading-none"
+              style={{
+                color:    'var(--text-primary)',
+                opacity:  0,
+                transform: 'translateY(55px)',
+                clipPath: 'inset(0% 0% 100% 0%)',
+              }}
+            >
+              بَشير
+            </span>
           </h1>
 
           {/* Ember line — pre-collapsed, GSAP expands */}
