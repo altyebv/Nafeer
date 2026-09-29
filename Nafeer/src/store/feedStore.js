@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { persistConfig } from './persistConfig';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -52,6 +53,6 @@ export const useFeedStore = create(
 
       resetFeed: () => set({ feedItems: [] }),
     }),
-    { name: 'basheer-feed' }
+    persistConfig('basheer-feed', { feedItems: [] })
   )
 );
