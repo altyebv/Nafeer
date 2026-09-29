@@ -47,18 +47,24 @@ export const OG_IMAGE = {
   alt:    'بشير — رفيق الشهادة السودانية',
 };
 
+// `absoluteTitle` opts a route out of the root layout's `%s — نفير` template.
+// Without it, a title that already names the brand gets it appended a second
+// time: contributor profiles were shipping as
+// "مساهم تجريبي — مساهم في نفير — نفير", which reads as a bug in a result list
+// and eats the character budget before the name is even visible.
 export function pageMetadata({
   title,
   description,
   path = '/',
   noindex = false,
   ogTitle,
+  absoluteTitle = false,
 }) {
   const url        = absoluteUrl(path);
   const ogHeadline = ogTitle ?? `${title} — ${SITE_NAME}`;
 
   return {
-    title,
+    title: absoluteTitle ? { absolute: title } : title,
     description,
 
     ...(noindex
