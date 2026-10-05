@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Send, RefreshCw, CircleCheck, CircleAlert } from 'lucide-react';
+import { Send, RefreshCw, CircleCheck, CircleAlert, Trash2 } from 'lucide-react';
 import { SectionHeader, EmptyState, Spinner } from './ui/shared';
 import { emailStatus } from './ui/emailStatus';
 
@@ -85,7 +85,7 @@ function isProblem(log) {
 
 function fmtTime(ts) {
   if (!ts) return '—';
-  return new Date(ts).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
+  return new Date(ts).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 // ─── Form primitives ──────────────────────────────────────────────────────────
@@ -370,15 +370,36 @@ function ComposeTab({ onSent }) {
 
 // ─── Log tab ──────────────────────────────────────────────────────────────────
 
-function LogRow({ log }) {
+const CLEANUP_OPTIONS = [
+  { id: '30',  label: 'الأقدم من 30 يوماً', body: { olderThanDays: 30 } },
+  { id: '90',  label: 'الأقدم من 90 يوماً', body: { olderThanDays: 90 } },
+  { id: 'all', label: 'كل الرسائل',          body: { all: true } },
+];
+
+function fmtMonth(month) {
+  return new Date(`${month}-01T00:00:00Z`).toLocaleDateString('ar-EG-u-nu-latn', {
+    month: 'long', year: 'numeric', timeZone: 'UTC',
+  });
+}
+
+function LogRow({ log, onDelete }) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting,   setDeleting]   = useState(false);
   const st = emailStatus(log);
+
+  const remove = async () => {
+    setDeleting(true);
+    const deleted = await onDelete({ ids: [log._id] });
+    if (deleted === false) { setDeleting(false); setConfirming(false); }
+  };
+
   return (
     <li className="px-5 py-3.5 flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
       <div className="min-w-0 flex-1">
         <p className="text-sm text-ink-100 truncate"><span dir="ltr">{log.to}</span></p>
         <p className="text-sm font-arabic text-ink-400 truncate mt-0.5">{log.subject}</p>
         {st.detail && (
-          <p className="text-xs font-arabic mt-1 break-words" style={{ color: st.color }}>{st.detail}</p>
+          <p dir="auto" className="text-xs font-arabic mt-1 break-words" style={{ color: st.color }}>{st.detail}</p>
         )}
       </div>
       <div className="flex items-center gap-3 md:gap-4 shrink-0 flex-wrap">
@@ -390,64 +411,190 @@ function LogRow({ log }) {
           {st.label}
         </span>
         <span className="text-xs text-ink-500 tabular-nums md:w-40 md:text-left">{fmtTime(log.timestamp)}</span>
+
+        {confirming ? (
+          <span className="flex items-center gap-1.5">
+            <button
+              onClick={remove}
+              disabled={deleting}
+              className="px-2.5 py-1 rounded-md text-xs font-arabic font-semibold bg-danger-surface border border-danger-border text-danger disabled:opacity-50"
+            >
+              {deleting ? '…' : 'حذف'}
+            </button>
+            <button
+              onClick={() => setConfirming(false)}
+              disabled={deleting}
+              className="px-2 py-1 rounded-md text-xs font-arabic text-ink-400 hover:text-ink-200"
+            >
+              إلغاء
+            </button>
+          </span>
+        ) : (
+          <button
+            onClick={() => setConfirming(true)}
+            aria-label={`حذف الرسالة المرسلة إلى ${log.to}`}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-500 hover:text-danger hover:bg-danger-surface transition-colors"
+          >
+            <Trash2 size={15} />
+          </button>
+        )}
       </div>
     </li>
   );
 }
 
-function LogTab({ logs, state, onReload }) {
-  const [filter, setFilter] = useState('all');
+// Bulk clean-up: pick a range, confirm, done. Counts move to the archive.
+function CleanupBar({ onDelete, onClose }) {
+  const [range,   setRange]   = useState('90');
+  const [working, setWorking] = useState(false);
+  const [result,  setResult]  = useState(null); // number deleted | 'error'
+
+  const run = async () => {
+    setWorking(true);
+    const option  = CLEANUP_OPTIONS.find((o) => o.id === range);
+    const deleted = await onDelete(option.body);
+    setWorking(false);
+    setResult(deleted === false ? 'error' : deleted);
+  };
+
+  return (
+    <div className="px-5 py-4 border-b border-ink-800/70 bg-ink-950/40 space-y-3">
+      <p className="text-sm font-arabic text-ink-300 leading-relaxed">
+        تُحذف الرسائل المحددة نهائياً من السجل ومن سجل بريد كل مساهم. يبقى في الأرشيف عددها الشهري فقط، بلا عناوين ولا مواضيع.
+      </p>
+      <div className="flex items-center gap-2 flex-wrap">
+        <select
+          value={range}
+          onChange={(e) => { setRange(e.target.value); setResult(null); }}
+          disabled={working}
+          className={`${INPUT_CLS} font-arabic !w-auto !py-2`}
+          aria-label="نطاق الحذف"
+        >
+          {CLEANUP_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+        <button
+          onClick={run}
+          disabled={working}
+          className="px-4 py-2 rounded-lg text-sm font-arabic font-semibold bg-danger-surface border border-danger-border text-danger hover:brightness-125 transition disabled:opacity-50"
+        >
+          {working ? 'جارٍ الحذف…' : 'حذف نهائي'}
+        </button>
+        <button onClick={onClose} disabled={working} className="px-3 py-2 rounded-lg text-sm font-arabic text-ink-400 hover:text-ink-200">
+          إغلاق
+        </button>
+        {result === 'error' && <span className="text-sm font-arabic text-danger" role="alert">تعذّر الحذف</span>}
+        {typeof result === 'number' && (
+          <span className="text-sm font-arabic text-ink-300" role="status">
+            {result === 0 ? 'لا توجد رسائل في هذا النطاق.' : `حُذفت ${result} رسالة ونُقلت أعدادها إلى الأرشيف.`}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ArchiveCard({ archive }) {
+  if (archive.length === 0) return null;
+  return (
+    <Card title="الأرشيف" className="mt-6">
+      <p className="px-5 pt-3.5 text-xs font-arabic text-ink-500 leading-relaxed">
+        أعداد الرسائل التي حُذفت من السجل، شهراً بشهر.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm font-arabic">
+          <thead>
+            <tr className="text-ink-500 text-xs">
+              <th className="text-right font-normal px-5 py-3">الشهر</th>
+              <th className="text-right font-normal px-3 py-3">أُرسلت</th>
+              <th className="text-right font-normal px-3 py-3">تأكد وصولها</th>
+              <th className="text-right font-normal px-5 py-3">لم تصل</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-ink-800/60">
+            {archive.map((m) => (
+              <tr key={m.month}>
+                <td className="px-5 py-3 text-ink-200 whitespace-nowrap">{fmtMonth(m.month)}</td>
+                <td className="px-3 py-3 text-ink-200 tabular-nums">{m.total}</td>
+                <td className="px-3 py-3 text-ink-200 tabular-nums">{m.delivered}</td>
+                <td className={`px-5 py-3 tabular-nums ${m.problems > 0 ? 'text-danger' : 'text-ink-500'}`}>{m.problems}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+function LogTab({ logs, archive, state, onReload, onDelete }) {
+  const [filter,   setFilter]   = useState('all');
+  const [cleaning, setCleaning] = useState(false);
 
   const problems = logs.filter(isProblem);
   const shown    = filter === 'problems' ? problems : logs;
 
   return (
-    <Card
-      title={logs.length > 0 ? `آخر ${logs.length} رسالة` : 'سجل الإرسال'}
-      action={
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg bg-ink-800/60 p-0.5">
-            {LOG_FILTERS.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={`px-3 py-1 rounded-md text-xs font-arabic transition-colors ${
-                  filter === f.id ? 'bg-ink-700 text-ink-100' : 'text-ink-400 hover:text-ink-200'
-                }`}
-              >
-                {f.label}
-                {f.id === 'problems' && problems.length > 0 && (
-                  <span className="mr-1.5 text-danger tabular-nums">{problems.length}</span>
-                )}
-              </button>
-            ))}
+    <>
+      <Card
+        title={logs.length > 0 ? `آخر ${logs.length} رسالة` : 'سجل الإرسال'}
+        action={
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg bg-ink-800/60 p-0.5">
+              {LOG_FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className={`px-3 py-1 rounded-md text-xs font-arabic transition-colors ${
+                    filter === f.id ? 'bg-ink-700 text-ink-100' : 'text-ink-400 hover:text-ink-200'
+                  }`}
+                >
+                  {f.label}
+                  {f.id === 'problems' && problems.length > 0 && (
+                    <span className="mr-1.5 text-danger tabular-nums">{problems.length}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setCleaning((v) => !v)}
+              aria-expanded={cleaning}
+              className={`px-3 py-1.5 rounded-lg text-xs font-arabic transition-colors ${
+                cleaning ? 'bg-ink-700 text-ink-100' : 'text-ink-400 hover:text-ink-100 hover:bg-ink-800/60'
+              }`}
+            >
+              تنظيف السجل
+            </button>
+            <button
+              onClick={onReload}
+              aria-label="تحديث السجل"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-400 hover:text-ink-100 hover:bg-ink-800/60 transition-colors"
+            >
+              <RefreshCw size={15} className={state === 'loading' ? 'animate-spin' : ''} />
+            </button>
           </div>
-          <button
-            onClick={onReload}
-            aria-label="تحديث السجل"
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-400 hover:text-ink-100 hover:bg-ink-800/60 transition-colors"
-          >
-            <RefreshCw size={15} className={state === 'loading' ? 'animate-spin' : ''} />
-          </button>
-        </div>
-      }
-    >
-      {state === 'loading' && logs.length === 0 && <Spinner />}
-      {state === 'error' && (
-        <p className="px-5 py-10 text-center text-sm font-arabic text-danger">تعذّر تحميل السجل</p>
-      )}
-      {state === 'ok' && shown.length === 0 && (
-        <EmptyState
-          text={filter === 'problems' ? 'لا توجد رسائل متعثرة' : 'لم تُرسل أي رسالة بعد'}
-          sub={filter === 'problems' ? 'كل ما أُرسل وصل أو ما زال في الطريق.' : undefined}
-        />
-      )}
-      {shown.length > 0 && (
-        <ul className="divide-y divide-ink-800/60">
-          {shown.map((log) => <LogRow key={log._id} log={log} />)}
-        </ul>
-      )}
-    </Card>
+        }
+      >
+        {cleaning && <CleanupBar onDelete={onDelete} onClose={() => setCleaning(false)} />}
+
+        {state === 'loading' && logs.length === 0 && <Spinner />}
+        {state === 'error' && (
+          <p className="px-5 py-10 text-center text-sm font-arabic text-danger">تعذّر تحميل السجل</p>
+        )}
+        {state === 'ok' && shown.length === 0 && (
+          <EmptyState
+            text={filter === 'problems' ? 'لا توجد رسائل متعثرة' : 'السجل فارغ'}
+            sub={filter === 'problems' ? 'كل ما أُرسل وصل أو ما زال في الطريق.' : undefined}
+          />
+        )}
+        {shown.length > 0 && (
+          <ul className="divide-y divide-ink-800/60">
+            {shown.map((log) => <LogRow key={log._id} log={log} onDelete={onDelete} />)}
+          </ul>
+        )}
+      </Card>
+
+      <ArchiveCard archive={archive} />
+    </>
   );
 }
 
@@ -457,13 +604,14 @@ export function EmailSection() {
   const [tab,       setTab]       = useState('compose');
   const [logs,      setLogs]      = useState([]);
   const [logsState, setLogsState] = useState('loading'); // loading | ok | error
+  const [archive,   setArchive]   = useState([]);        // monthly counts of deleted rows
 
   const loadLogs = useCallback(async () => {
     setLogsState('loading');
     try {
       const res  = await fetch('/api/admin/email/logs?limit=100');
       const data = await res.json();
-      if (data.ok) { setLogs(data.logs || []); setLogsState('ok'); }
+      if (data.ok) { setLogs(data.logs || []); setArchive(data.archive || []); setLogsState('ok'); }
       else          { setLogsState('error'); }
     } catch {
       setLogsState('error');
@@ -471,6 +619,24 @@ export function EmailSection() {
   }, []);
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
+
+  // Deletes log rows (by ids, age or all). Resolves to the number deleted, or
+  // false on failure. Reloads so the list and the archive both reflect it.
+  const deleteLogs = useCallback(async (body) => {
+    try {
+      const res  = await fetch('/api/admin/email/logs', {
+        method:  'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!data.ok) return false;
+      await loadLogs();
+      return data.deleted;
+    } catch {
+      return false;
+    }
+  }, [loadLogs]);
 
   const problemCount = logs.filter(isProblem).length;
 
@@ -510,7 +676,7 @@ export function EmailSection() {
           <ComposeTab onSent={() => setTimeout(loadLogs, 800)} />
         </div>
         <div hidden={tab !== 'log'}>
-          <LogTab logs={logs} state={logsState} onReload={loadLogs} />
+          <LogTab logs={logs} archive={archive} state={logsState} onReload={loadLogs} onDelete={deleteLogs} />
         </div>
       </div>
     </div>
