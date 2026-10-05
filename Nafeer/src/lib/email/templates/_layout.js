@@ -24,7 +24,14 @@ const C = {
   faint:     '#8d8474', // ink-500
   accent:    '#d4891e', // sand-500
   button:    '#c57916', // sand-600 — 6.0:1 with ink-950 text
+  banner:    '#19140e', // sampled from the banner image's own background
 };
+
+// Email images must be absolute and on the canonical host — a preview-deploy
+// URL would die with the deploy. The -vN suffix is the cache key: mail clients
+// proxy and cache images hard, so a changed image needs a new filename.
+const BANNER_URL = `${SITE_URL}/email/banner-v1.jpg`;
+const MARK_URL   = `${SITE_URL}/email/mark-v1.png`;
 
 const FONT      = "'Segoe UI',Tahoma,Arial,sans-serif";
 const SITE_HOST = new URL(SITE_URL).host;
@@ -180,15 +187,20 @@ export function emailLayout({ title, preheader = '', blocks }) {
         <!-- Card -->
         <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:520px;background-color:${C.card};border:1px solid ${C.border};border-radius:16px;">
 
-          <!-- Accent rule -->
+          <!-- Banner — decorative; the cell colour stands in when images are blocked -->
           <tr>
-            <td style="height:4px;line-height:4px;font-size:0;background-color:${C.accent};border-radius:16px 16px 0 0;">&nbsp;</td>
+            <td bgcolor="${C.banner}" style="background-color:${C.banner};border-radius:15px 15px 0 0;font-size:0;line-height:0;">
+              <img src="${BANNER_URL}" width="520" height="186" alt="" style="display:block;width:100%;max-width:520px;height:auto;border:0;border-radius:15px 15px 0 0;" />
+            </td>
           </tr>
 
           <!-- Header -->
           <tr>
-            <td style="padding:22px 32px 18px;border-bottom:1px solid ${C.border};">
-              <a href="${SITE_URL}" target="_blank" style="font-size:26px;line-height:1.3;font-weight:700;color:${C.accent};text-decoration:none;font-family:'Amiri','Noto Naskh Arabic',Georgia,serif;">نفير</a>
+            <td style="padding:18px 32px 16px;border-bottom:1px solid ${C.border};">
+              <a href="${SITE_URL}" target="_blank" style="text-decoration:none;">
+                <img src="${MARK_URL}" width="36" height="36" alt="" style="display:inline-block;vertical-align:middle;width:36px;height:36px;border:0;" />
+                <span style="display:inline-block;vertical-align:middle;padding:0 10px;font-size:26px;line-height:36px;font-weight:700;color:${C.accent};font-family:'Amiri','Noto Naskh Arabic',Georgia,serif;">نفير</span>
+              </a>
             </td>
           </tr>
 

@@ -79,8 +79,12 @@ export const metadata = {
   },
 
   icons: {
-    icon:  '/logo.png',
-    apple: '/logo.png',
+    icon: [
+      { url: '/favicon.ico',    sizes: '48x48' },
+      { url: '/favicon-32.png', sizes: '32x32',   type: 'image/png' },
+      { url: '/logo.png',       sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
   },
 
   // No index/follow here: that is already the default, and an explicit tag on
