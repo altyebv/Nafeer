@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CreateAnnouncementModal } from './modals/CreateAnnouncementModal';
 import { CreateSurveyModal } from './modals/CreateSurveyModal';
+import { SectionHeader } from './ui/SectionHeader';
 
 /* ── Tab config ─────────────────────────────────────────────────────────────── */
 const TABS = [
@@ -15,47 +16,35 @@ export default function CommsSection() {
   const [tab, setTab] = useState('announcements');
 
   return (
-    <div dir="rtl" className="space-y-6">
-
-      {/* Section header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-arabic font-bold text-sand-300">
-            التواصل والاستطلاعات
-          </h1>
-          <p className="text-sm text-ink-600 font-arabic mt-1">
-            إدارة الإعلانات والاستطلاعات المرسلة للمستخدمين
-          </p>
+    <div dir="rtl">
+      <SectionHeader
+        title="مركز التحكم"
+        description="الإعلانات والاستطلاعات المرسلة لمستخدمي التطبيق، وإعداداته."
+      >
+        <div className="flex gap-1 mt-4 -mb-4 overflow-x-auto" role="tablist">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-2.5 text-sm font-arabic whitespace-nowrap border-b-2 transition-colors ${
+                tab === t.id
+                  ? 'border-sand-500 text-sand-300 font-semibold'
+                  : 'border-transparent text-ink-400 hover:text-ink-200'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
-        <span className="text-2xs font-mono px-2 py-1 rounded border border-ink-700/40 text-ink-600">
-          COMMS
-        </span>
-      </div>
+      </SectionHeader>
 
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 p-1 bg-ink-800/40 border border-ink-700/40 rounded-xl w-fit">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-arabic transition-all ${
-              tab === t.id
-                ? 'bg-sand-900/50 text-sand-300 border border-sand-800/50'
-                : 'text-ink-500 hover:text-ink-200 border border-transparent'
-            }`}
-          >
-            <span className={`text-base ${tab === t.id ? 'text-sand-400' : 'text-ink-600'}`}>
-              {t.icon}
-            </span>
-            {t.label}
-          </button>
-        ))}
+      <div className="px-4 sm:px-6 lg:px-8 pb-12">
+        {tab === 'announcements' && <AnnouncementsTab />}
+        {tab === 'surveys'       && <SurveysTab />}
+        {tab === 'app-settings'  && <AppSettingsTab />}
       </div>
-
-      {/* Tab panels */}
-      {tab === 'announcements' && <AnnouncementsTab />}
-      {tab === 'surveys'       && <SurveysTab />}
-      {tab === 'app-settings'  && <AppSettingsTab />}
     </div>
   );
 }

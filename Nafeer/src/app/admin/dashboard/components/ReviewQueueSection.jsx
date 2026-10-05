@@ -84,7 +84,7 @@ export function ReviewQueueSection({ onTotalChange, onUnauthorized }) {
         </div>
       </SectionHeader>
 
-      <div className="px-8 pb-8">
+      <div className="px-4 sm:px-6 lg:px-8 pb-8">
         {loading ? (
           <Spinner />
         ) : queue.total === 0 ? (

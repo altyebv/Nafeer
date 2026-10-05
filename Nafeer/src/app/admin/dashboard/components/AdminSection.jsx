@@ -243,7 +243,7 @@ export function AdminsSection() {
         </div>
       </SectionHeader>
 
-      <div className="px-8 pb-8">
+      <div className="px-4 sm:px-6 lg:px-8 pb-8">
         <div className="flex justify-start mb-6">
           <button
             onClick={() => setModal('create')}

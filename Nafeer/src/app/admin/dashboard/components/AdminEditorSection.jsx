@@ -931,7 +931,7 @@ export function AdminEditorSection() {
         </div>
       </SectionHeader>
 
-      <div className="px-8 pb-8">
+      <div className="px-4 sm:px-6 lg:px-8 pb-8">
         {initialLoading ? (
           <AdminEditorSkeleton />
         ) : error && !subjects.length ? (

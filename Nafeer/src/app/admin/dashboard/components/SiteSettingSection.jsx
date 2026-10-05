@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { Eye, HandHeart } from 'lucide-react';
 import { SectionHeader } from './ui/shared';
 
 // ── Toggle switch ─────────────────────────────────────────────────────────────
@@ -113,7 +114,7 @@ export function SiteSettingsSection() {
         description="تحكم في ما يظهر وما يُخفى في الصفحة الرئيسية"
       />
 
-      <div className="px-8 pb-8 max-w-2xl">
+      <div className="px-4 sm:px-6 lg:px-8 pb-8 max-w-2xl">
         {loading ? (
           <div className="flex items-center gap-3 text-ink-500 text-sm py-8">
             <span className="animate-spin inline-block w-4 h-4 border-2 border-ink-700 border-t-sand-400 rounded-full" />
@@ -124,13 +125,13 @@ export function SiteSettingsSection() {
 
             {/* ── Analytics stats ── */}
             <div>
-              <p className="text-xs font-mono text-ink-600 uppercase tracking-widest mb-4">
+              <p className="text-sm font-arabic font-semibold text-ink-400 mb-3">
                 الإحصائيات
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { label: 'زيارات الصفحة', value: stats.visitCount, icon: '👁' },
-                  { label: 'طلاب داعمون', value: stats.supportCount, icon: '🙋' },
+                  { label: 'زيارات الصفحة', value: stats.visitCount, icon: Eye },
+                  { label: 'طلاب داعمون', value: stats.supportCount, icon: HandHeart },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -140,13 +141,13 @@ export function SiteSettingsSection() {
                       border: '1px solid rgba(255,255,255,0.06)',
                     }}
                   >
-                    <span className="text-2xl">{stat.icon}</span>
+                    <stat.icon size={22} strokeWidth={1.75} className="text-ink-500 shrink-0" aria-hidden="true" />
                     <div>
                       <p
                         className="text-2xl font-bold font-mono tabular-nums"
                         style={{ color: 'var(--accent, #d4891e)' }}
                       >
-                        {stat.value === null ? '…' : stat.value.toLocaleString('ar-EG')}
+                        {stat.value === null ? '…' : stat.value.toLocaleString('en-US')}
                       </p>
                       <p className="text-xs text-ink-500 font-arabic mt-0.5">{stat.label}</p>
                     </div>
@@ -157,7 +158,7 @@ export function SiteSettingsSection() {
 
             {/* ── Landing page toggles ── */}
             <div>
-              <p className="text-xs font-mono text-ink-600 uppercase tracking-widest mb-4">
+              <p className="text-sm font-arabic font-semibold text-ink-400 mb-3">
                 الصفحة الرئيسية
               </p>
 

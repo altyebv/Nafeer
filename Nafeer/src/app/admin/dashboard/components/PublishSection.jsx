@@ -645,7 +645,7 @@ export function PublishSection() {
         </div>
       </SectionHeader>
 
-      <div className="px-8 pb-8">
+      <div className="px-4 sm:px-6 lg:px-8 pb-8">
         {loading ? (
           <div className="flex items-center gap-3 text-ink-500 text-sm py-12">
             <span className="inline-block w-4 h-4 border-2 border-ink-700 border-t-sand-400 rounded-full animate-spin" />

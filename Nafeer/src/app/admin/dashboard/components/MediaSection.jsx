@@ -201,7 +201,7 @@ export function MediaSection() {
           ]} />
         </SectionHeader>
 
-        <div className="px-8 pb-8 space-y-6">
+        <div className="px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
 
           {/* Upload panel */}
           <div className="rounded-xl border border-ink-800/60 overflow-hidden">

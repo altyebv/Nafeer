@@ -446,3 +446,28 @@ summary:focus-visible,
   outline-color: rgb(var(--sand-500)) !important;
   outline-offset: 2px !important;
 }
+
+/* ── Admin dashboard type scale ─────────────────────────────────────────────
+   The dashboard was built at editor density: 300+ labels at `text-2xs` (11px)
+   and most body copy at `text-xs` (12px), which reads as cramped on a page
+   people scan rather than work inside. Rather than touch every call site,
+   the two smallest steps are lifted one notch inside `.admin-shell` only —
+   the editor keeps its compact scale.
+
+   Unlayered so it beats the utilities layer regardless of source order.
+─────────────────────────────────────────────────────────────────────────── */
+.admin-shell .text-2xs { font-size: 12px; line-height: 1.125rem; }
+.admin-shell .text-xs  { font-size: 13px; line-height: 1.25rem; }
+
+/* Arabic labels were set in `font-mono` with wide tracking — a Latin "eyebrow"
+   idiom. JetBrains Mono has no Arabic glyphs, so the browser fell back to a
+   system monospace Arabic face and then letter-spaced it, pulling the joined
+   letters apart. Inside the dashboard, Arabic in a mono run falls through to
+   the Arabic text face instead, and tracking is neutralised; Latin text and
+   digits in the same run still render in the mono face. */
+.admin-shell .font-mono {
+  font-family: 'JetBrains Mono', 'Noto Naskh Arabic', ui-monospace, monospace;
+}
+.admin-shell .tracking-wide,
+.admin-shell .tracking-wider,
+.admin-shell .tracking-widest { letter-spacing: normal; }

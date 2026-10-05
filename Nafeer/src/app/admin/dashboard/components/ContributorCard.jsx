@@ -5,6 +5,7 @@ import {
   SUBJECTS_CATALOG_REF, getPipelineStage,
 } from '../constants';
 import { Btn } from './ui/Btn';
+import { emailStatus } from './ui/emailStatus';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -172,6 +173,54 @@ function InlineLinkBox({ contributorId, kind, link, label, expiry, email: initia
           >
             {resending ? '···' : 'إعادة الإرسال'}
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Mail history — every email sent to this contributor's address ───────────
+function MailHistory({ email }) {
+  const [state, setState] = useState('loading'); // loading | ok | error
+  const [logs,  setLogs]  = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/admin/email/logs?limit=20&to=${encodeURIComponent(email)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.ok) { setLogs(data.logs || []); setState('ok'); }
+        else setState('error');
+      })
+      .catch(() => { if (!cancelled) setState('error'); });
+    return () => { cancelled = true; };
+  }, [email]);
+
+  return (
+    <div className="px-4 py-4" style={{ background: 'rgba(0,0,0,0.2)', borderTop: `1px solid ${T.border}` }}>
+      {state === 'loading' && <p className="text-2xs font-mono text-ink-700 animate-pulse">LOADING...</p>}
+      {state === 'error'   && <p className="text-xs font-arabic" style={{ color: T.red }}>تعذّر تحميل سجل البريد</p>}
+      {state === 'ok' && logs.length === 0 && (
+        <p className="text-xs text-ink-700 font-arabic text-center py-2">لم يُرسل أي بريد إلى هذا العنوان بعد.</p>
+      )}
+      {state === 'ok' && logs.length > 0 && (
+        <div className="space-y-2.5">
+          {logs.map((log) => {
+            const st = emailStatus(log);
+            return (
+              <div key={log._id} className="flex items-start gap-2.5">
+                <div className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: st.color }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-ink-300 font-arabic truncate">{log.subject}</p>
+                  <p className="text-2xs font-arabic truncate" style={{ color: st.color }} title={st.detail || undefined}>
+                    {st.label}{st.detail ? ` — ${st.detail}` : ''}
+                  </p>
+                </div>
+                <span className="text-2xs font-mono text-ink-700 shrink-0">{relativeTime(log.timestamp)}</span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -745,13 +794,14 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
           { key: 'profile',   icon: '◉', label: 'بيانات الطلب' },
           { key: 'interview', icon: hasAnyAnswers ? '✦' : '◌',
             label: hasAnyAnswers ? 'إجابات المقابلة' : 'لم تُكمل المقابلة' },
+          { key: 'mail',      icon: '✉', label: 'سجل البريد' },
         ].map(({ key, icon, label }, i) => (
           <button
             key={key}
             onClick={() => toggleSection(key)}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors"
             style={{
-              borderLeft:  i === 0 ? `1px solid ${BORDER}` : 'none',
+              borderLeft:  i < 2 ? `1px solid ${BORDER}` : 'none',
               background:  openSection === key ? T.accentFaint : 'transparent',
               color:       openSection === key ? T.accent
                          : (key === 'interview' && hasAnyAnswers) ? 'rgba(52,211,153,0.65)'
@@ -840,6 +890,9 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
         </div>
       )}
 
+      {/* Mail history panel */}
+      {openSection === 'mail' && <MailHistory email={c.email} />}
+
       {/* Inline link */}
       {activeLink && (
         <div className="px-4 pb-3">
@@ -881,7 +934,7 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
           </div>
         ) : (
           <button onClick={() => setDeleteConfirm(true)}
-            className="text-2xs font-mono text-ink-800 hover:text-red-500 transition-colors px-1">حذف</button>
+            className="text-xs font-arabic text-ink-500 hover:text-danger transition-colors px-2 py-1">حذف</button>
         )}
       </div>
     </div>
@@ -1124,6 +1177,9 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
         />
       )}
 
+      {/* ── Mail history (mode === 'mail') ── */}
+      {mode === 'mail' && <MailHistory email={c.email} />}
+
       {/* ── Inline link ── */}
       {activeLink && (
         <div className="px-4 pb-3">
@@ -1140,6 +1196,9 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
         <Btn small variant="ghost" loading={localLoading === 'onboard'} onClick={handleOnboardLink}>
           {c.onboarded ? '↺ تجديد رابط التأهيل' : 'رابط التأهيل'}
         </Btn>
+        <Btn small variant="ghost" onClick={() => setMode((m) => (m === 'mail' ? 'view' : 'mail'))}>
+          ✉ سجل البريد
+        </Btn>
         <div className="flex-1" />
         {deleteConfirm ? (
           <div className="flex items-center gap-1.5">
@@ -1149,7 +1208,7 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
           </div>
         ) : (
           <button onClick={() => setDeleteConfirm(true)}
-            className="text-2xs font-mono text-ink-800 hover:text-red-500 transition-colors px-1">حذف</button>
+            className="text-xs font-arabic text-ink-500 hover:text-danger transition-colors px-2 py-1">حذف</button>
         )}
       </div>
     </div>

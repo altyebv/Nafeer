@@ -314,7 +314,7 @@ export function CoverageSection() {
       </SectionHeader>
 
       {/* ── Body ── */}
-      <div className="px-8 pb-12">
+      <div className="px-4 sm:px-6 lg:px-8 pb-12">
         {!subjectId ? (
           <EmptyState text="اختر مادة لعرض خريطة التغطية" sub="سيتم عرض الوحدات والدروس مع نسب اكتمال المحتوى" />
         ) : loading ? (

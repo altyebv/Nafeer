@@ -20,10 +20,17 @@ import { CommsSection }          from './components/CommsSection';
 import { AndroidInsightsSection } from './components/android/AndroidInsightsSection';
 
 
+// Every section the dashboard can render — a hash outside this list is ignored.
+const SECTION_IDS = [
+  'overview', 'contributors', 'review', 'editor', 'coverage', 'curriculum', 'publish',
+  'media', 'admins', 'settings', 'seed', 'email', 'comms', 'android',
+];
+
 export default function AdminDashboard() {
   const router = useRouter();
 
-  const [section,         setSection]        = useState('overview');
+  const [section,         setSectionState]   = useState('overview');
+  const [navOpen,         setNavOpen]        = useState(false);
   const [allContributors, setAll]            = useState([]);
   const [isInitialLoad,   setIsInitialLoad]  = useState(true);
   const [reviewTotal,     setReviewTotal]    = useState(0);
@@ -48,6 +55,25 @@ export default function AdminDashboard() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  // ── Section ↔ URL hash ─────────────────────────────────────────────────────
+  // Keeps the open section across a refresh and makes it linkable
+  // (/admin/dashboard#email). Read after mount to avoid a hydration mismatch.
+  useEffect(() => {
+    const fromHash = () => {
+      const id = window.location.hash.slice(1);
+      if (SECTION_IDS.includes(id)) setSectionState(id);
+    };
+    fromHash();
+    window.addEventListener('hashchange', fromHash);
+    return () => window.removeEventListener('hashchange', fromHash);
+  }, []);
+
+  const setSection = useCallback((id) => {
+    setSectionState(id);
+    window.history.replaceState(null, '', `#${id}`);
+    window.scrollTo(0, 0);
+  }, []);
+
   // ── Optimistic helpers — instant, no refetch ───────────────────────────────
   // Call these immediately after an API action succeeds to update UI in-place.
 
@@ -70,17 +96,19 @@ export default function AdminDashboard() {
   const badges = { pending: pendingCount, reviewTotal };
 
   return (
-    <div className="min-h-screen bg-ink-950 text-ink-100 flex" dir="rtl">
+    <div className="admin-shell min-h-screen bg-ink-950 text-ink-100" dir="rtl">
 
       <AdminSidebar
         section={section}
         badges={badges}
+        open={navOpen}
+        onOpenChange={setNavOpen}
         onSelect={setSection}
         onCreateContributor={() => setShowCreate(true)}
         onSignOut={handleSignOut}
       />
 
-      <main className="flex-1 mr-56 min-h-screen overflow-y-auto">
+      <main className="min-h-screen pt-14 lg:pt-0 lg:mr-64">
         {section === 'overview'     && <OverviewSection allContributors={allContributors} isLoading={isInitialLoad} />}
         {section === 'contributors' && (
           <PeopleSection

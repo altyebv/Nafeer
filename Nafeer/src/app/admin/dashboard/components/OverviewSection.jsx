@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { Eye, HandHeart, UserCheck, Hourglass, BookOpen, FileQuestion, Rss, ArrowUpLeft, Check } from 'lucide-react';
 
 // ── Metric card ────────────────────────────────────────────────────────────────
-function MetricCard({ icon, value, label, sub, accent = false }) {
+function MetricCard({ icon: Icon, value, label, sub, accent = false }) {
   return (
     <div
       className="relative p-5 rounded-2xl overflow-hidden transition-all duration-200"
@@ -13,16 +14,14 @@ function MetricCard({ icon, value, label, sub, accent = false }) {
       onMouseEnter={(e) => { e.currentTarget.style.background = accent ? 'rgba(212,137,30,0.09)' : 'rgba(255,255,255,0.04)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = accent ? 'rgba(212,137,30,0.06)' : 'rgba(255,255,255,0.02)'; }}
     >
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-xl">{icon}</span>
-      </div>
+      <Icon size={20} strokeWidth={1.75} className={`mb-4 ${accent ? 'text-sand-400' : 'text-ink-500'}`} aria-hidden="true" />
       <p
         className="text-3xl font-bold font-mono tabular-nums mb-1"
         style={{ color: accent ? 'var(--accent)' : '#e8e0d5' }}
       >
         {value ?? '—'}
       </p>
-      <p className="text-xs font-arabic text-ink-500">{label}</p>
+      <p className="text-sm font-arabic text-ink-400">{label}</p>
       {sub && <p className="text-2xs font-mono text-ink-700 mt-0.5">{sub}</p>}
     </div>
   );
@@ -31,12 +30,13 @@ function MetricCard({ icon, value, label, sub, accent = false }) {
 // ── Section label ──────────────────────────────────────────────────────────────
 function Label({ children }) {
   return (
-    <p className="text-2xs font-mono uppercase tracking-widest mb-4 text-ink-600">{children}</p>
+    <h2 className="text-sm font-arabic font-semibold mb-3 text-ink-400">{children}</h2>
   );
 }
 
 // ── Contributor mini row ───────────────────────────────────────────────────────
 function ContributorRow({ c, rank }) {
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const initials = (c.name || '?').split(' ').slice(0, 2).map((w) => w[0]).join('');
   const total = (c.stats?.lessonsCreated || 0) + (c.stats?.questionsAdded || 0) + (c.stats?.feedItemsCreated || 0);
   return (
@@ -45,10 +45,10 @@ function ContributorRow({ c, rank }) {
       style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
     >
       <span className="text-2xs font-mono w-5 text-center shrink-0 text-ink-700">{rank}</span>
-      {c.avatarUrl ? (
-        <img src={c.avatarUrl} alt={c.name} className="w-7 h-7 rounded-full object-cover shrink-0" style={{ border: '1px solid rgba(212,137,30,0.3)' }} />
+      {c.avatarUrl && !avatarFailed ? (
+        <img src={c.avatarUrl} alt="" onError={() => setAvatarFailed(true)} className="w-8 h-8 rounded-full object-cover shrink-0" style={{ border: '1px solid rgba(212,137,30,0.3)' }} />
       ) : (
-        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
           style={{ background: 'linear-gradient(135deg, #d4891e 0%, rgba(146,79,18,0.5) 100%)', color: '#0e0c09' }}>
           {initials}
         </div>
@@ -61,10 +61,11 @@ function ContributorRow({ c, rank }) {
             href={`/contributor/${c.username}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-2xs font-mono text-ink-700 hover:text-sand-400 transition-colors px-1.5 py-0.5 rounded border border-transparent hover:border-ink-700/50"
+            className="text-ink-600 hover:text-sand-400 transition-colors p-1 rounded"
             title="عرض الملف الشخصي"
+            aria-label={`عرض ملف ${c.name}`}
           >
-            ↗
+            <ArrowUpLeft size={15} />
           </a>
         )}
       </div>
@@ -136,7 +137,7 @@ function Sparkline({ data }) {
         {/* Today dot */}
         <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="3" fill="#d4891e" />
       </svg>
-      <p className="text-2xs font-mono text-ink-700 mt-1 text-left" dir="ltr">آخر 30 يوم</p>
+      <p className="text-xs font-arabic text-ink-600 mt-2">آخر 30 يوماً</p>
     </div>
   );
 }
@@ -223,8 +224,7 @@ export function OverviewSection({ allContributors }) {
   const reviewTotal = reviewData?.total || 0;
 
   const now     = new Date();
-  const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-  const dateStr = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const dateStr = now.toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   if (loading) {
     return (
@@ -238,28 +238,22 @@ export function OverviewSection({ allContributors }) {
   }
 
   return (
-    <div className="px-6 sm:px-8 py-8 space-y-8 max-w-5xl">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-8 max-w-6xl mx-auto">
 
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-arabic font-bold mb-1 text-sand-300">نظرة عامة</h1>
-          <p className="text-sm font-arabic text-ink-600">{dateStr}</p>
-        </div>
-        <div dir="ltr" className="text-left shrink-0">
-          <p className="text-2xl font-mono font-bold tabular-nums" style={{ color: 'var(--accent)' }}>{timeStr}</p>
-          <p className="text-2xs font-mono uppercase tracking-widest text-ink-700">NAFEER ADMIN</p>
-        </div>
+      <div>
+        <h1 className="text-xl lg:text-2xl font-arabic font-bold mb-1 text-sand-300">نظرة عامة</h1>
+        <p className="text-sm font-arabic text-ink-500">{dateStr}</p>
       </div>
 
       {/* ── Site metrics ── */}
       <div>
         <Label>إحصائيات الموقع</Label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <MetricCard icon="👁"  value={visits.toLocaleString('ar-EG')}  label="زيارة إجمالية" accent />
-          <MetricCard icon="🙋" value={support.toLocaleString('ar-EG')} label="طالب داعم" />
-          <MetricCard icon="◉"  value={approved.length}                 label="مساهم نشط" />
-          <MetricCard icon="⏳" value={pending.length}                  label="طلب معلّق" />
+          <MetricCard icon={Eye}       value={visits.toLocaleString('en-US')}  label="زيارة إجمالية" accent />
+          <MetricCard icon={HandHeart} value={support.toLocaleString('en-US')} label="طالب داعم" />
+          <MetricCard icon={UserCheck} value={approved.length}                 label="مساهم نشط" />
+          <MetricCard icon={Hourglass} value={pending.length}                  label="طلب معلّق" />
         </div>
       </div>
 
@@ -279,10 +273,10 @@ export function OverviewSection({ allContributors }) {
       {/* ── Content stats ── */}
       <div>
         <Label>المحتوى المُنجز</Label>
-        <div className="grid grid-cols-3 gap-3">
-          <MetricCard icon="📖" value={totalLessons}   label="درس مكتوب"     />
-          <MetricCard icon="❓" value={totalQuestions} label="سؤال في البنك"  />
-          <MetricCard icon="📡" value={totalFeed}      label="عنصر تغذية"    />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <MetricCard icon={BookOpen}     value={totalLessons}   label="درس مكتوب"     />
+          <MetricCard icon={FileQuestion} value={totalQuestions} label="سؤال في البنك"  />
+          <MetricCard icon={Rss}          value={totalFeed}      label="عنصر تغذية"    />
         </div>
       </div>
 
@@ -344,7 +338,7 @@ export function OverviewSection({ allContributors }) {
           <Label>طابور المراجعة</Label>
           {reviewTotal === 0 ? (
             <div className="flex items-center gap-2 py-2">
-              <span className="text-green-400 text-lg">✓</span>
+              <Check size={18} className="text-success shrink-0" />
               <p className="text-sm font-arabic text-ink-500">لا يوجد محتوى ينتظر المراجعة</p>
             </div>
           ) : (
@@ -386,7 +380,7 @@ export function OverviewSection({ allContributors }) {
             />
             {pending.length === 0 && (
               <div className="flex items-center gap-2 py-1">
-                <span className="text-green-400">✓</span>
+                <Check size={16} className="text-success shrink-0" />
                 <p className="text-xs font-arabic text-ink-600">لا يوجد طلبات معلّقة</p>
               </div>
             )}

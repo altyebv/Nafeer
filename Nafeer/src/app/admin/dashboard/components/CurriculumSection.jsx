@@ -800,7 +800,7 @@ export function CurriculumSection() {
         description="تعديل عناوين الوحدات والدروس وتفاصيلها مباشرة في Atlas — هذه البيانات يراها المساهمون عند انضمامهم"
       />
 
-      <div className="px-8 pb-8">
+      <div className="px-4 sm:px-6 lg:px-8 pb-8">
         <div className="flex gap-5 items-start">
           <SubjectPicker
             subjects={subjects}

@@ -1,3 +1,7 @@
+import {
+  LayoutDashboard, PenLine, BookOpen, ClipboardCheck, LayoutGrid, Image as ImageIcon,
+  Users, Megaphone, Mail, Smartphone, ShieldCheck, Settings,
+} from 'lucide-react';
 import { SUBJECTS_CATALOG, TRACK_CONFIG } from '@/shared/curriculum';
 
 export { TRACK_CONFIG };
@@ -18,30 +22,45 @@ export const REVIEW_TYPE = {
 export const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 export const SUBJECTS_CATALOG_REF = SUBJECTS_CATALOG;
 
-export const NAV = [
-  { id: 'overview',     icon: '◈', label: 'نظرة عامة',        badgeKey: null          },
-  //
-  // ── Content pipeline ─────────────────────────────────────────────────────
-  { id: 'editor',       icon: '✎', label: 'محرر المشرف',       badgeKey: null          },
-  { id: 'curriculum',   icon: '◆', label: 'إدارة المنهج',      badgeKey: null          },
-  //
-  // ── Community ─────────────────────────────────────────────────────────────
-  { id: 'contributors', icon: '◉', label: 'المساهمون',         badgeKey: 'pending'     },
-  { id: 'review',       icon: '◎', label: 'طابور المراجعة',    badgeKey: 'reviewTotal' },
-  //
-  // ── Comms ─────────────────────────────────────────────────────────────────
-  // Announcements, surveys, and future app-level settings (feature flags, tours).
-  { id: 'comms',        icon: '⌘', label: 'مركز التحكم', badgeKey: null        },
-
-  { id: 'android', icon: '◉', label: 'تحليلات الأندرويد', badgeKey: null },
-  //
-  // ── Ops ───────────────────────────────────────────────────────────────────
-  { id: 'coverage',     icon: '▦', label: 'خريطة التغطية',     badgeKey: null          },
-  { id: 'media',        icon: '⬜', label: 'الوسائط',           badgeKey: null          },
-  { id: 'admins',       icon: '⬡', label: 'المشرفون',          badgeKey: null          },
-  { id: 'settings',     icon: '⚙', label: 'الإعدادات',         badgeKey: null          },
-  { id: 'email',        icon: '✉', label: 'البريد الإلكتروني',  badgeKey: null          },
+// Sidebar navigation, grouped by what the admin is there to do.
+// `badgeKey` names a count in the dashboard's `badges` object.
+export const NAV_GROUPS = [
+  {
+    label: null,
+    items: [
+      { id: 'overview',     icon: LayoutDashboard, label: 'نظرة عامة' },
+    ],
+  },
+  {
+    label: 'المحتوى',
+    items: [
+      { id: 'editor',       icon: PenLine,        label: 'محرر المشرف' },
+      { id: 'curriculum',   icon: BookOpen,       label: 'إدارة المنهج' },
+      { id: 'review',       icon: ClipboardCheck, label: 'طابور المراجعة', badgeKey: 'reviewTotal' },
+      { id: 'coverage',     icon: LayoutGrid,     label: 'خريطة التغطية' },
+      { id: 'media',        icon: ImageIcon,      label: 'الوسائط' },
+    ],
+  },
+  {
+    label: 'المجتمع',
+    items: [
+      { id: 'contributors', icon: Users,          label: 'المساهمون', badgeKey: 'pending' },
+      // Announcements, surveys, and future app-level settings (feature flags, tours).
+      { id: 'comms',        icon: Megaphone,      label: 'مركز التحكم' },
+      { id: 'email',        icon: Mail,           label: 'البريد الإلكتروني' },
+      { id: 'android',      icon: Smartphone,     label: 'تحليلات الأندرويد' },
+    ],
+  },
+  {
+    label: 'النظام',
+    items: [
+      { id: 'admins',       icon: ShieldCheck,    label: 'المشرفون' },
+      { id: 'settings',     icon: Settings,       label: 'الإعدادات' },
+    ],
+  },
 ];
+
+export const NAV = NAV_GROUPS.flatMap((group) => group.items);
 
 // Pipeline stage for a pending applicant
 export function getPipelineStage(c) {
