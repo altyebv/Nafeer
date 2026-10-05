@@ -215,11 +215,16 @@ export function ContributorsSection({ allContributors, onRefresh }) {
   const act = async (id, action, extra = {}) => {
     if (action === '_noop') { onRefresh(); return; }
     setActLoading(id + action);
-    await fetch('/api/admin/contributors', {
+    const res  = await fetch('/api/admin/contributors', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body:   JSON.stringify({ id, action, ...extra }),
     });
+    const data = await res.json().catch(() => ({}));
     setActLoading(null);
+    // The link email is sent server-side; say so when it didn't go out.
+    if (data.email && !data.email.ok) {
+      alert(`تم تنفيذ الإجراء، لكن تعذّر إرسال البريد إلى ${data.email.to}. أنشئ رابط التأهيل من بطاقة المساهم وأرسله يدوياً.`);
+    }
     onRefresh();
   };
 

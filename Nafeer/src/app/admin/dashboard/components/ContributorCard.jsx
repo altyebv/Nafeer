@@ -113,8 +113,24 @@ function StatBadge({ icon, count, label }) {
   );
 }
 
-function InlineLinkBox({ link, label, expiry }) {
-  const [copied, setCopied] = useState(false);
+function InlineLinkBox({ contributorId, kind, link, label, expiry, email: initialEmail }) {
+  const [copied,    setCopied]    = useState(false);
+  const [email,     setEmail]     = useState(initialEmail || null);
+  const [resending, setResending] = useState(false);
+
+  const resend = async () => {
+    setResending(true);
+    try {
+      const res  = await fetch('/api/admin/contributors', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body:   JSON.stringify({ id: contributorId, action: 'resend_link_email', kind }),
+      });
+      const data = await res.json();
+      setEmail(data.email || { ok: false, to: email?.to, error: data.message || 'فشل الإرسال' });
+    } catch {
+      setEmail({ ok: false, to: email?.to, error: 'خطأ في الاتصال بالشبكة' });
+    } finally { setResending(false); }
+  };
   const copy = () => {
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
@@ -141,6 +157,23 @@ function InlineLinkBox({ link, label, expiry }) {
           {copied ? '✓ تم' : 'نسخ'}
         </button>
       </div>
+      {email && (
+        <div className="flex items-center justify-between gap-2 mt-2 pt-2" style={{ borderTop: `1px solid ${T.accentBorder}` }}>
+          <p className="flex-1 min-w-0 text-2xs font-arabic" style={{ color: email.ok ? T.green : T.red }}>
+            {email.ok
+              ? <>✓ أُرسل الرابط إلى <span dir="ltr">{email.to}</span></>
+              : <>✕ تعذّر إرسال البريد — انسخ الرابط وأرسله يدوياً{email.error ? ` (${email.error})` : ''}</>}
+          </p>
+          <button
+            onClick={resend}
+            disabled={resending}
+            className="shrink-0 px-2.5 py-1 rounded-lg text-2xs font-arabic font-semibold transition-all"
+            style={{ background: T.accentFaint, color: T.accent, border: `1px solid ${T.accentBorder}`, opacity: resending ? 0.5 : 1 }}
+          >
+            {resending ? '···' : 'إعادة الإرسال'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -656,7 +689,7 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
       });
       const data = await res.json();
       if (data.interviewLink) {
-        setActiveLink({ link: data.interviewLink, label: 'رابط المقابلة', expiry: 'صالح 14 يوماً' });
+        setActiveLink({ kind: 'interview', link: data.interviewLink, email: data.email, label: 'رابط المقابلة', expiry: 'صالح 14 يوماً' });
       }
       onAct(c._id, '_noop');
     } finally { setLocalLoading(null); }
@@ -810,7 +843,7 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
       {/* Inline link */}
       {activeLink && (
         <div className="px-4 pb-3">
-          <InlineLinkBox {...activeLink} />
+          <InlineLinkBox key={activeLink.link} contributorId={c._id} {...activeLink} />
         </div>
       )}
 
@@ -916,7 +949,7 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
       });
       const data = await res.json();
       if (data.onboardingLink) {
-        setActiveLink({ link: data.onboardingLink, label: 'رابط التأهيل', expiry: 'صالح 7 أيام' });
+        setActiveLink({ kind: 'onboarding', link: data.onboardingLink, email: data.email, label: 'رابط التأهيل', expiry: 'صالح 7 أيام' });
       }
       onAct(c._id, '_noop');
     } finally { setLocalLoading(null); }
@@ -1094,7 +1127,7 @@ export function ActiveCard({ c, actionLoading, onAct, onDelete, onSetPassword, r
       {/* ── Inline link ── */}
       {activeLink && (
         <div className="px-4 pb-3">
-          <InlineLinkBox {...activeLink} />
+          <InlineLinkBox key={activeLink.link} contributorId={c._id} {...activeLink} />
         </div>
       )}
 

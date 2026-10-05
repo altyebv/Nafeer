@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { verifyAdminToken } from '@/lib/adminAuth';
+import { appUrl } from '@/lib/appUrl';
+import { sendEmail } from '@/lib/email/emailService';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 
@@ -12,13 +14,31 @@ function generateOnboardingToken() {
 }
 
 function getOnboardingLink(token) {
-  const base = process.env.NEXT_PUBLIC_APP_URL || 'https://nafeer-edu.vercel.app';
-  return `${base}/onboard?token=${token}`;
+  return appUrl(`/onboard?token=${token}`);
 }
 
 function getInterviewLink(token) {
-  const base = process.env.NEXT_PUBLIC_APP_URL || 'https://nafeer-edu.vercel.app';
-  return `${base}/interview?token=${token}`;
+  return appUrl(`/interview?token=${token}`);
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// One entry per emailed link: how long it lives and which template carries it.
+const LINK_KINDS = {
+  interview:  { days: 14, expiresIn: '14 يوماً', template: 'interview_invite'  },
+  onboarding: { days: 7,  expiresIn: '7 أيام',   template: 'onboarding_invite' },
+};
+
+// Emails a link to the contributor. Never throws — a failed send is reported
+// back to the dashboard, which still shows the link for manual copy.
+async function sendLinkEmail(contributor, kind, link) {
+  const { template, expiresIn } = LINK_KINDS[kind];
+  const result = await sendEmail({
+    to:   contributor.email,
+    template,
+    data: { name: contributor.name, link, expiresIn },
+  });
+  return { ok: result.ok, to: contributor.email, error: result.error || null };
 }
 
 // ─── GET /api/admin/contributors ─────────────────────────────────────────────
@@ -75,12 +95,17 @@ export async function POST(request) {
 
 // ─── PATCH /api/admin/contributors ───────────────────────────────────────────
 // Actions: approve | reject | set_password | reset_to_pending | generate_onboard_link
+//          | send_interview | resend_link_email
+//
+// send_interview, approve and generate_onboard_link email the fresh link to the
+// contributor. The response carries `email: { ok, to, error }` so the dashboard
+// can fall back to manual copy when delivery fails.
 
 export async function PATCH(request) {
   const admin = await verifyAdminToken();
   if (!admin) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-  const { id, action, password, subject, role, roleId, username } = await request.json();
+  const { id, action, password, subject, role, roleId, username, kind } = await request.json();
   if (!id || !action) return NextResponse.json({ message: 'Missing id or action' }, { status: 400 });
 
   // Client-side refresh trigger — no server action needed
@@ -90,6 +115,26 @@ export async function PATCH(request) {
 
   const contributor = await Contributor.findById(id);
   if (!contributor) return NextResponse.json({ message: 'Contributor not found' }, { status: 404 });
+
+  // Re-send the link currently on file without rotating its token.
+  if (action === 'resend_link_email') {
+    if (!LINK_KINDS[kind]) return NextResponse.json({ message: 'Unknown link kind' }, { status: 400 });
+
+    const withTokens = await Contributor.findById(id).select('+onboardingToken +interviewToken');
+    const token      = kind === 'interview' ? withTokens.interviewToken     : withTokens.onboardingToken;
+    const expiresAt  = kind === 'interview' ? withTokens.interviewExpiresAt : withTokens.onboardingExpiresAt;
+
+    if (!token || (expiresAt && expiresAt < new Date())) {
+      return NextResponse.json(
+        { message: 'الرابط غير موجود أو منتهي الصلاحية — أنشئ رابطاً جديداً' },
+        { status: 400 }
+      );
+    }
+
+    const link  = kind === 'interview' ? getInterviewLink(token) : getOnboardingLink(token);
+    const email = await sendLinkEmail(contributor, kind, link);
+    return NextResponse.json({ success: true, email });
+  }
 
   let onboardingLink  = null;
   let interviewLink   = null;
@@ -104,7 +149,7 @@ export async function PATCH(request) {
     }
     const token = generateOnboardingToken();
     contributor.interviewToken     = token;
-    contributor.interviewExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+    contributor.interviewExpiresAt = new Date(Date.now() + LINK_KINDS.interview.days * DAY_MS);
     interviewLink = getInterviewLink(token);
   } else if (action === 'approve') {
     contributor.status = 'approved';
@@ -112,7 +157,7 @@ export async function PATCH(request) {
     if (!contributor.onboarded) {
       const token = generateOnboardingToken();
       contributor.onboardingToken     = token;
-      contributor.onboardingExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      contributor.onboardingExpiresAt = new Date(Date.now() + LINK_KINDS.onboarding.days * DAY_MS);
       onboardingLink = getOnboardingLink(token);
     }
   } else if (action === 'reject') {
@@ -143,13 +188,19 @@ export async function PATCH(request) {
     }
     const token = generateOnboardingToken();
     contributor.onboardingToken     = token;
-    contributor.onboardingExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    contributor.onboardingExpiresAt = new Date(Date.now() + LINK_KINDS.onboarding.days * DAY_MS);
     contributor.onboarded           = false;
     onboardingLink = getOnboardingLink(token);
   }
 
   await contributor.save();
-  return NextResponse.json({ success: true, contributor, onboardingLink, interviewLink });
+
+  // Send only after the token is persisted — never email a link that isn't live.
+  let email = null;
+  if (interviewLink)       email = await sendLinkEmail(contributor, 'interview',  interviewLink);
+  else if (onboardingLink) email = await sendLinkEmail(contributor, 'onboarding', onboardingLink);
+
+  return NextResponse.json({ success: true, contributor, onboardingLink, interviewLink, email });
 }
 
 // ─── DELETE /api/admin/contributors ──────────────────────────────────────────

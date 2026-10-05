@@ -1,19 +1,25 @@
 // ─── Email Template Registry ──────────────────────────────────────────────────
-// Each template is a pure function: (data) => { subject, html }
+// Each template is a pure function: (data) => { subject, html, text }
 // Add new templates here — the service layer picks them up automatically.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { magicLinkTemplate }       from './magic_link';
-import { onboardingInviteTemplate } from './onboarding_invite';
-import { betaInviteTemplate }       from './beta_invite';
-import { customMessageTemplate }    from './custom_message';
+import { magicLinkTemplate }           from './magic_link';
+import { onboardingInviteTemplate }    from './onboarding_invite';
+import { betaInviteTemplate }          from './beta_invite';
+import { customMessageTemplate }       from './custom_message';
+import { interviewInviteTemplate }     from './interview_invite';
+import { applicationReceivedTemplate } from './application_received';
+import { applicationRejectedTemplate } from './application_rejected';
 
-/** @type {Record<string, (data: Record<string, any>) => { subject: string; html: string }>} */
+/** @type {Record<string, (data: Record<string, any>) => { subject: string; html: string; text: string }>} */
 export const TEMPLATES = {
-  magic_link:        magicLinkTemplate,
-  onboarding_invite: onboardingInviteTemplate,
-  beta_invite:       betaInviteTemplate,
-  custom_message:    customMessageTemplate,
+  magic_link:           magicLinkTemplate,
+  onboarding_invite:    onboardingInviteTemplate,
+  beta_invite:          betaInviteTemplate,
+  custom_message:       customMessageTemplate,
+  interview_invite:     interviewInviteTemplate,
+  application_received: applicationReceivedTemplate,
+  application_rejected: applicationRejectedTemplate,
 };
 
 /** All valid template keys — used for validation and UI dropdowns. */
@@ -23,7 +29,7 @@ export const TEMPLATE_KEYS = Object.keys(TEMPLATES);
  * Render a template by key.
  * @param {string} template
  * @param {Record<string, any>} data
- * @returns {{ subject: string; html: string }}
+ * @returns {{ subject: string; html: string; text: string }}
  */
 export function renderTemplate(template, data) {
   const fn = TEMPLATES[template];

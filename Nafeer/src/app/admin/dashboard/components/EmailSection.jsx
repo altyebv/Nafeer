@@ -23,6 +23,28 @@ const TEMPLATE_META = {
       { key: 'link', label: 'رابط التأهيل', type: 'url',  required: true,  placeholder: 'https://...' },
     ],
   },
+  interview_invite: {
+    label: 'دعوة المقابلة الكتابية',
+    description: 'تُرسل للمتقدمين مع رابط المقابلة',
+    fields: [
+      { key: 'link', label: 'رابط المقابلة',   type: 'url',  required: true,  placeholder: 'https://...' },
+      { key: 'name', label: 'الاسم (اختياري)', type: 'text', required: false, placeholder: 'محمد علي' },
+    ],
+  },
+  application_received: {
+    label: 'تأكيد استلام الطلب',
+    description: 'تُرسل تلقائياً عند تقديم طلب الانضمام',
+    fields: [
+      { key: 'name', label: 'الاسم (اختياري)', type: 'text', required: false, placeholder: 'سارة' },
+    ],
+  },
+  application_rejected: {
+    label: 'الاعتذار عن الطلب',
+    description: 'اعتذار مهذب للمتقدم — تُرسل يدوياً فقط',
+    fields: [
+      { key: 'name', label: 'الاسم (اختياري)', type: 'text', required: false, placeholder: 'أحمد' },
+    ],
+  },
   beta_invite: {
     label: 'دعوة بيتا',
     description: 'وصول مبكر للنسخة التجريبية',
@@ -244,7 +266,6 @@ function LivePreview({ template, to, fields }) {
         <div className="flex items-center gap-2 mb-2.5 pb-2.5"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <span className="text-sm font-bold" style={{ color: '#d4891e' }}>نفير</span>
-          <span className="text-2xs font-mono text-ink-700">ADMIN</span>
         </div>
 
         {fields.subject || fields.name || fields.link ? (

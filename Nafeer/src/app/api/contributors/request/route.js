@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { connectDB }    from '@/lib/db';
 import { Contributor }  from '@/lib/models/Contributor';
+import { sendEmail }    from '@/lib/email/emailService';
 
 export async function POST(request) {
   try {
@@ -67,6 +68,16 @@ export async function POST(request) {
       roleId:             roleId || null,
       status:             'pending',
     });
+
+    // Confirmation email — runs after the response so a slow or failed send
+    // never holds up or breaks the application itself.
+    after(() =>
+      sendEmail({
+        to:       contributor.email,
+        template: 'application_received',
+        data:     { name: contributor.name.slice(0, 60) },
+      })
+    );
 
     return NextResponse.json(
       {

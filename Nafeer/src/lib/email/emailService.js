@@ -11,7 +11,7 @@
  *     subject:  'Optional override',        // overrides template subject
  *     template: 'magic_link',
  *     data:     { name: 'Ahmed', link: 'https://...' },
- *     replyTo:  'support@nafeer.app',       // optional
+ *     replyTo:  'someone@example.com',      // optional — defaults to EMAIL_REPLY_TO
  *   });
  *
  * Returns:
@@ -31,13 +31,13 @@ import { logEmail }                       from './EmailLogger';
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
 // Sender identity — override via env
-const DEFAULT_FROM    = process.env.EMAIL_FROM    || 'نفير <no-reply@nafeer.app>';
-const DEFAULT_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
+const DEFAULT_FROM     = process.env.EMAIL_FROM     || 'نفير <zool@nafeer4sudan.site>';
+const DEFAULT_REPLY_TO = process.env.EMAIL_REPLY_TO || 'zool@nafeer4sudan.site';
 
 // ─── Types (JSDoc) ────────────────────────────────────────────────────────────
 
 /**
- * @typedef {'magic_link' | 'onboarding_invite' | 'beta_invite' | 'custom_message'} EmailTemplateType
+ * @typedef {'magic_link' | 'onboarding_invite' | 'beta_invite' | 'custom_message' | 'interview_invite' | 'application_received' | 'application_rejected'} EmailTemplateType
  */
 
 /**
@@ -95,6 +95,7 @@ export async function sendEmail({ to, template, data = {}, subject, replyTo, fro
       replyTo: finalReplyTo,
       subject: finalSubject,
       html:    rendered.html,
+      text:    rendered.text,
     });
   } catch (err) {
     const error = `Provider error: ${err.message}`;
@@ -119,16 +120,16 @@ export async function sendEmail({ to, template, data = {}, subject, replyTo, fro
 // Replace this function to swap providers (Postmark, SendGrid, SES, etc.).
 
 /**
- * @param {{ to: string; from: string; replyTo?: string; subject: string; html: string }} payload
+ * @param {{ to: string; from: string; replyTo?: string; subject: string; html: string; text: string }} payload
  * @returns {Promise<SendEmailResult>}
  */
-async function _sendViaResend({ to, from, replyTo, subject, html }) {
+async function _sendViaResend({ to, from, replyTo, subject, html, text }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     throw new Error('RESEND_API_KEY environment variable is not set.');
   }
 
-  const body = { from, to, subject, html };
+  const body = { from, to, subject, html, text };
   if (replyTo) body.reply_to = replyTo;
 
   const response = await fetch(RESEND_API_URL, {
