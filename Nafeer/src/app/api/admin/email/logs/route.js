@@ -8,6 +8,7 @@ import { EmailLog }         from '@/lib/models/EmailLog';
 // Query params:
 //   ?limit=N    (default 50, max 200)
 //   ?status=sent|failed
+//   ?to=email   (exact address, case-insensitive — per-contributor history)
 
 export async function GET(request) {
   const admin = await verifyAdminToken();
@@ -20,7 +21,12 @@ export async function GET(request) {
 
   await connectDB();
 
+  const to       = searchParams.get('to')?.trim();
+
   const filter = status ? { status } : {};
+  if (to) {
+    filter.to = new RegExp(`^${to.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+  }
   const logs   = await EmailLog.find(filter)
     .sort({ timestamp: -1 })
     .limit(limit)
