@@ -1,9 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dev-secret-change-this-in-production'
-);
+import { getJwtSecret } from '@/lib/jwtSecret';
 
 const COOKIE_NAME = 'nafeer_token';
 const EXPIRES_IN  = '7d';
@@ -13,12 +10,12 @@ export async function signToken(payload) {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(EXPIRES_IN)
-    .sign(SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifyToken(token) {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload;
   } catch {
     return null;

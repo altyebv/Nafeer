@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dev-secret-change-this-in-production'
-);
+import { getJwtSecret } from '@/lib/jwtSecret';
 
 async function verify(token) {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload;
   } catch {
     return null;

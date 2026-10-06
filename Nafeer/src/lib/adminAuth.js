@@ -1,10 +1,7 @@
 import { jwtVerify, SignJWT } from 'jose';
 import { cookies }            from 'next/headers';
 import { NextResponse }       from 'next/server';
-
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dev-secret-change-this-in-production'
-);
+import { getJwtSecret }      from '@/lib/jwtSecret';
 
 const COOKIE_NAME  = 'nafeer_admin';
 const COOKIE_MAX_AGE = 60 * 60 * 12; // 12 hours
@@ -22,7 +19,7 @@ export async function issueAdminToken(admin) {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('12h')
-    .sign(SECRET);
+    .sign(getJwtSecret());
 }
 
 // ─── Set admin cookie ─────────────────────────────────────────────────────────
@@ -45,7 +42,7 @@ export async function verifyAdminToken() {
     const cookieStore = await cookies();
     const token = cookieStore.get(COOKIE_NAME)?.value;
     if (!token) return null;
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload.role === 'admin' ? payload : null;
   } catch {
     return null;
