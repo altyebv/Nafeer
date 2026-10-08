@@ -120,6 +120,7 @@ export async function upsertDeltaSubjectEntry({
   legacyDownloadUrl = null,
   legacySha256      = null,
   legacySize        = null,
+  fullExportVersion = null,
 }) {
   const entry = {
     id:                   subjectId,
@@ -132,8 +133,13 @@ export async function upsertDeltaSubjectEntry({
     approvedLessonsCount,
     approvedSectionsCount,
     approvedBlocksCount,
-    // Legacy fields — kept so subjects mid-migration still work on old app builds
-    ...(legacyDownloadUrl ? { legacyDownloadUrl, legacySha256, legacySize } : {}),
+    // Full export of the subject. Old app builds sync from it directly; current
+    // builds use it as the baseline for devices that bundles cannot complete
+    // (first sync, or a missed publish). fullExportVersion is the contentVersion
+    // the file was generated for — the app refuses a baseline that is not current.
+    ...(legacyDownloadUrl
+      ? { legacyDownloadUrl, legacySha256, legacySize, fullExportVersion }
+      : {}),
   };
 
   return upsertSubjectEntry(entry);
