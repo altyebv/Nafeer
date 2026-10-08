@@ -106,9 +106,14 @@ export async function buildAndUploadDelta({
   // parent will be missing and the bundle fails with SQLITE_CONSTRAINT_FOREIGNKEY.
   //
   // Fix: for each changed child, ensure its direct parent is included in
-  // changedByType. We only add parents that are genuinely absent from the
-  // previous entityIndex (i.e. unknown to the device) — if the parent was
-  // already synced, it's already in Room and we don't need to re-send it.
+  // changedByType. We only add parents that are absent from the previous
+  // entityIndex, i.e. never published before.
+  //
+  // Note this is the SERVER's view, not a device's: a parent published in an
+  // earlier run is in the index and is not re-sent, so a device that missed
+  // that run still lacks it. Bundles are therefore only sufficient for devices
+  // that applied every previous run — everything else syncs from the full
+  // export the publish route uploads alongside the bundles (the baseline).
   //
   // Cascade is one level at a time (BLOCK→SECTION→LESSON→UNIT) so we process
   // them in reverse apply-order: deepest children first.
