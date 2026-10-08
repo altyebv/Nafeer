@@ -25,6 +25,12 @@ const EXPORTS_BUCKET = process.env.SUPABASE_EXPORTS_BUCKET || 'content-exports';
 // mode    — defaults to "delta". Pass "full" to force a full re-export
 //           (migration baseline or manifest recovery).
 //
+//           A delta publish uploads patch bundles AND the subject's full export.
+//           Bundles keep up-to-date devices incremental; the full export is the
+//           baseline for any device the bundles cannot complete (first sync, or
+//           a missed publish). The manifest entry records which contentVersion
+//           the export was built for (fullExportVersion).
+//
 // bump    — omit for a normal patch publish (auto-increments MAJOR.patch).
 //           Pass "major" to cut a named release: increments MAJOR, resets patch
 //           to 0. Ignored when mode is "full" (full always resets patch to 0).
@@ -277,6 +283,26 @@ export async function POST(request) {
       unitId:          item.unitContentId   || null,   
     }));
 
+    // ── Index scope ───────────────────────────────────────────────────────────
+    // The delta engine builds the manifest's entityIndex from the raw documents
+    // it is given. Hand it only documents that are actually exported: a section
+    // of an unapproved lesson or a QUESTION-type block is never in any bundle or
+    // full export, so indexing it leaves every device permanently "out of date"
+    // on an entity it can never receive.
+    const exportedBlockIds = new Set(blocksExport.map((b) => b.id));
+    const indexedSections  = sections.filter((s) => approvedSectionIds.has(s.contentId));
+    const indexedBlocks    = blocks.filter((b) => exportedBlockIds.has(b.contentId));
+
+    // ── Full export (lazy — built only when a path needs it) ──────────────────
+    const buildFullExport = () => assembleFullExport({
+      subjectExport, tagsExport, conceptsExport,
+      unitsExport, lessonsExport: lessons, // full export uses nested shape
+      sectionsExport: sections, blocksExport: blocks,
+      questionsExport, examsExport, feedItemsExport,
+      lessonsByUnit, sectionsByLesson, blocksBySection,
+      approvedLessonIds,
+    });
+
     // ── Stat counters (shared by both paths) ──────────────────────────────────
     const totalSections = sectionsExport.length;
     const totalBlocks   = blocksExport.length;
@@ -297,8 +323,8 @@ export async function POST(request) {
           concepts,   conceptsExport,
           units,      unitsExport,
           lessons,    lessonsExport,
-          sections,   sectionsExport,
-          blocks,     blocksExport,
+          sections: indexedSections, sectionsExport,
+          blocks:   indexedBlocks,   blocksExport,
           questions: scopedQuestions,  questionsExport,
           exams,      examsExport,
           feedItems,  feedItemsExport,
@@ -313,15 +339,9 @@ export async function POST(request) {
           concepts:  concepts.length,
           exams:     exams.length,
         },
-        // Also assemble the full export for legacy fields (in case we need to
-        // keep legacyDownloadUrl alive while some app versions are still on v2)
-        legacyEntry: prevEntry?.legacyDownloadUrl
-          ? {
-              downloadUrl: prevEntry.legacyDownloadUrl,
-              sha256:      prevEntry.legacySha256,
-              size:        prevEntry.legacySize,
-            }
-          : null,
+        // Every delta publish also uploads the full export: it is the baseline for
+        // devices the bundles cannot complete (first sync, or a missed publish).
+        buildFullExport,
       });
     } else {
       return await handleFullPublish({
@@ -329,14 +349,7 @@ export async function POST(request) {
         contentVersion: fullContentVersion,
         publishedAt,
         prevEntry,
-        exportData: assembleFullExport({
-          subjectExport, tagsExport, conceptsExport,
-          unitsExport, lessonsExport: lessons, // full export uses nested shape
-          sectionsExport: sections, blocksExport: blocks,
-          questionsExport, examsExport, feedItemsExport,
-          lessonsByUnit, sectionsByLesson, blocksBySection,
-          approvedLessonIds,
-        }),
+        exportData: buildFullExport(),
         stats: {
           lessons:   lessons.length,
           sections:  totalSections,
@@ -359,7 +372,7 @@ export async function POST(request) {
 
 async function handleDeltaPublish({
   subjectId, prevMajor, prevPatch, bump, publishedAt, prevEntry,
-  snapshot, stats, legacyEntry,
+  snapshot, stats, buildFullExport,
 }) {
   const { entityIndex, patches, deletedByType, stats: deltaStats } =
     await buildAndUploadDelta({
@@ -374,6 +387,46 @@ async function handleDeltaPublish({
   // contentVersion stays the same — Android sees no change and skips the sync.
   if (deltaStats.bundlesUploaded === 0 && deltaStats.deletedEntities === 0) {
     const currentVersion = prevEntry?.contentVersion || prevEntry?.version || `${prevMajor}.0`;
+
+    // Nothing changed — but a subject published before baselines existed has no
+    // full export for this version, and new devices cannot sync it. Upload one
+    // and attach it to the existing entry: same version, same index, same
+    // bundles, so devices already up to date are untouched.
+    const baselineIsCurrent =
+      !!prevEntry?.legacyDownloadUrl && prevEntry?.fullExportVersion === currentVersion;
+
+    if (!baselineIsCurrent) {
+      const full = await uploadFullExport(subjectId, buildFullExport());
+      await upsertDeltaSubjectEntry({
+        subjectId,
+        contentVersion:        currentVersion,
+        updatedAt:             prevEntry?.updatedAt || publishedAt,
+        enabled:               prevEntry?.enabled ?? true,
+        minAppVersion:         prevEntry?.minAppVersion || '1.0',
+        entityIndex,
+        patches:               prevEntry?.patches || [],
+        approvedLessonsCount:  stats.lessons,
+        approvedSectionsCount: stats.sections,
+        approvedBlocksCount:   stats.blocks,
+        legacyDownloadUrl:     full.downloadUrl,
+        legacySha256:          full.sha256,
+        legacySize:            full.size,
+        fullExportVersion:     currentVersion,
+      });
+      return NextResponse.json({
+        ok: true,
+        mode: 'delta',
+        subjectId,
+        contentVersion: currentVersion,
+        publishedAt: prevEntry?.updatedAt || publishedAt,
+        noChange: true,
+        baselineRepaired: true,
+        downloadUrl: full.downloadUrl,
+        delta: { bundlesUploaded: 0, changedEntities: 0, deletedEntities: 0 },
+        stats,
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       mode: 'delta',
@@ -393,6 +446,10 @@ async function handleDeltaPublish({
     ? `${prevMajor + 1}.0`
     : `${prevMajor}.${prevPatch + 1}`;
 
+  // The baseline for this version. Uploaded before the manifest write so the
+  // manifest never points at a version without its full export.
+  const full = await uploadFullExport(subjectId, buildFullExport());
+
   await upsertDeltaSubjectEntry({
     subjectId,
     contentVersion,
@@ -404,9 +461,10 @@ async function handleDeltaPublish({
     approvedLessonsCount:  stats.lessons,
     approvedSectionsCount: stats.sections,
     approvedBlocksCount:   stats.blocks,
-    legacyDownloadUrl:     legacyEntry?.downloadUrl || null,
-    legacySha256:          legacyEntry?.sha256       || null,
-    legacySize:            legacyEntry?.size         || null,
+    legacyDownloadUrl:     full.downloadUrl,
+    legacySha256:          full.sha256,
+    legacySize:            full.size,
+    fullExportVersion:     contentVersion,
   });
 
   return NextResponse.json({
@@ -431,20 +489,7 @@ async function handleFullPublish({
   subjectId, contentVersion, publishedAt, prevEntry,
   exportData, stats,
 }) {
-  const fileName   = `${subjectId.toLowerCase()}_v${contentVersion}.json`;
-  const jsonBuffer = Buffer.from(JSON.stringify(exportData), 'utf-8');
-  const sha256     = crypto.createHash('sha256').update(jsonBuffer).digest('hex');
-  const size       = jsonBuffer.length;
-
-  await uploadFile(EXPORTS_BUCKET, fileName, jsonBuffer, 'application/json');
-  const downloadUrl = getPublicUrl(EXPORTS_BUCKET, fileName);
-
-  if (!downloadUrl) {
-    return NextResponse.json(
-      { ok: false, error: 'فشل الحصول على رابط التحميل من Supabase' },
-      { status: 500 }
-    );
-  }
+  const { downloadUrl, sha256, size } = await uploadFullExport(subjectId, exportData);
 
   // Write as legacy entry (no entityIndex / patches) so old app builds keep working.
   // Also sets contentVersion so the v3 app can do a coarse guard.
@@ -462,6 +507,7 @@ async function handleFullPublish({
     legacyDownloadUrl:     downloadUrl,
     legacySha256:          sha256,
     legacySize:            size,
+    fullExportVersion:     contentVersion,
   });
 
   return NextResponse.json({
@@ -475,7 +521,40 @@ async function handleFullPublish({
   });
 }
 
-// ── Full export assembler (legacy nested shape for mode:"full") ───────────────
+// ── Full export upload ───────────────────────────────────────────────────────
+
+/**
+ * Serialise and upload a subject's full export.
+ *
+ * Path: {subjectId}/full/{first 12 hex of sha256}.json — content-addressed like
+ * patch bundles, so a retried publish reuses the file instead of failing on the
+ * bucket's no-overwrite rule.
+ *
+ * @returns {Promise<{downloadUrl: string, sha256: string, size: number}>}
+ */
+async function uploadFullExport(subjectId, exportData) {
+  const jsonBuffer = Buffer.from(JSON.stringify(exportData), 'utf-8');
+  const sha256     = crypto.createHash('sha256').update(jsonBuffer).digest('hex');
+  const size       = jsonBuffer.length;
+  const path       = `${subjectId.toLowerCase()}/full/${sha256.slice(0, 12)}.json`;
+
+  try {
+    await uploadFile(EXPORTS_BUCKET, path, jsonBuffer, 'application/json');
+  } catch (e) {
+    if (!e.message?.includes('already exists') && !e.message?.includes('duplicate')) {
+      throw e;
+    }
+    // Identical export already uploaded — reuse it.
+  }
+
+  const downloadUrl = getPublicUrl(EXPORTS_BUCKET, path);
+  if (!downloadUrl) {
+    throw new Error('فشل الحصول على رابط التحميل من Supabase');
+  }
+  return { downloadUrl, sha256, size };
+}
+
+// ── Full export assembler (nested shape — the app's seeding format) ───────────
 
 function assembleFullExport({
   subjectExport, tagsExport, conceptsExport,
