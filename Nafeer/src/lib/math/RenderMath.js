@@ -1,53 +1,36 @@
 /**
- * renderMath.js
+ * RenderMath.js
  * ─────────────────────────────────────────────────────────────────────────────
- * Orchestrates the full Arabic-first math rendering pipeline:
- *   1. normalizeMathInput  — Arabic text → macro calls
- *   2. katex.render        — LaTeX → KaTeX HTML DOM
- *   3. postProcessMath     — RTL DOM fixes
- *
- * CMS path: src/lib/math/renderMath.js
- *
- * This is the only function FormulaPreview.jsx (and any other CMS component)
- * needs to import. The three underlying modules are implementation details.
+ * The one function CMS components call to typeset a formula. It runs the same
+ * pipeline as the Android app (see ArabicMath.js), so what a contributor sees
+ * in a preview is what a student sees in a lesson.
  */
-import { getKatexConfig }    from './KatexConfig.js';
-import { normalizeMathInput } from './NormallizeInput.js';
-import { postProcessMath }    from './PostProcessMath.js';
+import { getKatexConfig, postProcessMath } from './ArabicMath.js';
 
 /**
- * renderMath(expression, element, overrides?)
+ * renderMath(expression, element, options?)
  *
- * @param {string}  expression       — raw LaTeX (may contain Arabic operators)
- * @param {Element} element          — DOM element to render into (cleared first)
- * @param {object}  [overrides={}]   — optional KaTeX option overrides,
- *                                     e.g. { displayMode: false }
- * @returns {Promise<void>}           — resolves after render + post-processing
- *
- * Error handling:
- *   On a KaTeX parse error, the element receives:
- *     - data-error="true"
- *     - textContent = first line of the error message in Arabic context
- *   No exception is thrown — the caller never needs a try/catch.
- *
- * Example (FormulaPreview):
- *   await renderMath('\\nha_{x \\to 0} \\dfn(\\sen)', el, { displayMode: true });
- *
- * Example (inline override):
- *   await renderMath('\\frac{س}{ص}', el, { displayMode: false });
+ * @param {string}  expression            — LaTeX source
+ * @param {Element} element               — DOM element to render into (cleared first)
+ * @param {object}  [options]
+ * @param {boolean} [options.displayMode] — true = centred block equation (default),
+ *                                          false = inline, sized to the surrounding text
+ * @param {string}  [options.notation]    — 'ARABIC' or 'LATIN' (default), from the subject
+ * @returns {Promise<string|null>}        — null on success, or the first line of
+ *                                          KaTeX's error message. Never throws on bad LaTeX.
  */
-export async function renderMath(expression, element, overrides = {}) {
+export async function renderMath(expression, element, { displayMode = true, notation = 'LATIN' } = {}) {
   const { default: katex } = await import('katex');
-
-  const normalized = normalizeMathInput(expression);
-  const config     = { ...getKatexConfig(), ...overrides };
+  const arabic = notation === 'ARABIC';
 
   try {
-    katex.render(normalized, element, config);
+    katex.render(expression, element, { ...getKatexConfig(arabic), displayMode, throwOnError: true });
     element.dataset.error = '';
-    postProcessMath(element);
+    if (arabic) postProcessMath(element);
+    return null;
   } catch (err) {
-    element.dataset.error   = 'true';
-    element.textContent     = err.message?.split('\n')[0] ?? 'خطأ في الصياغة';
+    element.dataset.error = 'true';
+    element.textContent   = '';
+    return (err?.message ?? '').split('\n')[0].replace(/^KaTeX parse error:\s*/, '') || 'خطأ في الصياغة';
   }
 }
