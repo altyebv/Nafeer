@@ -24,6 +24,11 @@ const SubjectSchema = new mongoose.Schema(
     // Inside SubjectSchema, after colorHex:
     iconUrl: { type: String, default: null },
 
+    // How this subject's formulas are typeset: 'ARABIC' | 'LATIN'.
+    // null defers to the catalog (getMathNotation in shared/curriculum.js),
+    // so only subjects outside the catalog need to set it.
+    mathNotation: { type: String, enum: ['ARABIC', 'LATIN', null], default: null },
+
     // The contributor assigned to this subject
     contributor: {
       type: mongoose.Schema.Types.ObjectId,
