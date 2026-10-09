@@ -4,64 +4,81 @@ import { useEffect, useRef } from 'react';
 // rendered math spans have no styles and appear invisible.
 import 'katex/dist/katex.min.css';
 import { renderMath } from '@/lib/math/RenderMath.js';
+import { useMathNotation } from '@/components/editor/shared/MathNotationContext';
 
 // ─── FormulaPreview ────────────────────────────────────────────────────────────
-// Lightweight KaTeX renderer using the shared Arabic math pipeline:
-//   normalizeMathInput → katex.render (with Arabic macros) → postProcessMath
+// Typesets one formula exactly as the Android app will (see lib/math/ArabicMath.js).
 //
 // Props:
-//   latex       {string}  — LaTeX source (block.content). May contain raw
-//                           Arabic operators like 'نها' — normalization handles
-//                           the conversion automatically.
-//   displayMode {boolean} — true = block/centred equation (default)
-//                           false = inline, fits within surrounding text
-//   rtlMath     {boolean} — sets direction:rtl on the wrapper so Arabic term
-//                           order reads right-to-left. KaTeX's internal LTR
-//                           absolute-positioning is unaffected because
-//                           postProcessMath isolates .msupsub from bidi.
-//   className   {string}  — extra Tailwind/CSS classes on the wrapper span
+//   latex       {string}   — LaTeX source
+//   displayMode {boolean}  — true = block/centred equation (default)
+//                            false = inline, fits within surrounding text
+//   notation    {string}   — 'ARABIC' or 'LATIN'. Defaults to the subject's notation
+//                            from MathNotationContext.
+//   onError     {fn}       — called with KaTeX's message, or null when the source is
+//                            valid. When given, a broken source keeps the last good
+//                            render on screen (so a preview does not blink while the
+//                            contributor is mid-keystroke); without it the raw source
+//                            is shown instead.
+//   className   {string}   — extra classes on the wrapper span
 
 export default function FormulaPreview({
   latex       = '',
   displayMode = true,
-  rtlMath     = false,
+  notation: notationProp,
+  onError,
   className   = '',
 }) {
-  const ref = useRef(null);
+  const contextNotation = useMathNotation();
+  const notation        = notationProp ?? contextNotation;
+  const ref        = useRef(null);
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   useEffect(() => {
-    if (!ref.current) return;
     const el = ref.current;
+    if (!el) return;
 
     if (!latex.trim()) {
-      el.textContent = '';
+      el.replaceChildren();
+      el.dataset.error = '';
+      onErrorRef.current?.(null);
       return;
     }
 
     let cancelled = false;
+    // Render off-screen, then swap in — a failed render never clears the preview.
+    const target = document.createElement('span');
 
-    renderMath(latex, el, { displayMode })
-      .catch(() => {
-        // renderMath handles KaTeX errors internally (sets data-error + textContent).
-        // This catch only fires on an unexpected module-load failure.
-        if (!cancelled && ref.current) {
+    renderMath(latex, target, { displayMode, notation })
+      .then((error) => {
+        if (cancelled || !ref.current) return;
+        if (!error) {
+          ref.current.replaceChildren(...target.childNodes);
+        } else if (!onErrorRef.current) {
           ref.current.textContent = latex;
         }
+        ref.current.dataset.error = error ? 'true' : '';
+        onErrorRef.current?.(error);
+      })
+      .catch(() => {
+        // Only an unexpected module-load failure lands here.
+        if (!cancelled && ref.current) ref.current.textContent = latex;
       });
 
     return () => { cancelled = true; };
-  }, [latex, displayMode]);
+  }, [latex, displayMode, notation]);
 
   return (
     <span
       ref={ref}
-      // dir is NOT set here — the rtlMath class below controls direction
-      // so that KaTeX's internal LTR absolute-positioning is unaffected
-      // while the inline flow of Arabic terms reads RTL.
+      // KaTeX does not pin its own direction, and the CMS is an RTL page:
+      // without this the browser reorders the formula's boxes.
+      dir="ltr"
+      style={{ unicodeBidi: 'isolate' }}
       className={[
         'formula-preview',
-        displayMode ? 'block text-center' : 'inline',
-        rtlMath     ? '[direction:rtl]'   : '',
+        displayMode ? 'block text-center' : 'inline-block align-middle',
         className,
       ].filter(Boolean).join(' ')}
       data-display={displayMode ? 'block' : 'inline'}
