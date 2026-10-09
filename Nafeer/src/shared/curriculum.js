@@ -37,8 +37,19 @@ export const TRACK_CONFIG = {
   LITERARY: { label: 'أدبي',  color: 'text-special',  badge: 'bg-special-surface border-special-border text-special' },
 };
 
+// ─── Math Notation ───────────────────────────────────────────────────────────
+// How a subject's formulas are typeset. Contributors write the same LaTeX
+// either way; the preview here and the Android app apply the notation.
+// Exported to the app as subject.mathNotation.
+export const MATH_NOTATION = {
+  LATIN:  'LATIN',    // left-to-right, Latin symbols — the default
+  ARABIC: 'ARABIC',   // right-to-left, Arabic letters, digits and function names
+};
+
 // ─── Subject Catalog ─────────────────────────────────────────────────────────
 /**
+ * A subject may set `mathNotation` (see MATH_NOTATION); absent means LATIN.
+ *
  * Each unit entry:
  * {
  *   order      : number  — GLOBALLY UNIQUE within subject. Used in contentId. NEVER change.
@@ -119,6 +130,7 @@ export const SUBJECTS_CATALOG = [
     isMajor: false,
     color:   'sand',
     order:   4,
+    mathNotation: MATH_NOTATION.ARABIC,
     units: [
       { order: 1, titleAr: 'الدوال الحقيقية و النهايات',           lessonCount: 7 },
       { order: 2, titleAr: 'التفاضل',                              lessonCount: 8 },
@@ -140,6 +152,7 @@ export const SUBJECTS_CATALOG = [
     isMajor: false,
     color:   'sand',
     order:   5,
+    mathNotation: MATH_NOTATION.ARABIC,
     units: [
       // ── الكتاب الأول ────────────────────────────────────────────────────────
       // order values 1–5 reserved for book one (globally unique within subject)
@@ -332,6 +345,18 @@ export const SUBJECTS_CATALOG = [
 export const SUBJECTS_BY_ID = Object.fromEntries(
   SUBJECTS_CATALOG.map((s) => [s.id, s])
 );
+
+/**
+ * The notation a subject's formulas are typeset in.
+ * Accepts a subject id, or a subject object ({ id | subjectId, mathNotation }):
+ * a notation stored on the subject wins, then the catalog, then LATIN.
+ */
+export const getMathNotation = (subject) => {
+  const id     = typeof subject === 'string' ? subject : (subject?.subjectId ?? subject?.id);
+  const stored = subject && typeof subject === 'object' ? subject.mathNotation : null;
+  const value  = stored || SUBJECTS_BY_ID[id]?.mathNotation;
+  return value === MATH_NOTATION.ARABIC ? MATH_NOTATION.ARABIC : MATH_NOTATION.LATIN;
+};
 
 /** All valid subject IDs — use for Mongoose enum validation */
 export const SUBJECT_IDS = SUBJECTS_CATALOG.map((s) => s.id);
