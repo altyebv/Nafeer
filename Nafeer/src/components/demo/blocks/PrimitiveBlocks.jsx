@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import MathText from '@/components/editor/shared/MathText';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PrimitiveBlocks — leaf-level block renderers
@@ -49,7 +50,7 @@ export function TextBlock({ block }) {
         className="font-arabic text-sm sm:text-base leading-loose"
         style={{ color: 'var(--text-secondary)' }}
       >
-        {block.content}
+        <MathText text={block.content} />
       </p>
     </div>
   );
@@ -77,7 +78,7 @@ export function TipBlock({ block }) {
       <div>
         <p className="font-arabic text-xs font-bold mb-1" style={{ color: '#9a7848' }}>نصيحة</p>
         <p className="font-arabic text-sm leading-loose" style={{ color: 'var(--text-secondary)' }}>
-          {block.content}
+          <MathText text={block.content} />
         </p>
       </div>
     </div>
