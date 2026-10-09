@@ -12,6 +12,7 @@ import { FeedItem }               from '@/lib/models/FeedItem';
 import { Question }               from '@/lib/models/Question';
 import { Exam }                   from '@/lib/models/Exam';
 import { uploadFile, getPublicUrl } from '@/lib/supabase';
+import { getMathNotation }        from '@/shared/curriculum';
 import { getManifest, upsertDeltaSubjectEntry } from '@/lib/FirebaseAdmin';
 import { buildAndUploadDelta }    from '@/lib/deltaEngine';
 import crypto from 'crypto';
@@ -134,6 +135,8 @@ export async function POST(request) {
       order:    subject.order    || 0,
       colorHex: subject.colorHex || null,
       iconRes:  subject.iconUrl  || null,
+      // The app typesets this subject's formulas in this notation.
+      mathNotation: getMathNotation(subject),
     };
 
     // ── Tags
