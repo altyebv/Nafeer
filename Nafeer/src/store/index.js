@@ -20,6 +20,7 @@ import { useContentStore } from './contentStore';
 import { useConceptStore } from './conceptStore';
 import { useFeedStore }    from './feedStore';
 import { useQuizStore }    from './quizStore';
+import { getMathNotation } from '@/shared/curriculum';
 
 const STORES = [useSubjectStore, useContentStore, useConceptStore, useFeedStore, useQuizStore];
 
@@ -270,6 +271,7 @@ function assembleExportData(s) {
       id: s.subject.id, nameAr: s.subject.nameAr, nameEn: s.subject.nameEn || null,
       path: s.subject.path, isMajor: s.subject.isMajor || false,
       order: s.subject.order || 0, colorHex: s.subject.colorHex || null,
+      mathNotation: getMathNotation(s.subject),
     } : null,
     tags:     s.tags.map((t) => ({ id: t.id, nameAr: t.nameAr, nameEn: t.nameEn || null })),
     concepts: s.concepts.map((c) => ({
