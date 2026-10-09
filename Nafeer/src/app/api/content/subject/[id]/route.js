@@ -17,7 +17,7 @@ const err = (msg, status=400) => Response.json({ ok: false, error: msg }, { stat
 // Admin-only. Updates cosmetic / metadata fields on the Subject document.
 // Immutable fields (subjectId, path, isMajor, order) are intentionally excluded.
 //
-// Body: { nameAr?, nameEn?, colorHex?, note? }
+// Body: { nameAr?, nameEn?, colorHex?, mathNotation?, note? }
 export async function PATCH(request, { params }) {
   const admin = await verifyAdminToken();
   if (!admin) return err('غير مصرح', 401);
@@ -26,7 +26,7 @@ export async function PATCH(request, { params }) {
   const body = await request.json();
   const { note, ...updates } = body;
 
-  const allowed = ['nameAr', 'nameEn', 'colorHex', 'iconUrl'];
+  const allowed = ['nameAr', 'nameEn', 'colorHex', 'iconUrl', 'mathNotation'];
   const safeUpdates = Object.fromEntries(
     Object.entries(updates).filter(([k]) => allowed.includes(k))
   );
