@@ -1,4 +1,5 @@
 'use client';
+import MathText from '@/components/editor/shared/MathText';
 
 const STYLE_CONFIG = {
   DEFINITION: {
@@ -29,7 +30,7 @@ export function HighlightBox({ block }) {
         <span className="font-arabic text-xs font-bold">{block.title || cfg.label}</span>
       </div>
       <p className="font-arabic text-xs leading-loose" style={{ color: 'var(--text-secondary)' }}>
-        {block.content}
+        <MathText text={block.content} />
       </p>
     </div>
   );
