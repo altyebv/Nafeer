@@ -9,6 +9,8 @@ import LessonQuestionsPanel from '@/components/editor/lesson/LessonQuestionsPane
 import LessonFeedPanel      from '@/components/editor/lesson/LessonFeedPanel';
 import StatusBadge          from '@/components/editor/shared/StatusBadge';
 import LessonPreviewModal   from '@/components/editor/lesson/LessonPreviewModal';
+import { MathNotationContext } from '@/components/editor/shared/MathNotationContext';
+import { getMathNotation }  from '@/shared/curriculum';
 import AttributionBar       from '@/components/editor/lesson/AttributionBar';
 import LessonNotesDrawer    from '@/components/editor/lesson/LessonNotesDrawer';
 import LessonHistoryDrawer  from '@/components/editor/lesson/LessonHistoryDrawer';
@@ -235,6 +237,8 @@ export default function LessonEditorPage({
   const circumference = 2 * Math.PI * 9;
 
   return (
+    // Every formula on this page — editors, previews, inline — follows the subject.
+    <MathNotationContext.Provider value={getMathNotation(subjectId)}>
     <EditorPage width="full" bleed className="flex min-h-[100dvh] flex-col">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
@@ -502,6 +506,7 @@ export default function LessonEditorPage({
         />
       )}
     </EditorPage>
+    </MathNotationContext.Provider>
   );
 }
 
