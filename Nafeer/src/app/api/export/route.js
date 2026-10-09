@@ -11,6 +11,7 @@ import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
 import { getManifest } from '@/lib/FirebaseAdmin';
+import { getMathNotation } from '@/shared/curriculum';
 
 // GET /api/export?subjectId=PHYSICS[&includeAll=true]
 //
@@ -120,6 +121,7 @@ export async function GET(request) {
         isMajor: subject.isMajor || false,
         order: subject.order || 0,
         colorHex: subject.colorHex || null,
+        mathNotation: getMathNotation(subject),
       },
       tags: tags.map((tag) => ({
         id: tag.contentId,
