@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { HIGHLIGHT_STYLES } from '@/shared/constants';
 import FormulaPreview from '@/components/editor/shared/FormulaPreview';
+import MathText from '@/components/editor/shared/MathText';
 import {
   AlertTriangle,
   BookOpen,
@@ -212,7 +213,7 @@ function BlockPreview({ block }) {
     case 'TEXT':
       return (
         <p className="text-white/85 text-sm font-arabic leading-relaxed">
-          {block.content || <span className="text-white/20">نص فارغ</span>}
+          {block.content ? <MathText text={block.content} /> : <span className="text-white/20">نص فارغ</span>}
         </p>
       );
 
@@ -293,11 +294,7 @@ function BlockPreview({ block }) {
     case 'FORMULA':
       return (
         <div className="rounded-xl px-4 py-4 text-center" style={{ background: '#1a1713' }}>
-          <FormulaPreview
-            latex={block.content || ''}
-            displayMode={block.metadata?.displayMode !== true}
-            rtlMath={true}
-          />
+          <FormulaPreview latex={block.content || ''} className="text-white/90" />
           {!block.content && (
             <p className="font-mono text-xs mt-1" style={{ color: '#5c5648' }}>معادلة</p>
           )}
@@ -342,11 +339,11 @@ function BlockPreview({ block }) {
                 <div key={i} className="flex gap-2 items-start">
                   <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0"
                     style={{ background: '#134e4a', color: '#5eead4' }}>{i + 1}</div>
-                  <p className="text-sm font-arabic text-white/80">{step || '…'}</p>
+                  <p className="text-sm font-arabic text-white/80">{step ? <MathText text={step} /> : '…'}</p>
                 </div>
               ))
             ) : (
-              <p className="text-sm font-arabic text-white/80 leading-relaxed">{block.content || '…'}</p>
+              <p className="text-sm font-arabic text-white/80 leading-relaxed">{block.content ? <MathText text={block.content} /> : '…'}</p>
             )}
           </div>
         </div>
@@ -357,7 +354,7 @@ function BlockPreview({ block }) {
       return (
         <div className="rounded-xl p-3" style={{ background: '#1c0f00', borderRight: '3px solid #f97316' }}>
           <p className="text-xs mb-1.5 font-arabic" style={{ color: '#fb923c' }}>◈ نصيحة</p>
-          <p className="text-sm font-arabic text-white/80 leading-relaxed">{block.content || '…'}</p>
+          <p className="text-sm font-arabic text-white/80 leading-relaxed">{block.content ? <MathText text={block.content} /> : '…'}</p>
         </div>
       );
 
@@ -372,7 +369,7 @@ function BlockPreview({ block }) {
               <span className="text-sm shrink-0 mt-0.5" style={{ color: '#d4891e' }}>
                 {style === 'NUMBERED' ? `${i + 1}.` : '•'}
               </span>
-              <p className="text-sm font-arabic text-white/80">{item}</p>
+              <p className="text-sm font-arabic text-white/80"><MathText text={item} /></p>
             </div>
           ))}
         </div>
