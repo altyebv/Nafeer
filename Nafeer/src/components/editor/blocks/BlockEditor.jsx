@@ -10,6 +10,7 @@ import MediaPicker from '@/components/editor/media/MediaPicker';
 import ImageMarkerEditor from '@/components/editor/media/ImageMarkerEditor';
 import { sanitiseMarkers } from '@/lib/markerUtils';
 import FormulaEditor from '@/components/editor/blocks/FormulaEditor';
+import MathTextarea from '@/components/editor/shared/MathTextarea';
 
 // Demo renderers — the actual lesson appearance
 import { HeadingBlock, TextBlock, TipBlock, ArabicFormulaBlock, ImagePlaceholderBlock, GifPlaceholderBlock, TableBlock } from '@/components/demo/blocks/PrimitiveBlocks';
@@ -316,7 +317,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
 
     case 'TEXT':
       return (
-        <textarea autoFocus value={block.content} onChange={(e) => update({ content: e.target.value })}
+        <MathTextarea autoFocus value={block.content} onChange={(v) => update({ content: v })}
           className={`${ta} min-h-[100px]`} placeholder="اكتب النص هنا…" />
       );
 
@@ -347,7 +348,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return <MediaBlockEditor block={block} update={update} subjectId={subjectId} />;
 
     case 'FORMULA':
-      return <FormulaEditor value={block.content} onChange={(v) => update({ content: v })} />;
+      return <FormulaEditor value={block.content} onChange={(v) => update({ content: v })} autoFocus />;
 
     case 'HIGHLIGHT_BOX': {
       const style = block.metadata?.style ?? 'NOTE';
@@ -365,7 +366,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
           </div>
           <div className={`border-r-4 ${colors.border} ${colors.bg} rounded-lg p-3`}>
             <p className={`text-xs mb-2 font-arabic ${colors.label}`}>{HIGHLIGHT_STYLES[style]?.icon} {HIGHLIGHT_STYLES[style]?.label}</p>
-            <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
+            <MathTextarea value={block.content} onChange={(v) => update({ content: v })}
               className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-sand-200 text-sm font-arabic placeholder-ink-600"
               placeholder="النص المهم الذي تريد إبرازه…" autoFocus />
           </div>
@@ -396,7 +397,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
           {!interactive ? (
             <div className="bg-teal-950/40 border-r-4 border-teal-700 rounded-lg p-3">
               <p className="text-xs text-teal-600 mb-2 font-arabic inline-flex items-center gap-1"><Pencil size={12} strokeWidth={1.9} /> مثال</p>
-              <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
+              <MathTextarea value={block.content} onChange={(v) => update({ content: v })}
                 className="w-full bg-transparent border-none resize-y min-h-[88px] focus:outline-none text-teal-100 text-sm font-arabic placeholder-teal-900"
                 placeholder="اكتب المثال كاملاً هنا…" autoFocus />
             </div>
@@ -405,7 +406,9 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
               {steps.map((step, i) => (
                 <div key={i} className="flex gap-2 items-start">
                   <div className="w-6 h-6 rounded-full bg-teal-900/50 border border-teal-800/50 text-teal-500 text-[10px] font-mono flex items-center justify-center shrink-0 mt-1.5">{i + 1}</div>
-                  <textarea value={step} onChange={(e) => updateStep(i, e.target.value)} className={`${ta} flex-1 min-h-[60px]`} placeholder={`الخطوة ${i + 1}…`} autoFocus />
+                  <div className="flex-1">
+                    <MathTextarea value={step} onChange={(v) => updateStep(i, v)} className={`${ta} min-h-[60px]`} placeholder={`الخطوة ${i + 1}…`} autoFocus />
+                  </div>
                   <button onClick={() => removeStep(i)} aria-label="حذف الخطوة" className="text-ink-500 hover:text-red-500 transition-colors mt-2 text-sm"><X size={14} strokeWidth={1.9} /></button>
                 </div>
               ))}
@@ -421,7 +424,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return (
         <div className="bg-ember-900/20 border-r-4 border-ember-500/70 rounded-lg p-3">
           <p className="text-xs text-ember-400 mb-2 font-arabic">◈ نصيحة</p>
-          <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
+          <MathTextarea value={block.content} onChange={(v) => update({ content: v })}
             className="w-full bg-transparent border-none resize-y min-h-[80px] focus:outline-none text-ink-200 text-sm font-arabic placeholder-ink-600"
             placeholder="اكتب النصيحة هنا…" />
         </div>
@@ -439,7 +442,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
               </button>
             ))}
           </div>
-          <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
+          <MathTextarea value={block.content} onChange={(v) => update({ content: v })}
             className={`${ta} min-h-[100px]`} placeholder="كل سطر = عنصر في القائمة…" autoFocus />
           <p className="text-[11px] text-ink-500 font-arabic">كل سطر سيظهر كعنصر منفصل</p>
         </div>
