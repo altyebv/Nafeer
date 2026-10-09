@@ -124,6 +124,7 @@ async function importRemoteSubject(data, actorId) {
     isMajor: data.subject.isMajor || false,
     order: data.subject.order || 0,
     colorHex: data.subject.colorHex || null,
+    mathNotation: ['ARABIC', 'LATIN'].includes(data.subject.mathNotation) ? data.subject.mathNotation : null,
     contributor: actorId,
     createdBy: actorId,
     updatedBy: actorId,
