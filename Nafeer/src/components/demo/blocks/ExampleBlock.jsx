@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import MathText from '@/components/editor/shared/MathText';
 
 function toAr(n) {
   return n.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
@@ -12,7 +13,7 @@ export function ExampleBlock({ block }) {
       <div className="mx-4 my-2 rounded-xl p-3" dir="rtl"
         style={{ background: 'rgba(147,112,219,0.08)', border: '1px solid rgba(147,112,219,0.22)' }}>
         <Header title={caption} />
-        <p className="font-arabic text-xs leading-loose mt-1.5" style={{ color: 'var(--text-secondary)' }}>{content}</p>
+        <p className="font-arabic text-xs leading-loose mt-1.5" style={{ color: 'var(--text-secondary)' }}><MathText text={content} /></p>
       </div>
     );
   }
