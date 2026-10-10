@@ -573,6 +573,12 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
               className={`${FIELD} resize-y min-h-[68px]`}
               placeholder="هل تساءلت كيف يحدد الملاحون موقعهم؟…" />
           </Field>
+          <Field label="إجابة السؤال التحفيزي" hint="تظهر قرب نهاية الدرس، بعد أن يقرأ الطالب ما يكفي لفهمها">
+            <textarea value={lesson.metadata?.hookAnswer || ''}
+              onChange={(e) => patchMeta({ hookAnswer: e.target.value || null })}
+              className={`${FIELD} resize-y min-h-[68px]`}
+              placeholder="باستخدام خطوط الطول والعرض…" />
+          </Field>
           <Field label="ستتعلم في هذا الدرس" hint="نقاط توجيهية تظهر قبل المحتوى">
             <OrientationInput value={lesson.metadata?.orientation || []} onChange={(v) => patchMeta({ orientation: v })} />
           </Field>

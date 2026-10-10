@@ -29,6 +29,7 @@ const FIELD_LABELS = {
   'estimatedMinutes':      'الوقت المقدر',
   'status':                'الحالة',
   'metadata.hook':         'السؤال التحفيزي',
+  'metadata.hookAnswer':   'إجابة السؤال التحفيزي',
   'metadata.forwardPull':  'الجملة الشدّاءة',
   'metadata.orientation':  'نقاط التوجيه',
 };
