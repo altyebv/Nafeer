@@ -326,7 +326,8 @@ function BlockPreview({ block }) {
 
     case 'EXAMPLE': {
       const interactive = block.metadata?.interactive ?? false;
-      const steps       = block.metadata?.steps ?? [];
+      // A step is a string, or { text, predict } when the student predicts it first.
+      const steps       = (block.metadata?.steps ?? []).map((s) => (typeof s === 'string' ? s : s?.text ?? ''));
       return (
         <div className="rounded-xl overflow-hidden" style={{ background: '#0a1f1c', border: '1px solid #134e4a' }}>
           <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: '1px solid #134e4a' }}>

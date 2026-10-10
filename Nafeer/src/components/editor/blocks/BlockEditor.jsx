@@ -89,7 +89,8 @@ function BlockPreview({ block }) {
 
     case 'EXAMPLE': {
       const interactive = block.metadata?.interactive ?? false;
-      const steps = block.metadata?.steps ?? [];
+      // A step is a string, or { text, predict } when the student predicts it first.
+      const steps = (block.metadata?.steps ?? []).map((s) => (typeof s === 'string' ? s : s?.text ?? ''));
       if (!interactive && !block.content?.trim()) return null;
       if (interactive && steps.length === 0) return null;
       return <ExampleBlock block={{ ...b, interactive, steps, caption: block.metadata?.caption || 'مثال' }} />;
@@ -380,7 +381,34 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       const setInteractive = (val) => {
         patchMeta({ interactive: val, steps: val && steps.length === 0 && block.content ? [block.content] : steps });
       };
-      const updateStep = (i, val) => { const next = [...steps]; next[i] = val; patchMeta({ steps: next }); };
+      // A step is a plain string, or { text, predict: { choices, answer } } when Basheer
+      // asks the student what comes next before showing it. choices[answer] is the
+      // right one; the app shuffles them, so the right choice is always stored first.
+      const stepText    = (s) => (typeof s === 'string' ? s : s?.text ?? '');
+      const stepPredict = (s) => (s && typeof s === 'object' ? s.predict ?? null : null);
+      const setStep = (i, text, predict) => {
+        const next = [...steps];
+        next[i] = predict ? { text, predict } : text;
+        patchMeta({ steps: next });
+      };
+      const updateStep = (i, val) => setStep(i, val, stepPredict(steps[i]));
+      const togglePredict = (i) => setStep(
+        i, stepText(steps[i]),
+        stepPredict(steps[i]) ? null : { choices: ['', ''], answer: 0 },
+      );
+      const updateChoice = (i, c, val) => {
+        const predict = stepPredict(steps[i]);
+        const choices = [...predict.choices]; choices[c] = val;
+        setStep(i, stepText(steps[i]), { ...predict, choices });
+      };
+      const addChoice = (i) => {
+        const predict = stepPredict(steps[i]);
+        setStep(i, stepText(steps[i]), { ...predict, choices: [...predict.choices, ''] });
+      };
+      const removeChoice = (i, c) => {
+        const predict = stepPredict(steps[i]);
+        setStep(i, stepText(steps[i]), { ...predict, choices: predict.choices.filter((_, j) => j !== c) });
+      };
       const addStep = () => patchMeta({ steps: [...steps, ''] });
       const removeStep = (i) => patchMeta({ steps: steps.filter((_, j) => j !== i) });
 
@@ -406,8 +434,32 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
               {steps.map((step, i) => (
                 <div key={i} className="flex gap-2 items-start">
                   <div className="w-6 h-6 rounded-full bg-teal-900/50 border border-teal-800/50 text-teal-500 text-[10px] font-mono flex items-center justify-center shrink-0 mt-1.5">{i + 1}</div>
-                  <div className="flex-1">
-                    <MathTextarea value={step} onChange={(v) => updateStep(i, v)} className={`${ta} min-h-[60px]`} placeholder={`الخطوة ${i + 1}…`} autoFocus />
+                  <div className="flex-1 space-y-1.5">
+                    <MathTextarea value={stepText(step)} onChange={(v) => updateStep(i, v)} className={`${ta} min-h-[60px]`} placeholder={`الخطوة ${i + 1}…`} autoFocus />
+                    {/* The first step is always shown, so there is nothing to predict before it. */}
+                    {i > 0 && (
+                      <label className="inline-flex items-center gap-1.5 text-[11px] text-ink-500 font-arabic cursor-pointer">
+                        <input type="checkbox" checked={!!stepPredict(step)} onChange={() => togglePredict(i)} />
+                        اسأل الطالب «الخطوة الجاية شنو؟» قبل كشفها
+                      </label>
+                    )}
+                    {i > 0 && stepPredict(step) && (
+                      <div className="space-y-1.5 border-r-2 border-teal-900 pr-2">
+                        {stepPredict(step).choices.map((choice, c) => (
+                          <div key={c} className="flex gap-1.5 items-center">
+                            <span className={`text-[10px] font-arabic shrink-0 w-10 ${c === 0 ? 'text-teal-500' : 'text-ink-500'}`}>{c === 0 ? 'الصحيح' : 'خاطئ'}</span>
+                            <input type="text" value={choice} onChange={(e) => updateChoice(i, c, e.target.value)}
+                              className={`${ta} flex-1`} placeholder={c === 0 ? 'وصف قصير للخطوة الصحيحة…' : 'خطوة تبدو معقولة لكنها خاطئة…'} />
+                            {c > 1 && (
+                              <button onClick={() => removeChoice(i, c)} aria-label="حذف الاختيار" className="text-ink-500 hover:text-red-500 transition-colors"><X size={12} strokeWidth={1.9} /></button>
+                            )}
+                          </div>
+                        ))}
+                        {stepPredict(step).choices.length < 4 && (
+                          <button onClick={() => addChoice(i)} className="text-[11px] text-teal-700 hover:text-teal-500 font-arabic">+ اختيار خاطئ آخر</button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <button onClick={() => removeStep(i)} aria-label="حذف الخطوة" className="text-ink-500 hover:text-red-500 transition-colors mt-2 text-sm"><X size={14} strokeWidth={1.9} /></button>
                 </div>
