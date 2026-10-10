@@ -161,7 +161,7 @@ function EndScreen({ data, onGoHome, onXpEarned, setFullScreen, onAgain }) {
           <span style={{ width: 1, background: 'var(--b-rule)' }} />
           <Stat n={toAr(data.subjectsHit.length)} label="مواد" />
           <span style={{ width: 1, background: 'var(--b-rule)' }} />
-          <Stat n={`+${toAr(data.xpEarned)}`} label="نقطة" />
+          <Stat n={<span dir="ltr">{`+${toAr(data.xpEarned)}`}</span>} label="نقطة" />
         </div>
         <p style={{ margin: '16px 0 0', font: '500 14px/24px var(--font-arabic)', color: 'var(--b-ink2)' }}>
           كل مفهوم بيرجع ليك في المراجعة في يومه.

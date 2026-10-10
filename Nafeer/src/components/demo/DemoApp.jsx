@@ -116,8 +116,8 @@ export default function DemoApp() {
         zIndex:        1,
       }}
     >
-      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && activeTab !== 'home' && activeTab !== 'lesson' && <StatusBar />}
-      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && activeTab !== 'home' && activeTab !== 'lesson' && <AppTopBar activeTab={activeTab} />}
+      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && activeTab !== 'home' && activeTab !== 'lesson' && activeTab !== 'quiz' && <StatusBar />}
+      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && activeTab !== 'home' && activeTab !== 'lesson' && activeTab !== 'quiz' && <AppTopBar activeTab={activeTab} />}
 
       <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
         {phase === 'onboarding' && (
@@ -156,9 +156,7 @@ export default function DemoApp() {
               />
             )}
             {activeTab === 'quiz' && (
-              <ScrollPane>
-                <QuizBankScreen onXpEarned={(xp) => awardXp(xp)} />
-              </ScrollPane>
+              <QuizBankScreen onXpEarned={(xp) => awardXp(xp)} onNavigate={navigateTo} setFullScreen={setLessonFullScreen} />
             )}
             {activeTab === 'profile' && (
               <ScrollPane><ProfileScreen userProfile={userProfile} /></ScrollPane>
