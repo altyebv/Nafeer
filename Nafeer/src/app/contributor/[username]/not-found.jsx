@@ -11,7 +11,7 @@ export default function ContributorNotFound() {
       fontFamily: 'monospace',
     }}>
       <span style={{ fontSize: 40, opacity: 0.2 }}>◈</span>
-      <p style={{ fontSize: 14 }}>لم يُعثر على هذا المساهم</p>
+      <p style={{ fontSize: 14 }}>ما لقينا المٌساهِم ده</p>
       <p style={{ fontSize: 11, opacity: 0.5 }}>contributor not found</p>
     </div>
   );
