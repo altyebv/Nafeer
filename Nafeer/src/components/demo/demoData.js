@@ -23,6 +23,8 @@ export const DEMO_USER = {
   xpToNext:       1000,
   dailyGoalDone:  2,
   dailyGoalTotal: 5,
+  daysUntilExam:  84,
+  paceLabel:      'ماشي على الخطة',
 };
 
 export const SUBJECTS_BY_PATH = {
@@ -68,6 +70,7 @@ export const DEMO_LESSON_PHYSICS = {
   subjectKey:     'physics',
   unitName:       'الوحدة الثانية: الحركة والقوى',
   lessonTitle:    'القانون الثاني لنيوتن',
+  concept:        'الكتلة والوزن',
   totalSections:  8,
   currentSection: 3,
   hook: 'لماذا تحتاج شاحنة إلى محرك أقوى بكثير من سيارة عادية للتحرك بنفس السرعة؟',
@@ -115,6 +118,7 @@ export const DEMO_LESSON_HISTORY = {
   subjectKey:     'history',
   unitName:       'الوحدة الثالثة: السودان في القرن التاسع عشر',
   lessonTitle:    'الثورة المهدية',
+  concept:        'الفرق بين ثورة عرابي والمهدية',
   totalSections:  6,
   currentSection: 2,
   hook: 'كيف استطاع رجل من دنقلا بجيش لا يتجاوز بضعة آلاف أن يُسقط أعتى جيوش عصره ويؤسّس دولة مستقلة؟',
@@ -209,4 +213,39 @@ export const DEMO_PROFILE = {
     { label: 'النقاط المكتسبة',   value: '١٢٤٠' },
   ],
   activityWeek: [3, 5, 2, 6, 4, 7, 3],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LESSON PATH — the Lessons page: units, each with lessons on the margin line.
+// state: done | hero (the next lesson, the one amber action) | open | locked
+// ─────────────────────────────────────────────────────────────────────────────
+export const LESSON_PATH_BY_PATH = {
+  SCIENCE: [
+    { title: 'الوحدة الأولى', name: 'القياس والمتجهات', lessons: [
+      { title: 'الكميات الفيزيائية والقياس', state: 'done' },
+      { title: 'المتجهات', state: 'done' },
+      { title: 'الحركة في بُعد واحد', state: 'done' },
+    ] },
+    { title: 'الوحدة الثانية', name: 'الحركة والقوى', lessons: [
+      { title: 'القانون الأول لنيوتن', state: 'done' },
+      { title: 'القانون الثاني لنيوتن', state: 'hero', parts: 2, partsDone: 0, minutes: 8 },
+      { title: 'القانون الثالث لنيوتن', state: 'open' },
+      { title: 'الاحتكاك', state: 'locked' },
+    ] },
+    { title: 'الوحدة الثالثة', name: 'الشغل والطاقة', lessons: [
+      { title: 'الشغل', state: 'locked' },
+      { title: 'الطاقة الحركية', state: 'locked' },
+    ] },
+  ],
+  LITERARY: [
+    { title: 'الوحدة الأولى', name: 'السودان القديم', lessons: [
+      { title: 'حضارة كرمة', state: 'done' },
+      { title: 'مملكة كوش ومروي', state: 'done' },
+    ] },
+    { title: 'الوحدة الثالثة', name: 'السودان في القرن التاسع عشر', lessons: [
+      { title: 'الحكم التركي المصري', state: 'done' },
+      { title: 'الثورة المهدية', state: 'hero', parts: 2, partsDone: 0, minutes: 8 },
+      { title: 'الحكم الثنائي', state: 'locked' },
+    ] },
+  ],
 };

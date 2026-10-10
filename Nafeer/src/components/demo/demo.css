@@ -1,0 +1,141 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Basheer demo — the app's design roles, scoped to the phone shell.
+
+   Mirrors core/ui/theme/Color.kt + Roles.kt in the Basheer app. The legacy
+   site variables (--bg-primary, --text-muted …) are remapped inside .bsh so
+   every demo component follows the app, and follows the site's light/dark
+   switch the way the app follows the phone.
+
+   paper → --bg-primary     surface → --bg-secondary / --bg-card
+   rule  → --border-subtle  rule-strong → --border-mid
+   amber is a FILL that carries dark ink; amber TEXT uses --b-accent-text.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.bsh {
+  --b-paper:        #FFFDF5;
+  --b-surface:      #FFFFFF;
+  --b-sunken:       #F5F0E8;
+  --b-ink:          #1C1917;
+  --b-ink2:         #6B6560;
+  --b-ink3:         #7A726D;
+  --b-rule:         #E7E0D8;
+  --b-rule-strong:  #CDC5BB;
+  --b-accent:       #F59E0B;
+  --b-accent-text:  #B45309;
+  --b-on-accent:    #1C1917;
+  --b-band:         #F59E0B;
+  --b-on-band:      #1C1917;
+  --b-selected:     #FEF3C7;
+  --b-on-selected:  #78350F;
+  --b-positive:     #047857;
+  --b-positive-bg:  #D1FAE5;
+  --b-negative:     #B91C1C;
+  --b-negative-bg:  #FFE4E6;
+  --b-warning:      #C2410C;
+  --b-light-day:    #FAD27A;
+  --b-red-ink:      #C0392B;
+
+  /* legacy variables the demo components already read */
+  --bg-primary:     var(--b-paper);
+  --bg-secondary:   var(--b-surface);
+  --bg-card:        var(--b-surface);
+  --border-subtle:  var(--b-rule);
+  --border-mid:     var(--b-rule-strong);
+  --text-primary:   var(--b-ink);
+  --text-secondary: var(--b-ink2);
+  --text-muted:     var(--b-ink3);
+  --accent:         var(--b-accent);
+  --accent-hover:   var(--b-accent);
+  --accent-dim:     var(--b-selected);
+  --accent-text:    var(--b-accent-text);
+
+  --font-arabic:    'Cairo', 'Noto Naskh Arabic', system-ui, sans-serif;
+  --font-sans:      'Cairo', 'Noto Naskh Arabic', system-ui, sans-serif;
+  --font-read:      'Noto Naskh Arabic', serif;
+
+  font-family: var(--font-arabic);
+  letter-spacing: 0;
+  color: var(--b-ink);
+}
+
+:root[data-theme="dark"] .bsh {
+  --b-paper:        #16130E;
+  --b-surface:      #2A241B;
+  --b-sunken:       #1F1B14;
+  --b-ink:          #F5F0E8;
+  --b-ink2:         #B8B0A5;
+  --b-ink3:         #9B9390;
+  --b-rule:         #362F23;
+  --b-rule-strong:  #4A4132;
+  --b-accent:       #FBBF24;
+  --b-accent-text:  #FBBF24;
+  --b-band:         #2B1F08;
+  --b-on-band:      #FBBF24;
+  --b-selected:     #3A2A0A;
+  --b-on-selected:  #FDE68A;
+  --b-positive:     #10B981;
+  --b-positive-bg:  #10291F;
+  --b-negative:     #F87171;
+  --b-negative-bg:  #3A1418;
+  --b-warning:      #FB923C;
+  --b-light-day:    #7A5410;
+  --b-red-ink:      #F0786A;
+}
+
+/* reading text is Naskh, controls are Cairo */
+.bsh .b-read   { font-family: var(--font-read); }
+.bsh .b-fill   { background: var(--b-accent); color: var(--b-on-accent); }
+.bsh .b-rule-t { border-top: 1px solid var(--b-rule); }
+.bsh .b-rule-b { border-bottom: 1px solid var(--b-rule); }
+
+/* three radii: marks 4, controls 10, overlays 16 */
+.bsh .b-mark    { border-radius: 4px; }
+.bsh .b-control { border-radius: 10px; }
+.bsh .b-overlay { border-radius: 16px; }
+
+/* amber button with dark ink, never white text */
+.bsh .b-btn {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 20px; width: 100%;
+  background: var(--b-accent); color: var(--b-on-accent);
+  border: 0; border-radius: 10px; cursor: pointer;
+  font: 800 14px/22px var(--font-arabic);
+}
+.bsh .b-btn:disabled { background: var(--b-sunken); color: var(--b-ink3); cursor: default; }
+.bsh .b-btn-quiet {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 20px; width: 100%;
+  background: transparent; color: var(--b-ink);
+  border: 1px solid var(--b-rule-strong); border-radius: 10px; cursor: pointer;
+  font: 700 14px/22px var(--font-arabic);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bsh * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* ── Reader families: what a block is for (see ReaderMargin.kt) ── */
+.bsh {
+  --f-know: #F59E0B;  --f-know-tint: #FEF3C7;  --f-know-label: #B45309;
+  --f-do:   #0F766E;  --f-do-tint:   #CCFBF1;  --f-do-label:   #0F766E;
+  --f-look: #A8A29E;  --f-look-tint: #F5F0E8;  --f-look-label: #6B6560;
+  --f-warn: #B91C1C;  --f-warn-tint: #FFE4E6;  --f-warn-label: #B91C1C;
+  --font-remark: 'Aref Ruqaa', 'Cairo', serif;
+}
+:root[data-theme="dark"] .bsh {
+  --f-know: #FBBF24;  --f-know-tint: #3A2A0A;  --f-know-label: #FBBF24;
+  --f-do:   #2DD4BF;  --f-do-tint:   #0F2F2C;  --f-do-label:   #2DD4BF;
+  --f-look: #78716C;  --f-look-tint: #1F1B14;  --f-look-label: #B8B0A5;
+  --f-warn: #F87171;  --f-warn-tint: #3A1418;  --f-warn-label: #F87171;
+}
+
+.bsh .b-btn-ink {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 20px; width: 100%;
+  background: var(--b-ink); color: var(--b-paper);
+  border: 0; border-radius: 10px; cursor: pointer;
+  font: 800 14px/22px var(--font-arabic);
+}
+.bsh .b-btn-ink:disabled { background: var(--b-sunken); color: var(--b-ink3); cursor: default; }
+
+@keyframes bshStep { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }

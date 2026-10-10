@@ -38,6 +38,12 @@ export default function DemoPage() {
         inset:           0,
       }}
     >
+      {/* Cairo is the app's control face; the site only loads Noto Naskh. */}
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Aref+Ruqaa:wght@700&display=swap"
+      />
 
       {/* ── Top bar ──────────────────────────────────────────────────────────
           Always visible. On mobile it's the only chrome — kept minimal.

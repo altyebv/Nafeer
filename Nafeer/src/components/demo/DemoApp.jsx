@@ -8,13 +8,14 @@ import QuizBankScreen   from './screens/QuizBankScreen';
 import ProfileScreen    from './screens/ProfileScreen';
 import GuidedTour, { TOUR_STEPS } from './GuidedTour';
 import { LESSON_BY_PATH, DEMO_USER } from './demoData';
+import './demo.css';
 
 const TABS = [
-  { id: 'home',    labelAr: 'الرئيسية', locked: false },
-  { id: 'lesson',  labelAr: 'الدروس',   locked: false },
-  { id: 'feed',    labelAr: 'اللقطات',  locked: false },
-  { id: 'quiz',    labelAr: 'البنك',    locked: false  },
-  { id: 'profile', labelAr: 'الملف',    locked: false },
+  { id: 'home',    labelAr: 'الرئيسية',    locked: false },
+  { id: 'lesson',  labelAr: 'الدروس',      locked: false },
+  { id: 'feed',    labelAr: 'مراجعة',      locked: false },
+  { id: 'quiz',    labelAr: 'الامتحانات',  locked: false },
+  { id: 'profile', labelAr: 'حسابي',       locked: false },
 ];
 
 
@@ -98,7 +99,7 @@ export default function DemoApp() {
   return (
     <div
       className={[
-        'w-full h-full',
+        'bsh w-full h-full',
         'sm:w-[375px] sm:h-[680px]',
         'rounded-none',
         'sm:rounded-[32px]',
@@ -115,8 +116,8 @@ export default function DemoApp() {
         zIndex:        1,
       }}
     >
-      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && <StatusBar />}
-      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && <AppTopBar activeTab={activeTab} />}
+      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && activeTab !== 'home' && activeTab !== 'lesson' && <StatusBar />}
+      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && activeTab !== 'home' && activeTab !== 'lesson' && <AppTopBar activeTab={activeTab} />}
 
       <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
         {phase === 'onboarding' && (
@@ -128,26 +129,22 @@ export default function DemoApp() {
         {phase === 'app' && (
           <>
             {activeTab === 'home' && (
-              <ScrollPane>
-                <HomeScreen
+              <HomeScreen
                   onNavigate={navigateTo}
                   userProfile={userProfile}
                   bonusXp={bonusXp}
                   justLeveledUp={justLeveledUp}
                   onLevelUpSeen={() => setJustLeveledUp(false)}
                 />
-              </ScrollPane>
             )}
 
             {activeTab === 'lesson' && (
-              <ScrollPane>
-                <LessonScreen
+              <LessonScreen
                   userPath={userProfile?.path}
                   previewMode={lessonPreviewMode}
                   onGoHome={handleLessonGoHome}
                   setFullScreen={setLessonFullScreen}
                 />
-              </ScrollPane>
             )}
 
             {activeTab === 'feed' && (
@@ -191,18 +188,18 @@ export default function DemoApp() {
         />
       )}
 
-      {phase === 'app' && !tourActive && (
+      {phase === 'app' && !tourActive && !lessonFullScreen && !feedFullScreen && (
         <button
           onClick={() => { setTourActive(true); setTourStep(0); setActiveTab('home'); }}
           style={{
-            position:'absolute', bottom:'70px', left:'50%', transform:'translateX(-50%)',
-            background:'rgba(0,0,0,0.55)', border:'1px solid var(--border-subtle)',
-            borderRadius:'20px', padding:'5px 14px', fontSize:'11px',
-            fontFamily:'var(--font-arabic, inherit)', color:'var(--text-muted)',
-            cursor:'pointer', zIndex:99, backdropFilter:'blur(4px)', whiteSpace:'nowrap',
+            position:'absolute', top:'6px', left:'8px',
+            background:'var(--b-surface)', border:'1px solid var(--b-rule-strong)',
+            borderRadius:'10px', padding:'2px 10px', fontSize:'11px', opacity:0.85,
+            fontFamily:'var(--font-arabic, inherit)', color:'var(--b-ink2)',
+            cursor:'pointer', zIndex:99, whiteSpace:'nowrap',
           }}
         >
-          🔄 إعادة الجولة
+          إعادة الجولة
         </button>
       )}
     </div>
@@ -239,7 +236,7 @@ function StatusBar() {
 }
 
 const SCREEN_TITLES = {
-  home:'بشير', lesson:'الدروس', feed:'اللقطات', quiz:'بنك الأسئلة', profile:'ملفي',
+  home:'بشير', lesson:'الدروس', feed:'مراجعة', quiz:'الامتحانات', profile:'حسابي',
 };
 
 function AppTopBar({ activeTab }) {
@@ -261,27 +258,26 @@ function AppTopBar({ activeTab }) {
 }
 
 function BottomBar({ tabs, activeTab, onTabChange }) {
+  // Hairline, not a shadow. The current tab is marked by an amber rule on its
+  // top edge, the filled icon and a bold label, so it never rests on colour alone.
   return (
-    <div className="flex-shrink-0 flex"
-      style={{ background:'var(--bg-secondary)', borderTop:'1px solid var(--border-subtle)' }}>
+    <div className="flex-shrink-0 flex" role="tablist"
+      style={{ background:'var(--b-surface)', borderTop:'1px solid var(--b-rule)', height:64 }}>
       {tabs.map(tab => {
         const active = activeTab === tab.id;
         return (
-          <button key={tab.id} onClick={() => onTabChange(tab.id)}
-            className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all"
+          <button key={tab.id} role="tab" aria-selected={active} onClick={() => onTabChange(tab.id)}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5"
             style={{ background:'none', border:'none', cursor:'pointer', position:'relative' }}>
-            <TabIcon id={tab.id} active={active} locked={tab.locked} />
-            <span className="font-arabic transition-colors" style={{
-              fontSize:'10px',
-              color: active ? 'var(--accent)' : 'var(--text-muted)',
-              opacity: tab.locked ? 0.5 : 1,
+            {active && <span style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'var(--b-accent)' }} />}
+            <TabIcon id={tab.id} active={active} />
+            <span style={{
+              fontFamily:'var(--font-arabic)', fontSize:11,
+              fontWeight: active ? 800 : 500,
+              color: active ? 'var(--b-ink)' : 'var(--b-ink2)',
             }}>
               {tab.labelAr}
             </span>
-            {active && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-b-full"
-                style={{ background:'var(--accent)' }} />
-            )}
           </button>
         );
       })}
@@ -289,16 +285,17 @@ function BottomBar({ tabs, activeTab, onTabChange }) {
   );
 }
 
-function TabIcon({ id, active, locked }) {
-  const color = locked ? 'var(--text-muted)' : active ? 'var(--accent)' : 'var(--text-muted)';
-  const op    = locked ? 0.45 : 1;
-  const sw    = active ? 2 : 1.6;
+function TabIcon({ id, active }) {
+  const color = active ? 'var(--b-ink)' : 'var(--b-ink2)';
+  const f = active ? color : 'none';
+  const cut = active ? 'var(--b-surface)' : color;
+  const p = { width:22, height:22, viewBox:'0 0 24 24', fill:'none', stroke:color, strokeWidth:1.8, strokeLinejoin:'round', strokeLinecap:'round' };
   const icons = {
-    home: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} opacity={op}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-    lesson: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} opacity={op}><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="14" y2="12"/><line x1="7" y1="16" x2="11" y2="16"/></svg>,
-    feed: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} opacity={op}><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="12" y2="12"/></svg>,
-    quiz: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} opacity={op}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-    profile: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} opacity={op}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    home:    <svg {...p}><path fill={f} d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>,
+    lesson:  <svg {...p}><path fill={f} d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13C17 4 14 4.5 12 6z"/><path stroke={cut} d="M12 6v13"/></svg>,
+    feed:    <svg {...p}><rect fill={f} x="4" y="7" width="13" height="13" rx="2"/><path d="M8 4h11a1 1 0 0 1 1 1v11"/></svg>,
+    quiz:    <svg {...p}><rect fill={f} x="4" y="3" width="16" height="18" rx="2"/><path stroke={cut} d="M8 9h8M8 13h8M8 17h4"/></svg>,
+    profile: <svg {...p}><circle fill={f} cx="12" cy="8" r="4"/><path fill={f} d="M4 21c0-4 3.5-6 8-6s8 2 8 6z"/></svg>,
   };
   return icons[id] || null;
 }
