@@ -3,578 +3,280 @@ import { useState, useRef } from 'react';
 import { SUBJECT_COLORS } from '../demoData';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared helpers
+// Feed cards — paper pages, one idea each (see FeedCardFrame.kt in the app).
+//
+// Every page shares one frame: a quiet line beside the close button naming the
+// concept and why it is shown, then the card's content. Short content sits in
+// the middle of the page, a long block starts from the top. Answers show their
+// feedback in place and nothing advances on its own: the student swipes.
 // ─────────────────────────────────────────────────────────────────────────────
+
 function toAr(n) {
   return n.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 }
 
-function Chip({ label, color }) {
-  return (
-    <div
-      style={{
-        fontSize: '11px',
-        fontFamily: 'var(--font-arabic, inherit)',
-        padding: '3px 10px',
-        borderRadius: '20px',
-        background: `${color}18`,
-        border: `1px solid ${color}30`,
-        color,
-        flexShrink: 0,
-      }}
-    >
-      {label}
-    </div>
-  );
+const TYPE_LABEL = {
+  FACT: 'حقيقة', DEFINITION: 'تعريف', FLASH_CARD: 'بطاقة', MCQ: 'سؤال', TRUE_FALSE: 'صح أم خطأ', REVIEW: 'مراجعة',
+};
+
+/** Reading text sized to its length: a one-liner is set large, a long block smaller. */
+function readingStyle(len) {
+  const [size, lh] = len <= 60 ? [24, 42] : len <= 160 ? [21, 38] : [18, 34];
+  return { font: `500 ${size}px/${lh}px var(--font-read)`, color: 'var(--b-ink)' };
 }
 
-function ActionBtn({ onClick, bg, color, border, label }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: 1,
-        padding: '11px',
-        borderRadius: '12px',
-        background: bg,
-        border: `1px solid ${border}`,
-        color,
-        fontFamily: 'var(--font-arabic, inherit)',
-        fontSize: '13px',
-        fontWeight: 600,
-        cursor: 'pointer',
-        transition: 'opacity 0.15s',
-      }}
-      onMouseEnter={e => { e.currentTarget.style.opacity = '0.82'; }}
-      onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-    >
-      {label}
-    </button>
-  );
+function returnsIn(days) {
+  if (days <= 1) return 'بكرة';
+  if (days >= 30) return 'بعد شهر وأكتر';
+  if (days === 2) return 'بعد يومين';
+  return `بعد ${toAr(days)} ${days <= 10 ? 'أيام' : 'يوم'}`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DefinitionCard — full-height lesson bite card (FACT / DEFINITION / TIP)
-// ─────────────────────────────────────────────────────────────────────────────
-export function DefinitionCard({ card }) {
+const caption = { font: '700 12px/18px var(--font-arabic)', color: 'var(--b-ink)' };
+const muted   = { font: '600 12px/18px var(--font-arabic)', color: 'var(--b-ink2)' };
+
+// ── frame ────────────────────────────────────────────────────────────────────
+
+export function CardFrame({ card, onClick, footer, children, clickLabel }) {
   const color = SUBJECT_COLORS[card.subjectKey] || '#4A90D9';
-
   return (
     <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#0d0b09',
-        border: `1px solid ${color}22`,
-        borderRadius: '20px',
-        padding: '20px',
-        boxShadow: `inset 0 0 80px ${color}12`,
-        overflow: 'hidden',
-      }}
       dir="rtl"
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      aria-label={clickLabel}
+      style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, cursor: onClick ? 'pointer' : 'default' }}
     >
-      {/* Top row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <Chip label={card.typeLabel} color={color} />
-        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-arabic, inherit)' }}>
-          {card.subjectName}
-        </span>
+      {/* the quiet line, clear of the close button */}
+      <div style={{ height: 48, marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, padding: '0 52px 0 16px' }}>
+        <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+        <span style={{ ...caption, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.subjectName}</span>
+        <span style={{ ...muted, fontWeight: 500, whiteSpace: 'nowrap' }}>جديدة عليك</span>
       </div>
-
-      {/* Main content — centered vertically */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p
-          style={{
-            fontFamily: 'var(--font-arabic, inherit)',
-            fontSize: '15px',
-            fontWeight: 500,
-            lineHeight: 1.9,
-            textAlign: 'center',
-            color: 'rgba(255,255,255,0.90)',
-            direction: 'rtl',
-          }}
-        >
-          {card.contentAr}
-        </p>
+      {/* short content in the middle, long content from the top */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: `0 24px ${footer ? 8 : 24}px`, display: 'flex', flexDirection: 'column', justifyContent: 'safe center' }}>
+        <div>{children}</div>
       </div>
-
-      <div style={{ marginTop: '16px', height: '3px', borderRadius: '2px', background: `${color}40` }} />
+      {footer}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FlashCard — tap to flip
-// ─────────────────────────────────────────────────────────────────────────────
+export function TypeLabel({ text, color }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 14 }}>
+      <span style={{ width: 4, height: 18, borderRadius: 4, background: color }} />
+      <span style={{ ...muted, fontWeight: 600 }}>{text}</span>
+    </div>
+  );
+}
+
+const colorOf = card => SUBJECT_COLORS[card.subjectKey] || '#4A90D9';
+
+// ── text card: fact / definition ─────────────────────────────────────────────
+
+export function DefinitionCard({ card, first }) {
+  const color = colorOf(card);
+  return (
+    <CardFrame card={card}>
+      <TypeLabel text={TYPE_LABEL[card.type] || card.typeLabel} color={color} />
+      <p className="b-read" style={{ margin: 0, ...readingStyle(card.contentAr.length) }}>{card.contentAr}</p>
+      {first && <p style={{ ...muted, fontWeight: 500, margin: '28px 0 0', color: 'var(--b-ink3)' }}>اسحب لفوق</p>}
+    </CardFrame>
+  );
+}
+
+// ── flashcard: a prompt, its answer once the page is tapped, then a verdict ──
+
 export function FlashCard({ card }) {
   const [flipped, setFlipped] = useState(false);
-  const color = SUBJECT_COLORS[card.subjectKey] || '#27AE60';
+  const [rated, setRated] = useState(null);
+  const color = colorOf(card);
+  const days = rated === true ? 3 : 1;
 
   return (
-    <div
-      style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}
-      dir="rtl"
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Chip label={card.typeLabel} color={color} />
-        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-arabic, inherit)' }}>
-          {card.subjectName}
-        </span>
-      </div>
-
-      <div
-        onClick={() => !flipped && setFlipped(true)}
-        style={{
-          flex: 1,
-          borderRadius: '20px',
-          padding: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          gap: '12px',
-          cursor: flipped ? 'default' : 'pointer',
-          background: flipped ? `${color}1a` : '#1a1710',
-          border: `1.5px solid ${flipped ? color + '55' : color + '1f'}`,
-          transition: 'background 0.4s ease, border-color 0.4s ease',
-        }}
-      >
-        <p
-          style={{
-            fontFamily: 'var(--font-arabic, inherit)',
-            fontSize: flipped ? '14px' : '18px',
-            fontWeight: flipped ? 400 : 700,
-            lineHeight: 1.7,
-            textAlign: 'center',
-            color: flipped ? color : 'rgba(255,255,255,0.92)',
-            transition: 'font-size 0.3s ease, color 0.3s ease',
-          }}
-        >
-          {flipped ? (card.back || '') : card.contentAr}
-        </p>
-        {flipped && (
-          <div style={{ width: '40px', height: '2px', borderRadius: '1px', background: `${color}50`, marginTop: '4px' }} />
-        )}
-      </div>
-
+    <CardFrame card={card} onClick={!flipped ? () => setFlipped(true) : undefined} clickLabel="اقلب البطاقة">
+      <TypeLabel text={TYPE_LABEL.FLASH_CARD} color={color} />
       {!flipped ? (
-        <p style={{ textAlign: 'center', fontSize: '11px', fontFamily: 'var(--font-arabic, inherit)', color: 'rgba(255,255,255,0.28)' }}>
-          اضغط للكشف
-        </p>
+        <>
+          <p className="b-read" style={{ margin: 0, ...readingStyle(card.contentAr.length) }}>{card.contentAr}</p>
+          <div style={{ borderTop: '1px solid var(--b-rule-strong)', margin: '16px 0 12px' }} />
+          <span style={muted}>اضغط عشان تشوف الإجابة</span>
+        </>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <p style={{ textAlign: 'center', fontSize: '11px', fontFamily: 'var(--font-arabic, inherit)', color: 'rgba(255,255,255,0.40)' }}>
-            هل كنت تعرف الإجابة؟
-          </p>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <ActionBtn
-              onClick={() => setFlipped(false)}
-              bg="rgba(231,76,60,0.14)" color="#E74C3C" border="rgba(231,76,60,0.25)" label="✕  لم أعرف"
-            />
-            <ActionBtn
-              onClick={() => setFlipped(false)}
-              bg={`${color}1f`} color={color} border={`${color}3f`} label="✓  عرفت"
-            />
+        <div style={{ animation: 'bshStep .25s ease' }}>
+          <p className="b-read" style={{ margin: 0, font: '500 16px/28px var(--font-read)', color: 'var(--b-ink2)' }}>{card.contentAr}</p>
+          <div style={{ borderTop: '1px solid var(--b-rule-strong)', margin: '16px 0' }} />
+          <p className="b-read" style={{ margin: 0, ...readingStyle(card.back.length) }}>{card.back}</p>
+          <div style={{ minHeight: 52, display: 'flex', alignItems: 'center', marginTop: 16 }}>
+            {rated === null ? (
+              <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+                <button className="b-btn-quiet" onClick={e => { e.stopPropagation(); setRated(false); }}>ما عرفتها</button>
+                <button className="b-btn" onClick={e => { e.stopPropagation(); setRated(true); }}>عرفتها</button>
+              </div>
+            ) : (
+              <span style={muted}>ترجع ليك {returnsIn(days)}</span>
+            )}
           </div>
         </div>
       )}
-    </div>
+    </CardFrame>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MCQCard — multiple choice question with 4 options
-// ─────────────────────────────────────────────────────────────────────────────
+// ── multiple choice ──────────────────────────────────────────────────────────
+
+const LETTERS = ['أ', 'ب', 'ج', 'د'];
+
 export function MCQCard({ card, onXpEarned }) {
   const [answered, setAnswered] = useState(null);
-  const color = SUBJECT_COLORS[card.subjectKey] || '#4A90D9';
-  const LETTERS = ['أ', 'ب', 'ج', 'د'];
-
-  function handleAnswer(i) {
-    if (answered !== null) return;
-    setAnswered(i);
-    if (i === card.correctIndex && onXpEarned && card.xpReward) {
-      onXpEarned(card.xpReward);
-    }
-  }
-
-  function optionStyle(i) {
-    if (answered === null) {
-      return { background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.10)`, color: 'rgba(255,255,255,0.88)' };
-    }
-    if (i === card.correctIndex) {
-      return { background: 'rgba(39,174,96,0.14)', border: '1px solid rgba(39,174,96,0.55)', color: '#27AE60' };
-    }
-    if (i === answered) {
-      return { background: 'rgba(231,76,60,0.14)', border: '1px solid rgba(231,76,60,0.55)', color: '#E74C3C' };
-    }
-    return { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.30)' };
-  }
-
+  const color = colorOf(card);
   const isCorrect = answered === card.correctIndex;
 
+  function pick(i) {
+    if (answered !== null) return;
+    setAnswered(i);
+    if (i === card.correctIndex && onXpEarned && card.xpReward) onXpEarned(card.xpReward);
+  }
+
+  const state = i => {
+    if (answered === null) return 'idle';
+    if (i === card.correctIndex) return answered === i ? 'right' : 'missed';
+    if (i === answered) return 'wrong';
+    return 'dimmed';
+  };
+
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }} dir="rtl">
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Chip label={card.typeLabel} color={color} />
-        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-arabic, inherit)' }}>
-          {card.subjectName}
-        </span>
-      </div>
-
-      {/* Question */}
-      <div style={{
-        borderRadius: '16px',
-        padding: '16px',
-        background: `${color}0d`,
-        border: `1px solid ${color}22`,
-      }}>
-        <p style={{
-          fontFamily: 'var(--font-arabic, inherit)',
-          fontSize: '14px',
-          fontWeight: 700,
-          lineHeight: 1.7,
-          color: 'rgba(255,255,255,0.92)',
-        }}>
-          {card.contentAr}
-        </p>
-      </div>
-
-      {/* Options */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', flex: 1 }}>
-        {card.options.map((opt, i) => (
-          <button
-            key={i}
-            onClick={() => handleAnswer(i)}
-            style={{
-              width: '100%',
-              textAlign: 'right',
-              borderRadius: '12px',
-              padding: '11px 14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 10,
-              cursor: answered !== null ? 'default' : 'pointer',
-              transition: 'all 0.2s ease',
-              fontFamily: 'var(--font-arabic, inherit)',
-              fontSize: '13px',
-              fontWeight: 500,
-              ...optionStyle(i),
-            }}
-          >
-            <span>{opt}</span>
-            <span style={{
-              width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 700,
-              background: answered !== null && i === card.correctIndex
-                ? '#27AE60'
-                : answered !== null && i === answered
-                ? '#E74C3C'
-                : `${color}20`,
-              color: answered !== null && (i === card.correctIndex || i === answered) ? '#fff' : color,
-              fontFamily: 'var(--font-arabic, inherit)',
+    <CardFrame card={card}>
+      <TypeLabel text={TYPE_LABEL.MCQ} color={color} />
+      <p className="b-read" style={{ margin: '0 0 18px', font: '500 19px/34px var(--font-read)', color: 'var(--b-ink)' }}>{card.contentAr}</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {card.options.map((opt, i) => {
+          const s = state(i);
+          const fill = s === 'right' || s === 'missed' ? 'var(--b-positive-bg)' : s === 'wrong' ? 'var(--b-negative-bg)' : 'var(--b-surface)';
+          const border = s === 'right' ? '2px solid var(--b-positive)' : s === 'missed' ? '2px solid var(--b-positive)' : s === 'wrong' ? '2px solid var(--b-negative)' : s === 'dimmed' ? '1px solid var(--b-rule)' : '1px solid var(--b-rule-strong)';
+          const tag = s === 'right' ? 'صح' : s === 'missed' ? 'الصواب' : s === 'wrong' ? 'إجابتك' : null;
+          return (
+            <button key={i} onClick={() => pick(i)} disabled={answered !== null} style={{
+              display: 'flex', alignItems: 'center', gap: 12, minHeight: 52, padding: '8px 14px', textAlign: 'right', width: '100%',
+              background: fill, border, borderRadius: 10, boxSizing: 'border-box', cursor: answered !== null ? 'default' : 'pointer',
+              color: s === 'dimmed' ? 'var(--b-ink2)' : 'var(--b-ink)',
             }}>
-              {answered !== null && i === card.correctIndex ? '✓'
-                : answered !== null && i === answered ? '✗'
-                : LETTERS[i]}
-            </span>
-          </button>
-        ))}
+              <span style={{
+                width: 26, height: 26, borderRadius: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1.5px solid var(--b-rule-strong)', font: '800 12px/18px var(--font-arabic)',
+              }}>{LETTERS[i]}</span>
+              <span className="b-read" style={{ flex: 1, font: `${s === 'idle' || s === 'dimmed' ? 400 : 700} 16px/28px var(--font-read)` }}>{opt}</span>
+              {tag && (
+                <span style={{ font: '800 12px/18px var(--font-arabic)', color: s === 'wrong' ? 'var(--b-negative)' : 'var(--b-positive)' }}>{tag}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
+      <Feedback visible={answered !== null} explanation={card.explanation} days={isCorrect ? 3 : 1} />
+    </CardFrame>
+  );
+}
 
-      {/* Result + explanation */}
-      {answered !== null && (
-        <div style={{
-          borderRadius: '12px',
-          padding: '12px 14px',
-          background: isCorrect ? 'rgba(39,174,96,0.10)' : 'rgba(74,144,217,0.10)',
-          border: `1px solid ${isCorrect ? 'rgba(39,174,96,0.30)' : 'rgba(74,144,217,0.25)'}`,
-          animation: 'feedFadeUp 0.3s ease both',
-        }}>
-          <p style={{
-            fontFamily: 'var(--font-arabic, inherit)',
-            fontSize: '12px', fontWeight: 700,
-            color: isCorrect ? '#27AE60' : '#4A90D9',
-            marginBottom: '4px',
-          }}>
-            {isCorrect ? `✓ إجابة صحيحة! +${toAr(card.xpReward || 10)} XP` : 'إجابة خاطئة — إليك التفسير:'}
-          </p>
-          {card.explanation && (
-            <p style={{
-              fontFamily: 'var(--font-arabic, inherit)',
-              fontSize: '12px', lineHeight: 1.7,
-              color: 'rgba(255,255,255,0.55)',
-            }}>
-              {card.explanation}
-            </p>
-          )}
-        </div>
-      )}
-
-      <style>{`
-        @keyframes feedFadeUp {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+/** What follows an answer. It keeps its place in the layout while hidden, so answering moves nothing. */
+function Feedback({ visible, explanation, days }) {
+  return (
+    <div aria-hidden={!visible} style={{ marginTop: 16, opacity: visible ? 1 : 0, transition: 'opacity .22s', minHeight: 96 }}>
+      {explanation && <p className="b-read" style={{ margin: '0 0 6px', font: '400 16px/28px var(--font-read)', color: 'var(--b-ink)' }}>{explanation}</p>}
+      <span style={muted}>ترجع ليك {returnsIn(days)}</span>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ReviewCard — compact summary / مراجعة سريعة (pattern-breaker)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── review: a short list of what to remember ─────────────────────────────────
+
 export function ReviewCard({ card }) {
-  const color = SUBJECT_COLORS[card.subjectKey] || '#4A90D9';
-
+  const color = colorOf(card);
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }} dir="rtl">
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Chip label={card.typeLabel} color={color} />
-          {/* small bookmark icon */}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={color} opacity="0.7">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-          </svg>
-        </div>
-        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-arabic, inherit)' }}>
-          {card.subjectName}
-        </span>
-      </div>
-
-      {/* Title */}
-      <div style={{
-        borderRadius: '16px',
-        padding: '14px 16px',
-        background: `${color}10`,
-        border: `1px solid ${color}28`,
-      }}>
-        <p style={{
-          fontFamily: 'var(--font-arabic, inherit)',
-          fontSize: '15px', fontWeight: 700,
-          color: color,
-        }}>
-          {card.contentAr}
-        </p>
-      </div>
-
-      {/* Review points */}
-      <div style={{
-        flex: 1,
-        borderRadius: '16px',
-        padding: '16px',
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-      }}>
-        {card.reviewPoints.map((point, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <div style={{
-              flexShrink: 0,
-              width: 22, height: 22,
-              borderRadius: '50%',
-              background: `${color}18`,
-              border: `1px solid ${color}30`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '11px', fontWeight: 700, color,
-              fontFamily: 'var(--font-arabic, inherit)',
-            }}>
-              {toAr(i + 1)}
-            </div>
-            <p style={{
-              fontFamily: 'var(--font-arabic, inherit)',
-              fontSize: '13px', lineHeight: 1.7,
-              color: 'rgba(255,255,255,0.82)',
-              flex: 1,
-            }}>
-              {point}
-            </p>
+    <CardFrame card={card}>
+      <TypeLabel text={TYPE_LABEL.REVIEW} color={color} />
+      <p style={{ margin: '0 0 8px', font: '800 20px/32px var(--font-arabic)' }}>{card.contentAr}</p>
+      <div style={{ borderTop: '2px solid var(--b-ink)' }}>
+        {card.reviewPoints.map((pt, i) => (
+          <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--b-rule)' }}>
+            <span style={{
+              width: 26, height: 26, borderRadius: 4, flexShrink: 0, border: '1.5px solid var(--b-ink)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 12px/18px var(--font-arabic)',
+            }}>{toAr(i + 1)}</span>
+            <span className="b-read" style={{ flex: 1, font: '400 16px/28px var(--font-read)' }}>{pt}</span>
           </div>
         ))}
       </div>
-
-      <p style={{
-        textAlign: 'center', fontSize: '11px',
-        fontFamily: 'var(--font-arabic, inherit)',
-        color: 'rgba(255,255,255,0.25)',
-      }}>
-        تذكير قبل السؤال القادم 📌
-      </p>
-    </div>
+    </CardFrame>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TrueFalseCard — swipe left (خطأ) or right (صح), or tap the buttons
-// ─────────────────────────────────────────────────────────────────────────────
+// ── true / false: answered by swiping sideways (right = صح, left = خطأ) ─────
+
 export function TrueFalseCard({ card, onXpEarned }) {
   const [answered, setAnswered] = useState(null);
-  const [dragX,    setDragX]    = useState(0);
-  const touchStartX = useRef(null);
-  const mouseStartX = useRef(null);
-  const color   = SUBJECT_COLORS[card.subjectKey] || '#4A90D9';
+  const [dragX, setDragX] = useState(0);
+  const startX = useRef(null);
+  const color = colorOf(card);
   const correct = card.correctAnswer;
+  const isCorrect = answered === correct;
 
-  function handleAnswer(ans) {
+  function answer(ans) {
     if (answered) return;
     setAnswered(ans);
     setDragX(0);
-    if (ans === correct && onXpEarned && card.xpReward) {
-      onXpEarned(card.xpReward);
-    }
+    if (ans === correct && onXpEarned && card.xpReward) onXpEarned(card.xpReward);
   }
+  const down = x => { if (!answered) startX.current = x; };
+  const move = x => { if (!answered && startX.current !== null) setDragX(Math.max(-90, Math.min(90, x - startX.current))); };
+  const up = x => {
+    if (answered || startX.current === null) return;
+    const dx = x - startX.current;
+    startX.current = null;
+    if (Math.abs(dx) > 60) answer(dx > 0 ? 'true' : 'false'); else setDragX(0);
+  };
 
-  function onTouchStart(e) { touchStartX.current = e.touches[0].clientX; }
-  function onTouchMove(e) {
-    if (answered || touchStartX.current === null) return;
-    setDragX(Math.max(-80, Math.min(80, e.touches[0].clientX - touchStartX.current)));
-  }
-  function onTouchEnd(e) {
-    if (answered || touchStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(dx) > 55) handleAnswer(dx > 0 ? 'true' : 'false');
-    else setDragX(0);
-    touchStartX.current = null;
-  }
-  function onMouseDown(e) { mouseStartX.current = e.clientX; }
-  function onMouseMove(e) {
-    if (answered || mouseStartX.current === null || !(e.buttons & 1)) return;
-    setDragX(Math.max(-80, Math.min(80, e.clientX - mouseStartX.current)));
-  }
-  function onMouseUp(e) {
-    if (answered || mouseStartX.current === null) return;
-    const dx = e.clientX - mouseStartX.current;
-    if (Math.abs(dx) > 55) handleAnswer(dx > 0 ? 'true' : 'false');
-    else setDragX(0);
-    mouseStartX.current = null;
-  }
-
-  const isCorrect  = answered === correct;
-  const swipeLeft  = dragX < -20;
-  const swipeRight = dragX > 20;
-  const tiltDeg    = dragX * 0.06;
-  const dragOpacity = Math.abs(dragX) / 80;
+  const word = a => (a === 'true' ? 'صح' : 'خطأ');
+  const tint = dragX > 20 ? 'var(--b-positive-bg)' : dragX < -20 ? 'var(--b-negative-bg)' : 'transparent';
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }} dir="rtl">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Chip label={card.typeLabel} color={color} />
-        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-arabic, inherit)' }}>
-          {card.subjectName}
-        </span>
-      </div>
-
-      {!answered && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px' }}>
-          <SwipeHintLabel label="← خطأ" color="#E74C3C" active={swipeLeft}  side="left" />
-          <SwipeHintLabel label="صح →"  color="#27AE60" active={swipeRight} side="right" />
-        </div>
-      )}
-
-      <div
-        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-        onMouseDown={onMouseDown}   onMouseMove={onMouseMove} onMouseUp={onMouseUp}
-        style={{
-          flex: 1,
-          borderRadius: '20px',
-          padding: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          overflow: 'hidden',
-          cursor: answered ? 'default' : 'grab',
-          userSelect: 'none',
-          transform: `translateX(${dragX}px) rotate(${tiltDeg}deg)`,
-          transition: answered || dragX === 0 ? 'transform 0.3s ease' : 'none',
-          background: answered
-            ? isCorrect ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.12)'
-            : '#0f0d0a',
-          border: `1.5px solid ${answered
-            ? isCorrect ? '#27AE6055' : '#E74C3C55'
-            : color + '25'}`,
-        }}
-      >
-        {!answered && dragX !== 0 && (
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: swipeLeft
-              ? `rgba(231,76,60,${dragOpacity * 0.22})`
-              : `rgba(39,174,96,${dragOpacity * 0.22})`,
-            borderRadius: '20px',
-            pointerEvents: 'none',
-          }} />
-        )}
-        <p style={{
-          fontFamily: 'var(--font-arabic, inherit)',
-          fontSize: '15px', fontWeight: 600,
-          lineHeight: 1.8, textAlign: 'center',
-          color: 'rgba(255,255,255,0.90)',
-          position: 'relative', zIndex: 1,
-        }}>
-          {card.contentAr}
-        </p>
-      </div>
-
-      {!answered ? (
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <ActionBtn onClick={() => handleAnswer('false')} bg="rgba(231,76,60,0.12)" color="#E74C3C" border="rgba(231,76,60,0.28)" label="✕  خطأ" />
-          <ActionBtn onClick={() => handleAnswer('true')}  bg="rgba(39,174,96,0.12)"  color="#27AE60" border="rgba(39,174,96,0.28)"  label="✓  صحيح" />
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{
-            borderRadius: '12px', padding: '10px 14px', textAlign: 'center',
-            background: isCorrect ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.12)',
-          }}>
-            <p style={{
-              fontFamily: 'var(--font-arabic, inherit)',
-              fontSize: '14px', fontWeight: 700,
-              color: isCorrect ? '#27AE60' : '#E74C3C', margin: 0,
-            }}>
-              {isCorrect
-                ? `✓ إجابة صحيحة! +${toAr(card.xpReward || 10)} XP`
-                : '✕ الإجابة خاطئة'}
-            </p>
+    <div
+      onTouchStart={e => down(e.touches[0].clientX)} onTouchMove={e => move(e.touches[0].clientX)} onTouchEnd={e => up(e.changedTouches[0].clientX)}
+      onMouseDown={e => down(e.clientX)} onMouseMove={e => e.buttons & 1 && move(e.clientX)} onMouseUp={e => up(e.clientX)}
+      onMouseLeave={() => { startX.current = null; setDragX(0); }}
+      style={{
+        flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, userSelect: 'none', touchAction: 'pan-y',
+        background: answered ? (isCorrect ? 'var(--b-positive-bg)' : 'var(--b-negative-bg)') : tint, transition: 'background .2s',
+      }}
+    >
+      <CardFrame
+        card={card}
+        footer={
+          <div style={{ padding: '0 24px 22px', minHeight: 92 }}>
+            {!answered ? (
+              /* خطأ at the left edge, صح at the right, matching the drag */
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', direction: 'rtl' }}>
+                <span style={{ font: `800 16px/24px var(--font-arabic)`, color: 'var(--b-positive)', opacity: dragX > 20 ? 1 : 0.6 }} dir="ltr">صح →</span>
+                <span style={{ font: `800 16px/24px var(--font-arabic)`, color: 'var(--b-negative)', opacity: dragX < -20 ? 1 : 0.6 }} dir="ltr">← خطأ</span>
+              </div>
+            ) : (
+              <div style={{ animation: 'bshStep .25s ease' }}>
+                <div style={{ font: '800 16px/24px var(--font-arabic)', color: isCorrect ? 'var(--b-positive)' : 'var(--b-negative)' }}>
+                  {isCorrect ? `قلت ${word(answered)}، وإجابتك صحيحة` : `قلت ${word(answered)}، والصواب ${word(correct)}`}
+                </div>
+                {card.explanation && <p className="b-read" style={{ margin: '6px 0 4px', font: '400 15px/26px var(--font-read)', color: 'var(--b-ink)' }}>{card.explanation}</p>}
+                <span style={muted}>ترجع ليك {returnsIn(isCorrect ? 3 : 1)}</span>
+              </div>
+            )}
           </div>
-          {card.explanation && (
-            <div style={{
-              borderRadius: '12px', padding: '10px 14px',
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid var(--border-subtle)',
-            }}>
-              <p style={{
-                fontFamily: 'var(--font-arabic, inherit)',
-                fontSize: '12px', lineHeight: 1.7,
-                color: 'var(--text-secondary)', margin: 0,
-              }}>
-                {card.explanation}
-              </p>
-            </div>
-          )}
+        }
+      >
+        <div style={{ transform: `translateX(${dragX}px) rotate(${dragX * 0.04}deg)`, transition: dragX === 0 ? 'transform .25s ease' : 'none' }}>
+          <TypeLabel text={TYPE_LABEL.TRUE_FALSE} color={color} />
+          <p className="b-read" style={{ margin: 0, ...readingStyle(card.contentAr.length) }}>{card.contentAr}</p>
         </div>
-      )}
-    </div>
-  );
-}
-
-function SwipeHintLabel({ label, color, active, side }) {
-  return (
-    <div style={{
-      fontFamily: 'var(--font-arabic, inherit)',
-      fontSize: '11px', fontWeight: 700, color,
-      opacity: active ? 1 : 0.30,
-      transition: 'opacity 0.15s',
-      direction: side === 'left' ? 'ltr' : 'rtl',
-    }}>
-      {label}
+      </CardFrame>
     </div>
   );
 }
