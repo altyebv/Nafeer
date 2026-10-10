@@ -131,8 +131,6 @@ export default function DemoApp() {
                   onNavigate={navigateTo}
                   userProfile={userProfile}
                   bonusXp={bonusXp}
-                  justLeveledUp={justLeveledUp}
-                  onLevelUpSeen={() => setJustLeveledUp(false)}
                 />
             )}
 
