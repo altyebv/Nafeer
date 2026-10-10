@@ -116,8 +116,6 @@ export default function DemoApp() {
         zIndex:        1,
       }}
     >
-      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && activeTab !== 'home' && activeTab !== 'lesson' && activeTab !== 'quiz' && <StatusBar />}
-      {phase === 'app' && !focusMode && !lessonFullScreen && !feedFullScreen && activeTab !== 'home' && activeTab !== 'lesson' && activeTab !== 'quiz' && <AppTopBar activeTab={activeTab} />}
 
       <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
         {phase === 'onboarding' && (
@@ -159,7 +157,7 @@ export default function DemoApp() {
               <QuizBankScreen onXpEarned={(xp) => awardXp(xp)} onNavigate={navigateTo} setFullScreen={setLessonFullScreen} />
             )}
             {activeTab === 'profile' && (
-              <ScrollPane><ProfileScreen userProfile={userProfile} /></ScrollPane>
+              <ProfileScreen userProfile={userProfile} bonusXp={bonusXp} />
             )}
 
             {tourActive && (
@@ -178,7 +176,7 @@ export default function DemoApp() {
         <BottomBar tabs={TABS} activeTab={activeTab} onTabChange={navigateTo} />
       )}
 
-      {/* ── Level-Up Overlay — rendered here to escape ScrollPane clipping ── */}
+      {/* ── Level-Up Overlay — rendered here so it covers every tab ── */}
       {phase === 'app' && justLeveledUp && (
         <LevelUpOverlay
           levelInfo={getLevel(DEMO_USER.xp + bonusXp)}
@@ -190,7 +188,7 @@ export default function DemoApp() {
         <button
           onClick={() => { setTourActive(true); setTourStep(0); setActiveTab('home'); }}
           style={{
-            position:'absolute', top:'6px', left:'8px',
+            position:'absolute', top:'4px', left:'50%', transform:'translateX(-50%)',
             background:'var(--b-surface)', border:'1px solid var(--b-rule-strong)',
             borderRadius:'10px', padding:'2px 10px', fontSize:'11px', opacity:0.85,
             fontFamily:'var(--font-arabic, inherit)', color:'var(--b-ink2)',
@@ -200,57 +198,6 @@ export default function DemoApp() {
           إعادة الجولة
         </button>
       )}
-    </div>
-  );
-}
-
-function ScrollPane({ children }) {
-  return (
-    <div style={{ position:'absolute', inset:0, overflowY:'auto', overflowX:'hidden', scrollbarWidth:'none' }}>
-      {children}
-    </div>
-  );
-}
-
-function StatusBar() {
-  return (
-    <div className="flex items-center justify-between px-5 pt-2.5 pb-1 flex-shrink-0"
-      style={{ background: 'var(--bg-primary)' }}>
-      <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)' }}>
-        9:41
-      </span>
-      <div className="flex items-center gap-1.5">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--text-muted)">
-          <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
-        </svg>
-        <svg width="16" height="11" viewBox="0 0 24 14" fill="none" stroke="var(--text-muted)" strokeWidth="1.5">
-          <rect x="1" y="1" width="18" height="12" rx="2"/>
-          <path d="M21 5v4"/>
-          <rect x="3" y="3" width="11" height="8" rx="1" fill="var(--text-muted)" stroke="none"/>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-const SCREEN_TITLES = {
-  home:'بشير', lesson:'الدروس', feed:'مراجعة', quiz:'الامتحانات', profile:'حسابي',
-};
-
-function AppTopBar({ activeTab }) {
-  return (
-    <div className="flex items-center justify-between px-4 py-2.5 flex-shrink-0"
-      style={{ borderBottom:'1px solid var(--border-subtle)', background:'var(--bg-primary)' }}
-      dir="rtl">
-      <h1 className="font-arabic text-base font-bold" style={{ color:'var(--text-primary)' }}>
-        {SCREEN_TITLES[activeTab] || 'بشير'}
-      </h1>
-      <button style={{ background:'none', border:'none', cursor:'default' }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-      </button>
     </div>
   );
 }

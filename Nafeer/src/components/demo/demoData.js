@@ -203,49 +203,32 @@ export const DEMO_FEED_CARDS = FEED_CARDS_SCIENCE;
 
 export const DEMO_PROFILE = {
   nameAr:        'يوسف أحمد',
-  roleAr:        'طالب — الثانوي العام',
-  joinedAr:      'منذ ٣ أسابيع',
-  avatarInitial: 'ي',
-  stats: [
-    { label: 'الدروس المكتملة',   value: '١٢' },
-    { label: 'اللقطات المشاهدة',  value: '٨٤' },
-    { label: 'سلسلة المذاكرة',    value: '٧ أيام' },
-    { label: 'النقاط المكتسبة',   value: '١٢٤٠' },
+  school:        'مدرسة أم درمان الثانوية',
+  bio:           'عايز أدخل كلية الطب بإذن الله.',
+  currentStreak: 7,
+  longestStreak: 12,
+  totals:        { lessons: 12, cards: 84, questions: 143, minutes: 540 },
+  // the last seven days, oldest first, ending today
+  week: [
+    { letter: 'س', minutes: 32, points: 90 },
+    { letter: 'ح', minutes: 48, points: 130 },
+    { letter: 'ن', minutes: 0,  points: 0 },
+    { letter: 'ث', minutes: 55, points: 160 },
+    { letter: 'ر', minutes: 41, points: 120 },
+    { letter: 'خ', minutes: 12, points: 35 },
+    { letter: 'ج', minutes: 25, points: 70 },
   ],
-  activityWeek: [3, 5, 2, 6, 4, 7, 3],
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LESSON PATH — the Lessons page: units, each with lessons on the margin line.
-// state: done | hero (the next lesson, the one amber action) | open | locked
-// ─────────────────────────────────────────────────────────────────────────────
-export const LESSON_PATH_BY_PATH = {
-  SCIENCE: [
-    { title: 'الوحدة الأولى', name: 'القياس والمتجهات', lessons: [
-      { title: 'الكميات الفيزيائية والقياس', state: 'done' },
-      { title: 'المتجهات', state: 'done' },
-      { title: 'الحركة في بُعد واحد', state: 'done' },
-    ] },
-    { title: 'الوحدة الثانية', name: 'الحركة والقوى', lessons: [
-      { title: 'القانون الأول لنيوتن', state: 'done' },
-      { title: 'القانون الثاني لنيوتن', state: 'hero', parts: 2, partsDone: 0, minutes: 8 },
-      { title: 'القانون الثالث لنيوتن', state: 'open' },
-      { title: 'الاحتكاك', state: 'locked' },
-    ] },
-    { title: 'الوحدة الثالثة', name: 'الشغل والطاقة', lessons: [
-      { title: 'الشغل', state: 'locked' },
-      { title: 'الطاقة الحركية', state: 'locked' },
-    ] },
-  ],
-  LITERARY: [
-    { title: 'الوحدة الأولى', name: 'السودان القديم', lessons: [
-      { title: 'حضارة كرمة', state: 'done' },
-      { title: 'مملكة كوش ومروي', state: 'done' },
-    ] },
-    { title: 'الوحدة الثالثة', name: 'السودان في القرن التاسع عشر', lessons: [
-      { title: 'الحكم التركي المصري', state: 'done' },
-      { title: 'الثورة المهدية', state: 'hero', parts: 2, partsDone: 0, minutes: 8 },
-      { title: 'الحكم الثنائي', state: 'locked' },
-    ] },
-  ],
+  goalMinutes: 30,
+  // earned badges, by drawable name
+  earnedBadges: ['badge_firstlesson', 'badge_fullday', 'badge_steady', 'badge_honest'],
+  // what a subject's record page shows
+  subjectRecord: {
+    physics:   { answered: 62, right: 41, minutes: 210, firm: 3, shaky: 2, fresh: 4 },
+    math:      { answered: 38, right: 30, minutes: 150, firm: 5, shaky: 1, fresh: 3 },
+    biology:   { answered: 20, right: 11, minutes: 70,  firm: 1, shaky: 2, fresh: 6 },
+    chemistry: { answered: 23, right: 15, minutes: 110, firm: 2, shaky: 2, fresh: 4 },
+    history:   { answered: 44, right: 30, minutes: 160, firm: 4, shaky: 1, fresh: 3 },
+    geography: { answered: 25, right: 17, minutes: 90,  firm: 2, shaky: 2, fresh: 3 },
+    arabic:    { answered: 51, right: 40, minutes: 200, firm: 6, shaky: 1, fresh: 2 },
+  },
 };
