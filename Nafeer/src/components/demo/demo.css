@@ -84,14 +84,7 @@
 
 /* reading text is Naskh, controls are Cairo */
 .bsh .b-read   { font-family: var(--font-read); }
-.bsh .b-fill   { background: var(--b-accent); color: var(--b-on-accent); }
-.bsh .b-rule-t { border-top: 1px solid var(--b-rule); }
-.bsh .b-rule-b { border-bottom: 1px solid var(--b-rule); }
 
-/* three radii: marks 4, controls 10, overlays 16 */
-.bsh .b-mark    { border-radius: 4px; }
-.bsh .b-control { border-radius: 10px; }
-.bsh .b-overlay { border-radius: 16px; }
 
 /* amber button with dark ink, never white text */
 .bsh .b-btn {
