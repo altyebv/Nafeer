@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import BlockRenderer from '../blocks/BlockRenderer';
-import { LESSON_BY_PATH, SUBJECT_COLORS } from '../demoData';
+import { MarginItem, MarginSign, ReaderColumn, Icons } from '../blocks/margin';
+import { getLevel } from './HomeScreen';
+import { LESSON_BY_PATH, LESSON_PATH_BY_PATH, SUBJECT_COLORS, DEMO_USER } from '../demoData';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -10,759 +12,752 @@ function toAr(n) {
   return n.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 }
 
-function formatTime(ms) {
-  const secs = Math.floor(ms / 1000);
-  const mins = Math.floor(secs / 60);
-  const s    = secs % 60;
-  if (mins === 0) return `${toAr(s)} ثانية`;
-  if (s === 0)    return `${toAr(mins)} ${mins === 1 ? 'دقيقة' : 'دقائق'}`;
-  return `${toAr(mins)} ${mins === 1 ? 'دقيقة' : 'دقائق'} و${toAr(s)} ثانية`;
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function arabicLessons(n) {
+  if (n === 1) return 'درس واحد';
+  if (n === 2) return 'درسان';
+  if (n >= 3 && n <= 10) return `${toAr(n)} دروس`;
+  return `${toAr(n)} درساً`;
 }
 
+function arabicMinutes(n) {
+  if (n === 1) return 'دقيقة واحدة';
+  if (n === 2) return 'دقيقتان';
+  if (n >= 3 && n <= 10) return `${toAr(n)} دقائق`;
+  return `${toAr(n)} دقيقة`;
+}
+
+const Chevron = ({ size = 18, dir = 'left' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
+    strokeLinecap="round" strokeLinejoin="round" style={{ transform: dir === 'right' ? 'scaleX(-1)' : 'none' }}>
+    <path d="m15 6-6 6 6 6" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M6 6l12 12M18 6 6 18" />
+  </svg>
+);
+
 // ─────────────────────────────────────────────────────────────────────────────
-// LessonScreen — 5-phase state machine
+// LessonScreen — the Lessons page, and the lesson itself as a pipeline:
 //
-// Phases:
-//   hook        → provocative question to engage attention
-//   orientation → lesson objectives + time estimate
-//   content     → full block stream + "اختبر فهمك" CTA
-//   checkpoint  → single MCQ with visual feedback + explanation
-//   complete    → animated stats: streak ▲, time spent, XP gained, forward pull
+//   path   → lessons on the margin line (notebook cover above)
+//   entry  → a notebook page: the hook, then what the student leaves knowing
+//   reader → the lesson on the margin page, full screen, free scrolling,
+//            ending in an active-recall question
+//   exit   → a stepped ceremony: result, streak, gains, what comes next
 //
-// previewMode: when true (set by DemoApp during guided tour) skips hook/orientation
-//              and starts directly at 'content'.
+// previewMode (set by the guided tour) opens straight on the reader.
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LessonScreen({ userPath, previewMode = false, onGoHome, setFullScreen }) {
   const lesson = LESSON_BY_PATH[userPath] || LESSON_BY_PATH.SCIENCE;
   const color  = SUBJECT_COLORS[lesson.subjectKey] || '#4A90D9';
+  const units  = LESSON_PATH_BY_PATH[userPath] || LESSON_PATH_BY_PATH.SCIENCE;
 
-  const [phase,         setPhase]         = useState(previewMode ? 'content' : 'hook');
-  const [checkAnswer,   setCheckAnswer]   = useState(null);
-  const [elapsed,       setElapsed]       = useState(0);
-  const [timeSpent,     setTimeSpent]     = useState(0);
-  const [displayStreak, setDisplayStreak] = useState(lesson.complete.streakBefore);
-  const [xpVisible,     setXpVisible]     = useState(false);
-  const startTimeRef  = useRef(null);
-  const intervalRef   = useRef(null);
+  const [phase,    setPhase]    = useState(previewMode ? 'reader' : 'path');
+  const [recall,   setRecall]   = useState({ right: null });
+  const startRef = useRef(null);
+  const [spent,    setSpent]    = useState(0);
 
-  // ── Timer: tick every second while reading content ──
   useEffect(() => {
-    if (phase !== 'content') return;
-    startTimeRef.current = startTimeRef.current || Date.now();
-    intervalRef.current  = setInterval(() => {
-      setElapsed(Date.now() - startTimeRef.current);
-    }, 1000);
-    return () => clearInterval(intervalRef.current);
-  }, [phase]);
+    if (previewMode && phase === 'path') setPhase('reader');
+  }, [previewMode, phase]);
 
-  // ── Animate complete screen ──
   useEffect(() => {
-    if (phase !== 'complete') return;
-    setDisplayStreak(lesson.complete.streakBefore);
-    setXpVisible(false);
-    const t1 = setTimeout(() => setDisplayStreak(lesson.complete.streakBefore + 1), 700);
-    const t2 = setTimeout(() => setXpVisible(true), 450);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [phase, lesson]);
+    if (setFullScreen) setFullScreen(phase === 'reader' || phase === 'entry' || phase === 'exit');
+    return () => { if (setFullScreen) setFullScreen(false); };
+  }, [phase, setFullScreen]);
 
-  function goToContent() {
-    startTimeRef.current = Date.now();
-    setElapsed(0);
-    setPhase('content');
-    if (setFullScreen) setFullScreen(true);
+  function openReader() {
+    startRef.current = Date.now();
+    setPhase('reader');
   }
-
-  function goToCheckpoint() {
-    clearInterval(intervalRef.current);
-    const spent = startTimeRef.current ? Date.now() - startTimeRef.current : 0;
-    setTimeSpent(spent);
-    setCheckAnswer(null);
-    setPhase('checkpoint');
-    if (setFullScreen) setFullScreen(false);
+  function finish(result) {
+    setRecall(result);
+    setSpent(startRef.current ? Date.now() - startRef.current : 0);
+    setPhase('exit');
+  }
+  function leave() {
+    if (onGoHome) onGoHome();
+    else setPhase('path');
   }
 
-  function goToComplete() {
-    setPhase('complete');
-    if (setFullScreen) setFullScreen(false);
-  }
+  const root = { position: 'absolute', inset: 0, background: 'var(--b-paper)', color: 'var(--b-ink)' };
 
-  const progress = Math.round((lesson.currentSection / lesson.totalSections) * 100);
-
-  // ── Phase routing ──
-  if (phase === 'hook') {
-    return <HookPhase lesson={lesson} color={color} onContinue={() => setPhase('orientation')} />;
-  }
-  if (phase === 'orientation') {
-    return <OrientationPhase lesson={lesson} color={color} onStart={goToContent} />;
-  }
-  if (phase === 'checkpoint') {
-    return (
-      <CheckpointPhase
-        lesson={lesson}
-        color={color}
-        checkAnswer={checkAnswer}
-        setCheckAnswer={setCheckAnswer}
-        onContinue={goToComplete}
-      />
-    );
-  }
-  if (phase === 'complete') {
-    return (
-      <CompletePhase
-        lesson={lesson}
-        color={color}
-        timeSpent={timeSpent}
-        displayStreak={displayStreak}
-        xpVisible={xpVisible}
-        streakBefore={lesson.complete.streakBefore}
-        onContinue={() => {
-          // Navigate back to home screen if the parent provided a handler,
-          // otherwise fall back to restarting the lesson (e.g. in DemoSection)
-          if (onGoHome) {
-            if (setFullScreen) setFullScreen(false);
-            onGoHome();
-          } else {
-            startTimeRef.current = null;
-            setElapsed(0);
-            setPhase('hook');
-            if (setFullScreen) setFullScreen(false);
-          }
-        }}
-      />
-    );
-  }
-
-  // ── Content phase ──
   return (
-    <div className="w-full">
-      {/* Sticky header */}
-      <div
-        className="sticky top-0 z-10 px-4 pt-3 pb-2.5"
-        style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-subtle)' }}
-        dir="rtl"
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h2 className="font-arabic text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>
-              {lesson.lessonTitle}
-            </h2>
-            <p className="font-arabic text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              {lesson.subjectName} · {lesson.unitName}
-            </p>
-          </div>
-          {/* Live reading timer */}
-          <div
-            className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full"
-            style={{ background: `${color}10`, border: `1px solid ${color}20` }}
-          >
-            <span style={{ fontSize: 9 }}>⏱</span>
-            <span className="font-mono text-xs" style={{ color, fontSize: 10 }}>
-              {Math.floor(elapsed / 60000) > 0
-                ? `${toAr(Math.floor(elapsed/60000))}:${toAr(String(Math.floor((elapsed%60000)/1000)).padStart(2,'0'))}`
-                : `${toAr(Math.floor(elapsed/1000))}ث`}
+    <div dir="rtl" style={root}>
+      {phase === 'path'   && <LessonsPage lesson={lesson} units={units} color={color} onOpen={() => setPhase('entry')} />}
+      {phase === 'entry'  && <EntryPage lesson={lesson} color={color} onStart={openReader} onClose={() => setPhase('path')} />}
+      {phase === 'reader' && <ReaderPage lesson={lesson} color={color} onClose={() => setPhase('path')} onFinish={finish} />}
+      {phase === 'exit'   && <ExitPage lesson={lesson} units={units} color={color} recall={recall} timeSpent={spent} onLeave={leave} onBack={() => setPhase('path')} />}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// LESSONS PAGE
+// ═════════════════════════════════════════════════════════════════════════════
+
+const MARKER = 48;
+const PAGE_MARGIN = 10;
+const sway = i => 26 + 20 * Math.sin(i * 1.05);
+const markerRight = i => PAGE_MARGIN + sway(i);            // marker box, from the right edge
+const lineX = i => markerRight(i) + MARKER / 2;            // the line's x, from the right edge
+
+const UNIT_GAP = 20;
+const UNIT_BAND = 72;
+const ROW_H = 76;
+const HERO_H = 176;
+
+function LessonsPage({ lesson, units, color, onOpen }) {
+  const [f, setF] = useState(0);
+  const spine = 10;
+
+  // flatten into rows with a running y
+  const rows = [];
+  let y = 0, idx = 0, lessonNo = 0;
+  units.forEach((u, ui) => {
+    const done = u.lessons.filter(l => l.state === 'done').length;
+    const tone = done === u.lessons.length ? 'complete' : u.lessons.some(l => l.state === 'hero' || l.state === 'open' || l.state === 'done') ? 'active' : 'ahead';
+    const h = UNIT_GAP + UNIT_BAND;
+    rows.push({ kind: 'unit', u, tone, done, y, h, idx, nodeY: y + UNIT_GAP + UNIT_BAND / 2, reached: tone !== 'ahead' });
+    y += h; idx++;
+    u.lessons.forEach(l => {
+      lessonNo++;
+      const hero = l.state === 'hero';
+      const h2 = hero ? HERO_H : ROW_H;
+      rows.push({ kind: 'lesson', l, number: lessonNo, y, h: h2, idx, nodeY: y + (hero ? 12 + MARKER / 2 : h2 / 2), reached: l.state === 'done' || hero });
+      y += h2; idx++;
+    });
+  });
+  const total = y;
+
+  // the line, one S-curve between every pair of nodes
+  const paths = [];
+  rows.forEach((r, i) => {
+    const nx = rows[i + 1];
+    if (!nx) return;
+    const x1 = lineX(r.idx), x2 = lineX(nx.idx), y1 = r.nodeY, y2 = nx.nodeY, mid = (y1 + y2) / 2;
+    paths.push({ d: `M${x1} ${y1} C${x1} ${mid} ${x2} ${mid} ${x2} ${y2}`, travelled: nx.reached });
+  });
+
+  const allLessons = units.flatMap(u => u.lessons);
+  const completed = allLessons.filter(l => l.state === 'done').length;
+  const totalLessons = allLessons.length;
+  const activeUnit = units.find(u => u.lessons.some(l => l.state === 'hero')) || units[0];
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: `color-mix(in srgb, ${color} 16%, var(--b-paper))` }}>
+      {/* ── Notebook cover ── */}
+      <header style={{ flexShrink: 0, position: 'relative', paddingRight: spine }}>
+        <span style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: spine, background: color }} />
+        <div style={{ display: 'flex', alignItems: 'center', height: lerp(56, 48, f), padding: '0 16px 0 20px' }}>
+          <h1 style={{ margin: 0, flex: 1, font: `800 ${lerp(22, 17, f)}px/32px var(--font-arabic)`, color: 'var(--b-ink)' }}>
+            {lesson.subjectName}
+          </h1>
+          {f > 0.5 && (
+            <span style={{ font: '600 12px/18px var(--font-arabic)', opacity: (f - 0.5) * 2 }}>
+              {toAr(completed)} من {toAr(totalLessons)}
             </span>
-          </div>
-        </div>
-        <div className="mt-2">
-          <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${progress}%`, background: color }}
-            />
-          </div>
-          <div className="flex justify-between mt-1">
-            <span className="font-arabic text-xs" style={{ color: 'var(--text-muted)' }}>
-              {toAr(lesson.currentSection)} / {toAr(lesson.totalSections)} أقسام
-            </span>
-            <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{toAr(progress)}%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Block stream */}
-      <div className="py-1.5">
-        {lesson.blocks.map(block => (
-          <BlockRenderer key={block.id} block={block} />
-        ))}
-      </div>
-
-      {/* Checkpoint CTA */}
-      <div className="px-4 py-4 pb-8">
-        <button
-          onClick={goToCheckpoint}
-          className="w-full py-3.5 rounded-2xl font-arabic font-bold text-sm flex items-center justify-center gap-2"
-          style={{
-            background: color, color: '#fff', border: 'none', cursor: 'pointer',
-            boxShadow: `0 4px 20px ${color}35`,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-        >
-          اختبر فهمك
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="m9 18 6-6-6-6"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HookPhase — polished with subject icon + radial glow
-// ─────────────────────────────────────────────────────────────────────────────
-function HookPhase({ lesson, color, onContinue }) {
-  const subjectIcons = {
-    physics:   '⚡',
-    chemistry: '🧪',
-    biology:   '🧬',
-    math:      '∑',
-    history:   '📜',
-    arabic:    'ع',
-    islamic:   '☪',
-    geography: '🌍',
-    english:   'A',
-  };
-  const icon = subjectIcons[lesson.subjectKey] || '📖';
-
-  return (
-    <div
-      className="w-full flex flex-col"
-      dir="rtl"
-      style={{ minHeight: '100%', padding: '28px 20px 24px' }}
-    >
-      {/* Subject chip */}
-      <div className="flex justify-center mb-6">
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full"
-          style={{ background: `${color}15`, border: `1px solid ${color}30` }}
-        >
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block' }} />
-          <span className="font-arabic text-xs font-bold" style={{ color }}>{lesson.subjectName}</span>
-        </div>
-      </div>
-
-      {/* Main hook content */}
-      <div className="flex-1 flex flex-col items-center justify-center text-center">
-        {/* Radial glow + large icon */}
-        <div style={{ position: 'relative', marginBottom: 20 }}>
-          {/* Glow */}
-          <div style={{
-            position:     'absolute',
-            inset:        '-24px',
-            borderRadius: '50%',
-            background:   `radial-gradient(circle, ${color}18 0%, transparent 70%)`,
-            pointerEvents:'none',
-          }} />
-          {/* Icon circle */}
-          <div style={{
-            width:        72,
-            height:       72,
-            borderRadius: '50%',
-            background:   `${color}12`,
-            border:       `1.5px solid ${color}25`,
-            display:      'flex',
-            alignItems:   'center',
-            justifyContent: 'center',
-            fontSize:     32,
-            position:     'relative',
-          }}>
-            {icon}
-          </div>
-          {/* Orbiting question mark */}
-          <div style={{
-            position:   'absolute',
-            top:        -4,
-            right:      -6,
-            width:      22,
-            height:     22,
-            borderRadius: '50%',
-            background: 'var(--bg-card)',
-            border:     `1.5px solid ${color}40`,
-            display:    'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize:   13,
-            fontFamily: 'var(--font-arabic, inherit)',
-            color:      color,
-            fontWeight: 700,
-          }}>
-            ؟
-          </div>
-        </div>
-
-        <p className="font-arabic text-xs mb-3 font-medium" style={{ color: 'var(--text-muted)' }}>
-          قبل أن تبدأ، فكّر في هذا...
-        </p>
-
-        <h2
-          className="font-arabic font-bold leading-relaxed"
-          style={{ fontSize: 15, color: 'var(--text-primary)', maxWidth: 290, lineHeight: 1.7 }}
-        >
-          {lesson.hook}
-        </h2>
-
-        {/* Decorative dots */}
-        <div style={{ display: 'flex', gap: 5, marginTop: 20 }}>
-          {[0.4, 0.7, 1, 0.7, 0.4].map((op, i) => (
-            <div key={i} style={{
-              width: 4, height: 4, borderRadius: '50%',
-              background: color, opacity: op,
-            }} />
-          ))}
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="mt-6">
-        <button
-          onClick={onContinue}
-          className="w-full py-3.5 rounded-2xl font-arabic font-bold text-sm flex items-center justify-center gap-2"
-          style={{
-            background: color, color: '#fff', border: 'none', cursor: 'pointer',
-            boxShadow: `0 4px 20px ${color}35`,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-        >
-          يلا نكتشف ←
-        </button>
-        <p className="font-arabic text-xs text-center mt-2.5" style={{ color: 'var(--text-muted)', opacity: 0.65 }}>
-          ⏱ {toAr(lesson.orientation.estimatedMins)} دقائق تقريباً
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// OrientationPhase
-// ─────────────────────────────────────────────────────────────────────────────
-function OrientationPhase({ lesson, color, onStart }) {
-  return (
-    <div className="w-full" dir="rtl" style={{ padding: '24px 20px 28px' }}>
-      {/* Icon + subject + title */}
-      <div className="mb-6">
-        <div
-          className="w-10 h-10 rounded-2xl flex items-center justify-center text-2xl mb-3"
-          style={{ background: `${color}15`, border: `1px solid ${color}25` }}
-        >
-          {lesson.orientation.icon}
-        </div>
-        <p className="font-arabic text-xs mb-1 font-medium" style={{ color }}>
-          {lesson.subjectName} · {lesson.unitName}
-        </p>
-        <h2 className="font-arabic text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-          {lesson.lessonTitle}
-        </h2>
-      </div>
-
-      {/* Learning objectives */}
-      <div className="mb-5">
-        <p className="font-arabic text-xs font-bold mb-3" style={{ color: 'var(--text-muted)' }}>
-          ستتعلم في هذا الدرس:
-        </p>
-        <div className="flex flex-col gap-2.5">
-          {lesson.orientation.points.map((point, i) => (
-            <div key={i} className="flex items-start gap-2.5">
-              <div
-                className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5"
-                style={{ background: `${color}15`, border: `1px solid ${color}30` }}
-              >
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-              </div>
-              <p
-                className="font-arabic text-sm leading-relaxed flex-1"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {point}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Time estimate */}
-      <div
-        className="flex items-center gap-2 mb-6 px-3 py-2.5 rounded-xl"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-      >
-        <span style={{ fontSize: 14 }}>⏱</span>
-        <p className="font-arabic text-xs" style={{ color: 'var(--text-muted)' }}>
-          الوقت المتوقع: {toAr(lesson.orientation.estimatedMins)} دقائق تقريباً
-        </p>
-      </div>
-
-      {/* CTA */}
-      <button
-        onClick={onStart}
-        className="w-full py-3.5 rounded-2xl font-arabic font-bold text-sm flex items-center justify-center gap-2"
-        style={{
-          background: color, color: '#fff', border: 'none', cursor: 'pointer',
-          boxShadow: `0 4px 20px ${color}35`,
-        }}
-        onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
-        onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-      >
-        ابدأ الدرس
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <path d="m9 18 6-6-6-6"/>
-        </svg>
-      </button>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CheckpointPhase — MCQ with visual feedback + explanation
-// ─────────────────────────────────────────────────────────────────────────────
-function CheckpointPhase({ lesson, color, checkAnswer, setCheckAnswer, onContinue }) {
-  const { question, options, correctIndex, explanation } = lesson.checkpoint;
-  const answered  = checkAnswer !== null;
-  const isCorrect = checkAnswer === correctIndex;
-
-  function optionStyle(i) {
-    if (!answered) {
-      return {
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-subtle)',
-        color: 'var(--text-primary)',
-      };
-    }
-    if (i === correctIndex) {
-      return { background: 'rgba(39,174,96,0.12)', border: '1px solid rgba(39,174,96,0.5)', color: '#27AE60' };
-    }
-    if (i === checkAnswer) {
-      return { background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.5)', color: '#E74C3C' };
-    }
-    return {
-      background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-      color: 'var(--text-muted)', opacity: 0.4,
-    };
-  }
-
-  const LETTERS = ['أ', 'ب', 'ج', 'د'];
-
-  return (
-    <div className="w-full" dir="rtl" style={{ padding: '20px 16px 24px' }}>
-      {/* Header badge */}
-      <div className="flex items-center gap-2 mb-5">
-        <div
-          className="px-3 py-1 rounded-full flex items-center gap-1.5"
-          style={{ background: `${color}15`, border: `1px solid ${color}30` }}
-        >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          <span className="font-arabic text-xs font-bold" style={{ color }}>نقطة تحقق</span>
-        </div>
-        <p className="font-arabic text-xs" style={{ color: 'var(--text-muted)' }}>اختبر فهمك</p>
-      </div>
-
-      {/* Question */}
-      <div
-        className="mb-5 p-4 rounded-2xl"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-      >
-        <p className="font-arabic text-sm font-bold leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-          {question}
-        </p>
-      </div>
-
-      {/* Options */}
-      <div className="flex flex-col gap-2.5 mb-4">
-        {options.map((opt, i) => (
-          <button
-            key={i}
-            onClick={() => !answered && setCheckAnswer(i)}
-            style={{
-              width: '100%', textAlign: 'right',
-              borderRadius: 14,
-              padding: '12px 14px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-              cursor: answered ? 'default' : 'pointer',
-              transition: 'all 0.2s ease',
-              fontFamily: 'var(--font-arabic, inherit)', fontSize: 13, fontWeight: 500,
-              ...optionStyle(i),
-            }}
-          >
-            <span>{opt}</span>
-            <span
-              style={{
-                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 700,
-                background: answered && i === correctIndex
-                  ? '#27AE60'
-                  : answered && i === checkAnswer
-                  ? '#E74C3C'
-                  : `${color}15`,
-                color: answered && (i === correctIndex || i === checkAnswer) ? '#fff' : color,
-                fontFamily: 'var(--font-arabic, inherit)',
-              }}
-            >
-              {answered && i === correctIndex ? '✓' : answered && i === checkAnswer ? '✗' : LETTERS[i]}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Explanation */}
-      {answered && (
-        <div
-          className="mb-4 rounded-2xl p-4"
-          style={{
-            background: isCorrect ? 'rgba(39,174,96,0.08)' : 'rgba(74,144,217,0.08)',
-            border: `1px solid ${isCorrect ? 'rgba(39,174,96,0.3)' : 'rgba(74,144,217,0.25)'}`,
-            animation: 'cpFadeUp 0.3s ease both',
-          }}
-        >
-          <p
-            className="font-arabic text-xs font-bold mb-1.5"
-            style={{ color: isCorrect ? '#27AE60' : '#4A90D9' }}
-          >
-            {isCorrect ? 'ممتاز! إجابة صحيحة ✓' : 'ليست الإجابة الصحيحة — إليك التفسير:'}
-          </p>
-          <p className="font-arabic text-xs leading-loose" style={{ color: 'var(--text-secondary)' }}>
-            {explanation}
-          </p>
-        </div>
-      )}
-
-      {/* Continue button */}
-      {answered && (
-        <button
-          onClick={onContinue}
-          className="w-full py-3.5 rounded-2xl font-arabic font-bold text-sm flex items-center justify-center gap-2"
-          style={{
-            background: color, color: '#fff', border: 'none', cursor: 'pointer',
-            animation: 'cpFadeUp 0.3s ease 0.1s both',
-            boxShadow: `0 4px 20px ${color}35`,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-        >
-          التالي
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="m9 18 6-6-6-6"/>
-          </svg>
-        </button>
-      )}
-
-      <style>{`
-        @keyframes cpFadeUp {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CompletePhase — streak, time, XP + visual forward pull
-// ─────────────────────────────────────────────────────────────────────────────
-function CompletePhase({ lesson, color, timeSpent, displayStreak, xpVisible, streakBefore, onContinue }) {
-  const { xpGained, forwardPull } = lesson.complete;
-  const streakIncremented = displayStreak > streakBefore;
-
-  // Progress bar: lesson is N of totalSections — visually show unit completion
-  const unitProgress = Math.round((lesson.currentSection / lesson.totalSections) * 100);
-  const nextProgress = Math.min(Math.round(((lesson.currentSection + 1) / lesson.totalSections) * 100), 100);
-
-  return (
-    <div className="w-full" dir="rtl" style={{ padding: '24px 20px 28px' }}>
-      {/* Animated checkmark */}
-      <div className="flex justify-center mb-5">
-        <svg width="76" height="76" viewBox="0 0 76 76">
-          <circle cx="38" cy="38" r="34" fill="none" stroke={color} strokeWidth="2" opacity="0.15" />
-          <circle
-            cx="38" cy="38" r="34"
-            fill="none"
-            stroke={color}
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeDasharray="214"
-            strokeDashoffset="214"
-            transform="rotate(-90 38 38)"
-            style={{ animation: 'drawRing 0.8s ease forwards' }}
-          />
-          <polyline
-            points="24,38 34,48 52,28"
-            fill="none"
-            stroke={color}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="42"
-            strokeDashoffset="42"
-            style={{ animation: 'drawMark 0.4s ease 0.7s forwards' }}
-          />
-        </svg>
-      </div>
-
-      {/* Title */}
-      <h2 className="font-arabic text-base font-bold text-center mb-1" style={{ color: 'var(--text-primary)' }}>
-        أحسنت! أكملت الدرس
-      </h2>
-      <p className="font-arabic text-xs text-center mb-5" style={{ color: 'var(--text-muted)' }}>
-        {lesson.lessonTitle}
-      </p>
-
-      {/* Stats row */}
-      <div className="flex gap-2 mb-5">
-        {/* Streak */}
-        <div
-          className="flex-1 rounded-2xl p-3 text-center"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-        >
-          <div
-            style={{
-              fontSize: 26, lineHeight: 1,
-              filter: streakIncremented ? 'drop-shadow(0 0 10px rgba(212,137,30,0.85))' : 'none',
-              transition: 'filter 0.5s ease',
-              animation: streakIncremented ? 'statPop 0.45s ease' : 'none',
-            }}
-          >
-            🔥
-          </div>
-          <p
-            className="font-arabic text-lg font-bold mt-1"
-            style={{ color: 'var(--accent)', animation: streakIncremented ? 'statPop 0.45s ease 0.05s' : 'none' }}
-          >
-            {toAr(displayStreak)}
-          </p>
-          <p className="font-arabic" style={{ color: 'var(--text-muted)', fontSize: 10 }}>يوم</p>
-          {streakIncremented && (
-            <p
-              className="font-arabic"
-              style={{ color: 'var(--accent)', fontSize: 9, fontWeight: 700, marginTop: 2, animation: 'cpFadeUp 0.3s ease' }}
-            >
-              +١ جديد ✨
-            </p>
           )}
         </div>
-
-        {/* Time spent */}
-        <div
-          className="flex-1 rounded-2xl p-3 text-center"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-        >
-          <div style={{ fontSize: 22, lineHeight: 1 }}>⏱</div>
-          <p
-            className="font-arabic font-bold mt-1"
-            style={{ color: 'var(--text-primary)', fontSize: timeSpent > 60000 ? 11 : 13 }}
-          >
-            {timeSpent > 0 ? formatTime(timeSpent) : '—'}
-          </p>
-          <p className="font-arabic" style={{ color: 'var(--text-muted)', fontSize: 10 }}>وقت المذاكرة</p>
-        </div>
-
-        {/* XP */}
-        <div
-          className="flex-1 rounded-2xl p-3 text-center"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-        >
-          <div style={{ fontSize: 22, lineHeight: 1 }}>⭐</div>
-          <p
-            className="font-arabic text-base font-bold mt-1"
-            style={{
-              color: '#9B59B6',
-              opacity: xpVisible ? 1 : 0,
-              transform: xpVisible ? 'scale(1) translateY(0)' : 'scale(0.7) translateY(4px)',
-              transition: 'opacity 0.35s ease, transform 0.35s ease',
-            }}
-          >
-            +{toAr(xpGained)}
-          </p>
-          <p className="font-arabic" style={{ color: 'var(--text-muted)', fontSize: 10 }}>نقطة XP</p>
-        </div>
-      </div>
-
-      {/* Forward pull — visual with mini unit progress bar */}
-      <div
-        className="rounded-2xl p-4 mb-5"
-        style={{ background: `${color}08`, border: `1px solid ${color}22` }}
-      >
-        <div className="flex items-start gap-2.5 mb-3">
-          <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>🎯</span>
-          <p className="font-arabic text-xs leading-loose" style={{ color: 'var(--text-secondary)' }}>
-            {forwardPull}
-          </p>
-        </div>
-        {/* Unit progress mini-bar */}
-        <div>
-          <div className="flex justify-between mb-1">
-            <span className="font-arabic text-xs" style={{ color: 'var(--text-muted)', fontSize: 10 }}>
-              تقدّمك في الوحدة
-            </span>
-            <span className="font-arabic text-xs font-bold" style={{ color, fontSize: 10 }}>
-              {toAr(lesson.currentSection)} / {toAr(lesson.totalSections)}
-            </span>
-          </div>
-          <div style={{ height: 6, borderRadius: 4, background: 'var(--border-subtle)', overflow: 'hidden' }}>
-            {/* Previous progress */}
-            <div
-              style={{
-                height: '100%', borderRadius: 4,
-                background: `${color}40`,
-                width: `${unitProgress}%`,
-                position: 'relative',
-                overflow: 'visible',
-              }}
-            >
-              {/* Incremental gain */}
-              <div
-                style={{
-                  position:   'absolute',
-                  right:      0,
-                  top:        0,
-                  height:     '100%',
-                  borderRadius: 4,
-                  background: color,
-                  width:      `${nextProgress - unitProgress}%`,
-                  animation:  'progressGrow 0.8s ease 0.4s both',
-                  transformOrigin: 'left',
-                  boxShadow:  `0 0 8px ${color}60`,
-                }}
-              />
+        <div style={{ overflow: 'hidden', maxHeight: lerp(44, 0, f), opacity: Math.max(0, 1 - f / 0.5) }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '4px 20px 10px' }}>
+            <div style={{ flex: 1, height: 6, borderRadius: 4, background: 'color-mix(in srgb, var(--b-ink) 12%, transparent)', overflow: 'hidden' }}>
+              <div style={{ width: `${(completed / totalLessons) * 100}%`, height: '100%', background: 'var(--b-accent)', borderRadius: 4 }} />
             </div>
+            <span style={{ font: '600 12px/18px var(--font-arabic)' }}>{toAr(completed)} من {arabicLessons(totalLessons)}</span>
           </div>
+        </div>
+        {f > 0.6 && (
+          <div style={{ background: 'var(--b-sunken)', padding: '8px 20px', display: 'flex', justifyContent: 'space-between', font: '700 12px/18px var(--font-arabic)' }}>
+            <span>{activeUnit.title}، {activeUnit.name}</span>
+          </div>
+        )}
+      </header>
+
+      {/* ── The margin line and its lessons ── */}
+      <div
+        onScroll={e => setF(Math.min(1, e.currentTarget.scrollTop / 96))}
+        style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', background: 'var(--b-paper)' }}
+      >
+        <div style={{ position: 'relative', height: total + 24 }}>
+          <svg width="100%" height={total} style={{ position: 'absolute', top: 0, right: 0, transform: 'scaleX(-1)', pointerEvents: 'none' }} aria-hidden>
+            {paths.map((p, i) => (
+              <path key={i} d={p.d} fill="none" stroke={p.travelled ? 'var(--b-accent)' : 'var(--b-rule-strong)'}
+                strokeWidth={p.travelled ? 3 : 2.5} strokeLinecap="round"
+                strokeDasharray={p.travelled ? undefined : '0.1 8'} />
+            ))}
+          </svg>
+          {rows.map((r, i) => r.kind === 'unit'
+            ? <UnitBand key={i} r={r} />
+            : <LessonRow key={i} r={r} color={color} onOpen={onOpen} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UnitBand({ r }) {
+  const { u, tone, done } = r;
+  const diamond = tone === 'complete' ? 'var(--b-accent)' : tone === 'active' ? 'var(--b-ink)' : 'var(--b-rule-strong)';
+  const ink = tone === 'ahead' ? 'var(--b-ink3)' : tone === 'complete' ? 'var(--b-ink2)' : 'var(--b-ink)';
+  return (
+    <div style={{ position: 'absolute', top: r.y, left: 0, right: 0, height: r.h }}>
+      <div style={{
+        position: 'absolute', top: UNIT_GAP, left: 0, right: 0, height: UNIT_BAND, background: 'var(--b-sunken)',
+        borderTop: '1px solid var(--b-rule-strong)', borderBottom: '1px solid var(--b-rule-strong)',
+      }} />
+      <div style={{ position: 'absolute', top: UNIT_GAP, height: UNIT_BAND, right: markerRight(r.idx), width: MARKER, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--b-sunken)', position: 'absolute' }} />
+        <span style={{ width: 16, height: 16, borderRadius: 3, background: diamond, transform: 'rotate(45deg)', position: 'relative' }} />
+      </div>
+      <div style={{
+        position: 'absolute', top: UNIT_GAP, height: UNIT_BAND, right: markerRight(r.idx) + MARKER + 4, left: 20,
+        display: 'flex', alignItems: 'center', gap: 8, color: ink,
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ font: '700 12px/18px var(--font-arabic)', opacity: 0.8 }}>{u.title}</div>
+          <div style={{ font: '800 16px/26px var(--font-arabic)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</div>
+        </div>
+        <span style={{ font: '600 12px/18px var(--font-arabic)', opacity: 0.8, whiteSpace: 'nowrap' }}>
+          {toAr(done)} من {toAr(u.lessons.length)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PathMarker({ l, number, surround }) {
+  const accent = 'var(--b-accent)';
+  const ring = l.parts > 1 && l.state !== 'done';
+  const dot = { width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxSizing: 'border-box' };
+  const num = c => <span style={{ font: '800 13px/1 var(--font-arabic)', color: c }}>{toAr(number)}</span>;
+  return (
+    <div style={{ width: MARKER, height: MARKER, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+      <span style={{ position: 'absolute', width: ring ? 48 : 36, height: ring ? 48 : 36, borderRadius: '50%', background: surround }} />
+      {ring && (
+        <svg width="48" height="48" viewBox="0 0 48 48" style={{ position: 'absolute' }}>
+          {Array.from({ length: l.parts }).map((_, p) => {
+            const span = 360 / l.parts, gap = 16, a0 = (-90 + p * span + gap / 2) * Math.PI / 180, a1 = (-90 + (p + 1) * span - gap / 2) * Math.PI / 180;
+            const R = 20, c = 24;
+            const d = `M${c + R * Math.cos(a0)} ${c + R * Math.sin(a0)} A${R} ${R} 0 ${span - gap > 180 ? 1 : 0} 1 ${c + R * Math.cos(a1)} ${c + R * Math.sin(a1)}`;
+            return <path key={p} d={d} fill="none" strokeWidth="3.5" strokeLinecap="round"
+              stroke={p < l.partsDone ? 'var(--b-ink)' : 'color-mix(in srgb, var(--b-ink) 22%, transparent)'} />;
+          })}
+        </svg>
+      )}
+      {l.state === 'done' && (
+        <span style={{ ...dot, background: accent }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--b-on-accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+        </span>
+      )}
+      {l.state === 'hero' && <span style={{ ...dot, background: accent }}>{num('var(--b-on-accent)')}</span>}
+      {l.state === 'open' && <span style={{ ...dot, background: surround, border: `2px solid ${accent}` }}>{num('var(--b-accent-text)')}</span>}
+      {l.state === 'locked' && (
+        <span style={{ ...dot, background: surround, border: ring ? 0 : '1.5px solid var(--b-rule-strong)' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--b-ink3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          </svg>
+        </span>
+      )}
+    </div>
+  );
+}
+
+function LessonRow({ r, color, onOpen }) {
+  const { l, number } = r;
+  const hero = l.state === 'hero';
+  const locked = l.state === 'locked';
+  const surround = hero ? 'var(--b-selected)' : 'var(--b-paper)';
+  const titleColor = l.state === 'done' ? 'var(--b-ink2)' : locked ? 'var(--b-ink3)' : 'var(--b-ink)';
+  const meta = hero
+    ? `${l.parts > 1 ? `${toAr(l.parts)} أجزاء، ` : ''}${arabicMinutes(l.minutes)}`
+    : l.state === 'done' ? 'خلّصته' : locked ? 'اقفل لحدّ ما تخلّص الدرس الفات' : '';
+  const clickable = !locked;
+  return (
+    <div
+      onClick={clickable ? onOpen : undefined}
+      role={clickable ? 'button' : undefined}
+      style={{
+        position: 'absolute', top: r.y, left: 0, right: 0, height: r.h,
+        background: hero ? 'var(--b-selected)' : 'transparent', cursor: clickable ? 'pointer' : 'default',
+        borderBottom: hero || locked ? 0 : 0,
+      }}
+    >
+      <div style={{ position: 'absolute', top: hero ? 12 : (r.h - MARKER) / 2, right: markerRight(r.idx) }}>
+        <PathMarker l={l} number={number} surround={surround} />
+      </div>
+      <div style={{
+        position: 'absolute', right: markerRight(r.idx) + MARKER + 4, left: 20,
+        top: hero ? 26 : 0, bottom: hero ? 16 : 0,
+        display: 'flex', flexDirection: 'column', justifyContent: hero ? 'flex-start' : 'center', gap: 2,
+        color: hero ? 'var(--b-on-selected)' : titleColor,
+      }}>
+        {hero && <span style={{ font: '700 12px/18px var(--font-arabic)' }}>درسك التالي</span>}
+        <span style={{ font: `${hero ? 800 : 700} ${hero ? 16 : 15}px/24px var(--font-arabic)` }}>{l.title}</span>
+        {meta && <span style={{ font: '600 12px/18px var(--font-arabic)', opacity: hero ? 1 : 0.85 }}>{meta}</span>}
+        {hero && (
+          <button className="b-btn" style={{ marginTop: 10 }} onClick={e => { e.stopPropagation(); onOpen(); }}>
+            ابدأ الدرس
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ENTRY — a page of the subject's notebook. The title steps back; the hook and
+// the points the student leaves with lead. A short ritual plays once.
+// ═════════════════════════════════════════════════════════════════════════════
+
+const RITUAL_MS = 2200;
+const RITUAL_PHRASES = ['بنجهّز ليك الدرس', 'بنرتّب الصفحات', 'كل حاجة حتبقى أوضح', 'جاهز'];
+const SPINE = 10;
+
+function EntryPage({ lesson, color, onStart, onClose }) {
+  const points = lesson.orientation.points;
+  const [p, setP] = useState(0);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const t0 = performance.now();
+    let raf;
+    const tick = now => {
+      const v = Math.min(1, (now - t0) / RITUAL_MS);
+      setP(v);
+      if (v < 1) raf = requestAnimationFrame(tick);
+      else setTimeout(() => setReady(true), 400);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const lit = ready ? points.length : Math.min(points.length, Math.floor(p * (points.length + 1)));
+  const last = RITUAL_PHRASES.length - 1;
+  const phrase = RITUAL_PHRASES[p >= 1 ? last : Math.min(last - 1, Math.floor(p * last))];
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--b-paper)' }}>
+      {/* subject watermark */}
+      <span aria-hidden style={{
+        position: 'absolute', left: 8, bottom: 110, font: '800 220px/1 var(--font-arabic)', color, opacity: 0.12, pointerEvents: 'none',
+      }}>{lesson.subjectName.slice(0, 1)}</span>
+
+      <div style={{ display: 'flex', alignItems: 'center', height: 56, padding: `0 ${SPINE + 4}px 0 16px`, position: 'relative' }}>
+        <button onClick={onClose} aria-label="إغلاق" style={{ background: 'none', border: 0, color: 'var(--b-ink)', cursor: 'pointer', padding: 8 }}><CloseIcon /></button>
+        <span style={{ flex: 1 }} />
+        <span style={{ font: '700 12px/18px var(--font-arabic)', color: 'var(--b-ink2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {lesson.subjectName}، {lesson.unitName.split(':')[0]}
+        </span>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', position: 'relative' }}>
+        <div style={{ padding: `4px 24px 14px ${24}px`, paddingRight: SPINE + 24 }}>
+          <div style={{ font: '800 12px/18px var(--font-arabic)', color: 'var(--b-accent-text)' }}>درس جديد</div>
+          <h2 style={{ margin: 0, font: '700 19px/28px var(--font-arabic)' }}>{lesson.lessonTitle}</h2>
+          <div style={{ font: '500 12px/18px var(--font-arabic)', color: 'var(--b-ink2)', paddingTop: 4 }}>
+            {arabicMinutes(lesson.orientation.estimatedMins)}
+          </div>
+        </div>
+
+        {/* the hook: loudest thing on the page, in its own band */}
+        <div style={{
+          background: 'var(--b-sunken)', borderTop: '1px solid var(--b-rule-strong)', borderBottom: '1px solid var(--b-rule-strong)',
+          padding: `16px 24px 18px`, paddingRight: SPINE + 24,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 6 }}>
+            <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--b-band)', transform: 'rotate(45deg)', border: '1px solid var(--b-accent-text)' }} />
+            <span style={{ font: '800 12px/18px var(--font-arabic)', color: 'var(--b-accent-text)' }}>خلّيها في بالك</span>
+          </div>
+          <p className="b-read" style={{ margin: 0, font: '700 20px/36px var(--font-read)' }}>{lesson.hook}</p>
+        </div>
+
+        <div style={{ padding: `18px 24px 12px`, paddingRight: SPINE + 24 }}>
+          <h3 style={{ margin: '0 0 4px', font: '700 16px/24px var(--font-arabic)' }}>حتطلع من الدرس وإنت بتعرف</h3>
+          {points.map((pt, i) => (
+            <div key={i} style={{ opacity: i < lit ? 1 : 0.22, transition: 'opacity .26s ease', borderBottom: '1px solid var(--b-rule)' }}>
+              <div style={{ display: 'flex', gap: 12, padding: '10px 0' }}>
+                <span style={{
+                  width: 28, height: 28, borderRadius: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: i < lit ? 'var(--b-band)' : 'var(--b-rule)', color: 'var(--b-on-band)', font: '800 14px/22px var(--font-arabic)',
+                }}>{toAr(i + 1)}</span>
+                <span style={{ flex: 1, paddingTop: 2, font: '700 14px/24px var(--font-arabic)' }}>{pt}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Continue → home */}
-      <button
-        onClick={onContinue}
-        className="w-full py-3.5 rounded-2xl font-arabic font-bold text-sm"
-        style={{
-          background: color, color: '#fff', border: 'none', cursor: 'pointer',
-          boxShadow: `0 4px 20px ${color}35`,
-        }}
-        onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
-        onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-      >
-        العودة للرئيسية →
-      </button>
+      {/* the ritual, then the way in */}
+      <div style={{ padding: `8px 20px 20px`, paddingRight: SPINE + 20, minHeight: 80, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative' }}>
+        {ready ? (
+          <button className="b-btn" onClick={onStart}>ابدأ الدرس</button>
+        ) : (
+          <>
+            <div style={{ textAlign: 'center', font: '700 16px/24px var(--font-arabic)' }}>{phrase}</div>
+            <div style={{ height: 4, borderRadius: 4, background: 'var(--b-rule)', marginTop: 14, overflow: 'hidden' }}>
+              <div style={{ width: `${p * 100}%`, height: '100%', background: 'var(--b-ink)' }} />
+            </div>
+          </>
+        )}
+      </div>
 
-      <style>{`
-        @keyframes drawRing  { to { stroke-dashoffset: 0; } }
-        @keyframes drawMark  { to { stroke-dashoffset: 0; } }
-        @keyframes statPop {
-          0%   { transform: scale(1); }
-          40%  { transform: scale(1.35); }
-          70%  { transform: scale(0.92); }
-          100% { transform: scale(1); }
-        }
-        @keyframes cpFadeUp {
-          from { opacity: 0; transform: translateY(5px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes progressGrow {
-          from { transform: scaleX(0); }
-          to   { transform: scaleX(1); }
-        }
-      `}</style>
+      {/* the spine, over the page so the hook's band runs under it */}
+      <span aria-hidden style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: SPINE, background: color }} />
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// READER — the lesson on its margin page. Full screen and focused: the bar
+// retreats to a hairline of progress while reading and returns on scroll-up.
+// ═════════════════════════════════════════════════════════════════════════════
+
+function ReaderPage({ lesson, color, onClose, onFinish }) {
+  const [barShown, setBarShown] = useState(true);
+  const [frac, setFrac] = useState(0);
+  const [result, setResult] = useState(null);   // null | { right: bool }
+  const lastTop = useRef(0);
+
+  function onScroll(e) {
+    const el = e.currentTarget;
+    const top = el.scrollTop;
+    const max = el.scrollHeight - el.clientHeight;
+    setFrac(max > 0 ? Math.min(1, top / max) : 0);
+    if (top < 24) setBarShown(true);
+    else if (top > lastTop.current + 6) setBarShown(false);
+    else if (top < lastTop.current - 6) setBarShown(true);
+    lastTop.current = top;
+  }
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--b-paper)', ['--reader-line']: color }}>
+      {/* 2px progress hairline, always there */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--b-rule)', zIndex: 6 }}>
+        <div style={{ width: `${frac * 100}%`, height: '100%', background: color, marginLeft: 'auto' }} />
+      </div>
+
+      {/* the bar */}
+      <div style={{
+        position: 'absolute', top: 2, left: 0, right: 0, zIndex: 5, height: 52, display: 'flex', alignItems: 'center', gap: 4,
+        padding: '0 8px 0 16px', background: 'var(--b-paper)', borderBottom: '1px solid var(--b-rule)',
+        transform: barShown ? 'none' : 'translateY(-110%)', transition: 'transform .22s ease',
+      }}>
+        <button onClick={onClose} aria-label="إغلاق" style={{ background: 'none', border: 0, color: 'var(--b-ink)', cursor: 'pointer', padding: 8 }}><CloseIcon /></button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ font: '700 14px/20px var(--font-arabic)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lesson.lessonTitle}</div>
+          <div style={{ font: '500 12px/16px var(--font-arabic)', color: 'var(--b-ink2)' }}>{lesson.subjectName}</div>
+        </div>
+      </div>
+
+      <div onScroll={onScroll} onClick={() => setBarShown(true)} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', paddingTop: 52 }}>
+        <div style={{ paddingTop: 8 }}>
+          {lesson.blocks.map(block => <BlockRenderer key={block.id} block={block} />)}
+        </div>
+
+        <RecallCard lesson={lesson} onSettled={setResult} />
+
+        <MarginItem top={12} bottom={40}>
+          <ReaderColumn>
+            <button className="b-btn" disabled={!result} onClick={() => onFinish(result)}>
+              {result ? 'خلّصت، كمّل' : 'جاوب على السؤال عشان تكمّل'}
+            </button>
+          </ReaderColumn>
+        </MarginItem>
+      </div>
+    </div>
+  );
+}
+
+// ── Active recall: a question on what was just read ──────────────────────────
+
+function Choice({ text, state, onClick, disabled }) {
+  const fill = state === 'picked' ? 'var(--b-selected)' : state === 'right' ? 'var(--b-positive-bg)' : state === 'wrong' ? 'var(--b-negative-bg)' : 'var(--b-surface)';
+  const border = state === 'picked' ? '2px solid var(--b-ink)' : state === 'right' ? '2px solid var(--b-positive)' : state === 'wrong' ? '2px solid var(--b-negative)' : state === 'dimmed' ? '1px solid var(--b-rule)' : '1px solid var(--b-rule-strong)';
+  const judged = state === 'right' || state === 'wrong';
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 48, padding: '8px 14px', textAlign: 'right',
+      background: fill, border, borderRadius: 10, cursor: disabled ? 'default' : 'pointer',
+      color: state === 'dimmed' ? 'var(--b-ink2)' : 'var(--b-ink)',
+      font: `${judged || state === 'picked' ? 700 : 400} 15px/27px var(--font-read)`, boxSizing: 'border-box',
+    }}>
+      <span style={{ flex: 1 }}>{text}</span>
+      {judged && (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+          stroke={state === 'right' ? 'var(--b-positive)' : 'var(--b-negative)'}>
+          {state === 'right' ? <path d="m5 12 5 5 9-10" /> : <path d="M6 6l12 12M18 6 6 18" />}
+        </svg>
+      )}
+    </button>
+  );
+}
+
+function RecallCard({ lesson, onSettled }) {
+  const { question, options, correctIndex, explanation } = lesson.checkpoint;
+  const [selected, setSelected] = useState(null);
+  const [attempts, setAttempts] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const [settled, setSettled] = useState(false);
+  const [firstRight, setFirstRight] = useState(null);
+
+  const right = submitted && selected === correctIndex;
+  const wrong = submitted && !right;
+
+  function submit() {
+    setSubmitted(true);
+    if (attempts === 0) setFirstRight(selected === correctIndex);
+    setAttempts(a => a + 1);
+    if (selected === correctIndex) { setSettled(true); onSettled({ right: attempts === 0 }); }
+  }
+  function retry() { setSelected(null); setSubmitted(false); }
+  function settle() { setSettled(true); onSettled({ right: false }); }
+
+  const stateOf = i => {
+    if (!submitted) return selected === i ? 'picked' : 'idle';
+    if (i === correctIndex && right) return 'right';
+    if (i === selected && wrong) return 'wrong';
+    return 'dimmed';
+  };
+  const subtitle = attempts > 0 && !submitted ? 'المحاولة التانية' : 'من غير ما ترجع للفقرة';
+
+  return (
+    <MarginItem
+      top={20}
+      bottom={16}
+      bar="var(--b-accent)"
+      sign={<MarginSign icon={Icons.recall} fill="var(--b-accent)" tint="var(--b-on-accent)" border="var(--b-accent)" />}
+    >
+      <ReaderColumn>
+        <div style={{ minHeight: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ font: '800 12px/18px var(--font-arabic)', color: 'var(--b-accent-text)' }}>اختبر نفسك</span>
+          <span style={{ font: '500 12px/18px var(--font-arabic)', color: 'var(--b-ink2)' }}>{subtitle}</span>
+        </div>
+        <p className="b-read" style={{ margin: '4px 0 12px', font: '500 16px/29px var(--font-read)' }}>{question}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {options.map((o, i) => (
+            <Choice key={i} text={o} state={stateOf(i)} disabled={submitted} onClick={() => setSelected(i)} />
+          ))}
+        </div>
+
+        {!submitted && (
+          <div style={{ marginTop: 14 }}>
+            <button className="b-btn-ink" disabled={selected === null} onClick={submit}>تحقّق</button>
+          </div>
+        )}
+
+        {right && (
+          <Feedback tone="right" title={firstRight ? 'صاح' : 'المرة دي صاح'} heading="ليه؟" body={explanation} />
+        )}
+        {wrong && (
+          <>
+            <Feedback tone="wrong" title="ما ظبطت المرة دي" heading="الغلط وين؟" body={explanation}
+              extra={`الإجابة الصحيحة: ${options[correctIndex]}`} />
+            <p style={{ margin: '10px 0', font: '500 12px/18px var(--font-arabic)', color: 'var(--b-ink2)' }}>
+              المحاولة التانية للتثبيت بس. الأولى هي المحسوبة.
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="b-btn-quiet" onClick={retry}>جرّب تاني</button>
+              <button className="b-btn" onClick={settle}>فهمت، كمّل</button>
+            </div>
+          </>
+        )}
+      </ReaderColumn>
+    </MarginItem>
+  );
+}
+
+function Feedback({ tone, title, heading, body, extra }) {
+  const ok = tone === 'right';
+  return (
+    <div style={{ marginTop: 14, animation: 'bshStep .25s ease' }}>
+      <div style={{ font: '800 16px/24px var(--font-arabic)', color: ok ? 'var(--b-positive)' : 'var(--b-negative)' }}>{title}</div>
+      {extra && <div style={{ font: '700 14px/22px var(--font-arabic)', paddingTop: 2 }}>{extra}</div>}
+      <div style={{ font: '800 12px/18px var(--font-arabic)', color: 'var(--b-ink2)', paddingTop: 8 }}>{heading}</div>
+      <p className="b-read" style={{ margin: 0, font: '400 15px/27px var(--font-read)' }}>{body}</p>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// EXIT — a stepped ceremony of pages: what you did, the streak, what you
+// gained, what comes next. "اختصر" skips to the last page.
+// ═════════════════════════════════════════════════════════════════════════════
+
+const WEEK = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+
+function ExitPage({ lesson, units, color, recall, timeSpent, onLeave, onBack }) {
+  const [step, setStep] = useState(0);
+  const STEPS = 4;
+  const { xpGained, streakBefore } = lesson.complete;
+
+  const minutes = Math.max(1, Math.round(timeSpent / 60000));
+  const xp = DEMO_USER.xp + xpGained;
+  const lvl = getLevel(xp);
+  const unit = units.find(u => u.lessons.some(l => l.state === 'hero')) || units[0];
+  const unitDone = unit.lessons.filter(l => l.state === 'done').length + 1;
+  const left = unit.lessons.length - unitDone;
+  const next = unit.lessons.find(l => l.state === 'open');
+
+  const kicker = { font: '700 12px/18px var(--font-arabic)', color: 'var(--b-ink2)' };
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--b-paper)' }}>
+      {/* page dots, close, and the shortcut */}
+      <div style={{ display: 'flex', alignItems: 'center', height: 56, padding: '0 8px 0 16px', gap: 8 }}>
+        <button onClick={onBack} aria-label="إغلاق" style={{ background: 'none', border: 0, color: 'var(--b-ink)', cursor: 'pointer', padding: 8 }}><CloseIcon /></button>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 6 }} aria-label={`الصفحة ${toAr(step + 1)} من ${toAr(STEPS)}`}>
+          {Array.from({ length: STEPS }).map((_, i) => (
+            <span key={i} style={{ width: i === step ? 22 : 8, height: 4, borderRadius: 4, background: i <= step ? 'var(--b-ink)' : 'var(--b-rule-strong)', transition: 'width .2s' }} />
+          ))}
+        </div>
+        {step < STEPS - 1
+          ? <button onClick={() => setStep(STEPS - 1)} style={{ background: 'none', border: 0, color: 'var(--b-ink2)', font: '700 12px/18px var(--font-arabic)', cursor: 'pointer', padding: 8 }}>اختصر</button>
+          : <span style={{ width: 52 }} />}
+      </div>
+
+      <div key={step} style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', padding: '8px 24px 16px', animation: 'bshStep .3s ease' }}>
+        {step === 0 && (
+          <>
+            <div style={kicker}>خلّصت الدرس</div>
+            <h2 style={{ margin: '0 0 20px', font: '800 22px/32px var(--font-arabic)' }}>{lesson.lessonTitle}</h2>
+            <div style={{ display: 'flex', borderTop: '2px solid var(--b-ink)', borderBottom: '1px solid var(--b-rule)' }}>
+              <Stat n={toAr(minutes)} label="دقيقة" />
+              <span style={{ width: 1, background: 'var(--b-rule)' }} />
+              <Stat n={recall.right ? 'صاح' : 'غلط'} label="اختبر نفسك" tone={recall.right ? 'var(--b-positive)' : 'var(--b-negative)'} />
+            </div>
+            <p style={{ margin: '20px 0 0', font: '500 14px/24px var(--font-arabic)', color: 'var(--b-ink2)' }}>
+              {recall.right
+                ? 'جاوبت صاح من أول مرة. واصل كدا.'
+                : `«${lesson.concept}» لسه محتاج تثبيت. حنرجّعو ليك في المراجعة بكرة.`}
+            </p>
+          </>
+        )}
+
+        {step === 1 && (
+          <>
+            <div style={kicker}>سلسلتك زادت يوم</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '4px 0 6px' }}>
+              <span style={{ font: '800 96px/1.1 var(--font-arabic)' }}>{toAr(streakBefore + 1)}</span>
+              <span style={{ font: '700 16px/24px var(--font-arabic)' }}>أيام على التوالي</span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, margin: '12px 0 16px' }}>
+              {WEEK.map((d, i) => (
+                <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{
+                    height: 36, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: i === 6 ? 'var(--b-accent)' : 'var(--b-light-day)', color: 'var(--b-on-accent)',
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                  </div>
+                  <div style={{ font: '600 12px/18px var(--font-arabic)', color: 'var(--b-ink2)', paddingTop: 2 }}>{d}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: '1px solid var(--b-rule)', padding: '12px 0' }}>
+              <div style={{ font: '700 14px/22px var(--font-arabic)' }}>اليوم اتحسب بدرس كامل</div>
+              <div style={{ font: '500 12px/20px var(--font-arabic)', color: 'var(--b-ink2)' }}>الدرس الكامل بيكبّر السلسلة، والمراجعة الخفيفة بتحافظ عليها.</div>
+            </div>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <div style={kicker}>حصيلتك من الدرس</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ font: '800 64px/1.2 var(--font-arabic)' }}>{toAr(xpGained)}</span>
+              <span style={{ font: '700 16px/24px var(--font-arabic)' }}>نقطة</span>
+            </div>
+            <div style={{ font: '700 14px/22px var(--font-arabic)' }}>المستوى {toAr(lvl.level)}، {lvl.title}</div>
+            <div style={{ height: 6, borderRadius: 4, background: 'var(--b-rule)', margin: '8px 0 4px', overflow: 'hidden' }}>
+              <div style={{ width: `${lvl.progress}%`, height: '100%', background: 'var(--b-accent)', borderRadius: 4 }} />
+            </div>
+            <div style={{ font: '500 12px/18px var(--font-arabic)', color: 'var(--b-ink2)' }}>
+              باقي {toAr(lvl.next.minXp - xp)} نقطة للمستوى {toAr(lvl.level + 1)}
+            </div>
+
+            <Row title={unit.name} aside={`${toAr(unitDone)} من ${arabicLessons(unit.lessons.length)}`}>
+              <div style={{ display: 'flex', gap: 3, padding: '6px 0 4px' }}>
+                {unit.lessons.map((_, i) => (
+                  <span key={i} style={{ flex: 1, height: 6, borderRadius: 4, background: i < unitDone ? 'var(--b-accent)' : 'var(--b-rule)' }} />
+                ))}
+              </div>
+              <div style={{ font: '600 12px/18px var(--font-arabic)', color: 'var(--b-ink2)' }}>
+                {left === 0 ? 'قفلت الوحدة' : left === 1 ? 'درس واحد وتقفل الوحدة' : left === 2 ? 'درسين وتقفل الوحدة' : `باقي ${arabicLessons(left)} في الوحدة`}
+              </div>
+            </Row>
+
+            <Row title="دخل كراسك" aside="مفهوم واحد">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
+                <span style={{ font: '700 14px/22px var(--font-arabic)' }}>{lesson.concept}</span>
+                <span style={{ font: '700 12px/18px var(--font-arabic)', color: recall.right ? 'var(--b-positive)' : 'var(--b-warning)' }}>
+                  {recall.right ? 'ثابت' : 'محتاج تثبيت'}
+                </span>
+              </div>
+              <div style={{ font: '500 12px/18px var(--font-arabic)', color: 'var(--b-ink2)', paddingTop: 2 }}>كل مفهوم بيرجع ليك في المراجعة في يومه.</div>
+            </Row>
+
+            <Row title={`باقي ${toAr(DEMO_USER.daysUntilExam)} يوم للامتحان`} aside={DEMO_USER.paceLabel} />
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <div style={kicker}>{next ? 'الجاي' : 'خلّصت دروس الوحدة'}</div>
+            {next && <h2 style={{ margin: '0 0 16px', font: '800 22px/32px var(--font-arabic)' }}>{next.title}</h2>}
+            <div style={{
+              background: 'var(--b-sunken)', borderTop: '1px solid var(--b-rule-strong)', borderBottom: '1px solid var(--b-rule-strong)',
+              margin: '0 -24px', padding: '14px 24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 4 }}>
+                <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--b-band)', transform: 'rotate(45deg)', border: '1px solid var(--b-accent-text)' }} />
+                <span style={{ font: '800 12px/18px var(--font-arabic)', color: 'var(--b-accent-text)' }}>خلّيها في بالك</span>
+              </div>
+              <p className="b-read" style={{ margin: 0, font: '700 16px/30px var(--font-read)' }}>{lesson.hook}</p>
+            </div>
+            <p style={{ margin: '16px 0 0', font: '500 12px/20px var(--font-arabic)', color: 'var(--b-ink2)' }}>
+              في بنك الأسئلة أسئلة على مفاهيم الدرس دا، لو عايز تتدرّب عليها.
+            </p>
+          </>
+        )}
+      </div>
+
+      <div style={{ padding: '8px 24px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {step < STEPS - 1
+          ? <button className="b-btn" onClick={() => setStep(s => s + 1)}>التالي</button>
+          : (
+            <>
+              <button className="b-btn" onClick={onLeave}>ارجع للرئيسية</button>
+              <button className="b-btn-quiet" onClick={onBack}>ارجع للدروس</button>
+            </>
+          )}
+      </div>
+    </div>
+  );
+}
+
+function Stat({ n, label, tone }) {
+  return (
+    <div style={{ flex: 1, padding: '14px 0', textAlign: 'center' }}>
+      <div style={{ font: '800 34px/44px var(--font-arabic)', color: tone || 'var(--b-ink)' }}>{n}</div>
+      <div style={{ font: '600 12px/18px var(--font-arabic)', color: 'var(--b-ink2)' }}>{label}</div>
+    </div>
+  );
+}
+
+function Row({ title, aside, children }) {
+  return (
+    <div style={{ borderTop: '1px solid var(--b-rule)', padding: '12px 0', marginTop: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ font: '800 14px/22px var(--font-arabic)' }}>{title}</span>
+        {aside && <span style={{ font: '600 12px/18px var(--font-arabic)', color: 'var(--b-ink2)' }}>{aside}</span>}
+      </div>
+      {children}
     </div>
   );
 }

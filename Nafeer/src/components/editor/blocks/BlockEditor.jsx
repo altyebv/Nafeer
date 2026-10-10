@@ -17,6 +17,7 @@ import { HeadingBlock, TextBlock, TipBlock, ArabicFormulaBlock, ImagePlaceholder
 import { HighlightBox } from '@/components/demo/blocks/HighlightBox';
 import { FormulaBlock } from '@/components/demo/blocks/FormulaBlock';
 import { ExampleBlock } from '@/components/demo/blocks/ExampleBlock';
+import '@/components/demo/demo.css';
 import {
   Check,
   CircleDot,
@@ -208,7 +209,7 @@ export default function BlockEditor({ block, subjectId, dragHandleProps, lessonI
 
   // ── PREVIEW MODE ─────────────────────────────────────────────────────────────
   if (!isEditing) {
-    const preview = <BlockPreview block={block} />;
+    const preview = <div className="bsh" style={{ background: 'var(--b-paper)', borderRadius: 10, overflow: 'hidden' }}><BlockPreview block={block} /></div>;
 
     return (
       <div className="relative group/block">
