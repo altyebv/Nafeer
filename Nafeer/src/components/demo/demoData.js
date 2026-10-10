@@ -42,7 +42,6 @@ export const SUBJECTS_BY_PATH = {
   ],
 };
 
-export const DEMO_SUBJECTS = SUBJECTS_BY_PATH.SCIENCE;
 
 export const FOCUS_BY_PATH = {
   SCIENCE: {
@@ -158,7 +157,6 @@ export const DEMO_LESSON_HISTORY = {
   ],
 };
 
-export const DEMO_LESSON = DEMO_LESSON_PHYSICS;
 export const LESSON_BY_PATH = {
   SCIENCE:  DEMO_LESSON_PHYSICS,
   LITERARY: DEMO_LESSON_HISTORY,
@@ -199,7 +197,6 @@ export const FEED_CARDS_BY_PATH = {
   LITERARY: FEED_CARDS_LITERARY,
 };
 
-export const DEMO_FEED_CARDS = FEED_CARDS_SCIENCE;
 
 export const DEMO_PROFILE = {
   nameAr:        'يوسف أحمد',
