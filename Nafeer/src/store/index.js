@@ -312,6 +312,8 @@ function assembleExportData(s) {
     questions: s.questions.map((q) => ({
       id: q.id, type: q.type, textAr: q.textAr, textEn: q.textEn || null,
       correctAnswer: q.correctAnswer, options: q.options || null, explanation: q.explanation || null,
+      mistakeNote: q.mistakeNote || null, optionNotes: q.optionNotes?.some(Boolean) ? q.optionNotes : null,
+      acceptedAnswers: q.acceptedAnswers || [],
       imageUrl: q.imageUrl || null, tableData: q.tableData || null, difficulty: q.difficulty || 1,
       points: q.points || 1, estimatedSeconds: q.estimatedSeconds || 60,
       cognitiveLevel: q.cognitiveLevel || 'RECALL', source: q.source || 'ORIGINAL',

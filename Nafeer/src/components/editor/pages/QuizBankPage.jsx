@@ -18,6 +18,9 @@ const emptyQuestion = () => ({
   correctAnswer: '',
   options: ['', '', '', ''],
   explanation: null,
+  mistakeNote: null,
+  optionNotes: [],
+  acceptedAnswers: [],
   imageUrl: null,
   tableData: null,
   difficulty: 1,
@@ -63,6 +66,10 @@ const normaliseQuestion = (draft) => {
     textAr: draft.textAr.trim(),
     textEn: cleanOptional(draft.textEn),
     explanation: cleanOptional(draft.explanation),
+    mistakeNote: cleanOptional(draft.mistakeNote || ''),
+    acceptedAnswers: ['FILL_BLANK', 'SHORT_ANSWER'].includes(draft.type)
+      ? (draft.acceptedAnswers || []).map((answer) => answer.trim()).filter(Boolean)
+      : [],
     imageUrl: cleanOptional(draft.imageUrl),
     sourceDetails: cleanOptional(draft.sourceDetails),
     correctAnswer: draft.correctAnswer?.trim() || '',
@@ -72,7 +79,16 @@ const normaliseQuestion = (draft) => {
   };
 
   if (normalised.type === 'MCQ' && Array.isArray(normalised.options)) {
-    normalised.options = normalised.options.map((option) => option.trim()).filter(Boolean);
+    // A choice and its note travel together, so dropping a blank choice drops its note too.
+    const kept = normalised.options
+      .map((option, index) => ({ option: option.trim(), note: (draft.optionNotes?.[index] || '').trim() }))
+      .filter((entry) => entry.option);
+    normalised.options = kept.map((entry) => entry.option);
+    // The right choice needs no note on why it is wrong.
+    const notes = kept.map((entry) => (entry.option === normalised.correctAnswer ? '' : entry.note));
+    normalised.optionNotes = notes.some(Boolean) ? notes : [];
+  } else {
+    normalised.optionNotes = [];
   }
   if (normalised.type === 'MATCH' && Array.isArray(normalised.options)) {
     normalised.options = normalised.options.filter((pair) => pair.right?.trim() && pair.left?.trim());
@@ -156,6 +172,9 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
       correctAnswer: q.correctAnswer,
       options: q.options || (q.type === 'MCQ' ? ['', '', '', ''] : null),
       explanation: q.explanation || '',
+      mistakeNote: q.mistakeNote || '',
+      optionNotes: q.optionNotes || [],
+      acceptedAnswers: q.acceptedAnswers || [],
       imageUrl: q.imageUrl || '',
       tableData: q.tableData || null,
       difficulty: q.difficulty || 1,

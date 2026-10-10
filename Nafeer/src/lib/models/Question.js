@@ -45,6 +45,18 @@ const QuestionSchema = new mongoose.Schema(
     correctAnswer:    { type: String, required: true },
     options:          { type: mongoose.Schema.Types.Mixed, default: null },
     explanation:      { type: String, default: null },
+
+    // ── Optional feedback and grading extras ────────────────────────────────
+    // All three may be absent; the app falls back to the explanation alone.
+    //   mistakeNote     — the usual mistake on this question ("الغلط وين؟" in
+    //                     the app), shown after a wrong answer.
+    //   optionNotes     — MCQ only: one note per choice, in the same order as
+    //                     options, saying why that choice is wrong. '' = no note.
+    //   acceptedAnswers — other spellings or forms that also count as right
+    //                     (FILL_BLANK and SHORT_ANSWER), e.g. "331" and "٣٣١".
+    mistakeNote:      { type: String, default: null },
+    optionNotes:      { type: [String], default: [] },
+    acceptedAnswers:  { type: [String], default: [] },
     imageUrl:         { type: String, default: null },
     tableData:        { type: mongoose.Schema.Types.Mixed, default: null },
     difficulty:       { type: Number, default: 1, min: 1, max: 5 },

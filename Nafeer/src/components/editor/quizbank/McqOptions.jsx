@@ -2,8 +2,17 @@
 
 const optionLabels = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
 
-export default function MCQOptions({ options, correctIndex, onChange, onCorrectChange }) {
+// notes / onNotesChange are optional: one note per choice, in the same order,
+// saying why that choice is wrong. The app shows it when a student picks it.
+export default function MCQOptions({ options, correctIndex, onChange, onCorrectChange, notes = null, onNotesChange = null }) {
   const opts = options.length ? options : ['', '', '', ''];
+  const withNotes = typeof onNotesChange === 'function';
+
+  const updateNote = (index, value) => {
+    const next = opts.map((_, idx) => notes?.[idx] || '');
+    next[index] = value;
+    onNotesChange(next);
+  };
 
   const updateOption = (index, value) => {
     const next = [...opts];
@@ -15,7 +24,7 @@ export default function MCQOptions({ options, correctIndex, onChange, onCorrectC
 
   const removeOption = (index) => {
     const next = opts.filter((_, idx) => idx !== index);
-    onChange(next);
+    onChange(next, withNotes ? opts.map((_, idx) => notes?.[idx] || '').filter((_, idx) => idx !== index) : undefined);
     if (correctIndex === index) onCorrectChange(-1);
     else if (correctIndex > index) onCorrectChange(correctIndex - 1);
   };
@@ -25,8 +34,8 @@ export default function MCQOptions({ options, correctIndex, onChange, onCorrectC
       {opts.map((option, index) => {
         const isCorrect = correctIndex === index;
         return (
+          <div key={index} className="space-y-1">
           <div
-            key={index}
             className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-xl border p-2 transition-colors ${
               isCorrect ? 'border-emerald-700 bg-emerald-900/15' : 'border-ink-800 bg-ink-950'
             }`}
@@ -58,6 +67,16 @@ export default function MCQOptions({ options, correctIndex, onChange, onCorrectC
             >
               ×
             </button>
+          </div>
+          {withNotes && !isCorrect && option.trim() && (
+            <input
+              type="text"
+              value={notes?.[index] || ''}
+              onChange={(e) => updateNote(index, e.target.value)}
+              className="w-full rounded-lg border border-ink-800 bg-ink-950 px-3 py-1.5 text-xs text-sand-300 outline-none transition-colors placeholder:text-ink-600 focus:border-sand-700 font-arabic"
+              placeholder="لماذا هذا الخيار خطأ؟ (اختياري)"
+            />
+          )}
           </div>
         );
       })}

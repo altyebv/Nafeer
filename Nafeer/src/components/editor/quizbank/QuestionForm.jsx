@@ -81,11 +81,19 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons }
     if (form.type === 'MCQ') {
       const options = mcqOptionsFrom(form);
       const correctIndex = options.findIndex((option) => option === form.correctAnswer);
+      const notes = asArray(form.optionNotes, []);
       return (
         <MCQOptions
           options={options}
           correctIndex={correctIndex}
-          onChange={(next) => setForm({ ...form, options: next, correctAnswer: next[correctIndex] || '' })}
+          notes={notes}
+          onNotesChange={(next) => setForm({ ...form, optionNotes: next })}
+          onChange={(next, nextNotes) => setForm({
+            ...form,
+            options: next,
+            optionNotes: nextNotes ?? notes,
+            correctAnswer: next[correctIndex] || '',
+          })}
           onCorrectChange={(index) => setForm({ ...form, correctAnswer: options[index] || '' })}
         />
       );
@@ -319,6 +327,35 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons }
           className={`${inputClass} min-h-[82px] resize-y leading-7`}
           placeholder="لماذا هذه الإجابة صحيحة؟"
         />
+
+        <div className="mt-4">
+          <label className={labelClass}>الخطأ الشائع (اختياري)</label>
+          <textarea
+            value={form.mistakeNote || ''}
+            onChange={(e) => setField('mistakeNote', e.target.value || null)}
+            className={`${inputClass} min-h-[64px] resize-y leading-7`}
+            placeholder="أين يخطئ الطلاب عادةً في هذا السؤال؟ يظهر للطالب بعد الإجابة الخاطئة."
+          />
+        </div>
+
+        {(form.type === 'FILL_BLANK' || form.type === 'SHORT_ANSWER') && (
+          <div className="mt-4">
+            <label className={labelClass}>إجابات أخرى مقبولة (اختياري)</label>
+            <textarea
+              value={(form.acceptedAnswers || []).join('\n')}
+              onChange={(e) => setField('acceptedAnswers', e.target.value ? e.target.value.split('\n') : [])}
+              className={`${inputClass} min-h-[64px] resize-y leading-7`}
+              placeholder={'كل إجابة في سطر، مثل:\n331\n٣٣١'}
+            />
+            <p className="mt-1 text-[11px] text-ink-600 font-arabic">صيغ أو كتابات أخرى تُحسب صحيحة مع الإجابة الأساسية.</p>
+          </div>
+        )}
+
+        {concepts.length > 0 && (form.conceptIds || []).length === 0 && (
+          <p className="mt-4 rounded-lg bg-amber-900/20 px-3 py-2 text-[11px] leading-5 text-amber-500 font-arabic">
+            السؤال غير مرتبط بأي مفهوم. بدون مفهوم لا يستطيع التطبيق أن يخبر الطالب بما تدرّب عليه ولا أين نقاط ضعفه.
+          </p>
+        )}
 
         {concepts.length > 0 && (
           <div className="mt-4">

@@ -15,6 +15,7 @@ export async function PUT(request, { params }) {
 
     const allowed = [
       'type', 'textAr', 'textEn', 'correctAnswer', 'options', 'explanation',
+      'mistakeNote', 'optionNotes', 'acceptedAnswers',
       'imageUrl', 'tableData', 'difficulty', 'points', 'estimatedSeconds',
       'cognitiveLevel', 'source', 'sourceExamContentId', 'sourceDetails',
       'sourceYear', 'feedEligible', 'unitContentId', 'lessonContentId',
