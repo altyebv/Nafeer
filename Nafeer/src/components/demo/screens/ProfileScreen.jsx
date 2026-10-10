@@ -93,7 +93,7 @@ function ProfilePage({ userProfile, bonusXp, onSubject, sheet, setSheet }) {
         style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', background: 'var(--b-paper)', borderRadius: '16px 16px 0 0' }}>
 
         {/* the record */}
-        <section style={{ padding: '20px 20px 0' }}>
+        <section data-tour="record" style={{ padding: '20px 20px 0' }}>
           <div style={{ display: 'flex', alignItems: 'stretch', paddingBottom: 14 }}>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 12 }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--b-accent-text)" stroke="var(--b-accent-text)" strokeWidth="1.8" strokeLinejoin="round">

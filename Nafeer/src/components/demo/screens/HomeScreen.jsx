@@ -79,7 +79,7 @@ export default function HomeScreen({ onNavigate, userProfile, bonusXp = 0 }) {
           </h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', height: lerp(52, 44, f) }}>
+        <div data-tour="streak" style={{ display: 'flex', alignItems: 'center', height: lerp(52, 44, f) }}>
           {/* streak */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill={streak > 0 ? ink : 'none'} stroke={ink} strokeWidth="1.8" strokeLinejoin="round">

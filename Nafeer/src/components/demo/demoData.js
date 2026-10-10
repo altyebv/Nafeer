@@ -232,3 +232,38 @@ export const DEMO_PROFILE = {
     arabic:    { answered: 51, right: 40, minutes: 200, firm: 6, shaky: 1, fresh: 2 },
   },
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LESSON PATH — the Lessons page: units, each with lessons on the margin line.
+// state: done | hero (the next lesson, the one amber action) | open | locked
+// ─────────────────────────────────────────────────────────────────────────────
+export const LESSON_PATH_BY_PATH = {
+  SCIENCE: [
+    { title: 'الوحدة الأولى', name: 'القياس والمتجهات', lessons: [
+      { title: 'الكميات الفيزيائية والقياس', state: 'done' },
+      { title: 'المتجهات', state: 'done' },
+      { title: 'الحركة في بُعد واحد', state: 'done' },
+    ] },
+    { title: 'الوحدة الثانية', name: 'الحركة والقوى', lessons: [
+      { title: 'القانون الأول لنيوتن', state: 'done' },
+      { title: 'القانون الثاني لنيوتن', state: 'hero', parts: 2, partsDone: 0, minutes: 8 },
+      { title: 'القانون الثالث لنيوتن', state: 'open' },
+      { title: 'الاحتكاك', state: 'locked' },
+    ] },
+    { title: 'الوحدة الثالثة', name: 'الشغل والطاقة', lessons: [
+      { title: 'الشغل', state: 'locked' },
+      { title: 'الطاقة الحركية', state: 'locked' },
+    ] },
+  ],
+  LITERARY: [
+    { title: 'الوحدة الأولى', name: 'السودان القديم', lessons: [
+      { title: 'حضارة كرمة', state: 'done' },
+      { title: 'مملكة كوش ومروي', state: 'done' },
+    ] },
+    { title: 'الوحدة الثالثة', name: 'السودان في القرن التاسع عشر', lessons: [
+      { title: 'الحكم التركي المصري', state: 'done' },
+      { title: 'الثورة المهدية', state: 'hero', parts: 2, partsDone: 0, minutes: 8 },
+      { title: 'الحكم الثنائي', state: 'locked' },
+    ] },
+  ],
+};

@@ -1,107 +1,76 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOUR STEPS
 //
 // Each step targets one `tab` (drives tab switching in DemoApp).
-// highlight: { x, y, w, h, rx } — spotlight rectangle within content area
-//   y=0 is top of content area (below status bar + app top bar ~80px total)
-//   Content area is 375px wide × ~553px tall on desktop
 //
-// tooltipSide: 'below' | 'above' | 'center'
-//   'center' → no arrow, tooltip floats in the middle (used for focus-mode step)
-// tooltipOffset: gap in px between highlight edge and tooltip card
+// target:  a [data-tour="…"] element on the page. The spotlight is measured
+//          from it, so the tour follows the layout instead of hard-coded
+//          coordinates. `fixed` is used where there is no single element.
+// fixed:   (W, H) => ({ x, y, w, h, rx }) — a spotlight from the overlay size.
+// focusMode: true → DemoApp hides the bottom nav for this step, and the
+//          tooltip floats in the middle with no spotlight.
 //
-// focusMode: true → DemoApp will hide the top bar + bottom nav for this step
-//
-// Add new steps freely — numbering is always computed automatically from TOTAL.
+// Numbering is always computed from TOTAL.
 // ─────────────────────────────────────────────────────────────────────────────
 export const TOUR_STEPS = [
-  // ── 1. Streak widget on home ──────────────────────────────────────────────
   {
-    tab:           'home',
-    title:         'سلسلة مذاكرتك 🔥',
-    desc:          'كل يوم تذاكر، تحافظ على السلسلة. الانضباط يُبنى بالعادة لا بالإرادة.',
-    highlight:     { x: 5, y: 8, w: 90, h: 70, rx: 25 },
-    tooltipSide:   'below',
-    tooltipOffset: 14,
+    tab:    'home',
+    title:  'سلسلة مذاكرتك',
+    desc:   'كل يوم تذاكر فيه، السلسلة بتكبر. والعدّاد التاني بيوريك باقي كم يوم للامتحان.',
+    target: 'streak',
   },
-
   {
-    tab:           'home',
-    title:         'ترشيح اليوم 📌',
-    desc:          'نِظام ترشيح يومي ذكي — يختار لك أفضل درس للمراجعة كل يوم بناءً على نشاطك وأدائك.',
-    highlight:     { x: 12, y: 265, w: 351, h: 170, rx: 20 },
-    tooltipSide:   'above',
-    tooltipOffset: 14,
+    tab:    'home',
+    title:  'خطة اليوم',
+    desc:   'بنختار ليك الدرس الجاي، وإنت بتكمّل من محل ما وقفت.',
+    target: 'focus',
   },
-
-  // ── 2. Focus mode — lesson runs fullscreen ────────────────────────────────
   {
-    tab:           'lesson',
-    focusMode:     true,    // DemoApp hides top bar + bottom nav for this step
-    title:         'وضع التركيز الكامل 🎯',
-    desc:          'تم تصميم شاشة الدرس لتكون خالية من المشتتات — لا أزرار، لا عداد تقدم، لا شريط تنقل. فقط أنت والمحتوى.',
-    highlight:     { x: 0, y: 0, w: 375, h: 553, rx: 0 },
-    tooltipSide:   'center',
-    tooltipOffset: 0,
+    tab:       'lesson',
+    focusMode: true,
+    title:     'الدرس بملء الشاشة',
+    desc:      'ما في أزرار ولا شريط تنقل. الصفحة ليك والدرس بس، والشريط بيرجع لمن تسحب لفوق.',
   },
-
-  // ── 3. Lesson content blocks ──────────────────────────────────────────────
   {
-    tab:           'lesson',
-    focusMode:     false,   // restore top bar so highlight makes sense
-    title:         'درس منظّم ومهيكل 📖',
-    desc:          'نصوص، معادلات، جداول، صور، أمثلة تفاعلية — المنهج نفسه بأسلوب مختلف تماماً.',
-    highlight:     { x: 8, y: 76, w: 359, h: 210, rx: 14 },
-    tooltipSide:   'below',
-    tooltipOffset: 12,
+    tab:   'lesson',
+    title: 'كل نوع له علامته',
+    desc:  'التعريف والقانون والمثال والتنبيه، كل واحد بعلامته على الهامش، عشان تعرف شنو جاي قبل ما تقراه.',
+    fixed: (W, H) => ({ x: 8, y: 70, w: W - 16, h: Math.min(330, H - 220), rx: 10 }),
   },
-
-  // ── 4. Feed ───────────────────────────────────────────────────────────────
   {
-    tab:           'feed',
-    title:         'اسحب للأعلى ⬆️',
-    desc:          'لقطات سريعة يومية — اسحب للأعلى بين البطاقات. صح/خطأ تُجيب بالسحب يميناً أو يساراً.',
-    highlight:     { x: 12, y: 8, w: 351, h: 300, rx: 20 },
-    tooltipSide:   'below',
-    tooltipOffset: 14,
+    tab:   'feed',
+    title: 'اسحب لفوق',
+    desc:  'بطاقات سريعة للمراجعة. وصح أو خطأ بتجاوبها بالسحب يمين أو شمال.',
+    fixed: (W, H) => ({ x: 12, y: 70, w: W - 24, h: Math.min(320, H - 260), rx: 10 }),
   },
-
-  // ── 5. Profile ────────────────────────────────────────────────────────────
   {
-    tab:           'profile',
-    title:         'تقدّمك أمامك دائماً 📊',
-    desc:          'إحصائياتك، نشاطك الأسبوعي، وإنجازاتك — كلها في مكان واحد. هذا ملفك الشخصي.',
-    highlight:     { x: 12, y: 72, w: 351, h: 160, rx: 14 },
-    tooltipSide:   'above',
-    tooltipOffset: 14,
+    tab:    'profile',
+    title:  'تقدّمك قدّامك',
+    desc:   'كرّاسك فيه سلسلتك ومستواك ونشاط الأسبوع، وبعدها الأختام اللي أخدتها.',
+    target: 'record',
   },
 ];
 
 const TOTAL         = TOUR_STEPS.length;
-const TOOLTIP_H_EST = 160;   // estimated tooltip height for 'above' placement
+const TOOLTIP_H_EST = 190;   // estimated tooltip height, for placing it above
 const TOOLTIP_MX    = 12;    // left/right margin
+const PAD           = 6;     // breathing room around a measured target
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GuidedTour — SVG-mask overlay with smart tooltip placement
+// GuidedTour — a dimmed page with one lit window and a plain tooltip
 // ─────────────────────────────────────────────────────────────────────────────
 export default function GuidedTour({ stepIndex, onNext, onPrev, onSkip }) {
   const [visible, setVisible] = useState(false);
+  const [box, setBox] = useState({ W: 375, H: 600, h: null });
+  const rootRef = useRef(null);
   const step    = TOUR_STEPS[stepIndex];
   const isFirst = stepIndex === 0;
   const isLast  = stepIndex === TOTAL - 1;
-  const h       = step.highlight;
+  const isFull  = Boolean(step.focusMode);
   const maskId  = `tour-mask-${stepIndex}`;
-  const isFull  = step.tooltipSide === 'center';
-
-  const tooltipTop = isFull ? null
-    : step.tooltipSide === 'below'
-      ? h.y + h.h + step.tooltipOffset
-      : h.y - step.tooltipOffset - TOOLTIP_H_EST;
-
-  const arrowPointsUp = step.tooltipSide === 'below';
 
   useEffect(() => {
     setVisible(false);
@@ -109,254 +78,143 @@ export default function GuidedTour({ stepIndex, onNext, onPrev, onSkip }) {
     return () => clearTimeout(t);
   }, [stepIndex]);
 
+  // Measure the lit window once the page behind has settled on this step's tab.
+  useLayoutEffect(() => {
+    function measure() {
+      const root = rootRef.current;
+      if (!root) return;
+      const R = root.getBoundingClientRect();
+      const W = R.width, H = R.height;
+      let h = null;
+      if (!isFull) {
+        if (step.target) {
+          const el = root.parentElement?.querySelector(`[data-tour="${step.target}"]`);
+          if (el) {
+            const r = el.getBoundingClientRect();
+            h = {
+              x: Math.max(4, r.left - R.left - PAD), y: Math.max(4, r.top - R.top - PAD),
+              w: Math.min(W - 8, r.width + PAD * 2), h: r.height + PAD * 2, rx: 10,
+            };
+          }
+        }
+        if (!h && step.fixed) h = step.fixed(W, H);
+        if (!h) h = { x: 12, y: 80, w: W - 24, h: 200, rx: 10 };
+      }
+      setBox({ W, H, h });
+    }
+    const t1 = setTimeout(measure, 40);
+    const t2 = setTimeout(measure, 320);
+    window.addEventListener('resize', measure);
+    return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', measure); };
+  }, [stepIndex, isFull, step]);
+
+  const h = box.h;
+  const below = h ? h.y + h.h + 190 < box.H : true;
+  const tooltipTop = !h ? null : below ? h.y + h.h + 14 : Math.max(8, h.y - 14 - TOOLTIP_H_EST);
+
   return (
     <div
+      ref={rootRef}
       style={{
-        position:       'absolute',
-        inset:          0,
-        zIndex:         50,
-        opacity:        visible ? 1 : 0,
-        transition:     'opacity 0.25s ease',
-        display:        isFull ? 'flex' : undefined,
-        alignItems:     isFull ? 'center' : undefined,
-        justifyContent: isFull ? 'center' : undefined,
+        position: 'absolute', inset: 0, zIndex: 50,
+        opacity: visible ? 1 : 0, transition: 'opacity 0.25s ease',
+        display: isFull ? 'flex' : undefined, alignItems: isFull ? 'center' : undefined, justifyContent: isFull ? 'center' : undefined,
       }}
     >
-      {/* ── Dim layer ── */}
-      <div style={{ position:'absolute', inset:0, zIndex:51, pointerEvents:'none' }}>
-        <svg
-          style={{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none' }}
-          xmlns="http://www.w3.org/2000/svg"
-        >
+      {/* dim layer, with a window cut out where the target is */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 51, pointerEvents: 'none' }}>
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} xmlns="http://www.w3.org/2000/svg">
           <defs>
             <mask id={maskId}>
               <rect width="100%" height="100%" fill="white" />
-              {!isFull && <rect x={h.x} y={h.y} width={h.w} height={h.h} rx={h.rx} fill="black" />}
+              {h && <rect x={h.x} y={h.y} width={h.w} height={h.h} rx={h.rx} fill="black" />}
             </mask>
           </defs>
-          <rect
-            width="100%" height="100%"
-            fill={isFull ? 'rgba(0,0,0,0.82)' : 'rgba(0,0,0,0.76)'}
-            mask={isFull ? undefined : `url(#${maskId})`}
-          />
+          <rect width="100%" height="100%" fill="rgba(20,16,10,0.72)" mask={h ? `url(#${maskId})` : undefined} />
         </svg>
       </div>
 
-      {/* ── Click-blocking rects ── */}
-      {!isFull && (
+      {/* block taps outside the lit window */}
+      {h ? (
         <>
-          <div style={{ position:'absolute', top:0,         left:0,       right:0,       height:h.y,  zIndex:52, cursor:'default' }} />
-          <div style={{ position:'absolute', top:h.y+h.h,   left:0,       right:0,       bottom:0,    zIndex:52, cursor:'default' }} />
-          <div style={{ position:'absolute', top:h.y,       left:0,       width:h.x,     height:h.h,  zIndex:52, cursor:'default' }} />
-          <div style={{ position:'absolute', top:h.y,       left:h.x+h.w, right:0,       height:h.h,  zIndex:52, cursor:'default' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: h.y, zIndex: 52 }} />
+          <div style={{ position: 'absolute', top: h.y + h.h, left: 0, right: 0, bottom: 0, zIndex: 52 }} />
+          <div style={{ position: 'absolute', top: h.y, left: 0, width: h.x, height: h.h, zIndex: 52 }} />
+          <div style={{ position: 'absolute', top: h.y, left: h.x + h.w, right: 0, height: h.h, zIndex: 52 }} />
+          <div style={{
+            position: 'absolute', top: h.y, left: h.x, width: h.w, height: h.h, borderRadius: h.rx, zIndex: 53,
+            border: '2px solid var(--b-accent)', pointerEvents: 'none', boxSizing: 'border-box',
+          }} />
         </>
+      ) : (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 52 }} />
       )}
-      {isFull && <div style={{ position:'absolute', inset:0, zIndex:52, cursor:'default' }} />}
 
-      {/* ── Spotlight border ── */}
-      {!isFull && (
-        <div
-          style={{
-            position:     'absolute',
-            top:          `${h.y}px`,
-            left:         `${h.x}px`,
-            width:        `${h.w}px`,
-            height:       `${h.h}px`,
-            borderRadius: `${h.rx}px`,
-            border:       '1.5px solid rgba(212,137,30,0.80)',
-            boxShadow:    '0 0 0 3px rgba(212,137,30,0.10), inset 0 0 20px rgba(212,137,30,0.05)',
-            pointerEvents:'none',
-            zIndex:       53,
-            animation:    'tourPulse 2.4s ease-in-out infinite',
-          }}
+      {(isFull || h) && (
+        <TooltipCard
+          step={step} stepIndex={stepIndex} isFirst={isFirst} isLast={isLast} isFull={isFull}
+          tooltipTop={tooltipTop} onNext={onNext} onPrev={onPrev} onSkip={onSkip}
         />
       )}
-
-      {/* ── Corner accents ── */}
-      {!isFull && <CornerAccents h={h} />}
-
-      {/* ── Tooltip card ── */}
-      <TooltipCard
-        step={step}
-        stepIndex={stepIndex}
-        isFirst={isFirst}
-        isLast={isLast}
-        isFull={isFull}
-        tooltipTop={tooltipTop}
-        arrowPointsUp={arrowPointsUp}
-        onNext={onNext}
-        onPrev={onPrev}
-        onSkip={onSkip}
-      />
-
-      <style>{`
-        @keyframes tourPulse {
-          0%,100% { box-shadow: 0 0 0 3px rgba(212,137,30,0.10), inset 0 0 20px rgba(212,137,30,0.05); }
-          50%      { box-shadow: 0 0 0 8px rgba(212,137,30,0.04), inset 0 0 20px rgba(212,137,30,0.02); }
-        }
-        @keyframes tourSlideUp {
-          from { opacity:0; transform:translateY(8px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
-        @keyframes tourPop {
-          from { opacity:0; transform:scale(0.94); }
-          to   { opacity:1; transform:scale(1); }
-        }
-      `}</style>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TooltipCard
+// TooltipCard — a sheet of paper: step counter, title, one sentence, buttons
 // ─────────────────────────────────────────────────────────────────────────────
-function TooltipCard({ step, stepIndex, isFirst, isLast, isFull, tooltipTop, arrowPointsUp, onNext, onPrev, onSkip }) {
+function TooltipCard({ step, stepIndex, isFirst, isLast, isFull, tooltipTop, onNext, onPrev, onSkip }) {
   const posStyle = isFull
-    ? { position: 'relative', width: `calc(100% - ${TOOLTIP_MX * 2}px)`, maxWidth: 316 }
+    ? { position: 'relative', width: `calc(100% - ${TOOLTIP_MX * 2}px)`, maxWidth: 336 }
     : { position: 'absolute', top: `${tooltipTop}px`, left: `${TOOLTIP_MX}px`, right: `${TOOLTIP_MX}px` };
+  const FONT = 'var(--font-arabic)';
 
   return (
     <div
-      style={{
-        ...posStyle,
-        background:   'var(--bg-card)',
-        border:       '1px solid rgba(212,137,30,0.28)',
-        borderRadius: '20px',
-        padding:      '15px 16px 13px',
-        boxShadow:    '0 16px 48px rgba(0,0,0,0.60), 0 2px 8px rgba(0,0,0,0.35)',
-        zIndex:       60,
-        animation:    isFull ? 'tourPop 0.35s ease both' : 'tourSlideUp 0.3s ease both',
-      }}
       dir="rtl"
+      role="dialog"
+      aria-label={step.title}
+      style={{
+        ...posStyle, zIndex: 60, boxSizing: 'border-box',
+        background: 'var(--b-surface)', border: '1px solid var(--b-rule-strong)', borderRadius: 16,
+        padding: '14px 16px 14px', color: 'var(--b-ink)',
+        animation: 'bshStep .25s ease both',
+      }}
     >
-      {/* Caret arrow */}
-      {!isFull && (
-        arrowPointsUp ? (
-          <div style={{
-            position:'absolute', top:'-9px', left:'50%', transform:'translateX(-50%)',
-            width:0, height:0,
-            borderLeft:'9px solid transparent', borderRight:'9px solid transparent',
-            borderBottom:'9px solid var(--bg-card)',
-            filter:'drop-shadow(0 -1px 0 rgba(212,137,30,0.18))',
-          }} />
-        ) : (
-          <div style={{
-            position:'absolute', bottom:'-9px', left:'50%', transform:'translateX(-50%)',
-            width:0, height:0,
-            borderLeft:'9px solid transparent', borderRight:'9px solid transparent',
-            borderTop:'9px solid var(--bg-card)',
-            filter:'drop-shadow(0 1px 0 rgba(212,137,30,0.18))',
-          }} />
-        )
-      )}
-
-      {/* Step counter + progress pills */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
-        <span style={{
-          fontFamily:'monospace', fontSize:10, fontWeight:700,
-          color:'var(--accent)', opacity:0.75, letterSpacing:'0.04em',
-        }}>
-          {toArNum(stepIndex + 1)}&thinsp;/&thinsp;{toArNum(TOTAL)}
+      {/* where we are: marks, not dots */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ font: `700 12px/18px ${FONT}`, color: 'var(--b-ink2)' }}>
+          {toArNum(stepIndex + 1)} من {toArNum(TOTAL)}
         </span>
-        <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           {TOUR_STEPS.map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width:        i === stepIndex ? '20px' : '5px',
-                height:       '5px',
-                borderRadius: '3px',
-                background:   i <= stepIndex ? 'var(--accent)' : 'var(--border-mid)',
-                opacity:      i < stepIndex ? 0.38 : 1,
-                transition:   'all 0.3s ease',
-              }}
-            />
+            <span key={i} style={{
+              width: i === stepIndex ? 20 : 8, height: 4, borderRadius: 4, transition: 'width .2s',
+              background: i <= stepIndex ? 'var(--b-ink)' : 'var(--b-rule-strong)',
+            }} />
           ))}
         </div>
       </div>
 
-      {/* Focus-mode icon */}
-      {isFull && (
-        <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
-          <div style={{
-            width:48, height:48, borderRadius:'50%',
-            background:'rgba(212,137,30,0.12)',
-            border:'1.5px solid rgba(212,137,30,0.28)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontSize:22,
-          }}>
-            🎯
-          </div>
-        </div>
-      )}
+      <h3 style={{ margin: '0 0 4px', font: `800 16px/24px ${FONT}`, textAlign: 'right' }}>{step.title}</h3>
+      <p style={{ margin: '0 0 14px', font: `500 14px/24px ${FONT}`, color: 'var(--b-ink2)', textAlign: 'right' }}>{step.desc}</p>
 
-      <h3 style={{
-        fontFamily: 'var(--font-arabic, inherit)',
-        fontSize:   isFull ? '15px' : '14px',
-        fontWeight: 700,
-        color:      'var(--text-primary)',
-        margin:     '0 0 6px',
-        lineHeight: 1.4,
-        textAlign:  isFull ? 'center' : 'right',
-      }}>
-        {step.title}
-      </h3>
-
-      <p style={{
-        fontFamily: 'var(--font-arabic, inherit)',
-        fontSize:   '12px',
-        lineHeight: 1.8,
-        color:      'var(--text-secondary)',
-        margin:     '0 0 14px',
-        textAlign:  isFull ? 'center' : 'right',
-      }}>
-        {step.desc}
-      </p>
-
-      {/* Navigation row */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-        <div>
-          {!isFirst ? (
-            <button
-              onClick={onPrev}
-              style={{
-                background:'none', border:'1px solid var(--border-mid)',
-                borderRadius:10, padding:'7px 13px',
-                fontFamily:'var(--font-arabic, inherit)', fontSize:12,
-                color:'var(--text-muted)', cursor:'pointer', transition:'opacity 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.opacity='0.65'}
-              onMouseLeave={e => e.currentTarget.style.opacity='1'}
-            >
-              ← السابق
-            </button>
-          ) : (
-            <button
-              onClick={onSkip}
-              style={{
-                background:'none', border:'none', padding:'7px 6px',
-                fontFamily:'var(--font-arabic, inherit)', fontSize:12,
-                color:'var(--text-muted)', cursor:'pointer', opacity:0.5,
-              }}
-            >
-              تخطّ
-            </button>
-          )}
-        </div>
-
-        <button
-          onClick={isLast ? onSkip : onNext}
-          onMouseEnter={e => e.currentTarget.style.opacity='0.85'}
-          onMouseLeave={e => e.currentTarget.style.opacity='1'}
-          style={{
-            background:  'var(--accent)', border:'none', borderRadius:10,
-            padding:     '8px 24px',
-            fontFamily:  'var(--font-arabic, inherit)', fontSize:12, fontWeight:700,
-            color:       '#fff', cursor:'pointer', transition:'opacity 0.15s',
-            boxShadow:   '0 3px 14px rgba(212,137,30,0.35)',
-          }}
-        >
-          {isLast ? 'جرّب بنفسك ✓' : 'التالي →'}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        {!isFirst ? (
+          <button onClick={onPrev} style={{
+            minHeight: 44, padding: '0 14px', background: 'none', border: '1px solid var(--b-rule-strong)', borderRadius: 10,
+            font: `700 12px/18px ${FONT}`, color: 'var(--b-ink)', cursor: 'pointer',
+          }}>السابق</button>
+        ) : (
+          <button onClick={onSkip} style={{
+            minHeight: 44, padding: '0 8px', background: 'none', border: 0, font: `700 12px/18px ${FONT}`, color: 'var(--b-ink2)', cursor: 'pointer',
+          }}>تخطّ</button>
+        )}
+        <button onClick={isLast ? onSkip : onNext} style={{
+          minHeight: 44, padding: '0 28px', background: 'var(--b-accent)', color: 'var(--b-on-accent)', border: 0, borderRadius: 10,
+          font: `800 14px/22px ${FONT}`, cursor: 'pointer',
+        }}>
+          {isLast ? 'جرّب بنفسك' : 'التالي'}
         </button>
       </div>
     </div>
@@ -365,44 +223,4 @@ function TooltipCard({ step, stepIndex, isFirst, isLast, isFull, tooltipTop, arr
 
 function toArNum(n) {
   return n.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CornerAccents
-// ─────────────────────────────────────────────────────────────────────────────
-function CornerAccents({ h }) {
-  const size   = 10;
-  const weight = 2;
-  const color  = 'rgba(212,137,30,0.90)';
-  const r      = Math.min(h.rx, 8);
-  const st     = { position:'absolute', pointerEvents:'none', zIndex:54 };
-
-  return (
-    <>
-      <div style={{ ...st, top: h.y-1, left: h.x-1 }}>
-        <svg width={size+r} height={size+r} viewBox={`0 0 ${size+r} ${size+r}`}>
-          <path d={`M${size+r} ${weight/2} H${r} Q${weight/2} ${weight/2} ${weight/2} ${r} V${size+r}`}
-            fill="none" stroke={color} strokeWidth={weight} strokeLinecap="round"/>
-        </svg>
-      </div>
-      <div style={{ ...st, top: h.y-1, left: h.x+h.w-size-r+1 }}>
-        <svg width={size+r} height={size+r} viewBox={`0 0 ${size+r} ${size+r}`}>
-          <path d={`M0 ${weight/2} H${size} Q${size+r-weight/2} ${weight/2} ${size+r-weight/2} ${r} V${size+r}`}
-            fill="none" stroke={color} strokeWidth={weight} strokeLinecap="round"/>
-        </svg>
-      </div>
-      <div style={{ ...st, top: h.y+h.h-size-r+1, left: h.x-1 }}>
-        <svg width={size+r} height={size+r} viewBox={`0 0 ${size+r} ${size+r}`}>
-          <path d={`M${weight/2} 0 V${size} Q${weight/2} ${size+r-weight/2} ${r} ${size+r-weight/2} H${size+r}`}
-            fill="none" stroke={color} strokeWidth={weight} strokeLinecap="round"/>
-        </svg>
-      </div>
-      <div style={{ ...st, top: h.y+h.h-size-r+1, left: h.x+h.w-size-r+1 }}>
-        <svg width={size+r} height={size+r} viewBox={`0 0 ${size+r} ${size+r}`}>
-          <path d={`M0 ${size+r-weight/2} H${size} Q${size+r-weight/2} ${size+r-weight/2} ${size+r-weight/2} ${size} V0`}
-            fill="none" stroke={color} strokeWidth={weight} strokeLinecap="round"/>
-        </svg>
-      </div>
-    </>
-  );
 }

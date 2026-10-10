@@ -94,7 +94,7 @@ export default function DemoApp() {
 
   const currentTourStep   = tourActive ? TOUR_STEPS[tourStep] : null;
   const focusMode         = Boolean(currentTourStep?.focusMode);
-  const lessonPreviewMode = tourActive && currentTourStep?.tab === 'lesson' && !focusMode;
+  const lessonPreviewMode = tourActive && currentTourStep?.tab === 'lesson';
 
   return (
     <div
