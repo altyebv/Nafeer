@@ -144,6 +144,15 @@ export const LEARNING_TYPE_CONFIG = {
   HYBRID:        { label: 'فهم + حفظ',   icon: '⚡', hint: 'يُفعّل كلاهما' },
 };
 
+// The role a section plays in its lesson (matches Android SectionKind enum).
+// Basheer names the role above the section's title; GENERAL shows no label.
+export const SECTION_KIND_CONFIG = {
+  GENERAL: { label: 'بدون دور',   hint: 'قسم عادي بلا تسمية' },
+  CONCEPT: { label: 'الفكرة',     hint: 'شرح المفهوم الأساسي' },
+  MODEL:   { label: 'النموذج',    hint: 'صورة أو شكل يوضّح الفكرة' },
+  EXAMPLE: { label: 'مثال محلول', hint: 'تطبيق الفكرة خطوة بخطوة' },
+};
+
 // Question types (matches Android QuestionType enum)
 export const QUESTION_TYPES = {
   TRUE_FALSE:    'TRUE_FALSE',

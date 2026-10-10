@@ -298,7 +298,7 @@ function assembleExportData(s) {
           sections: s.sections.filter((sec) => sec.lessonId === lesson.id).sort((a, b) => a.order - b.order)
             .map((section) => ({
               id: section.id, title: section.title, order: section.order,
-              learningType: section.learningType || 'UNDERSTANDING', conceptIds: section.conceptIds || [],
+              learningType: section.learningType || 'UNDERSTANDING', kind: section.kind || 'GENERAL', conceptIds: section.conceptIds || [],
               partIndex: section.partIndex ?? 0,
               blocks: s.blocks.filter((b) => b.sectionId === section.id).sort((a, b) => a.order - b.order)
                 .map((block) => ({

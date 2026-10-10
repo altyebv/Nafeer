@@ -19,7 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
-import { LEARNING_TYPES, LEARNING_TYPE_CONFIG } from '@/shared/constants';
+import { LEARNING_TYPES, LEARNING_TYPE_CONFIG, SECTION_KIND_CONFIG } from '@/shared/constants';
 import BlockEditor    from '@/components/editor/blocks/BlockEditor';
 import AddBlockMenu   from '@/components/editor/blocks/AddBlockMenu';
 import ConceptLinker  from '@/components/editor/shared/ConceptLinker';
@@ -216,6 +216,19 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
             );
           })}
         </div>
+
+        {/* Section role: named above the section's title in Basheer */}
+        <select
+          value={section.kind || 'GENERAL'}
+          onChange={(e) => updateSection(section.id, { kind: e.target.value })}
+          title="دور القسم في الدرس — يظهر للطالب فوق عنوان القسم"
+          aria-label="دور القسم في الدرس"
+          className="shrink-0 bg-ink-900/40 border border-ink-700/60 rounded-lg px-1.5 py-1 text-xs font-arabic text-ink-400 focus:outline-none focus:border-ink-500"
+        >
+          {Object.entries(SECTION_KIND_CONFIG).map(([key, cfg]) => (
+            <option key={key} value={key} title={cfg.hint}>{cfg.label}</option>
+          ))}
+        </select>
 
         {/* Part index control */}
         {maxPart > 0 && (

@@ -27,7 +27,7 @@ export const useContentStore = create(
                 id:           section.id || generateId('sec'),
                 order:        lessonSections.length + 1,
                 conceptIds:   section.conceptIds   || [],
-                learningType: section.learningType || 'UNDERSTANDING',
+                learningType: section.learningType || 'UNDERSTANDING', kind: section.kind || 'GENERAL',
                 partIndex:    section.partIndex    ?? 0,
               },
             ],

@@ -254,7 +254,7 @@ export function useAtlasSync() {
             subjectId,
             sections: lessonSections.map((s) => ({
               contentId: s.id, subjectId, lessonContentId: lessonId,
-              title: s.title, order: s.order, learningType: s.learningType || 'UNDERSTANDING',
+              title: s.title, order: s.order, learningType: s.learningType || 'UNDERSTANDING', kind: s.kind || 'GENERAL',
               conceptIds: s.conceptIds || [], partIndex: s.partIndex ?? 0,
             })),
           }),
@@ -352,7 +352,7 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
             lessonContentId: lessonId, subjectId,
             sections: lessonSections.map((s) => ({
               contentId: s.id, title: s.title, order: s.order,
-              learningType: s.learningType || 'UNDERSTANDING',
+              learningType: s.learningType || 'UNDERSTANDING', kind: s.kind || 'GENERAL',
               conceptIds: s.conceptIds || [], partIndex: s.partIndex ?? 0,
             })),
           }),

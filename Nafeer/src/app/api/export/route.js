@@ -171,7 +171,7 @@ export async function GET(request) {
             title: section.title,
             order: section.order,
             partIndex: section.partIndex ?? 0,
-            learningType: section.learningType || 'UNDERSTANDING',
+            learningType: section.learningType || 'UNDERSTANDING', kind: section.kind || 'GENERAL',
             conceptIds: section.conceptIds || [],
             status: section.status || 'draft',
             blocks: (blocksBySection[section.contentId] || []).map((block) => ({

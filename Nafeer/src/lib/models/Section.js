@@ -7,6 +7,7 @@ import { versioningFields } from './versioning';
 // Blocks are stored as separate documents, linked by sectionContentId.
 
 const LEARNING_TYPES = ['UNDERSTANDING', 'MEMORIZATION', 'HYBRID'];
+const SECTION_KINDS  = ['GENERAL', 'CONCEPT', 'MODEL', 'EXAMPLE'];
 
 const SectionSchema = new mongoose.Schema(
   {
@@ -34,6 +35,14 @@ const SectionSchema = new mongoose.Schema(
       type: String,
       enum: LEARNING_TYPES,
       default: 'UNDERSTANDING',
+    },
+
+    // The role the section plays in the lesson. Basheer names it above the
+    // section's title. Must match app SectionKind; GENERAL shows no label.
+    kind: {
+      type: String,
+      enum: SECTION_KINDS,
+      default: 'GENERAL',
     },
 
     // dividing lessons into parts (optioinal) — Sections with the same partIndex 

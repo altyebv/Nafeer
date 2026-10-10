@@ -188,7 +188,7 @@ async function importRemoteSubject(data, actorId) {
           lessonContentId: lesson.id,
           title: section.title,
           order: section.order,
-          learningType: section.learningType || 'UNDERSTANDING',
+          learningType: section.learningType || 'UNDERSTANDING', kind: section.kind || 'GENERAL',
           partIndex: section.partIndex ?? 0,
           conceptIds: section.conceptIds || [],
           createdBy: actorId,

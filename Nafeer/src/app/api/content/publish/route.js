@@ -197,7 +197,7 @@ export async function POST(request) {
         title:        section.title,
         order:        section.order,
         partIndex:    section.partIndex    ?? 0,
-        learningType: section.learningType || 'UNDERSTANDING',
+        learningType: section.learningType || 'UNDERSTANDING', kind: section.kind || 'GENERAL',
         conceptIds:   section.conceptIds   || [],
       }));
 
@@ -597,7 +597,7 @@ function assembleFullExport({
             title:        section.title,
             order:        section.order,
             partIndex:    section.partIndex    ?? 0,
-            learningType: section.learningType || 'UNDERSTANDING',
+            learningType: section.learningType || 'UNDERSTANDING', kind: section.kind || 'GENERAL',
             conceptIds:   section.conceptIds   || [],
             blocks: (blocksBySection[section.contentId] || [])
               .filter((block) => block.type !== 'QUESTION')
