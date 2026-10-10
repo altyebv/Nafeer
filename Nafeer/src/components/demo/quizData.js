@@ -156,7 +156,6 @@ export const PRACTICE_QUESTIONS = [
   },
 ];
 
-export const QUIZ_XP_REWARD = 240;
 
 export const MOCK_EXAMS = {
   MINISTRY: [
