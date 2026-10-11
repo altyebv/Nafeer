@@ -132,3 +132,22 @@
 .bsh .b-btn-ink:disabled { background: var(--b-sunken); color: var(--b-ink3); cursor: default; }
 
 @keyframes bshStep { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ── Phone frame ──────────────────────────────────────────────────────────────
+   Narrow or short windows (phones, landscape phones) get the app full-bleed.
+   Roomy windows get a 375px phone, never taller than the space it has, and
+   the heading and footer only when there is height to spare. */
+.bsh-shell { width: 100%; max-width: 480px; height: 100%; border-radius: 0; }
+.bsh-stage { align-items: stretch; }
+.bsh-chrome { display: none; }
+@media (min-width: 640px) and (min-height: 560px) {
+  .bsh-stage { align-items: center; padding-bottom: 16px; }
+  .bsh-shell {
+    width: 375px; height: min(680px, 100%); border-radius: 32px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 40px 100px rgba(0,0,0,0.6);
+  }
+}
+@media (min-width: 640px) and (min-height: 880px) {
+  .bsh-chrome { display: block; }
+}

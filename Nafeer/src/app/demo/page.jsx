@@ -100,7 +100,7 @@ export default function DemoPage() {
           the top bar and the phone shell, giving context to the experience.
       ── */}
       <div
-        className="hidden sm:block"
+        className="bsh-chrome"
         style={{ textAlign: 'center', padding: '28px 16px 20px', flexShrink: 0 }}
       >
         <span
@@ -146,11 +146,11 @@ export default function DemoPage() {
           position:       'relative',
         }}
         /* On mobile: stretch children to fill. On desktop: center them. */
-        className="items-stretch sm:items-center sm:pb-4"
+        className="bsh-stage"
       >
         {/* Ambient glow — desktop only, doesn't affect layout */}
         <div
-          className="hidden sm:block"
+          className="bsh-chrome"
           style={{
             position:     'absolute',
             width:        '480px',
@@ -171,7 +171,7 @@ export default function DemoPage() {
           Hidden on mobile. On desktop it anchors the CTA below the shell.
       ── */}
       <div
-        className="hidden sm:block"
+        className="bsh-chrome"
         style={{
           flexShrink: 0,
           textAlign:  'center',

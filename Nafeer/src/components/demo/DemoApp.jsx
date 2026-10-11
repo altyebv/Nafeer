@@ -98,14 +98,7 @@ export default function DemoApp() {
 
   return (
     <div
-      className={[
-        'bsh w-full h-full',
-        'sm:w-[375px] sm:h-[680px]',
-        'rounded-none',
-        'sm:rounded-[32px]',
-        'sm:border sm:border-white/10',
-        'sm:shadow-[0_0_0_1px_rgba(0,0,0,0.5),0_40px_100px_rgba(0,0,0,0.6)]',
-      ].join(' ')}
+      className="bsh bsh-shell"
       style={{
         overflow:      'hidden',
         display:       'flex',
