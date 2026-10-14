@@ -117,7 +117,7 @@ export default function LessonItem({ lesson, index, onAddVariation, coverageLeve
             style={{ fontSize: 10, background: varCfg.bg, borderColor: varCfg.border, color: varCfg.color }}
             title={lesson.variationNote || varCfg.label}
           >
-            {varCfg.icon} {varCfg.label}
+            <varCfg.icon size={11} /> {varCfg.label}
           </span>
         )}
 
