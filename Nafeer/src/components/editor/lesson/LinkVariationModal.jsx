@@ -2,14 +2,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
-import { ArrowDown, ArrowLeft, ArrowUp, Check, Shuffle, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
+import { AlternativeIcon, ExtensionIcon, PrerequisiteIcon, SimplifiedIcon } from '@/components/editor/lesson/VariationIcons';
 
 // ─── Variation type config ────────────────────────────────────────────────────
 export const VARIATION_CONFIG = {
-  alternative:  { label: 'بديل',    color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)',  border: 'rgba(139,92,246,0.3)',  icon: Shuffle },
-  prerequisite: { label: 'متطلب',   color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.3)',  icon: ArrowLeft },
-  extension:    { label: 'توسع',    color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)',  icon: ArrowUp },
-  simplified:   { label: 'مبسط',    color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: ArrowDown },
+  alternative:  { label: 'بديل',    color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)',  border: 'rgba(139,92,246,0.3)',  icon: AlternativeIcon },
+  prerequisite: { label: 'متطلب',   color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.3)',  icon: PrerequisiteIcon },
+  extension:    { label: 'توسع',    color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)',  icon: ExtensionIcon },
+  simplified:   { label: 'مبسط',    color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: SimplifiedIcon },
 };
 
 const VARIATION_DESCRIPTIONS = {
@@ -41,10 +42,16 @@ export default function LinkVariationModal({ currentLessonId, onLink, onClose })
   const unitMap = Object.fromEntries(units.map((u) => [u.id, u.title]));
 
   // Filter lessons — exclude self, exclude already-variations of something
-  // (a variation cannot itself have sub-variations — keep it flat)
+  // (a variation cannot itself have sub-variations — keep it flat).
+  // The app shows a variation under its lesson on the unit's path, so only a
+  // lesson of the same unit can be linked, and never one that has variations.
+  const currentUnitId = lessons.find((l) => l.id === currentLessonId)?.unitId;
+  const parentIds = new Set(lessons.map((l) => l.parentLesson).filter(Boolean));
   const candidates = lessons.filter((l) => {
     if (l.id === currentLessonId) return false;
     if (l.parentLesson)           return false; // already a variation
+    if (parentIds.has(l.id))      return false; // has variations of its own
+    if (currentUnitId && l.unitId !== currentUnitId) return false;
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return l.title.toLowerCase().includes(q);
