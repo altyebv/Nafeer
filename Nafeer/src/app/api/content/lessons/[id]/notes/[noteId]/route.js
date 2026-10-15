@@ -1,4 +1,5 @@
-import { requireContributor, ok, err } from '@/lib/api/guard';
+import { requireContentAccess, ok, err } from '@/lib/api/guard';
+import { Lesson } from '@/lib/models/Lesson';
 import { updateLessonNote, deleteLessonNote } from '@/lib/api/lessons';
 
 // PATCH /api/content/lessons/[id]/notes/[noteId]
@@ -6,7 +7,7 @@ import { updateLessonNote, deleteLessonNote } from '@/lib/api/lessons';
 // Any contributor can toggle resolved. Only the author can edit text.
 export async function PATCH(request, { params }) {
   try {
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Lesson, (await params).id);
     const { resolved, text } = await request.json();
     const { id: contentId, noteId } = await params;
 
@@ -37,7 +38,7 @@ export async function PATCH(request, { params }) {
 // Only the note author or a contributor with role='admin' can delete.
 export async function DELETE(request, { params }) {
   try {
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Lesson, (await params).id);
     const { id: contentId, noteId } = await params;
 
     await deleteLessonNote(contentId, noteId, user.id, user.role);

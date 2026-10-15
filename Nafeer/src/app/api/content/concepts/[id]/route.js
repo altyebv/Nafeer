@@ -1,4 +1,6 @@
-import { requireContributor, ok, err } from '@/lib/api/guard';
+import { requireContentAccess, assertInSubject, ok, err } from '@/lib/api/guard';
+import { Tag } from '@/lib/models/Tag';
+import { Concept } from '@/lib/models/Concept';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateConcept, updateConceptStatus, deleteConcept } from '@/lib/api/concepts';
 import { connectDB } from '@/lib/db';
@@ -7,7 +9,7 @@ import { connectDB } from '@/lib/db';
 export async function PUT(request, { params }) {
   try {
     await connectDB();
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Concept, (await params).id);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
@@ -19,6 +21,8 @@ export async function PUT(request, { params }) {
     const safeUpdates = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
+
+    await assertInSubject(user, Tag, Array.isArray(safeUpdates.tagIds) ? safeUpdates.tagIds : []);
 
     const concept = await updateConcept((await params).id, safeUpdates, actorId, note || '',user.role === 'admin');
     if (!concept) return err('المفهوم غير موجود', 404);
@@ -35,7 +39,7 @@ export async function PUT(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     await connectDB();
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Concept, (await params).id);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
 
@@ -61,7 +65,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    await requireContributor();
+    await requireContentAccess(Concept, (await params).id);
     await deleteConcept((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {

@@ -1,4 +1,4 @@
-import { requireContributor, ok, err } from '@/lib/api/guard';
+import { requireContentAccess, assertInSubject, ok, err } from '@/lib/api/guard';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { getLessonWithContent, updateLesson, updateLessonStatus } from '@/lib/api/lessons';
 import { connectDB } from '@/lib/db';
@@ -11,7 +11,7 @@ import { deleteCheckpointQuestionsForSections } from '@/lib/api/content';
 // Returns lesson + sections + blocks (full content for editor)
 export async function GET(request, { params }) {
   try {
-    await requireContributor();
+    await requireContentAccess(Lesson, (await params).id);
 
     const lesson = await getLessonWithContent((await params).id);
     if (!lesson) return err('الدرس غير موجود', 404);
@@ -29,7 +29,7 @@ export async function GET(request, { params }) {
 // Bumps version, resets to draft if was approved.
 export async function PUT(request, { params }) {
   try {
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Lesson, (await params).id);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, versionLabel, ...updates } = body;
@@ -40,6 +40,8 @@ export async function PUT(request, { params }) {
     const safeUpdates = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
+
+    await assertInSubject(user, Lesson, [safeUpdates.parentLesson]);
 
     const lesson = await updateLesson(
       (await params).id,
@@ -64,7 +66,7 @@ export async function PUT(request, { params }) {
 // Body: { status: 'draft'|'review'|'approved'|'archived', note?, versionLabel? }
 export async function PATCH(request, { params }) {
   try {
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Lesson, (await params).id);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note, versionLabel } = await request.json();
 
@@ -94,7 +96,7 @@ export async function PATCH(request, { params }) {
 // Only drafts can be hard-deleted. Approved lessons must be archived.
 export async function DELETE(request, { params }) {
   try {
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Lesson, (await params).id);
 
     await connectDB();
     const lesson = await Lesson.findOne({ contentId: (await params).id });

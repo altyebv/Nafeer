@@ -39,6 +39,12 @@ export async function PATCH(request) {
     const contributor = await Contributor.findById(user.id);
     if (!contributor) return NextResponse.json({ ok: false, error: 'المساهم غير موجود' }, { status: 404 });
 
+    // A rejected or reset contributor still holds a valid JWT until it expires;
+    // re-issuing it here would extend that forever.
+    if (contributor.status !== 'approved') {
+      return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
+    }
+
     const token = await signToken(buildTokenPayload(contributor));
     await setAuthCookie(token);
 

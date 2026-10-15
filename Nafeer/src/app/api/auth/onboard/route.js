@@ -105,7 +105,9 @@ export async function POST(request) {
   try {
     const { token, password, bio, chosenSubject } = await request.json();
 
-    if (!token || !password) {
+    // Both must be strings: the token goes straight into a Mongo filter, where
+    // an object such as { "$ne": null } would match any pending contributor.
+    if (typeof token !== 'string' || !token || typeof password !== 'string' || !password) {
       return NextResponse.json(
         { ok: false, error: 'الرابط وكلمة المرور مطلوبان' },
         { status: 400 }

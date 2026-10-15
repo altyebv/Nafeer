@@ -117,7 +117,9 @@ export async function POST(request) {
   try {
     const { token, answers, microTask } = await request.json();
 
-    if (!token) {
+    // Must be a string: it goes straight into a Mongo filter, where an object
+    // such as { "$ne": null } would match another applicant's interview.
+    if (typeof token !== 'string' || !token) {
       return NextResponse.json({ ok: false, error: 'رابط غير صالح' }, { status: 400 });
     }
 

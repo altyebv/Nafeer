@@ -1,7 +1,8 @@
-import { requireContributor, ok, err } from '@/lib/api/guard';
+import { requireContentAccess, assertInSubject, ok, err } from '@/lib/api/guard';
 import { deleteBlock, upsertBlock } from '@/lib/api/content';
 import { connectDB } from '@/lib/db';
 import { Block } from '@/lib/models/Block';
+import { Section } from '@/lib/models/Section';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 
 // Returns null if the URL doesn't match the Supabase media bucket.
@@ -20,7 +21,7 @@ const IMAGE_BLOCK_TYPES = new Set(['IMAGE', 'GIF']);
 export async function PATCH(request, { params }) {
   try {
     await connectDB();
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Block, (await params).id);
     const actorId = user.role === 'admin'
       ? await ensureSystemSeedContributor()
       : user.id;
@@ -30,6 +31,12 @@ export async function PATCH(request, { params }) {
 
     const block = await Block.findOne({ contentId: id });
     if (!block) return err('البلوك غير موجود', 404);
+
+    // A block stays in its subject, and may only move to a section of it.
+    if (user.role !== 'admin') {
+      delete update.subjectId;
+      await assertInSubject(user, Section, [update.sectionContentId, update.sectionId]);
+    }
 
     const resolvedType = update.type ?? block.type;
 
@@ -63,7 +70,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    await requireContributor();
+    await requireContentAccess(Block, (await params).id);
     await deleteBlock((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {

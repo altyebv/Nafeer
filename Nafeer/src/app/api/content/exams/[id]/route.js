@@ -1,11 +1,13 @@
-import { requireContributor, ok, err } from '@/lib/api/guard';
+import { requireContentAccess, assertInSubject, ok, err } from '@/lib/api/guard';
+import { Question } from '@/lib/models/Question';
+import { Exam } from '@/lib/models/Exam';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateExam, deleteExam } from '@/lib/api/questions';
 
 // PUT /api/content/exams/[id]
 export async function PUT(request, { params }) {
   try {
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Exam, (await params).id);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
@@ -17,6 +19,10 @@ export async function PUT(request, { params }) {
     ];
     const safeUpdates = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
+    );
+
+    await assertInSubject(
+      user, Question, Array.isArray(safeUpdates.questionContentIds) ? safeUpdates.questionContentIds : []
     );
 
     const exam = await updateExam((await params).id, safeUpdates, actorId);
@@ -33,7 +39,7 @@ export async function PUT(request, { params }) {
 // DELETE /api/content/exams/[id]
 export async function DELETE(request, { params }) {
   try {
-    await requireContributor();
+    await requireContentAccess(Exam, (await params).id);
     await deleteExam((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {

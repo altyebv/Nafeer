@@ -1,4 +1,10 @@
-import { requireContributor, ok, err } from '@/lib/api/guard';
+import { requireContentAccess, assertInSubject, ok, err } from '@/lib/api/guard';
+import { Concept } from '@/lib/models/Concept';
+import { Exam } from '@/lib/models/Exam';
+import { Section } from '@/lib/models/Section';
+import { Lesson } from '@/lib/models/Lesson';
+import { Unit } from '@/lib/models/Unit';
+import { Question } from '@/lib/models/Question';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateQuestion, updateQuestionStatus, deleteQuestion } from '@/lib/api/questions';
 import { connectDB } from '@/lib/db'
@@ -8,7 +14,7 @@ import { connectDB } from '@/lib/db'
 export async function PUT(request, { params }) {
   try {
     await connectDB();
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Question, (await params).id);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
@@ -26,6 +32,14 @@ export async function PUT(request, { params }) {
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
+    await Promise.all([
+      assertInSubject(user, Unit,    [safeUpdates.unitContentId]),
+      assertInSubject(user, Lesson,  [safeUpdates.lessonContentId]),
+      assertInSubject(user, Section, [safeUpdates.sectionContentId]),
+      assertInSubject(user, Exam,    [safeUpdates.sourceExamContentId]),
+      assertInSubject(user, Concept, Array.isArray(safeUpdates.conceptIds) ? safeUpdates.conceptIds : []),
+    ]);
+
     const question = await updateQuestion((await params).id, safeUpdates, actorId, note || '');
     if (!question) return err('السؤال غير موجود', 404);
 
@@ -41,7 +55,7 @@ export async function PUT(request, { params }) {
 export async function PATCH(request, { params }) {
   await connectDB();
   try {
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Question, (await params).id);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
@@ -61,7 +75,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    await requireContributor();
+    await requireContentAccess(Question, (await params).id);
     await deleteQuestion((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {

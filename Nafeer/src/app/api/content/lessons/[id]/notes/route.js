@@ -1,4 +1,4 @@
-import { requireContributor, ok, err } from '@/lib/api/guard';
+import { requireContentAccess, ok, err } from '@/lib/api/guard';
 import { connectDB } from '@/lib/db';
 import { Lesson } from '@/lib/models/Lesson';
 import { addLessonNote } from '@/lib/api/lessons';
@@ -9,7 +9,7 @@ import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 // Returns notes for a lesson. Auth-gated to any contributor.
 export async function GET(request, { params }) {
   try {
-    await requireContributor();
+    await requireContentAccess(Lesson, (await params).id);
     await connectDB();
 
     const contentId = (await params).id;
@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
 // Body: { text, noteType? }   noteType: 'comment' | 'flag'
 export async function POST(request, { params }) {
   try {
-    const user = await requireContributor();
+    const { user } = await requireContentAccess(Lesson, (await params).id);
     const { text, noteType } = await request.json();
 
     if (!text?.trim()) return err('نص الملاحظة مطلوب');

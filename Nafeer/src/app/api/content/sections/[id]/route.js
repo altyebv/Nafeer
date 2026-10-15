@@ -1,4 +1,5 @@
-import { requireContributor, ok, err } from '@/lib/api/guard';
+import { requireContentAccess, ok, err } from '@/lib/api/guard';
+import { Section } from '@/lib/models/Section';
 import { deleteCheckpointQuestionsForSections, deleteSection } from '@/lib/api/content';
 import { Block } from '@/lib/models/Block';
 import { connectDB } from '@/lib/db';
@@ -6,7 +7,7 @@ import { connectDB } from '@/lib/db';
 // DELETE /api/content/sections/[id]
 export async function DELETE(request, { params }) {
   try {
-    await requireContributor();
+    await requireContentAccess(Section, (await params).id);
     await connectDB();
 
     const { id } = await params;

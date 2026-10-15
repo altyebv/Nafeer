@@ -1,4 +1,6 @@
-import { requireContributor, ok, err } from '@/lib/api/guard';
+import { requireContributor, assertInSubject, ok, err } from '@/lib/api/guard';
+import { Block } from '@/lib/models/Block';
+import { Section } from '@/lib/models/Section';
 import { batchUpsertBlocks, deleteBlock } from '@/lib/api/content';
 import { trackStat } from '@/lib/trackStat';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
@@ -18,6 +20,16 @@ export async function POST(request) {
     if (!Array.isArray(blocks) || blocks.length === 0) {
       return ok([], { total: 0 });
     }
+
+    // Every block — new or existing — and the section it lands in must be in
+    // the contributor's subject.
+    if (user.role !== 'admin' && blocks.some((b) => b?.subjectId && b.subjectId !== user.subject)) {
+      return err('ليس لديك صلاحية الوصول إلى هذه المادة', 403);
+    }
+    await Promise.all([
+      assertInSubject(user, Block,   blocks.map((b) => b?.contentId)),
+      assertInSubject(user, Section, blocks.map((b) => b?.sectionContentId || b?.sectionId)),
+    ]);
 
     const results = await batchUpsertBlocks(blocks, actorId);
 
