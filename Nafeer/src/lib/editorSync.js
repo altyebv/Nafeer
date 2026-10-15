@@ -33,6 +33,9 @@ export const fromServerLesson = (l) => ({
   groupTitle:       l.groupTitle       ?? null,
   groupMetadata:    l.groupMetadata    ?? null,
   atlasStatus:      l.status           || 'draft',
+  // Server-owned like the status: returned / round / when. Never edited
+  // locally, so mergeLesson takes the server's copy even over a dirty draft.
+  reviewState:      l.reviewState      ?? null,
   _v:               l.version          ?? 1,
 });
 
@@ -176,9 +179,10 @@ export function mergeLessonContent(state, lessonId, serverSections = []) {
 export function mergeLesson(local, incoming) {
   if (!local) return incoming;
   const status = incoming.atlasStatus ?? local.atlasStatus;
-  if (local._dirty) return { ...local, atlasStatus: status };
+  const reviewState = incoming.reviewState !== undefined ? incoming.reviewState : local.reviewState;
+  if (local._dirty) return { ...local, atlasStatus: status, reviewState };
   if (!hasVersion(local) && hasVersion(incoming) && !sameFields(local, incoming, LESSON_FIELDS)) {
-    return { ...local, atlasStatus: status, _v: incoming._v, _dirty: true };
+    return { ...local, atlasStatus: status, reviewState, _v: incoming._v, _dirty: true };
   }
   return { ...local, ...incoming, _dirty: false };
 }

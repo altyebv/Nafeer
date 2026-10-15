@@ -7,6 +7,7 @@ import { Block } from '@/lib/models/Block';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
 import { VersionConflict, updateAtVersion } from '@/lib/api/versionCheck';
 import { trackStat } from '@/lib/trackStat';
+import { assertCanSubmit } from '@/lib/review';
 
 // ─── writeHistory ─────────────────────────────────────────────────────────────
 // Fire-and-forget helper. Never throws — history failure must not block the edit.
@@ -159,6 +160,10 @@ export async function updateLessonStatus(
   const current = await Lesson.findOne({ contentId });
   if (!current) return null;
 
+  // A lesson returned with comments goes back to review only once every
+  // comment of that round is resolved (lib/review.js). Throws ReviewError.
+  if (newStatus === 'review') assertCanSubmit(current);
+
   const action =
     newStatus === 'approved' ? 'approved' :
     newStatus === 'review'   ? 'reviewed' :
@@ -187,6 +192,11 @@ export async function updateLessonStatus(
 
   if (newStatus === 'approved') {
     setPayload.reviewedAt = new Date();
+    setPayload['reviewState.returned'] = false;
+  }
+  if (newStatus === 'review') {
+    setPayload['reviewState.returned']    = false;
+    setPayload['reviewState.submittedAt'] = new Date();
   }
 
   const updated = await Lesson.findOneAndUpdate(
@@ -252,7 +262,7 @@ export async function addLessonNote(contentId, { text, authorId, authorName, aut
   return lesson.notes[lesson.notes.length - 1];
 }
 
-export async function updateLessonNote(contentId, noteId, updates, requesterId) {
+export async function updateLessonNote(contentId, noteId, updates, requesterId, requesterName = '') {
   await connectDB();
 
   const lesson = await Lesson.findOne({ contentId });
@@ -264,7 +274,12 @@ export async function updateLessonNote(contentId, noteId, updates, requesterId) 
   const isOwn = note.authorId && note.authorId.toString() === requesterId;
   if ('text' in updates && !isOwn) throw new Error('FORBIDDEN');
 
-  if ('resolved' in updates) note.resolved = updates.resolved;
+  if ('resolved' in updates) {
+    note.resolved = updates.resolved;
+    // Who handled a review comment, and when — the reviewer sees it next round.
+    note.resolvedAt     = updates.resolved ? new Date() : null;
+    note.resolvedByName = updates.resolved ? requesterName : '';
+  }
   if ('text' in updates)     note.text     = updates.text.trim();
 
   await lesson.save();

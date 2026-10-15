@@ -51,8 +51,33 @@ const LessonSchema = new mongoose.Schema(
         noteType:   { type: String, enum: ['comment', 'review_feedback', 'flag'], default: 'comment' },
         resolved:   { type: Boolean, default: false },
         createdAt:  { type: Date, default: Date.now },
+
+        // ── Review comments (lib/review.js) ──
+        // Where the comment applies, so the editor can take the contributor
+        // straight there. `label` is a snapshot ("القسم 2 · النموذج") that
+        // still reads correctly if the section is later renamed or removed.
+        anchor: {
+          kind:  { type: String, enum: ['lesson', 'meta', 'section', 'block', 'question', 'feed'], default: 'lesson' },
+          id:    { type: String, default: null },
+          label: { type: String, default: '' },
+        },
+        // The review round the comment belongs to; 0 for ordinary notes.
+        round:          { type: Number, default: 0 },
+        resolvedAt:     { type: Date, default: null },
+        resolvedByName: { type: String, default: '' },
       },
     ],
+
+    // ── Review round trip (lib/review.js) ─────────────────────────────────
+    // `status` keeps its four values; "returned" is a draft with
+    // reviewState.returned set, so the export and the queue need no new state.
+    reviewState: {
+      returned:       { type: Boolean, default: false },
+      round:          { type: Number,  default: 0 },
+      returnedAt:     { type: Date,    default: null },
+      returnedByName: { type: String,  default: '' },
+      submittedAt:    { type: Date,    default: null },
+    },
 
     // ── Lesson Variations ─────────────────────────────────────────────────
     // A variation is a lesson that is linked to another lesson (its parent).

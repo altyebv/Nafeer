@@ -8,6 +8,7 @@ import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { deleteCheckpointQuestionsForSections } from '@/lib/api/content';
 import { VersionConflict, withEditorNames } from '@/lib/api/versionCheck';
+import { ReviewError } from '@/lib/review';
 
 // GET /api/content/lessons/[id]
 // Returns lesson + sections + blocks (full content for editor), plus
@@ -119,6 +120,10 @@ export async function PATCH(request, { params }) {
     return ok(lesson);
   } catch (e) {
     if (e instanceof Response) return e;
+    // Resubmitting with the reviewer's comments still open (lib/review.js).
+    if (e instanceof ReviewError) {
+      return Response.json({ ok: false, error: e.message, code: e.code, open: e.open ?? 0 }, { status: 409 });
+    }
     console.error('[PATCH /api/content/lessons/[id]]', e);
     return err('خطأ في الخادم', 500);
   }
