@@ -1,9 +1,13 @@
 import { NextResponse, after } from 'next/server';
 import { connectDB }    from '@/lib/db';
+import { rateLimit }    from '@/lib/rateLimit';
 import { Contributor }  from '@/lib/models/Contributor';
 import { sendEmail }    from '@/lib/email/emailService';
 
 export async function POST(request) {
+  const limited = await rateLimit(request, 'contributorRequest');
+  if (limited) return limited;
+
   try {
     const {
       name,

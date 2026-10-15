@@ -1,9 +1,13 @@
 import { NextResponse }                        from 'next/server';
 import { connectDB }                           from '@/lib/db';
+import { rateLimit }                           from '@/lib/rateLimit';
 import { Admin }                               from '@/lib/models/Admin';
 import { issueAdminToken, setAdminCookie }     from '@/lib/adminAuth';
 
 export async function POST(request) {
+  const limited = await rateLimit(request, 'adminLogin');
+  if (limited) return limited;
+
   try {
     const { username, password } = await request.json();
 

@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import { connectDB }    from '@/lib/db';
+import { rateLimit }    from '@/lib/rateLimit';
 import { SiteSettings } from '@/lib/models/SiteSettings';
 
 // ─── POST /api/analytics/visit ────────────────────────────────────────────────
 // Fire-and-forget visit counter. Increments total AND today's daily bucket.
 // Prunes buckets older than 90 days to stay lean.
 
-export async function POST() {
+export async function POST(request) {
+  const limited = await rateLimit(request, 'visit', { ok: false });
+  if (limited) return limited;
+
   try {
     await connectDB();
 

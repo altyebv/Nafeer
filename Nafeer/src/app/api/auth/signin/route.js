@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
+import { rateLimit } from '@/lib/rateLimit';
 import { Contributor } from '@/lib/models/Contributor';
 import { signToken, setAuthCookie, buildTokenPayload } from '@/lib/auth';
 
 export async function POST(request) {
+  const limited = await rateLimit(request, 'signin');
+  if (limited) return limited;
+
   try {
     const { identifier, password } = await request.json();
 

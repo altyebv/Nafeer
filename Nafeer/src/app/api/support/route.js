@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB }    from '@/lib/db';
+import { rateLimit }    from '@/lib/rateLimit';
 import { SiteSettings } from '@/lib/models/SiteSettings';
 
 // GET /api/support — returns current support count
@@ -14,7 +15,10 @@ export async function GET() {
 }
 
 // POST /api/support — increments support count, returns new total
-export async function POST() {
+export async function POST(request) {
+  const limited = await rateLimit(request, 'support', { ok: false, count: null });
+  if (limited) return limited;
+
   try {
     await connectDB();
     const updated = await SiteSettings.findOneAndUpdate(
