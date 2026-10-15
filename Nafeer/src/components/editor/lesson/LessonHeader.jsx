@@ -1,6 +1,7 @@
 'use client';
 import { ArrowRight, Check, Clock3, Eye, NotebookPen, Send, Upload } from 'lucide-react';
-import { Badge, Button, IconButton, Menu, SaveStatus, Tabs } from '@/components/ui';
+import { Badge, Button, ConfirmButton, IconButton, Menu, SaveStatus, Tabs } from '@/components/ui';
+import { arCount, formatNumber } from '@/lib/format';
 
 // ─── LessonHeader ─────────────────────────────────────────────────────────────
 // The lesson editor's one header bar (docs/design-system.md, DS2 step 1).
@@ -19,13 +20,66 @@ import { Badge, Button, IconButton, Menu, SaveStatus, Tabs } from '@/components/
 // save-and-approve an already approved lesson.
 
 const ATLAS_STATUS = {
+  returned: { tone: 'warn',    label: 'أُعيد إليك' },
   draft:    { tone: 'neutral', label: 'مسودة' },
   review:   { tone: 'warn',    label: 'للمراجعة' },
   approved: { tone: 'success', label: 'معتمد' },
   archived: { tone: 'neutral', label: 'أرشيف' },
 };
 
-function PrimaryAction({ lesson, isAdmin, isSyncing, reviewSuccess, approveSuccess, onSubmitForReview, onApprove }) {
+// The contributor's send button, gated as the readiness board draws it:
+//   comments from a return still open → explain, offer to show them (the
+//     server refuses the resend anyway, lib/review.js)
+//   checks missing                     → list them; "complete first" jumps to
+//     the first gap, "send anyway" sends
+//   ready                              → send
+function SubmitAction({ lesson, isSyncing, reviewSuccess, missing, openComments, onSubmitForReview, onJump, onShowComments }) {
+  const label = reviewSuccess ? 'أُرسل للمراجعة' : lesson.reviewState?.returned ? 'أعد الإرسال' : 'إرسال للمراجعة';
+  const icon = reviewSuccess ? Check : Send;
+
+  if (openComments > 0) {
+    return (
+      <ConfirmButton
+        variant="primary" size="sm" icon={icon} tone="primary"
+        title={`بقي ${arCount(openComments, { one: 'ملاحظة واحدة', two: 'ملاحظتان', few: 'ملاحظات', many: 'ملاحظة' })} من المراجِع`}
+        description="عالج كل ملاحظة وعلّمها «عولجت»، ثم أعد الإرسال."
+        cancelLabel="اعرض الملاحظات"
+        onCancel={onShowComments}
+      >
+        {label}
+      </ConfirmButton>
+    );
+  }
+
+  if (missing.length > 0) {
+    return (
+      <ConfirmButton
+        variant="primary" size="sm" icon={icon} tone="primary"
+        title={`الدرس غير مكتمل بعد (${formatNumber(6 - missing.length)} من 6)`}
+        description="ينقصه ما يلي. يمكنك الإرسال الآن، وسيراه المراجِع ناقصاً."
+        details={(
+          <ul className="flex flex-col gap-1">
+            {missing.map((c) => <li key={c.id} className="t-label text-warn">○ {c.label}</li>)}
+          </ul>
+        )}
+        cancelLabel="أكمل أولاً"
+        onCancel={() => onJump(missing[0].tab)}
+        confirmLabel="أرسل على أي حال"
+        onConfirm={onSubmitForReview}
+      >
+        {label}
+      </ConfirmButton>
+    );
+  }
+
+  return (
+    <Button variant="primary" size="sm" icon={icon} onClick={onSubmitForReview} disabled={isSyncing}>
+      {label}
+    </Button>
+  );
+}
+
+function PrimaryAction({ lesson, isAdmin, isSyncing, reviewSuccess, approveSuccess, onSubmitForReview, onApprove, ...gate }) {
   const status = lesson.atlasStatus;
   if (!status || status === 'draft') {
     return isAdmin ? (
@@ -33,9 +87,10 @@ function PrimaryAction({ lesson, isAdmin, isSyncing, reviewSuccess, approveSucce
         {approveSuccess ? 'تم الاعتماد' : 'اعتماد'}
       </Button>
     ) : (
-      <Button variant="primary" size="sm" icon={reviewSuccess ? Check : Send} onClick={onSubmitForReview} disabled={isSyncing}>
-        {reviewSuccess ? 'أُرسل للمراجعة' : 'إرسال للمراجعة'}
-      </Button>
+      <SubmitAction
+        lesson={lesson} isSyncing={isSyncing} reviewSuccess={reviewSuccess}
+        onSubmitForReview={onSubmitForReview} {...gate}
+      />
     );
   }
   if (status === 'approved' && isAdmin) {
@@ -54,8 +109,10 @@ export default function LessonHeader({
   reviewSuccess, approveSuccess, notesCount,
   tabs, activeTab, onTabChange,
   onBack, onSave, onPreview, onHistory, onNotes, onSubmitForReview, onApprove,
+  missing = [], openComments = 0, onJump, onShowComments,
 }) {
-  const status = ATLAS_STATUS[lesson.atlasStatus];
+  const returned = lesson.atlasStatus === 'draft' && lesson.reviewState?.returned;
+  const status = ATLAS_STATUS[returned ? 'returned' : lesson.atlasStatus];
   const unitLabel = unit?.title ?? 'الدروس';
 
   return (
@@ -102,6 +159,7 @@ export default function LessonHeader({
             lesson={lesson} isAdmin={isAdmin} isSyncing={isSyncing}
             reviewSuccess={reviewSuccess} approveSuccess={approveSuccess}
             onSubmitForReview={onSubmitForReview} onApprove={onApprove}
+            missing={missing} openComments={openComments} onJump={onJump} onShowComments={onShowComments}
           />
         </div>
       </div>

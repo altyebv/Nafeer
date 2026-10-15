@@ -19,9 +19,11 @@ import { cx } from './cx';
 export function ConfirmButton({
   title,
   description,
+  details,            // optional node under the description — e.g. a list of what is missing
   confirmLabel = 'حذف',
   cancelLabel = 'إلغاء',
-  onConfirm,
+  onConfirm,          // omit to show only the cancel button (an explanation, not a choice)
+  onCancel,           // runs after closing — e.g. "complete it first" jumps to the gap
   tone = 'danger',
   variant = 'danger',
   size = 'sm',
@@ -82,16 +84,24 @@ export function ConfirmButton({
         >
           <p id={titleId} className="t-ui font-semibold text-fg-strong">{title}</p>
           {description && <p className="t-label font-normal text-fg-muted leading-relaxed">{description}</p>}
+          {details}
           <div className="flex items-center gap-2 pt-1">
+            {onConfirm && (
+              <Button
+                size="sm"
+                variant={tone === 'danger' ? 'primary' : 'secondary'}
+                className={tone === 'danger' ? '!bg-danger hover:!opacity-90' : undefined}
+                onClick={() => { close(); onConfirm(); }}
+              >
+                {confirmLabel}
+              </Button>
+            )}
             <Button
+              ref={cancelRef}
               size="sm"
-              variant="primary"
-              className={tone === 'danger' ? '!bg-danger hover:!opacity-90' : undefined}
-              onClick={() => { close(); onConfirm?.(); }}
+              variant={tone === 'danger' ? 'secondary' : 'primary'}
+              onClick={() => { close(); onCancel?.(); }}
             >
-              {confirmLabel}
-            </Button>
-            <Button ref={cancelRef} size="sm" variant="secondary" onClick={() => close()}>
               {cancelLabel}
             </Button>
           </div>

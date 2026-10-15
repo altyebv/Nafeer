@@ -1,5 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { formatNumber, formatDate } from '@/lib/format';
+import { formatNumber, formatDate, formatRelative } from '@/lib/format';
+
+describe('formatRelative', () => {
+  const now = Date.parse('2026-10-16T12:00:00Z');
+  const ago = (ms) => new Date(now - ms).toISOString();
+  it('uses Arabic counting at each scale', () => {
+    expect(formatRelative(ago(20_000), now)).toBe('الآن');
+    expect(formatRelative(ago(1 * 60_000), now)).toBe('منذ دقيقة');
+    expect(formatRelative(ago(2 * 3_600_000), now)).toBe('منذ ساعتين');
+    expect(formatRelative(ago(5 * 86_400_000), now)).toBe('منذ 5 أيام');
+    expect(formatRelative(ago(12 * 86_400_000), now)).toBe('منذ 12 يوماً');
+  });
+  it('falls back to the date after a month', () => {
+    expect(formatRelative(ago(40 * 86_400_000), now)).toMatch(/2026/);
+  });
+});
 
 const ARABIC_INDIC = /[٠-٩]/;
 

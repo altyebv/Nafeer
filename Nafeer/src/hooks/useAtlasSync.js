@@ -585,22 +585,33 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
   }, [apiFetch]);
 
   // ── Submit for review ─────────────────────────────────────────────────────
+  // Returns true when the item is now in review. It used to return nothing
+  // either way, so the lesson header announced "أُرسل" even when the request
+  // failed — and with the resubmit gate (lib/review.js) a refusal is normal.
   const submitForReview = useCallback(async (contentId, type) => {
     const TYPE_TO_PATH = { lesson: 'lessons', concept: 'concepts', feedItem: 'feed-items', question: 'questions' };
     const path = TYPE_TO_PATH[type];
-    if (!path) return;
+    if (!path) return false;
     try {
       setLoading();
       await apiFetch(`/api/content/${path}/${contentId}`, {
         method: 'PATCH', body: JSON.stringify({ status: 'review', note: 'إرسال للمراجعة من المحرر' }),
       });
-      if (type === 'lesson') updateLesson(contentId, { atlasStatus: 'review' });
+      if (type === 'lesson') {
+        const prev = useSubjectStore.getState().lessons.find((l) => l.id === contentId)?.reviewState;
+        updateLesson(contentId, {
+          atlasStatus: 'review',
+          reviewState: { ...(prev || {}), returned: false, submittedAt: new Date().toISOString() },
+        });
+      }
       if (type === 'concept') updateConcept(contentId, { atlasStatus: 'review' });
       if (type === 'feedItem') updateFeedItem(contentId, { atlasStatus: 'review' });
       if (type === 'question') updateQuestion(contentId, { atlasStatus: 'review' });
       setDone();
+      return true;
     } catch (e) {
       setError(`فشل إرسال للمراجعة: ${e.message}`);
+      return false;
     }
   }, [apiFetch, setLoading, setDone, setError, updateLesson, updateConcept, updateFeedItem, updateQuestion]);
 

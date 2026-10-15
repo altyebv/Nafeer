@@ -60,6 +60,24 @@ export const changesLabel = (n) =>
   arCount(n, { one: 'تغيير واحد', two: 'تغييران', few: 'تغييرات', many: 'تغييراً' });
 
 /**
+ * "منذ ساعتين" — how long ago, in words, with Arabic counting. Past 30 days it
+ * falls back to the date itself, which reads better than "منذ 94 يوماً".
+ */
+export function formatRelative(value, now = Date.now()) {
+  if (value === null || value === undefined || value === '') return '—';
+  const t = new Date(value).getTime();
+  if (Number.isNaN(t)) return '—';
+  const mins = Math.floor((now - t) / 60000);
+  if (mins < 1) return 'الآن';
+  if (mins < 60) return `منذ ${arCount(mins, { one: 'دقيقة', two: 'دقيقتين', few: 'دقائق', many: 'دقيقة' })}`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `منذ ${arCount(hours, { one: 'ساعة', two: 'ساعتين', few: 'ساعات', many: 'ساعة' })}`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `منذ ${arCount(days, { one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوماً' })}`;
+  return formatDate(value, 'medium');
+}
+
+/**
  * Format a date with one of the named presets above.
  * Accepts a Date, an ISO string or a timestamp; anything unparseable gives "—".
  * `timeZone` is for values that are calendar dates rather than instants

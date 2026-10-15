@@ -23,7 +23,7 @@
     "rawPalette": {
       "ui": 0,
       "landing": 1,
-      "editor": 140,
+      "editor": 137,
       "admin": 220,
       "flow": 5,
       "profile": 0,
@@ -32,7 +32,7 @@
     "rampDirect": {
       "ui": 0,
       "landing": 1,
-      "editor": 667,
+      "editor": 662,
       "admin": 767,
       "flow": 41,
       "profile": 0,
@@ -50,7 +50,7 @@
     "inlineStyle": {
       "ui": 0,
       "landing": 288,
-      "editor": 331,
+      "editor": 330,
       "admin": 493,
       "flow": 149,
       "profile": 68,

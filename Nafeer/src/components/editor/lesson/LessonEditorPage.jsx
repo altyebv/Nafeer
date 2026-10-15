@@ -11,7 +11,7 @@ import LessonHeader         from '@/components/editor/lesson/LessonHeader';
 import LessonPreviewModal   from '@/components/editor/lesson/LessonPreviewModal';
 import { MathNotationContext } from '@/components/editor/shared/MathNotationContext';
 import { getMathNotation }  from '@/shared/curriculum';
-import AttributionBar       from '@/components/editor/lesson/AttributionBar';
+import LessonReadiness, { SIXTHS } from '@/components/editor/lesson/LessonReadiness';
 import LessonNotesDrawer    from '@/components/editor/lesson/LessonNotesDrawer';
 import LessonHistoryDrawer  from '@/components/editor/lesson/LessonHistoryDrawer';
 import LinkVariationModal, { VARIATION_CONFIG } from '@/components/editor/lesson/LinkVariationModal';
@@ -40,8 +40,8 @@ import { minutesAgo } from '@/components/editor/lesson/SyncMarks';
 import { useAutosave } from '@/hooks/useAutosave';
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
-import { Button, EmptyState, IconButton, TabPanel } from '@/components/ui';
-import { formatNumber } from '@/lib/format';
+import { Badge, Button, Drawer, EmptyState, IconButton, TabPanel } from '@/components/ui';
+import { arCount, formatNumber } from '@/lib/format';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 
@@ -105,6 +105,11 @@ export default function LessonEditorPage({
   const [attribution,      setAttribution]      = useState(null);
   // Someone else who opened this lesson in the last half hour (lesson GET).
   const [openedBy,         setOpenedBy]         = useState(null);
+  // The reviewer's comments from the latest return (lesson GET — no request
+  // of their own), and the one being marked handled right now.
+  const [reviewComments,   setReviewComments]   = useState([]);
+  const [resolvingId,      setResolvingId]      = useState(null);
+  const [showReadiness,    setShowReadiness]    = useState(false);
 
   const lesson         = lessons.find((l) => l.id === lessonId);
   // unitId used to arrive as a prop alongside lessonId; with a single-segment
@@ -130,6 +135,10 @@ export default function LessonEditorPage({
           setNotesCount(res.data.notesCount ?? 0);
           setVariations(res.data.variations  || []);
           setOpenedBy(res.data.recentlyOpenedBy || null);
+          const round = res.data.reviewState?.round || 0;
+          setReviewComments(round
+            ? (res.data.notes || []).filter((n) => n.noteType === 'review_feedback' && (n.round ?? 0) === round)
+            : []);
           useSubjectStore.getState().mergeServerLessonMeta(res.data);
           useContentStore.getState().mergeServerLesson(lessonId, res.data.sections || []);
         }
@@ -162,13 +171,15 @@ export default function LessonEditorPage({
   const unitLessons = lessons.filter((l) => l.unitId === unitId).sort((a, b) => a.order - b.order);
   const lessonIndex = unitLessons.findIndex((l) => l.id === lessonId);
 
+  // The six readiness checks — unchanged rules, now each naming the tab that
+  // fixes it, so the readiness panel can take the author there.
   const checklist = lesson ? [
-    { label: 'عنوان',  done: !!lesson.title?.trim() && !SCAFFOLD_TITLE_RE.test(lesson.title.trim()) },
-    { label: 'ملخص',  done: !!lesson.summary?.trim()   },
-    { label: 'أقسام', done: lessonSections.length > 0  },
-    { label: 'محتوى', done: lessonBlocks.length > 0    },
-    { label: 'أسئلة', done: lessonQuestions.length > 0 },
-    { label: 'تغذية', done: lessonFeedItems.length > 0 },
+    { id: 'title',    tab: 'meta',      label: 'عنوان حقيقي',          done: !!lesson.title?.trim() && !SCAFFOLD_TITLE_RE.test(lesson.title.trim()) },
+    { id: 'summary',  tab: 'meta',      label: 'ملخص',                 done: !!lesson.summary?.trim()   },
+    { id: 'sections', tab: 'body',      label: 'قسم واحد على الأقل',   done: lessonSections.length > 0  },
+    { id: 'content',  tab: 'body',      label: 'محتوى في الأقسام',     done: lessonBlocks.length > 0    },
+    { id: 'questions',tab: 'questions', label: 'سؤال واحد على الأقل',  done: lessonQuestions.length > 0 },
+    { id: 'feed',     tab: 'feed',      label: 'بطاقة تغذية واحدة',    done: lessonFeedItems.length > 0 },
   ] : [];
   const completedChecks = checklist.filter((c) => c.done).length;
 
@@ -207,9 +218,12 @@ export default function LessonEditorPage({
     try { await syncAll(lessonId, subjectId); } catch { /* shown by SaveStatus */ }
   };
 
-  // Header "go to conflict": conflicts live on the content tab.
-  const revealConflict = (contentId) => {
-    setActiveTab('body');
+  // Open a tab and, when given a section or block id, scroll it into view —
+  // used by "go to conflict", the readiness checks and the review comments.
+  const jumpTo = (tab, contentId = null) => {
+    setActiveTab(tab);
+    setShowReadiness(false);
+    if (!contentId) return;
     setTimeout(() => {
       const block = blocks.find((b) => b.id === contentId);
       const el = document.querySelector(`[data-sync-id="${CSS.escape(contentId)}"]`)
@@ -217,15 +231,36 @@ export default function LessonEditorPage({
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 60);
   };
+  const revealConflict = (contentId) => jumpTo('body', contentId);
+
+  // Mark a reviewer's comment handled (or not). Optimistic; one request.
+  const resolveComment = async (noteId, resolved) => {
+    const before = reviewComments;
+    setResolvingId(noteId);
+    setReviewComments((list) => list.map((c) => (c._id === noteId
+      ? { ...c, resolved, resolvedAt: resolved ? new Date().toISOString() : null, resolvedByName: resolved ? (currentUser?.name || '') : '' }
+      : c)));
+    try {
+      const res = await fetch(`/api/content/lessons/${lessonId}/notes/${noteId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resolved }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setReviewComments(before);
+    } finally {
+      setResolvingId(null);
+    }
+  };
+  const openComments = lesson?.reviewState?.returned ? reviewComments.filter((c) => !c.resolved).length : 0;
 
   const handleSubmitForReview = async () => {
     if (!subjectId) return;
     try {
       await syncAll(lessonId, subjectId);
-      await submitForReview(lessonId, 'lesson');
+      if (!(await submitForReview(lessonId, 'lesson'))) return;   // SaveStatus shows why
       setReviewSuccess(true);
       setTimeout(() => setReviewSuccess(false), 3500);
-    } catch { /* SyncBar handles it */ }
+    } catch { /* SaveStatus shows it */ }
   };
 
   const handleApprove = async () => {
@@ -300,6 +335,16 @@ export default function LessonEditorPage({
     />
   );
 
+  const readinessPanel = (
+    <LessonReadiness
+      lesson={lesson} reviewState={lesson.reviewState} comments={reviewComments}
+      onResolve={resolveComment} resolvingId={resolvingId}
+      checks={checklist} onJump={jumpTo}
+      attribution={attribution} lessonIndex={lessonIndex} unitLessonCount={unitLessons.length}
+      prevLesson={prevLesson} nextLesson={nextLesson} onNavigateLesson={goToLesson}
+    />
+  );
+
   return (
     // Every formula on this page — editors, previews, inline — follows the subject.
     <MathNotationContext.Provider value={getMathNotation(subjectId)}>
@@ -317,14 +362,22 @@ export default function LessonEditorPage({
         onHistory={() => setShowHistory(true)}
         onNotes={() => setShowNotes(true)}
         onSubmitForReview={handleSubmitForReview} onApprove={handleApprove}
+        missing={checklist.filter((c) => !c.done)} openComments={openComments}
+        onJump={jumpTo} onShowComments={() => setShowReadiness(true)}
       />
 
       {/* Items another contributor changed first — see LessonConflicts */}
       <LessonConflicts lessonId={lessonId} onReveal={revealConflict} />
 
+      {/* Content column + readiness panel. The panel sits beside the steps at
+          xl and up, where there is room; below that a one-line bar opens it as
+          a drawer (DS2 step 2, canvas board «الجاهزية والإرسال»). */}
+      <div className="flex-1 w-full max-w-[68rem] mx-auto flex gap-8 px-4 sm:px-6">
+      <div className="flex-1 min-w-0 max-w-4xl mx-auto xl:mx-0 xl:max-w-none flex flex-col">
+
       {/* Notices sit in the content column, above the step — not in the sticky
           header, which used to grow a row for each of them. */}
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 pt-5 flex flex-col gap-3 empty:hidden">
+      <div className="w-full pt-5 flex flex-col gap-3 empty:hidden">
         {/* Someone else opened this lesson recently — they may be editing it.
             Read from the lesson GET; costs nothing extra. */}
         {openedBy && (
@@ -345,16 +398,24 @@ export default function LessonEditorPage({
           </div>
         )}
 
-        {/* Author and version — moves into the readiness panel in step 2. */}
-        {(attribution || lesson.version > 1) && (
-          <div className="hidden sm:block">
-            <AttributionBar lesson={lesson} attribution={attribution} />
-          </div>
-        )}
+        {/* Below xl: the readiness panel folds into this bar. */}
+        <button
+          type="button"
+          onClick={() => setShowReadiness(true)}
+          className="xl:hidden flex items-center gap-3 w-full px-4 h-12 rounded-card bg-raised border border-line text-start t-ui hover:border-line-strong transition-colors"
+        >
+          <span className="text-fg-strong">جاهزية الدرس</span>
+          <span dir="ltr" className="t-num text-fg-muted">{formatNumber(completedChecks)} / 6</span>
+          <span className="flex-1 h-1.5 rounded-full bg-hover overflow-hidden" aria-hidden="true">
+            <span className={`block h-full rounded-full ${SIXTHS[completedChecks]} ${completedChecks === 6 ? 'bg-success' : 'bg-accent-hover'}`} />
+          </span>
+          {openComments > 0 && <Badge tone="warn" size="sm">{arCount(openComments, { one: 'ملاحظة', two: 'ملاحظتان', few: 'ملاحظات', many: 'ملاحظة' })}</Badge>}
+          <span className="t-caption text-fg-accent">التفاصيل</span>
+        </button>
       </div>
 
       {/* ── Step canvas ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
+      <div className="flex-1 w-full py-8">
         <TabPanel idBase="lesson" id="meta" active={activeTab === 'meta'}>
           <StepMeta
             lesson={lesson} unit={unit} unitLessons={unitLessons} lessonIndex={lessonIndex}
@@ -397,6 +458,24 @@ export default function LessonEditorPage({
           />
         </TabPanel>
       </div>
+      </div>
+
+      <aside aria-label="جاهزية الدرس والمراجعة" className="hidden xl:block w-80 shrink-0 py-8">
+        <div className="sticky top-32 max-h-[calc(100dvh-9rem)] overflow-y-auto scrollbar-none">
+          {readinessPanel}
+        </div>
+      </aside>
+      </div>
+
+      {showReadiness && (
+        <Drawer onClose={() => setShowReadiness(false)} labelledBy="readiness-drawer-title">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-line">
+            <h2 id="readiness-drawer-title" className="t-title text-fg-strong">الجاهزية والمراجعة</h2>
+            <IconButton icon={X} label="إغلاق" size="sm" onClick={() => setShowReadiness(false)} />
+          </div>
+          <div className="p-5 overflow-y-auto">{readinessPanel}</div>
+        </Drawer>
+      )}
 
       {showPreview && (
         <LessonPreviewModal
@@ -576,27 +655,13 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
         </div>
       </Card>
 
+      {/* The completion checklist that sat here moved to the readiness panel
+          (LessonReadiness), which stays in view on every tab. */}
       <Card>
-        <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="اكتمال الدرس" />
+        <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="وسم الإصدار" />
         <div className="p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-1 bg-ink-800 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${(completedChecks / 6) * 100}%` }} />
-            </div>
-            <span className="text-sm font-mono text-ink-500">{completedChecks}/6</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {checklist.map((item) => (
-              <div key={item.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-arabic
-                ${item.done ? 'bg-emerald-900/15 border-emerald-800/30 text-emerald-500' : 'bg-ink-800/15 border-ink-800/60 text-ink-400'}`}>
-                <span className={item.done ? 'text-emerald-500' : 'text-ink-500'}>{item.done ? <Check size={13} strokeWidth={2} /> : <Circle size={13} strokeWidth={1.8} />}</span>
-                <span>{item.label}</span>
-              </div>
-            ))}
-          </div>
-
           {/* Version label — attaches a short note to the next save/submit */}
-          <div className="mt-4 pt-4 border-t border-ink-800/50">
+          <div>
             <label className="text-sm text-ink-400 font-arabic block mb-1.5">
               وسم الإصدار
               <span className="text-ink-500 mr-1">(اختياري — يظهر في سجل التعديلات)</span>
