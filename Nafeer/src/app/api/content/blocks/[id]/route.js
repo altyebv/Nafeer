@@ -1,5 +1,6 @@
 import { requireContentAccess, assertInSubject, ok, err } from '@/lib/api/guard';
 import { deleteBlock, upsertBlock } from '@/lib/api/content';
+import { VersionConflict } from '@/lib/api/versionCheck';
 import { connectDB } from '@/lib/db';
 import { Block } from '@/lib/models/Block';
 import { Section } from '@/lib/models/Section';
@@ -61,6 +62,7 @@ export async function PATCH(request, { params }) {
     return ok({ id: saved.contentId, mediaPath: saved.mediaPath ?? null });
   } catch (e) {
     if (e instanceof Response) return e;
+    if (e instanceof VersionConflict) return Response.json({ ok: false, conflict: e.toJSON() }, { status: 409 });
     console.error('[PATCH /api/content/blocks/[id]]', e);
     return err('خطأ في الخادم', 500);
   }

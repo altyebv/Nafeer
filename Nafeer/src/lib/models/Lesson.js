@@ -100,6 +100,15 @@ const LessonSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Who last opened the lesson in the editor, so the next person can be
+    // told someone may be working on it. Written by the lesson GET, without
+    // touching updatedAt or the version; never exported to the app.
+    openedBy: {
+      id:   { type: String, default: null },
+      name: { type: String, default: null },
+    },
+    openedAt: { type: Date, default: null },
+
     ...versioningFields,
   },
   { timestamps: true }

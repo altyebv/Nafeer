@@ -3,15 +3,20 @@ import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { Question } from '@/lib/models/Question';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
+import { VersionConflict, hasBaseVersion, updateAtVersion, settleBatch } from '@/lib/api/versionCheck';
 
 // ─── Sections ─────────────────────────────────────────────────────────────────
+// `data.baseVersion` — the version the editor loaded. When present, the write
+// is refused with a VersionConflict if the section changed or was deleted
+// since. See lib/api/versionCheck.js.
 
 export async function upsertSection(data, contributorId) {
   await connectDB();
 
   const existing = await Section.findOne({ contentId: data.contentId });
 
-  if (existing) {
+  if (existing || hasBaseVersion(data.baseVersion)) {
+    if (!existing) throw new VersionConflict(data.contentId, null);
     const { updates } = applyVersionBump(
       {
         title:        data.title,
@@ -19,16 +24,13 @@ export async function upsertSection(data, contributorId) {
         learningType: data.learningType,
         kind:         data.kind || 'GENERAL',
         conceptIds:   data.conceptIds || [],
+        partIndex:    data.partIndex ?? 0,
       },
       existing,
       contributorId,
       'edited'
     );
-    return Section.findOneAndUpdate(
-      { contentId: data.contentId },
-      { $set: updates },
-      { new: true }
-    ).lean();
+    return updateAtVersion(Section, data.contentId, data.baseVersion, existing, { $set: updates });
   }
 
   return Section.create({
@@ -39,15 +41,17 @@ export async function upsertSection(data, contributorId) {
     order:           data.order,
     learningType:    data.learningType || 'UNDERSTANDING', kind: data.kind || 'GENERAL',
     conceptIds:      data.conceptIds  || [],
+    partIndex:       data.partIndex   ?? 0,
     createdBy:       contributorId,
     changelog:       initialChangelog(contributorId),
   });
 }
 
-// Batch upsert — called when contributor saves a lesson
+// Batch upsert — called when contributor saves a lesson.
+// Returns { saved, conflicts }; one stale section never blocks the rest.
 export async function batchUpsertSections(sections, contributorId) {
   await connectDB();
-  return Promise.all(sections.map((s) => upsertSection(s, contributorId)));
+  return settleBatch(sections, (s) => upsertSection(s, contributorId));
 }
 
 export async function deleteSection(contentId) {
@@ -63,7 +67,10 @@ export async function upsertBlock(data, contributorId) {
   const normalized = normalizeBlockInput(data);
   const existing = await Block.findOne({ contentId: normalized.contentId });
 
-  if (existing) {
+  if (existing || hasBaseVersion(normalized.baseVersion)) {
+    // A block the editor had loaded is gone: someone deleted it. Recreating
+    // it here is how deleted blocks used to come back.
+    if (!existing) throw new VersionConflict(normalized.contentId, null);
     const existingWasCheckpoint = existing.type === 'QUESTION';
     const nextType = normalized.type ?? existing.type;
     const { updates } = applyVersionBump(
@@ -82,11 +89,9 @@ export async function upsertBlock(data, contributorId) {
       contributorId,
       'edited'
     );
-    const block = await Block.findOneAndUpdate(
-      { contentId: normalized.contentId },
-      { $set: updates },
-      { new: true }
-    ).lean();
+    const block = await updateAtVersion(
+      Block, normalized.contentId, normalized.baseVersion, existing, { $set: updates }
+    );
     if (existingWasCheckpoint && nextType !== 'QUESTION') {
       await deleteCheckpointQuestionForBlock(existing);
     }
@@ -112,10 +117,11 @@ export async function upsertBlock(data, contributorId) {
   return block;
 }
 
-// Batch upsert — all blocks for a lesson in one call
+// Batch upsert — all changed blocks for a lesson in one call.
+// Returns { saved, conflicts }.
 export async function batchUpsertBlocks(blocks, contributorId) {
   await connectDB();
-  return Promise.all(blocks.map((b) => upsertBlock(b, contributorId)));
+  return settleBatch(blocks, (b) => upsertBlock(b, contributorId));
 }
 
 export async function deleteBlock(contentId) {

@@ -28,7 +28,7 @@ vi.mock('@/lib/api/lessons', () => ({
 }));
 vi.mock('@/lib/api/content', () => ({
   upsertBlock:                         vi.fn(async (data) => ({ contentId: data.contentId })),
-  batchUpsertBlocks:                   vi.fn(async (blocks) => blocks),
+  batchUpsertBlocks:                   vi.fn(async (blocks) => ({ saved: blocks, conflicts: [] })),
   deleteBlock:                         vi.fn(async () => {}),
   deleteCheckpointQuestionsForSections: vi.fn(async () => {}),
 }));

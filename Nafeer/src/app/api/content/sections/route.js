@@ -2,11 +2,14 @@ import { requireContributor, assertInSubject, ok, err } from '@/lib/api/guard';
 import { Section } from '@/lib/models/Section';
 import { Lesson } from '@/lib/models/Lesson';
 import { batchUpsertSections, deleteSection } from '@/lib/api/content';
+import { withEditorNames } from '@/lib/api/versionCheck';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 
 // POST /api/content/sections
 // Body: { sections: [...] }  — batch upsert (create or update)
 // Called when contributor saves a lesson. Handles both new and existing sections.
+// A section may carry `baseVersion`; stale or deleted ones come back in
+// `conflicts` instead of being written.
 export async function POST(request) {
   try {
     const user = await requireContributor();
@@ -31,8 +34,8 @@ export async function POST(request) {
       assertInSubject(user, Lesson,  sections.map((s) => s?.lessonContentId)),
     ]);
 
-    const results = await batchUpsertSections(sections, actorId);
-    return ok(results, { total: results.length });
+    const { saved, conflicts } = await batchUpsertSections(sections, actorId);
+    return ok(saved, { total: saved.length, conflicts: await withEditorNames(conflicts) });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[POST /api/content/sections]', e);

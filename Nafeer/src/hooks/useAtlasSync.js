@@ -6,6 +6,7 @@ import { useContentStore } from '@/store/contentStore';
 import { useConceptStore } from '@/store/conceptStore';
 import { useFeedStore } from '@/store/feedStore';
 import { useQuizStore } from '@/store/quizStore';
+import { lessonPayload, sectionPayload, blockPayload } from '@/lib/editorSync';
 
 // ─── useAtlasSync ─────────────────────────────────────────────────────────────
 // Exposes explicit save functions for each content type.
@@ -59,6 +60,18 @@ export function useAtlasSync() {
     return json.data;
   }, []);
 
+  // Batch save — returns the written docs and the conflicts beside them.
+  const postBatch = useCallback(async (url, body) => {
+    const res  = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'خطأ غير معروف');
+    return { data: json.data || [], conflicts: json.conflicts || [] };
+  }, []);
+
   // ── FIX: approveAtlasResource ─────────────────────────────────────────────
   // Was referenced but never defined — ReferenceError killed sync for concepts,
   // feed items, and questions whenever approve=true was passed.
@@ -101,6 +114,7 @@ export function useAtlasSync() {
               groupTitle:       l.groupTitle         || null,
               groupMetadata:    l.groupMetadata      || null,
               atlasStatus:      l.status             || 'draft',
+              _v:               l.version            ?? 1,
             }))
           );
           const subject = atlasData.subject
@@ -190,94 +204,106 @@ export function useAtlasSync() {
   }, [apiFetch, setLoading, setDone, setSyncStatus, loadFromAtlas]);
 
   // ── Sync lesson meta + content ───────────────────────────────────────────────
-  const syncAll = useCallback(async (lessonId, subjectId) => {
+  // Sends only what changed since the last save (`_dirty`), each item with the
+  // server version it was based on. Nothing changed → no request at all; the
+  // usual save is one request. Items someone else changed or deleted first are
+  // not written — they come back as conflicts for LessonConflicts to resolve,
+  // and the call rejects so submit/approve stop. See lib/editorSync.js.
+  //
+  // { auto: true } is the autosave: items already waiting on a conflict are
+  // left out (resending them would only conflict again) and stay listed.
+  // Resolves to { saved } — how many items were written.
+  const syncAll = useCallback(async (lessonId, subjectId, { auto = false } = {}) => {
     // Read at call time, not render time — see the note at the top of the hook.
-    const { lessons }          = useSubjectStore.getState();
-    const { sections, blocks } = useContentStore.getState();
+    const { lessons, markLessonSaved } = useSubjectStore.getState();
+    const { sections, blocks, markSaved } = useContentStore.getState();
     const lesson = lessons.find((l) => l.id === lessonId);
-    if (!lesson) return;
+    if (!lesson) return { saved: 0 };
+    const { conflicts: pending, setConflicts } = useEditorStore.getState();
+    const held = auto && pending.lessonId === lessonId ? pending.items : [];
+    const heldIds = new Set(held.map((c) => c.contentId));
+    const send = (item) => item._dirty && !heldIds.has(item.id);
+
     const lessonSections = sections.filter((s) => s.lessonId === lessonId);
-    const sectionIds = lessonSections.map((s) => s.id);
-    const lessonBlocks = blocks.filter((b) => sectionIds.includes(b.sectionId));
+    const sectionIds     = new Set(lessonSections.map((s) => s.id));
+    const dirtySections  = lessonSections.filter(send);
+    const dirtyBlocks    = blocks.filter((b) => sectionIds.has(b.sectionId) && send(b));
+    const conflicts      = [...held];
+    let saved = 0;
+    const collect = (kind, sent, found = []) => {
+      const mine = new Map(sent.map((i) => [i.id, i]));
+      for (const c of found) conflicts.push({ kind, ...c, mine: mine.get(c.contentId) ?? null });
+    };
+
     try {
       setLoading();
-      // ── Upsert: PUT first, POST if lesson doesn't exist yet in DB ──────────
-      const lessonRes = await fetch(`/api/content/lessons/${lessonId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title:            lesson.title,
-          estimatedMinutes: lesson.estimatedMinutes,
-          summary:          lesson.summary          || null,
-          metadata:         lesson.metadata         || null,
-          parentLesson:     lesson.parentLesson      || null,
-          variationType:    lesson.variationType     || null,
-          variationNote:    lesson.variationNote     || null,
-          groupId:          lesson.groupId           || null,
-          groupTitle:       lesson.groupTitle        || null,
-          groupMetadata:    lesson.groupMetadata     || null,
-        }),
-      });
-      const lessonJson = await lessonRes.json();
 
-      if (!lessonJson.ok && lessonRes.status === 404) {
-        const created = await apiFetch('/api/content/lessons', {
-          method: 'POST',
-          body: JSON.stringify({
-            contentId:        lessonId,
-            subjectId,
-            unitContentId:    lesson.unitId,
-            title:            lesson.title,
-            order:            lesson.order,
-            estimatedMinutes: lesson.estimatedMinutes || 15,
-            summary:          lesson.summary          || null,
-            metadata:         lesson.metadata         || null,
-            parentLesson:     lesson.parentLesson      || null,
-            variationType:    lesson.variationType     || null,
-            variationNote:    lesson.variationNote     || null,
-            groupId:          lesson.groupId           || null,
-            groupTitle:       lesson.groupTitle        || null,
-            groupMetadata:    lesson.groupMetadata     || null,
-          }),
+      if (send(lesson)) {
+        const lessonRes = await fetch(`/api/content/lessons/${lessonId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lessonPayload(lesson)),
         });
-        if (created?.status) updateLesson(lessonId, { atlasStatus: created.status });
-      } else if (!lessonJson.ok) {
-        throw new Error(lessonJson.error || 'خطأ غير معروف');
-      } else {
-        if (lessonJson.data?.status) updateLesson(lessonId, { atlasStatus: lessonJson.data.status });
+        const lessonJson = await lessonRes.json();
+
+        if (lessonRes.status === 409) {
+          collect('lessons', [lesson], [lessonJson.conflict]);
+        } else if (!lessonJson.ok && lessonRes.status === 404) {
+          // Never reached Atlas (scaffolded locally) — create it.
+          const { baseVersion, ...fields } = lessonPayload(lesson);
+          const created = await apiFetch('/api/content/lessons', {
+            method: 'POST',
+            body: JSON.stringify({
+              ...fields,
+              contentId:        lessonId,
+              subjectId,
+              unitContentId:    lesson.unitId,
+              order:            lesson.order,
+              estimatedMinutes: lesson.estimatedMinutes || 15,
+            }),
+          });
+          if (created) { markLessonSaved(lesson, created); saved += 1; }
+        } else if (!lessonJson.ok) {
+          throw new Error(lessonJson.error || 'خطأ غير معروف');
+        } else {
+          markLessonSaved(lesson, lessonJson.data);
+          saved += 1;
+        }
       }
-      if (lessonSections.length > 0) {
-        await apiFetch('/api/content/sections', {
-          method: 'POST',
-          body: JSON.stringify({
-            lessonContentId: lessonId,
-            subjectId,
-            sections: lessonSections.map((s) => ({
-              contentId: s.id, subjectId, lessonContentId: lessonId,
-              title: s.title, order: s.order, learningType: s.learningType || 'UNDERSTANDING', kind: s.kind || 'GENERAL',
-              conceptIds: s.conceptIds || [], partIndex: s.partIndex ?? 0,
-            })),
-          }),
+
+      // Sections before blocks: a new block's section must exist first.
+      if (dirtySections.length > 0) {
+        const { data, conflicts: found } = await postBatch('/api/content/sections', {
+          lessonContentId: lessonId,
+          subjectId,
+          sections: dirtySections.map((s) => sectionPayload(s, subjectId)),
         });
+        markSaved('sections', dirtySections, data);
+        saved += data.length;
+        collect('sections', dirtySections, found);
       }
-      if (lessonBlocks.length > 0) {
-        await apiFetch('/api/content/blocks', {
-          method: 'POST',
-          body: JSON.stringify({
-            blocks: lessonBlocks.map((b) => ({
-              contentId: b.id, sectionContentId: b.sectionId, type: b.type, subjectId,
-              content: b.content || '', order: b.order, conceptRef: b.conceptRef || null,
-              caption: b.caption || null, metadata: b.metadata || null,
-            })),
-          }),
+
+      if (dirtyBlocks.length > 0) {
+        const { data, conflicts: found } = await postBatch('/api/content/blocks', {
+          blocks: dirtyBlocks.map((b) => blockPayload(b, subjectId)),
         });
+        markSaved('blocks', dirtyBlocks, data);
+        saved += data.length;
+        collect('blocks', dirtyBlocks, found);
       }
-      setDone();
     } catch (e) {
       setError(`فشل الحفظ: ${e.message}`);
       throw e;
     }
-  }, [apiFetch, setLoading, setDone, setError, updateLesson]);
+
+    setConflicts(lessonId, conflicts);
+    if (conflicts.length > 0) {
+      setSyncStatus({ isSyncing: false, syncError: null, lastSynced: null });
+      throw Object.assign(new Error('version conflict'), { conflicts, saved });
+    }
+    setDone();
+    return { saved };
+  }, [apiFetch, postBatch, setLoading, setDone, setError, setSyncStatus]);
 
  // ── syncLesson ───────────────────────────────────────────────────────────────
 const syncLesson = useCallback(async (lessonId, subjectId) => {

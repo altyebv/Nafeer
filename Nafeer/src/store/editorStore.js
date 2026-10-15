@@ -59,4 +59,18 @@ export const useEditorStore = create((set) => ({
 
   setSyncStatus: ({ isSyncing, syncError, lastSynced }) =>
     set({ isSyncing, syncError, lastSynced: lastSynced || null }),
+
+  // Items the last save of a lesson could not write because someone else
+  // changed or deleted them first: { lessonId, items: [{ kind, contentId,
+  // reason: 'changed' | 'deleted', current, mine }] }. Not persisted — the
+  // dirty items themselves are, and the next save finds the conflict again.
+  conflicts: { lessonId: null, items: [] },
+  setConflicts: (lessonId, items) => set({ conflicts: { lessonId, items } }),
+  resolveConflict: (contentId) =>
+    set((state) => ({
+      conflicts: {
+        ...state.conflicts,
+        items: state.conflicts.items.filter((c) => c.contentId !== contentId),
+      },
+    })),
 }));

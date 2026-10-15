@@ -35,6 +35,11 @@ import {
 
 import { useRouter } from 'next/navigation';
 import { useEditorStore } from '@/store/editorStore';
+import { useSubjectStore } from '@/store/subjectStore';
+import { useContentStore } from '@/store/contentStore';
+import LessonConflicts from '@/components/editor/lesson/LessonConflicts';
+import { UnsavedDot, changesLabel, minutesAgo } from '@/components/editor/lesson/SyncMarks';
+import { useAutosave } from '@/hooks/useAutosave';
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { SyncDot } from '@/components/editor/layout/SyncBanner';
 import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
@@ -83,7 +88,8 @@ export default function LessonEditorPage({
   const syncError  = useEditorStore((s) => s.syncError);
 
   const [activeTab,     setActiveTab]     = useState(0);
-  const [saveSuccess,   setSaveSuccess]   = useState(false);
+  // What the last manual save did, shown beside the button for a moment.
+  const [saveMsg,       setSaveMsg]       = useState(null);
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [approveSuccess, setApproveSuccess] = useState(false);
   const [showPreview,   setShowPreview]   = useState(false);
@@ -95,6 +101,8 @@ export default function LessonEditorPage({
   const [variations,       setVariations]       = useState([]);
   // Attribution data fetched from the lesson GET response (populated server-side)
   const [attribution,      setAttribution]      = useState(null);
+  // Someone else who opened this lesson in the last half hour (lesson GET).
+  const [openedBy,         setOpenedBy]         = useState(null);
 
   const lesson         = lessons.find((l) => l.id === lessonId);
   // unitId used to arrive as a prop alongside lessonId; with a single-segment
@@ -106,7 +114,10 @@ export default function LessonEditorPage({
   const goToLesson = onNavigateLesson ?? ((id) => router.push(lessonHref(id)));
   const openGlobal = onOpenGlobal     ?? ((page) => router.push(NAV_BY_ID[page]?.href ?? '/editor'));
 
-  // Fetch attribution + notesCount once when the lesson changes
+  // One request per lesson open: attribution, notes count, variations — and
+  // the lesson's saved content, merged into the local cache so this editor
+  // works on what is in Atlas rather than on whatever this browser last had.
+  // Unsaved local edits are kept (lib/editorSync.js).
   useEffect(() => {
     if (!lessonId) return;
     fetch(`/api/content/lessons/${lessonId}`)
@@ -116,13 +127,23 @@ export default function LessonEditorPage({
           setAttribution(res.data.attribution || null);
           setNotesCount(res.data.notesCount ?? 0);
           setVariations(res.data.variations  || []);
+          setOpenedBy(res.data.recentlyOpenedBy || null);
+          useSubjectStore.getState().mergeServerLessonMeta(res.data);
+          useContentStore.getState().mergeServerLesson(lessonId, res.data.sections || []);
         }
       })
       .catch(() => {/* non-blocking */});
+    return () => setOpenedBy(null);
   }, [lessonId]);
+
+  useAutosave(lessonId, subjectId, syncAll);
+
   const lessonSections = sections.filter((s) => s.lessonId === lessonId).sort((a, b) => a.order - b.order);
   const sectionIds     = lessonSections.map((s) => s.id);
   const lessonBlocks   = blocks.filter((b) => sectionIds.includes(b.sectionId));
+  // Unsaved work, from the `_dirty` marks the stores keep — no request.
+  const contentUnsaved = lessonSections.filter((s) => s._dirty).length + lessonBlocks.filter((b) => b._dirty).length;
+  const unsavedCount   = contentUnsaved + (lesson?._dirty ? 1 : 0);
   const lessonConceptIds = [...new Set(lessonSections.flatMap((s) => s.conceptIds || []))];
   const lessonQuestions  = questions.filter((q) => q.lessonId === lessonId);
   const lessonFeedItems  = feedItems.filter((f) => f.lessonId === lessonId);
@@ -157,13 +178,28 @@ export default function LessonEditorPage({
     return false;
   };
 
+  const flash = (msg) => {
+    setSaveMsg(msg);
+    setTimeout(() => setSaveMsg((m) => (m === msg ? null : m)), 3000);
+  };
+
   const handleSave = async () => {
     if (!subjectId) return;
     try {
-      await syncAll(lessonId, subjectId);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2500);
-    } catch { /* SyncBar handles it */ }
+      const { saved } = await syncAll(lessonId, subjectId);
+      flash(saved > 0 ? `حُفظ ${changesLabel(saved)}` : 'لا تغييرات للحفظ');
+    } catch { /* SyncBar and LessonConflicts handle it */ }
+  };
+
+  // Header "go to conflict": conflicts live on the content tab.
+  const revealConflict = (contentId) => {
+    setActiveTab(TABS.findIndex((t) => t.id === 'body'));
+    setTimeout(() => {
+      const block = blocks.find((b) => b.id === contentId);
+      const el = document.querySelector(`[data-sync-id="${CSS.escape(contentId)}"]`)
+        ?? (block && document.querySelector(`[data-sync-id="${CSS.escape(block.sectionId)}"]`));
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 60);
   };
 
   const handleSubmitForReview = async () => {
@@ -189,14 +225,26 @@ export default function LessonEditorPage({
     updateLesson(lesson.id, { metadata: { ...(lesson.metadata || {}), ...patch } });
 
   // ── Variation handlers ───────────────────────────────────────────────────
+  // These write the target lesson directly, so its local copy follows the
+  // version they produced — otherwise its next save would be refused as stale.
+  // The variation fields are written here, so they don't leave the target
+  // dirty unless it already had unsaved edits of its own.
+  const wasDirty = (id) => !!useSubjectStore.getState().lessons.find((l) => l.id === id)?._dirty;
+  const followVersion = async (res, dirty) => {
+    const json = await res.json().catch(() => null);
+    if (json?.ok) useSubjectStore.getState().followLessonVersion(json.data, dirty);
+  };
+
   const handleLinkVariation = async (targetLessonId, variationType, variationNote) => {
-    await fetch(`/api/content/lessons/${targetLessonId}`, {
+    // Optimistic local update — before the write, so the version it produces
+    // is the one the lesson ends up based on.
+    const dirty = wasDirty(targetLessonId);
+    updateLesson(targetLessonId, { parentLesson: lessonId, variationType, variationNote });
+    await followVersion(await fetch(`/api/content/lessons/${targetLessonId}`, {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ parentLesson: lessonId, variationType, variationNote }),
-    });
-    // Optimistic local update
-    updateLesson(targetLessonId, { parentLesson: lessonId, variationType, variationNote });
+    }), dirty);
     // Re-fetch variations list for this lesson
     const res  = await fetch(`/api/content/lessons/${lessonId}`);
     const json = await res.json();
@@ -204,12 +252,13 @@ export default function LessonEditorPage({
   };
 
   const handleUnlinkVariation = async (targetLessonId) => {
-    await fetch(`/api/content/lessons/${targetLessonId}`, {
+    const dirty = wasDirty(targetLessonId);
+    updateLesson(targetLessonId, { parentLesson: null, variationType: null, variationNote: null });
+    await followVersion(await fetch(`/api/content/lessons/${targetLessonId}`, {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ parentLesson: null, variationType: null, variationNote: null }),
-    });
-    updateLesson(targetLessonId, { parentLesson: null, variationType: null, variationNote: null });
+    }), dirty);
     setVariations((v) => v.filter((x) => x.contentId !== targetLessonId));
   };
 
@@ -355,14 +404,27 @@ export default function LessonEditorPage({
             <span className="hidden sm:inline">معاينة</span>
           </button>
 
+          {saveMsg && (
+            <span role="status" className="shrink-0 text-xs text-emerald-500 font-arabic whitespace-nowrap">{saveMsg}</span>
+          )}
+
+          {/* Counts unsaved changes; with none it reads "محفوظ". Autosave
+              (useAutosave) also saves after a pause and on leaving. */}
           <button
             onClick={handleSave}
             disabled={isSyncing}
-            className="touch-target shrink-0 flex items-center gap-1.5 px-4 h-7 bg-sand-700 hover:bg-sand-600 disabled:opacity-40 text-ink-950 text-xs font-bold rounded-lg transition-colors font-arabic"
+            title={unsavedCount > 0 ? `${changesLabel(unsavedCount)} لم تُحفظ بعد — تُحفظ تلقائياً بعد توقفك عن الكتابة` : 'كل التغييرات محفوظة'}
+            className={`touch-target shrink-0 flex items-center gap-1.5 px-4 h-7 disabled:opacity-40 text-xs font-bold rounded-lg transition-colors font-arabic ${
+              unsavedCount > 0
+                ? 'bg-sand-700 hover:bg-sand-600 text-ink-950'
+                : 'border border-ink-700 bg-ink-800/60 text-ink-400 hover:text-sand-300'
+            }`}
           >
             {isSyncing
               ? <><span className="w-3 h-3 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" />حفظ…</>
-              : saveSuccess ? <><Check size={13} strokeWidth={2} /> تم</> : <><Upload size={13} strokeWidth={1.9} /> حفظ</>}
+              : unsavedCount > 0
+                ? <><Upload size={13} strokeWidth={1.9} /> حفظ <span className="rounded-full bg-ink-950/25 px-1.5 font-mono leading-4">{unsavedCount.toLocaleString('ar-EG')}</span></>
+                : <><Check size={13} strokeWidth={2} /> محفوظ</>}
           </button>
           </div>
         </div>
@@ -385,6 +447,9 @@ export default function LessonEditorPage({
           </div>
         )}
 
+        {/* Items another contributor changed first — see LessonConflicts */}
+        <LessonConflicts lessonId={lessonId} onReveal={revealConflict} />
+
         {/* Row 2: tabs */}
         {/* overflow-x-auto: at 375px this strip measures 417px, so the last
             tab and the lesson counter were clipped with no way to reach them. */}
@@ -392,6 +457,7 @@ export default function LessonEditorPage({
           {TABS.map((tab, i) => {
             const isActive = i === activeTab;
             const isDone   = tabDone(tab);
+            const unsaved  = (tab.id === 'meta' && lesson._dirty) || (tab.id === 'body' && contentUnsaved > 0);
             return (
               <button
                 key={tab.id}
@@ -408,6 +474,7 @@ export default function LessonEditorPage({
                   {isDone && !isActive ? <Check size={11} strokeWidth={2.1} /> : tab.ar}
                 </span>
                 <span>{tab.label}</span>
+                <UnsavedDot show={unsaved} />
               </button>
             );
           })}
@@ -417,6 +484,20 @@ export default function LessonEditorPage({
           </span>
         </div>
       </header>
+
+      {/* Someone else opened this lesson recently — they may be editing it.
+          Read from the lesson GET; costs nothing extra. */}
+      {openedBy && (
+        <div className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-sky-950/30 border-b border-sky-900/40 text-sky-300 text-xs font-arabic">
+          <Clock3 size={13} strokeWidth={1.9} className="shrink-0" />
+          <span className="flex-1">
+            آخر من فتح هذا الدرس: {openedBy.name || 'زميل'}، {minutesAgo(openedBy.at)}. قد يكون العمل عليه جارياً الآن — تُحفظ تعديلاتك تلقائياً، وستُنبَّه إن تعارضت مع تعديلات أخرى.
+          </span>
+          <button onClick={() => setOpenedBy(null)} aria-label="إخفاء" className="touch-target shrink-0 text-sky-400 hover:text-sky-200">
+            <X size={13} strokeWidth={2} />
+          </button>
+        </div>
+      )}
 
       {/* Approved warning — only shown to contributors, not admins */}
       {lesson.atlasStatus === 'approved' && currentUser?.role !== 'admin' && (

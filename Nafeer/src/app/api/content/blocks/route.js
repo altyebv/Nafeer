@@ -2,11 +2,13 @@ import { requireContributor, assertInSubject, ok, err } from '@/lib/api/guard';
 import { Block } from '@/lib/models/Block';
 import { Section } from '@/lib/models/Section';
 import { batchUpsertBlocks, deleteBlock } from '@/lib/api/content';
+import { withEditorNames } from '@/lib/api/versionCheck';
 import { trackStat } from '@/lib/trackStat';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 
 // POST /api/content/blocks
-// Body: { blocks: [...] }  — batch upsert
+// Body: { blocks: [...] }  — batch upsert. A block may carry `baseVersion`;
+// stale or deleted ones come back in `conflicts` instead of being written.
 export async function POST(request) {
   try {
     const user = await requireContributor();
@@ -31,14 +33,14 @@ export async function POST(request) {
       assertInSubject(user, Section, blocks.map((b) => b?.sectionContentId || b?.sectionId)),
     ]);
 
-    const results = await batchUpsertBlocks(blocks, actorId);
+    const { saved, conflicts } = await batchUpsertBlocks(blocks, actorId);
 
-    // Track stat — every block in the batch is credited, not just one per save.
-    if (results.length > 0) {
-      trackStat(actorId, 'blocksAdded', { amount: results.length });
+    // Track stat — every block written is credited, not just one per save.
+    if (saved.length > 0) {
+      trackStat(actorId, 'blocksAdded', { amount: saved.length });
     }
 
-    return ok(results, { total: results.length });
+    return ok(saved, { total: saved.length, conflicts: await withEditorNames(conflicts) });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[POST /api/content/blocks]', e);

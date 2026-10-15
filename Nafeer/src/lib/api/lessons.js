@@ -5,6 +5,7 @@ import { LessonHistory } from '@/lib/models/LessonHistory';
 import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
+import { VersionConflict, updateAtVersion } from '@/lib/api/versionCheck';
 import { trackStat } from '@/lib/trackStat';
 
 // ─── writeHistory ─────────────────────────────────────────────────────────────
@@ -106,13 +107,19 @@ export async function getLessonWithContent(contentId) {
 // Updates lesson with versioning + writes a LessonHistory record with diff.
 // Pass skipRedraft=true when the actor is an admin so approved test lessons
 // don't silently reset to draft on every admin edit.
+// Pass baseVersion (the version the editor loaded) to refuse the write with a
+// VersionConflict if someone else saved the lesson in between.
 export async function updateLesson(
-  contentId, updates, contributorId, note = '', versionLabel = '', contributorName = '', skipRedraft = false
+  contentId, updates, contributorId, note = '', versionLabel = '', contributorName = '', skipRedraft = false,
+  baseVersion = null
 ) {
   await connectDB();
 
   const current = await Lesson.findOne({ contentId });
-  if (!current) return null;
+  if (!current) {
+    if (baseVersion) throw new VersionConflict(contentId, null);
+    return null;
+  }
 
   const { updates: bumpedUpdates, diff } = applyVersionBump(
     { ...updates },
@@ -124,11 +131,9 @@ export async function updateLesson(
     skipRedraft
   );
 
-  const updated = await Lesson.findOneAndUpdate(
-    { contentId },
-    { $set: bumpedUpdates },
-    { new: true, runValidators: true }
-  ).lean();
+  const updated = await updateAtVersion(
+    Lesson, contentId, baseVersion, current, { $set: bumpedUpdates }, { runValidators: true }
+  );
 
   // Write history async — don't await
   writeHistory(contentId, {

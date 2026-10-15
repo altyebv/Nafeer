@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { requireContentAccess, assertInSubject, ok, err } from '@/lib/api/guard';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { getLessonWithContent, updateLesson, updateLessonStatus } from '@/lib/api/lessons';
@@ -6,17 +7,43 @@ import { Lesson } from '@/lib/models/Lesson';
 import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { deleteCheckpointQuestionsForSections } from '@/lib/api/content';
+import { VersionConflict, withEditorNames } from '@/lib/api/versionCheck';
 
 // GET /api/content/lessons/[id]
-// Returns lesson + sections + blocks (full content for editor)
+// Returns lesson + sections + blocks (full content for editor), plus
+// `recentlyOpenedBy` when someone else opened it in the last half hour.
+const RECENT_OPEN_MS  = 30 * 60 * 1000;
+const STAMP_EVERY_MS  = 5 * 60 * 1000;
+
 export async function GET(request, { params }) {
   try {
-    await requireContentAccess(Lesson, (await params).id);
+    const { user } = await requireContentAccess(Lesson, (await params).id);
+    const id = (await params).id;
 
-    const lesson = await getLessonWithContent((await params).id);
+    const lesson = await getLessonWithContent(id);
     if (!lesson) return err('الدرس غير موجود', 404);
 
-    return ok(lesson);
+    const me   = String(user.id);
+    const now  = Date.now();
+    const prev = lesson.openedBy?.id ? { id: lesson.openedBy.id, at: lesson.openedAt } : null;
+    const recentlyOpenedBy = prev && prev.id !== me && now - new Date(prev.at).getTime() < RECENT_OPEN_MS
+      ? { name: lesson.openedBy.name || '', at: prev.at }
+      : null;
+
+    // Stamp this open after responding. Skipped when this same person
+    // stamped it a few minutes ago, so reloads cost nothing.
+    if (!(prev && prev.id === me && now - new Date(prev.at).getTime() < STAMP_EVERY_MS)) {
+      after(() =>
+        Lesson.updateOne(
+          { contentId: id },
+          { $set: { openedBy: { id: me, name: user.name || '' }, openedAt: new Date(now) } },
+          { timestamps: false }
+        ).catch((e) => console.warn('[lesson open stamp]', e.message))
+      );
+    }
+
+    const { openedBy, openedAt, ...rest } = lesson;
+    return ok({ ...rest, recentlyOpenedBy });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[GET /api/content/lessons/[id]]', e);
@@ -32,7 +59,7 @@ export async function PUT(request, { params }) {
     const { user } = await requireContentAccess(Lesson, (await params).id);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
-    const { note, versionLabel, ...updates } = body;
+    const { note, versionLabel, baseVersion, ...updates } = body;
 
     // Whitelist updatable fields
     const allowed = ['title', 'estimatedMinutes', 'summary', 'parentLesson', 'variationType',
@@ -49,14 +76,19 @@ export async function PUT(request, { params }) {
       actorId,
       note || '',
       versionLabel || '',
-      user.name || ''
-      
+      user.name || '',
+      false,
+      baseVersion ?? null
     );
     if (!lesson) return err('الدرس غير موجود', 404);
 
     return ok(lesson);
   } catch (e) {
     if (e instanceof Response) return e;
+    if (e instanceof VersionConflict) {
+      const [conflict] = await withEditorNames([e.toJSON()]);
+      return Response.json({ ok: false, conflict }, { status: 409 });
+    }
     console.error('[PUT /api/content/lessons/[id]]', e);
     return err('خطأ في الخادم', 500);
   }

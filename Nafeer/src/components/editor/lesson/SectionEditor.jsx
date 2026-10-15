@@ -25,6 +25,7 @@ import AddBlockMenu   from '@/components/editor/blocks/AddBlockMenu';
 import ConceptLinker  from '@/components/editor/shared/ConceptLinker';
 import DeleteButton   from '@/components/editor/shared/DeleteButton';
 import { Lightbulb } from 'lucide-react';
+import { ConflictCard, UnsavedBar, UnsavedDot, useConflict } from '@/components/editor/lesson/SyncMarks';
 
 // ─── Learning-type colour system ──────────────────────────────────────────────
 const LT_STYLE = {
@@ -59,6 +60,7 @@ function SortableBlockItem({ block, subjectId, lessonId, unitId, sectionId }) {
     transition,
     isDragging,
   } = useSortable({ id: block.id });
+  const conflict = useConflict(lessonId, block.id);
 
   const style = {
     transform:  CSS.Transform.toString(transform),
@@ -70,16 +72,21 @@ function SortableBlockItem({ block, subjectId, lessonId, unitId, sectionId }) {
     zIndex:     isDragging ? 0 : 'auto',
   };
 
+  // data-sync-id lets the header's "go to conflict" scroll here.
   return (
-    <div ref={setNodeRef} style={style}>
-      <BlockEditor
-        block={block}
-        subjectId={subjectId}
-        dragHandleProps={{ ...attributes, ...listeners }}
-        lessonId={lessonId}
-        unitId={unitId}
-        sectionId={sectionId}
-      />
+    <div ref={setNodeRef} style={style} data-sync-id={block.id} className="space-y-2">
+      {conflict && <ConflictCard conflict={conflict} />}
+      <div className={`relative rounded-xl ${conflict ? 'ring-1 ring-amber-700/60' : ''}`}>
+        <UnsavedBar show={!!block._dirty && !conflict} />
+        <BlockEditor
+          block={block}
+          subjectId={subjectId}
+          dragHandleProps={{ ...attributes, ...listeners }}
+          lessonId={lessonId}
+          unitId={unitId}
+          sectionId={sectionId}
+        />
+      </div>
     </div>
   );
 }
@@ -90,6 +97,7 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
     useShallow((s) => ({ blocks: s.blocks, concepts: s.concepts, updateSection: s.updateSection, deleteSection: s.deleteSection, addBlock: s.addBlock, reorderBlocks: s.reorderBlocks })),
   );
   const { deleteSection: atlasDeleteSection } = useAtlasSync();
+  const conflict = useConflict(lessonId, section.id);
 
   const [isEditingTitle,    setIsEditingTitle]    = useState(
     !section.title || /^قسم \d+$/.test(section.title.trim())
@@ -156,7 +164,10 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
     : null;
 
   return (
-    <div className={`bg-ink-900/60 rounded-xl border border-ink-800/80 border-r-4 ${ltStyle.border} overflow-hidden transition-all`}>
+    <div
+      data-sync-id={section.id}
+      className={`bg-ink-900/60 rounded-xl border border-r-4 ${ltStyle.border} overflow-hidden transition-all ${conflict ? 'border-amber-700/60' : 'border-ink-800/80'}`}
+    >
 
       {/* ── Section header ──────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2.5 px-4 py-3 bg-ink-800/20">
@@ -191,6 +202,8 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
             {section.title}
           </button>
         )}
+
+        <UnsavedDot show={!!section._dirty && !conflict} />
 
         {/* Block count */}
         {!collapsed && sectionBlocks.length > 0 && (
@@ -250,6 +263,12 @@ export default function SectionEditor({ section, maxPart = 0, subjectId, lessonI
 
         <DeleteButton onDelete={handleDelete} />
       </div>
+
+      {conflict && (
+        <div className="px-4 pt-3">
+          <ConflictCard conflict={conflict} />
+        </div>
+      )}
 
       {/* ── Section body ─────────────────────────────────────────────────────── */}
       {!collapsed && (
