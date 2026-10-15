@@ -18,7 +18,7 @@ const LOOK = {
   error:  { icon: AlertTriangle, cls: 'bg-danger-surface text-danger' },
 };
 
-export function SaveStatus({ state = 'idle', savedAt, dirtyCount = 0, onRetry, className }) {
+export function SaveStatus({ state = 'idle', savedAt, dirtyCount = 0, onRetry, detail, className }) {
   if (state === 'idle' || !LOOK[state]) return <span role="status" aria-live="polite" className="sr-only" />;
   const { icon: Icon, cls, spin } = LOOK[state];
 
@@ -32,6 +32,7 @@ export function SaveStatus({ state = 'idle', savedAt, dirtyCount = 0, onRetry, c
     <span
       role="status"
       aria-live="polite"
+      title={detail || undefined}
       className={cx('inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full t-caption font-medium whitespace-nowrap', cls, className)}
     >
       <Icon size={12} strokeWidth={2.25} className={cx('shrink-0', spin && 'animate-spin')} aria-hidden="true" />

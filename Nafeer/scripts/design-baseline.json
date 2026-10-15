@@ -23,7 +23,7 @@
     "rawPalette": {
       "ui": 0,
       "landing": 1,
-      "editor": 152,
+      "editor": 140,
       "admin": 220,
       "flow": 5,
       "profile": 0,
@@ -32,7 +32,7 @@
     "rampDirect": {
       "ui": 0,
       "landing": 1,
-      "editor": 691,
+      "editor": 667,
       "admin": 767,
       "flow": 41,
       "profile": 0,
@@ -41,7 +41,7 @@
     "arbitraryText": {
       "ui": 0,
       "landing": 8,
-      "editor": 105,
+      "editor": 104,
       "admin": 0,
       "flow": 2,
       "profile": 0,
@@ -86,7 +86,7 @@
     "arabicMono": {
       "ui": 0,
       "landing": 3,
-      "editor": 8,
+      "editor": 7,
       "admin": 58,
       "flow": 2,
       "profile": 0,

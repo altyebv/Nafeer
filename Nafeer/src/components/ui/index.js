@@ -13,5 +13,6 @@ export { EmptyState } from './EmptyState';
 export { Dialog } from './Dialog';
 export { Drawer } from './Drawer';
 export { ConfirmButton } from './Confirm';
+export { Menu } from './Menu';
 export { Eyebrow, SectionTitle } from './Typography';
 export { cx } from './cx';

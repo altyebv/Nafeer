@@ -1,5 +1,6 @@
 'use client';
 import { useRef } from 'react';
+import { Check } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
 import { cx } from './cx';
 
@@ -32,7 +33,9 @@ function useRoving(items, value, onChange) {
 }
 
 /**
- * items: [{ id, label, count?, disabled? }]
+ * items: [{ id, label, count?, done?, dirty?, disabled? }]
+ *   done   — a check before the label (that part of the work is complete)
+ *   dirty  — a dot after it (unsaved edits live on that tab)
  * idBase ties each tab to its panel: tab `${idBase}-tab-${id}` controls
  * `${idBase}-panel-${id}` — render panels with <TabPanel idBase id active>.
  */
@@ -63,9 +66,15 @@ export function Tabs({ items, value, onChange, idBase, label, className }) {
                 : 'border-transparent text-fg-muted hover:text-fg',
             )}
           >
+            {it.done && (
+              <Check size={14} strokeWidth={2.25} className="text-success shrink-0" aria-label="مكتمل" />
+            )}
             {it.label}
             {it.count != null && (
               <span className="t-num t-caption px-1.5 rounded-full bg-hover text-fg-muted">{formatNumber(it.count)}</span>
+            )}
+            {it.dirty && (
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-hover shrink-0" role="img" aria-label="تغييرات غير محفوظة" />
             )}
           </button>
         );

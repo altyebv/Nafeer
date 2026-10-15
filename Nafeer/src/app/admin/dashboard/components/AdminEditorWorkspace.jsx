@@ -698,8 +698,10 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
       </div>
 
       {/* ══ SYNC BAR ══════════════════════════════════════════════════════════ */}
-      {/* Reads editorStore directly — useAtlasSync above writes the same state. */}
-      <SyncBanner />
+      {/* Reads editorStore directly — useAtlasSync above writes the same state.
+          Hidden while the lesson editor is open: its header carries its own
+          SaveStatus, as on the contributor route (EditorChrome). */}
+      {currentPage !== 'editor' && <SyncBanner />}
       <WorkspaceRefreshBanner
         refreshing={refreshing}
         error={refreshError}

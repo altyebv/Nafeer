@@ -7,7 +7,7 @@ import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import SectionEditor        from '@/components/editor/lesson/SectionEditor';
 import LessonQuestionsPanel from '@/components/editor/lesson/LessonQuestionsPanel';
 import LessonFeedPanel      from '@/components/editor/lesson/LessonFeedPanel';
-import StatusBadge          from '@/components/editor/shared/StatusBadge';
+import LessonHeader         from '@/components/editor/lesson/LessonHeader';
 import LessonPreviewModal   from '@/components/editor/lesson/LessonPreviewModal';
 import { MathNotationContext } from '@/components/editor/shared/MathNotationContext';
 import { getMathNotation }  from '@/shared/curriculum';
@@ -20,11 +20,9 @@ import {
   Circle,
   CircleDot,
   Clock3,
-  Eye,
   FileText,
   Link2,
   NotebookPen,
-  Send,
   Smartphone,
   Sparkles,
   Target,
@@ -38,11 +36,11 @@ import { useEditorStore } from '@/store/editorStore';
 import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import LessonConflicts from '@/components/editor/lesson/LessonConflicts';
-import { UnsavedDot, changesLabel, minutesAgo } from '@/components/editor/lesson/SyncMarks';
+import { minutesAgo } from '@/components/editor/lesson/SyncMarks';
 import { useAutosave } from '@/hooks/useAutosave';
 import EditorPage from '@/components/editor/layout/EditorPage';
-import { SyncDot } from '@/components/editor/layout/SyncBanner';
 import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
+import { Button, EmptyState, IconButton, TabPanel } from '@/components/ui';
 import { formatNumber } from '@/lib/format';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
@@ -53,11 +51,15 @@ const FIELD =
   'font-arabic placeholder-ink-600 text-sm leading-relaxed transition-colors ' +
   'hover:border-ink-700';
 
+// The variations step had a component but no tab — nothing could open it. It
+// is the fifth tab now, named as its own heading names it: an alternative is
+// only one of four variation types (بديل، متطلب، توسع، مبسطة).
 const TABS = [
-  { id: 'meta',      ar: '1', label: 'البيانات' },
-  { id: 'body',      ar: '2', label: 'المحتوى'  },
-  { id: 'questions', ar: '3', label: 'الأسئلة'  },
-  { id: 'feed',      ar: '4', label: 'التغذية'  },
+  { id: 'meta',       label: 'البيانات'  },
+  { id: 'body',       label: 'المحتوى'   },
+  { id: 'questions',  label: 'الأسئلة'   },
+  { id: 'feed',       label: 'التغذية'   },
+  { id: 'variations', label: 'التنويعات' },
 ];
 
 const PART_NAMES_AR = ['الأوَّل', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
@@ -87,10 +89,9 @@ export default function LessonEditorPage({
   const { syncAll, submitForReview, approveAndSync } = useAtlasSync();
   const isSyncing  = useEditorStore((s) => s.isSyncing);
   const syncError  = useEditorStore((s) => s.syncError);
+  const lastSynced = useEditorStore((s) => s.lastSynced);
 
-  const [activeTab,     setActiveTab]     = useState(0);
-  // What the last manual save did, shown beside the button for a moment.
-  const [saveMsg,       setSaveMsg]       = useState(null);
+  const [activeTab,     setActiveTab]     = useState('meta');
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [approveSuccess, setApproveSuccess] = useState(false);
   const [showPreview,   setShowPreview]   = useState(false);
@@ -171,30 +172,44 @@ export default function LessonEditorPage({
   ] : [];
   const completedChecks = checklist.filter((c) => c.done).length;
 
-  const tabDone = (tab) => {
-    if (tab.id === 'meta')      return checklist.slice(0,2).every(c => c.done);
-    if (tab.id === 'body')      return checklist.slice(2,4).every(c => c.done);
-    if (tab.id === 'questions') return checklist[4]?.done;
-    if (tab.id === 'feed')      return checklist[5]?.done;
+  const tabDone = (id) => {
+    if (id === 'meta')      return checklist.slice(0,2).every(c => c.done);
+    if (id === 'body')      return checklist.slice(2,4).every(c => c.done);
+    if (id === 'questions') return !!checklist[4]?.done;
+    if (id === 'feed')      return !!checklist[5]?.done;
     return false;
   };
 
-  const flash = (msg) => {
-    setSaveMsg(msg);
-    setTimeout(() => setSaveMsg((m) => (m === msg ? null : m)), 3000);
+  const tabCount = {
+    body:       lessonSections.length,
+    questions:  lessonQuestions.length,
+    feed:       lessonFeedItems.length,
+    variations: variations.length,
   };
+  const tabItems = TABS.map((t) => ({
+    ...t,
+    count: tabCount[t.id] || undefined,   // no "0" badge on every empty tab
+    done:  tabDone(t.id) && t.id !== activeTab,
+    dirty: (t.id === 'meta' && !!lesson?._dirty) || (t.id === 'body' && contentUnsaved > 0),
+  }));
 
+  // One save state for the header pill, from what editorStore already tracks.
+  const saveState =
+    syncError        ? 'error'  :
+    isSyncing        ? 'saving' :
+    unsavedCount > 0 ? 'dirty'  :
+    lastSynced       ? 'saved'  : 'idle';
+
+  // Manual save. The SaveStatus pill reports the outcome; errors and
+  // conflicts surface there and in LessonConflicts.
   const handleSave = async () => {
     if (!subjectId) return;
-    try {
-      const { saved } = await syncAll(lessonId, subjectId);
-      flash(saved > 0 ? `حُفظ ${changesLabel(saved)}` : 'لا تغييرات للحفظ');
-    } catch { /* SyncBar and LessonConflicts handle it */ }
+    try { await syncAll(lessonId, subjectId); } catch { /* shown by SaveStatus */ }
   };
 
   // Header "go to conflict": conflicts live on the content tab.
   const revealConflict = (contentId) => {
-    setActiveTab(TABS.findIndex((t) => t.id === 'body'));
+    setActiveTab('body');
     setTimeout(() => {
       const block = blocks.find((b) => b.id === contentId);
       const el = document.querySelector(`[data-sync-id="${CSS.escape(contentId)}"]`)
@@ -276,285 +291,111 @@ export default function LessonEditorPage({
   };
 
   if (!lesson) return (
-    <div className="text-center py-32">
-      <NotebookPen size={42} strokeWidth={1.5} className="mx-auto mb-4 text-ink-600" />
-      <h2 className="text-lg font-medium text-ink-400 mb-4 font-arabic">الدرس غير موجود</h2>
-      <button onClick={goBack} className="px-6 py-2 bg-sand-700 text-ink-950 rounded-lg font-arabic">العودة</button>
-    </div>
+    <EmptyState
+      icon={NotebookPen}
+      title="الدرس غير موجود"
+      description="ربما حُذف أو نُقل إلى وحدة أخرى."
+      action={<Button variant="primary" onClick={goBack}>العودة إلى الدروس</Button>}
+      className="m-6"
+    />
   );
-
-  // The third hand-rolled sync indicator is gone — SyncDot reads editorStore.
-  const circumference = 2 * Math.PI * 9;
 
   return (
     // Every formula on this page — editors, previews, inline — follows the subject.
     <MathNotationContext.Provider value={getMathNotation(subjectId)}>
     <EditorPage width="full" bleed className="flex min-h-[100dvh] flex-col">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-ink-950/98 backdrop-blur-md border-b border-ink-800/70">
+      <LessonHeader
+        lesson={lesson} unit={unit} lessonIndex={lessonIndex} unitLessonCount={unitLessons.length}
+        isAdmin={currentUser?.role === 'admin'}
+        saveState={saveState} savedAt={lastSynced} unsavedCount={unsavedCount}
+        syncError={syncError} isSyncing={isSyncing}
+        reviewSuccess={reviewSuccess} approveSuccess={approveSuccess} notesCount={notesCount}
+        tabs={tabItems} activeTab={activeTab} onTabChange={setActiveTab}
+        onBack={goBack} onSave={handleSave}
+        onPreview={() => setShowPreview(true)}
+        onHistory={() => setShowHistory(true)}
+        onNotes={() => setShowNotes(true)}
+        onSubmitForReview={handleSubmitForReview} onApprove={handleApprove}
+      />
 
-        {/* Two groups — identity and actions — that wrap as units rather than
-            eleven loose flex children. Below xl the actions drop to their own
-            line (and scroll horizontally if they still don't fit); at xl the
-            two groups share one row, as before. Previously everything sat in
-            one row and the title was the item that collapsed. */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 sm:px-5 py-2 xl:py-0 xl:h-12">
+      {/* Items another contributor changed first — see LessonConflicts */}
+      <LessonConflicts lessonId={lessonId} onReveal={revealConflict} />
 
-          {/* ── Identity ──
-              w-full below xl: with `flex-1` alone the group's flex-basis is 0,
-              so it never triggers a wrap — it just collapsed to nothing while
-              the action group kept its width. */}
-          <div className="flex w-full min-w-0 items-center gap-2 xl:w-auto xl:flex-1">
-            <button
-              onClick={goBack}
-              aria-label={`العودة إلى ${unit?.title ?? 'الدروس'}`}
-              className="touch-target flex items-center gap-1.5 text-sm text-ink-400 hover:text-sand-400 transition-colors font-arabic shrink-0 group"
-            >
-              <span className="group-hover:translate-x-0.5 transition-transform inline-block">→</span>
-              <span className="hidden sm:inline">{unit?.title ?? 'الدروس'}</span>
-            </button>
-
-            <span className="text-ink-400 text-xs shrink-0">›</span>
-
-            <h1 className="min-w-0 flex-1 text-sm font-semibold text-sand-200 font-arabic truncate">
-              {lesson.title}
-            </h1>
-
-            <SyncDot size={6} />
-            {lesson.atlasStatus && <StatusBadge status={lesson.atlasStatus} />}
-
-          {/* Progress ring */}
-          <div className="relative w-6 h-6 shrink-0">
-            <svg className="w-6 h-6 -rotate-90" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-400" />
-              <circle
-                cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5"
-                className="text-emerald-600 transition-all duration-500"
-                strokeDasharray={`${(completedChecks / 6) * circumference} ${circumference}`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[8px] font-mono text-ink-500">
-              {completedChecks}
+      {/* Notices sit in the content column, above the step — not in the sticky
+          header, which used to grow a row for each of them. */}
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 pt-5 flex flex-col gap-3 empty:hidden">
+        {/* Someone else opened this lesson recently — they may be editing it.
+            Read from the lesson GET; costs nothing extra. */}
+        {openedBy && (
+          <div role="status" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-info-surface border border-info-border text-info t-label font-normal">
+            <Clock3 size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="flex-1 leading-relaxed">
+              آخر من فتح هذا الدرس: {openedBy.name || 'زميل'}، {minutesAgo(openedBy.at)}. قد يكون العمل عليه جارياً الآن — تُحفظ تعديلاتك تلقائياً، وستُنبَّه إن تعارضت مع تعديلات أخرى.
             </span>
+            <IconButton icon={X} label="إخفاء التنبيه" size="sm" onClick={() => setOpenedBy(null)} className="-my-1.5" />
           </div>
+        )}
+
+        {/* Approved warning — only shown to contributors, not admins */}
+        {lesson.atlasStatus === 'approved' && currentUser?.role !== 'admin' && (
+          <div role="note" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-warn-surface border border-warn-border text-warn t-label font-normal">
+            <TriangleAlert size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <p className="leading-relaxed">هذا الدرس <strong>معتمد</strong>. أي تعديل سيُعيده إلى حالة المسودة.</p>
           </div>
+        )}
 
-          {/* ── Actions — scroll horizontally rather than clip if they
-              still overflow on a very narrow phone. ── */}
-          <div className="flex w-full shrink-0 items-center gap-2 overflow-x-auto scrollbar-none -mx-1 px-1 xl:w-auto">
-
-          {(!lesson.atlasStatus || lesson.atlasStatus === 'draft') && (
-            currentUser?.role === 'admin' ? (
-              <button
-                onClick={handleApprove}
-                disabled={isSyncing}
-                className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-8 sm:h-7 text-green-400 text-xs font-semibold rounded-lg border border-green-800/50 bg-green-900/20 hover:bg-green-800/30 disabled:opacity-40 font-arabic transition-colors"
-              >
-                {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الاعتماد</> : <><Check size={13} strokeWidth={2} /> اعتماد مباشر</>}
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmitForReview}
-                disabled={isSyncing}
-                className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-8 sm:h-7 text-amber-400 text-xs font-semibold rounded-lg border border-amber-800/50 bg-amber-900/20 hover:bg-amber-800/30 disabled:opacity-40 font-arabic transition-colors"
-              >
-                {reviewSuccess ? <><Check size={13} strokeWidth={2} /> أُرسل</> : <><Send size={13} strokeWidth={1.9} /> مراجعة</>}
-              </button>
-            )
-          )}
-
-          {lesson.atlasStatus === 'approved' && currentUser?.role === 'admin' && (
-            <button
-              onClick={handleApprove}
-              disabled={isSyncing}
-              className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-8 sm:h-7 text-sand-400 text-xs font-semibold rounded-lg border border-sand-800/50 bg-sand-900/20 hover:bg-sand-800/30 disabled:opacity-40 font-arabic transition-colors"
-            >
-              {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الحفظ</> : <><Upload size={13} strokeWidth={1.9} /> حفظ + اعتماد</>}
-            </button>
-          )}
-
-          <button
-            onClick={() => setShowHistory(true)}
-            className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
-            title="سجل الإصدارات"
-          >
-            <Clock3 size={13} strokeWidth={1.9} />
-            <span className="hidden sm:inline">السجل</span>
-          </button>
-
-          <button
-            onClick={() => setShowNotes(true)}
-            className="touch-target shrink-0 relative flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
-          >
-            <NotebookPen size={13} strokeWidth={1.9} />
-            <span className="hidden sm:inline">ملاحظات</span>
-            {notesCount > 0 && (
-              <span className="absolute -top-1.5 -left-1 w-4 h-4 bg-sand-700 text-ink-950 text-xs font-bold rounded-full flex items-center justify-center font-mono leading-none">
-                {notesCount > 9 ? '9+' : notesCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setShowPreview(true)}
-            className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
-          >
-            <Eye size={13} strokeWidth={1.9} />
-            <span className="hidden sm:inline">معاينة</span>
-          </button>
-
-          {saveMsg && (
-            <span role="status" className="shrink-0 text-xs text-emerald-500 font-arabic whitespace-nowrap">{saveMsg}</span>
-          )}
-
-          {/* Counts unsaved changes; with none it reads "محفوظ". Autosave
-              (useAutosave) also saves after a pause and on leaving. */}
-          <button
-            onClick={handleSave}
-            disabled={isSyncing}
-            title={unsavedCount > 0 ? `${changesLabel(unsavedCount)} لم تُحفظ بعد — تُحفظ تلقائياً بعد توقفك عن الكتابة` : 'كل التغييرات محفوظة'}
-            className={`touch-target shrink-0 flex items-center gap-1.5 px-4 h-7 disabled:opacity-40 text-xs font-bold rounded-lg transition-colors font-arabic ${
-              unsavedCount > 0
-                ? 'bg-sand-700 hover:bg-sand-600 text-ink-950'
-                : 'border border-ink-700 bg-ink-800/60 text-ink-400 hover:text-sand-300'
-            }`}
-          >
-            {isSyncing
-              ? <><span className="w-3 h-3 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" />حفظ…</>
-              : unsavedCount > 0
-                ? <><Upload size={13} strokeWidth={1.9} /> حفظ <span className="rounded-full bg-ink-950/25 px-1.5 font-mono leading-4">{formatNumber(unsavedCount)}</span></>
-                : <><Check size={13} strokeWidth={2} /> محفوظ</>}
-          </button>
-          </div>
-        </div>
-
-        {/* Attribution bar — hidden on phones. It is supplementary metadata
-            (author, version) and cost 35px of a sticky header that was already
-            taking a quarter of the screen; the same information is in the
-            version history drawer. */}
+        {/* Author and version — moves into the readiness panel in step 2. */}
         {(attribution || lesson.version > 1) && (
           <div className="hidden sm:block">
             <AttributionBar lesson={lesson} attribution={attribution} />
           </div>
         )}
-
-        {/* Sync error */}
-        {syncError && (
-          <div className="flex items-center gap-2 px-5 py-1.5 bg-red-950/50 border-t border-red-900/30 text-red-400 text-sm font-arabic">
-            <TriangleAlert size={14} strokeWidth={1.9} />
-            <span className="flex-1 truncate">فشل الحفظ — {typeof syncError === 'string' ? syncError : 'تحقق من الاتصال'}</span>
-          </div>
-        )}
-
-        {/* Items another contributor changed first — see LessonConflicts */}
-        <LessonConflicts lessonId={lessonId} onReveal={revealConflict} />
-
-        {/* Row 2: tabs */}
-        {/* overflow-x-auto: at 375px this strip measures 417px, so the last
-            tab and the lesson counter were clipped with no way to reach them. */}
-        <div className="flex items-end gap-0 px-5 border-t border-ink-800/50 overflow-x-auto scrollbar-none">
-          {TABS.map((tab, i) => {
-            const isActive = i === activeTab;
-            const isDone   = tabDone(tab);
-            const unsaved  = (tab.id === 'meta' && lesson._dirty) || (tab.id === 'body' && contentUnsaved > 0);
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(i)}
-                className={`relative flex items-center gap-2 px-4 py-2.5 text-sm transition-all font-arabic whitespace-nowrap
-                  ${isActive ? 'text-sand-300' : isDone ? 'text-emerald-600 hover:text-emerald-500' : 'text-ink-400 hover:text-ink-400'}`}
-              >
-                {isActive && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-sand-500 rounded-t" />}
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs border transition-colors
-                  ${isActive ? 'border-sand-700 bg-sand-900/60 text-sand-400'
-                    : isDone  ? 'border-emerald-700 bg-emerald-900/20 text-emerald-500'
-                    :           'border-ink-700 text-ink-400'}`}
-                >
-                  {isDone && !isActive ? <Check size={11} strokeWidth={2.1} /> : tab.ar}
-                </span>
-                <span>{tab.label}</span>
-                <UnsavedDot show={unsaved} />
-              </button>
-            );
-          })}
-          <div className="flex-1" />
-          <span className="text-xs text-ink-500 font-mono pb-2.5 pr-1">
-            {lessonIndex + 1}/{unitLessons.length}
-          </span>
-        </div>
-      </header>
-
-      {/* Someone else opened this lesson recently — they may be editing it.
-          Read from the lesson GET; costs nothing extra. */}
-      {openedBy && (
-        <div className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-sky-950/30 border-b border-sky-900/40 text-sky-300 text-xs font-arabic">
-          <Clock3 size={13} strokeWidth={1.9} className="shrink-0" />
-          <span className="flex-1">
-            آخر من فتح هذا الدرس: {openedBy.name || 'زميل'}، {minutesAgo(openedBy.at)}. قد يكون العمل عليه جارياً الآن — تُحفظ تعديلاتك تلقائياً، وستُنبَّه إن تعارضت مع تعديلات أخرى.
-          </span>
-          <button onClick={() => setOpenedBy(null)} aria-label="إخفاء" className="touch-target shrink-0 text-sky-400 hover:text-sky-200">
-            <X size={13} strokeWidth={2} />
-          </button>
-        </div>
-      )}
-
-      {/* Approved warning — only shown to contributors, not admins */}
-      {lesson.atlasStatus === 'approved' && currentUser?.role !== 'admin' && (
-        <div className="max-w-4xl mx-auto w-full px-5 pt-4">
-          <div className="px-4 py-3 bg-amber-900/10 border border-amber-800/30 rounded-xl flex items-start gap-3">
-            <TriangleAlert size={15} strokeWidth={1.9} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-sm text-amber-400/90 font-arabic leading-relaxed">
-              هذا الدرس <strong>معتمد</strong>. أي تعديل سيُعيده إلى حالة المسودة.
-            </p>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* ── Step canvas ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-5 py-8">
-        {activeTab === 0 && (
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
+        <TabPanel idBase="lesson" id="meta" active={activeTab === 'meta'}>
           <StepMeta
             lesson={lesson} unit={unit} unitLessons={unitLessons} lessonIndex={lessonIndex}
             checklist={checklist} completedChecks={completedChecks} statusCfg={statusCfg}
             lessonSections={lessonSections} lessonBlocks={lessonBlocks}
             updateLesson={updateLesson} patchMeta={patchMeta}
             versionLabel={versionLabel} onVersionLabelChange={setVersionLabel}
-            onNext={() => setActiveTab(1)}
+            onNext={() => setActiveTab('body')}
           />
-        )}
-        {activeTab === 1 && (
+        </TabPanel>
+        <TabPanel idBase="lesson" id="body" active={activeTab === 'body'}>
           <StepBody
             lesson={lesson} lessonSections={lessonSections} lessonBlocks={lessonBlocks}
             subjectId={subjectId} lessonId={lessonId} unitId={unitId} onAddSection={handleAddSection} onAddNewPart={handleAddNewPart}
-            onPrev={() => setActiveTab(0)} onNext={() => setActiveTab(2)}
+            onPrev={() => setActiveTab('meta')} onNext={() => setActiveTab('questions')}
           />
-        )}
-        {activeTab === 2 && (
+        </TabPanel>
+        <TabPanel idBase="lesson" id="questions" active={activeTab === 'questions'}>
           <StepQuestions
             lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonSections={lessonSections}
             lessonQuestions={lessonQuestions} onOpenGlobal={openGlobal}
-            onPrev={() => setActiveTab(1)} onNext={() => setActiveTab(3)}
+            onPrev={() => setActiveTab('body')} onNext={() => setActiveTab('feed')}
           />
-        )}
-        {activeTab === 3 && (
+        </TabPanel>
+        <TabPanel idBase="lesson" id="feed" active={activeTab === 'feed'}>
           <StepFeed
             lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonConceptIds={lessonConceptIds}
             lessonFeedItems={lessonFeedItems} prevLesson={prevLesson} nextLesson={nextLesson}
-            units={units} onOpenGlobal={openGlobal} onPrev={() => setActiveTab(2)}
+            units={units} onOpenGlobal={openGlobal} onPrev={() => setActiveTab('questions')}
             onNavigateLesson={goToLesson} onBack={goBack}
           />
-        )}
-        {activeTab === 4 && (
+        </TabPanel>
+        <TabPanel idBase="lesson" id="variations" active={activeTab === 'variations'}>
           <StepVariations
             lesson={lesson}
             variations={variations}
             onOpenLinkModal={() => setShowLinkVariation(true)}
             onUnlink={handleUnlinkVariation}
-            onPrev={() => setActiveTab(3)}
+            onPrev={() => setActiveTab('feed')}
           />
-        )}
+        </TabPanel>
       </div>
 
       {showPreview && (
