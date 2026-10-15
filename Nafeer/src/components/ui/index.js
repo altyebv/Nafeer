@@ -14,5 +14,6 @@ export { Dialog } from './Dialog';
 export { Drawer } from './Drawer';
 export { ConfirmButton } from './Confirm';
 export { Menu } from './Menu';
+export { ActivityGraph } from './ActivityGraph';
 export { Eyebrow, SectionTitle } from './Typography';
 export { cx } from './cx';

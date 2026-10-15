@@ -76,6 +76,9 @@ module.exports = {
         hover:    'var(--surface-hover)',
         selected: 'var(--surface-selected)',
         scrim:    'var(--scrim)',
+        heat: {
+          0: 'var(--heat-0)', 1: 'var(--heat-1)', 2: 'var(--heat-2)', 3: 'var(--heat-3)', 4: 'var(--heat-4)',
+        },
         fg: {
           strong:      'var(--fg-strong)',
           DEFAULT:     'var(--fg)',

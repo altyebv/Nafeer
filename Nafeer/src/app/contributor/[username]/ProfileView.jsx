@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { SUBJECTS_CATALOG }              from '@/shared/curriculum';
 import { getEarnedBadges, TIERS }        from '@/lib/contributorBadges';
-import { formatDate, formatNumber } from '@/lib/format';
+import { formatNumber } from '@/lib/format';
+import { ActivityGraph } from '@/components/ui';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
@@ -39,7 +40,6 @@ const IMPACT_STATS = [
   { key: 'reviewsSubmitted', labelAr: 'مراجعة',   labelEn: 'Reviews',    icon: ShieldCheck },
 ];
 
-const DAYS_AR = ['أحد', 'اثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'];
 
 // ── Time formatting ───────────────────────────────────────────────────────────
 function hoursValue(ms) {
@@ -238,70 +238,6 @@ function BadgeCard({ badge, delay }) {
         </span>
       </div>
     </Reveal>
-  );
-}
-
-// ── Activity heatmap (public, read-only) ──────────────────────────────────────
-function ActivityHeatmap({ heatmap }) {
-  const weeks = 20;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const totalDays = weeks * 7;
-  const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - (totalDays - 1));
-
-  const cells = [];
-  for (let i = 0; i < totalDays; i++) {
-    const d = new Date(startDate);
-    d.setDate(startDate.getDate() + i);
-    const key = d.toISOString().slice(0, 10);
-    cells.push({ date: d, key, count: heatmap[key] || 0 });
-  }
-  const maxCount = Math.max(1, ...cells.map((c) => c.count));
-
-  function cellColor(count) {
-    if (!count) return 'rgba(255,255,255,0.04)';
-    const t = Math.sqrt(count / maxCount);
-    if (t < 0.25) return 'rgba(212,137,30,0.22)';
-    if (t < 0.5)  return 'rgba(212,137,30,0.42)';
-    if (t < 0.75) return 'rgba(212,137,30,0.68)';
-    return '#d4891e';
-  }
-
-  const cols = [];
-  for (let w = 0; w < weeks; w++) cols.push(cells.slice(w * 7, w * 7 + 7));
-
-  return (
-    <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
-      <div style={{ display: 'flex', gap: 4, width: 'max-content' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0, paddingTop: 16 }}>
-          {DAYS_AR.map((d) => (
-            <div key={d} style={{ height: 9, fontSize: 7, color: 'rgba(255,255,255,0.25)', lineHeight: '9px', fontFamily: 'var(--font-arabic, serif)' }}>
-              {d}
-            </div>
-          ))}
-        </div>
-        {cols.map((week, wi) => {
-          const firstDay = week[0]?.date;
-          const showMonth = firstDay && (firstDay.getDate() <= 7 || wi === 0);
-          return (
-            <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
-              <div style={{ height: 12, fontSize: 7, color: 'rgba(255,255,255,0.25)', whiteSpace: 'nowrap', fontFamily: 'var(--font-arabic, serif)' }}>
-                {showMonth ? formatDate(firstDay, 'monthShort') : ''}
-              </div>
-              {week.map((cell) => (
-                <div
-                  key={cell.key}
-                  title={`${cell.key} · ${cell.count} نشاط`}
-                  style={{ width: 9, height: 9, borderRadius: 2, background: cellColor(cell.count) }}
-                />
-              ))}
-            </div>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 
@@ -598,12 +534,15 @@ export default function ProfileView({ profile }) {
                 </div>
               </div>
 
-              {/* ── Activity heatmap ── */}
-              {activity?.heatmap && Object.keys(activity.heatmap).length > 0 && (
+              {/* ── Activity ──
+                  The shared graph, in a dark-token island: this page is still
+                  drawn dark-only (until DS3), so the graph must stay dark even
+                  when the site theme is light. */}
+              {activity?.summary?.activeDays > 0 && (
                 <div style={{ marginBottom: 40 }}>
                   <SectionLabel>النشاط · Activity</SectionLabel>
-                  <div style={{ padding: '18px 16px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <ActivityHeatmap heatmap={activity.heatmap} />
+                  <div data-theme="dark" className="p-4 sm:p-5 rounded-card border border-line bg-raised text-fg font-ui">
+                    <ActivityGraph days={activity.days} summary={activity.summary} weeks={20} showSummary={false} />
                   </div>
                 </div>
               )}

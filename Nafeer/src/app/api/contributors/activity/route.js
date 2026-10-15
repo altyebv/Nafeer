@@ -5,47 +5,37 @@ import { Contributor } from '@/lib/models/Contributor';
 import { ContributorActivity } from '@/lib/models/ContributorActivity';
 import { PUBLIC_FILTER } from '@/lib/api/contributors';
 import { computeContributorScore } from '@/lib/contributorScore';
+import { bucketActivity, summarizeActivity, dayKey, shiftKey } from '@/lib/activity';
 
 const DAY_MS = 86_400_000;
 
-// Builds { 'YYYY-MM-DD': count } from raw activity docs, oldest key first.
-function heatmapFromDocs(docs) {
-  const map = {};
-  for (const doc of docs) {
-    const key = doc.createdAt.toISOString().slice(0, 10);
-    map[key] = (map[key] || 0) + 1;
-  }
-  return map;
-}
-
-// Consecutive-day streak ending today (or yesterday, if nothing logged yet today).
-function computeStreak(dayMap) {
-  const cursor = new Date();
-  cursor.setUTCHours(0, 0, 0, 0);
-
-  const todayKey = cursor.toISOString().slice(0, 10);
-  if (!dayMap[todayKey]) cursor.setUTCDate(cursor.getUTCDate() - 1);
-
-  let streak = 0;
-  while (dayMap[cursor.toISOString().slice(0, 10)]) {
-    streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
-  }
-  return streak;
+// Keep only the last `windowDays` of a day map — no need to ship a year of
+// near-empty days to draw a few months.
+function trimDays(days, todayKey, windowDays) {
+  const from = shiftKey(todayKey, -(windowDays - 1));
+  return Object.fromEntries(Object.entries(days).filter(([key]) => key >= from));
 }
 
 // ─── GET /api/contributors/activity ────────────────────────────────────────────
+// Days are calendar dates in Sudan time (src/lib/activity.js), each with its
+// total and a per-type breakdown: { 'YYYY-MM-DD': { n, by: { type: count } } }.
+// The type was always stored on every event; it used to be thrown away here.
+//
 // Two modes, mirroring /api/contributors/public:
 //
-// - No `username` (session-authenticated): private heatmap for the editor
-//   dashboard. Returns { ok, data: { 'YYYY-MM-DD': count } } for the last 16 weeks.
+// - No `username` (session-authenticated): the editor dashboard's graph for
+//   the last 16 weeks, its summary, and the contributor's current stats. The
+//   stats ride along so the dashboard stops reading the stale copy in the
+//   session — that copy is why it showed 0 blocks while the public profile,
+//   which reads the database, showed 7. Same request; one extra findById.
 //
-// - `?username=xxx` (public): richer activity summary for the public profile —
-//   stats, rank among contributors, tenure, streak, and a heatmap of its own.
+// - `?username=xxx` (public): richer summary for the public profile — stats,
+//   rank, tenure, streak, and 20 weeks of days.
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const username = searchParams.get('username');
+    const todayKey = dayKey(new Date());
 
     await connectDB();
 
@@ -59,21 +49,16 @@ export async function GET(request) {
         return NextResponse.json({ ok: false, activity: null }, { status: 404 });
       }
 
+      // 400 days so a long streak is counted in full; only 20 weeks are sent.
       const since = new Date(Date.now() - 400 * DAY_MS);
       const docs = await ContributorActivity
-        .find({ contributorId: contributor._id, createdAt: { $gte: since } }, 'createdAt')
+        .find({ contributorId: contributor._id, createdAt: { $gte: since } }, 'createdAt type')
         .lean();
 
-      const fullMap    = heatmapFromDocs(docs);
-      const streakDays = computeStreak(fullMap);
+      const allDays    = bucketActivity(docs);
+      const summary    = summarizeActivity(allDays, todayKey, 140);
+      const longStreak = summarizeActivity(allDays, todayKey, 400).streak;
       const tenureDays = Math.floor((Date.now() - new Date(contributor.createdAt).getTime()) / DAY_MS);
-
-      // Trim the heatmap sent to the client down to the last 20 weeks — plenty
-      // to render, no need to ship a year of near-empty days.
-      const heatmapSince = Date.now() - 140 * DAY_MS;
-      const heatmap = Object.fromEntries(
-        Object.entries(fullMap).filter(([key]) => new Date(key).getTime() >= heatmapSince)
-      );
 
       const [joinRank, allStats] = await Promise.all([
         Contributor.countDocuments({ ...PUBLIC_FILTER, createdAt: { $lt: contributor.createdAt } }),
@@ -88,13 +73,14 @@ export async function GET(request) {
       return NextResponse.json({
         ok: true,
         activity: {
-          stats:            contributor.stats || {},
-          streakDays,
+          stats:             contributor.stats || {},
+          streakDays:        longStreak,
           tenureDays,
-          joinRank:         joinRank + 1,
-          rank:             rank || null,
+          joinRank:          joinRank + 1,
+          rank:              rank || null,
           totalContributors: scored.length,
-          heatmap,
+          days:              trimDays(allDays, todayKey, 140),
+          summary:           { ...summary, streak: longStreak },
         },
       });
     }
@@ -106,15 +92,25 @@ export async function GET(request) {
     // check is needed: any user resolved below has real stats to show.
     const user = await getCurrentUser();
     if (!user?.id) {
-      return NextResponse.json({ ok: true, data: {} });
+      return NextResponse.json({ ok: true, data: { days: {}, summary: null, stats: null } });
     }
 
-    const since = new Date(Date.now() - 112 * DAY_MS); // 16 weeks
-    const docs = await ContributorActivity
-      .find({ contributorId: user.id, createdAt: { $gte: since } }, 'createdAt')
-      .lean();
+    const WINDOW = 112; // 16 weeks
+    const since = new Date(Date.now() - (WINDOW + 1) * DAY_MS);
+    const [docs, contributor] = await Promise.all([
+      ContributorActivity.find({ contributorId: user.id, createdAt: { $gte: since } }, 'createdAt type').lean(),
+      Contributor.findById(user.id, 'stats').lean(),
+    ]);
 
-    return NextResponse.json({ ok: true, data: heatmapFromDocs(docs) });
+    const days = trimDays(bucketActivity(docs), todayKey, WINDOW);
+    return NextResponse.json({
+      ok: true,
+      data: {
+        days,
+        summary: summarizeActivity(days, todayKey, WINDOW),
+        stats:   contributor?.stats || null,
+      },
+    });
   } catch (err) {
     console.error('[GET /api/contributors/activity]', err);
     return NextResponse.json({ ok: false, error: 'حدث خطأ في الخادم' }, { status: 500 });

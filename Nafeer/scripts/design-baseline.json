@@ -5,19 +5,19 @@
     "hex": {
       "ui": 0,
       "landing": 27,
-      "editor": 102,
+      "editor": 101,
       "admin": 77,
       "flow": 14,
-      "profile": 17,
+      "profile": 16,
       "other": 8
     },
     "rgba": {
       "ui": 0,
       "landing": 84,
-      "editor": 87,
+      "editor": 82,
       "admin": 294,
       "flow": 46,
-      "profile": 58,
+      "profile": 51,
       "other": 4
     },
     "rawPalette": {
@@ -50,10 +50,10 @@
     "inlineStyle": {
       "ui": 0,
       "landing": 288,
-      "editor": 339,
+      "editor": 331,
       "admin": 493,
       "flow": 149,
-      "profile": 76,
+      "profile": 68,
       "other": 7
     },
     "toLocale": {

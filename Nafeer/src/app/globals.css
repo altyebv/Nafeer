@@ -20,7 +20,14 @@
     color: #fdf8f0;
   }
 
-  :root {
+  /* `[data-theme="dark"]` lets any element host the dark token set — an
+     island on a page that is still drawn dark-only (the public profile, until
+     DS3), so a role-token component there stays dark when the site is light.
+     The whole block is redeclared, roles included: a role like
+     --surface-page resolves where it is declared, so redeclaring only the
+     ramps would leave the light values inherited. */
+  :root,
+  [data-theme="dark"] {
     /* ── Typography tokens ───────────────────────────────────────────────────
        Referenced in ~110 places as var(--font-arabic, serif) but never
        defined, so every one of those silently fell back to the browser's
@@ -143,6 +150,14 @@
     --surface-hover:    rgb(var(--ink-800) / 0.5);
     --surface-selected: rgb(var(--sand-500) / 0.10);
     --scrim:            rgb(var(--ink-950) / 0.75);   /* backdrop behind dialogs and drawers */
+
+    /* Activity graph intensity — fixed steps (lib/activity.js heatLevel):
+       none · 1 · 2–4 · 5–9 · 10+. */
+    --heat-0: rgb(var(--ink-800) / 0.55);
+    --heat-1: rgb(var(--sand-500) / 0.28);
+    --heat-2: rgb(var(--sand-500) / 0.50);
+    --heat-3: rgb(var(--sand-500) / 0.75);
+    --heat-4: rgb(var(--sand-400));
 
     --fg-strong:    rgb(var(--ink-100));
     --fg:           rgb(var(--ink-200));
@@ -289,6 +304,12 @@
     /* Light sand-500 and -600 are 0.011 apart, so hovering the primary button
        changed nothing visible. On cream, hover goes darker instead. */
     --accent-fill-hover: rgb(var(--sand-300));
+
+    --heat-0: rgb(var(--ink-700) / 0.35);
+    --heat-1: rgb(var(--sand-600) / 0.25);
+    --heat-2: rgb(var(--sand-600) / 0.45);
+    --heat-3: rgb(var(--sand-600) / 0.70);
+    --heat-4: rgb(var(--sand-300));
     --shadow-overlay:   0 16px 48px rgb(82 45 8 / 0.18), 0 0 0 1px var(--line);
     --shadow-lift:      0 20px 60px rgb(82 45 8 / 0.16);
 

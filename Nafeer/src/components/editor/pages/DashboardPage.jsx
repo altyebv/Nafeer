@@ -5,6 +5,7 @@ import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { useAnnouncementStore } from '@/store/announcementStore';
 import { formatDate, formatNumber } from '@/lib/format';
+import { ActivityGraph, Card } from '@/components/ui';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
@@ -107,129 +108,6 @@ function StatCard({ icon, value, label, delay = 0 }) {
       >
         {label}
       </span>
-    </div>
-  );
-}
-
-// ─── Contribution heatmap ─────────────────────────────────────────────────────
-// Renders 16 weeks × 7 days. Accepts activityMap: { 'YYYY-MM-DD': count }.
-// Zero-filled when data is loading or not yet available.
-
-const DAYS_AR = ['أح', 'إث', 'ثل', 'أر', 'خم', 'جم', 'سب'];
-
-function ContributionHeatmap({ activityMap = {} }) {
-  const weeks = 16;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Build grid: newest day is bottom-right
-  const cells = [];
-  // Start from (weeks * 7) days ago, aligned to Sunday
-  const totalDays = weeks * 7;
-  const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - (totalDays - 1));
-
-  for (let i = 0; i < totalDays; i++) {
-    const d = new Date(startDate);
-    d.setDate(startDate.getDate() + i);
-    const key   = d.toISOString().slice(0, 10);
-    const count = activityMap[key] || 0;
-    cells.push({ date: d, key, count, dayOfWeek: d.getDay() });
-  }
-
-  const maxCount = Math.max(1, ...cells.map((c) => c.count));
-
-  function cellColor(count) {
-    // A role, not white-at-4%: that wash vanished on the light theme's cream.
-    if (!count) return 'var(--surface-hover)';
-    const t = Math.sqrt(count / maxCount); // sqrt for visual balance
-    if (t < 0.25) return 'rgba(212,137,30,0.2)';
-    if (t < 0.5)  return 'rgba(212,137,30,0.4)';
-    if (t < 0.75) return 'rgba(212,137,30,0.65)';
-    return '#d4891e';
-  }
-
-  // Group into columns (weeks)
-  const cols = [];
-  for (let w = 0; w < weeks; w++) {
-    cols.push(cells.slice(w * 7, w * 7 + 7));
-  }
-
-  return (
-    <div>
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
-        {/* Day labels column */}
-        <div className="flex flex-col gap-1 shrink-0 pt-5">
-          {DAYS_AR.map((d) => (
-            <div
-              key={d}
-              style={{ height: 10, fontSize: 8, color: 'var(--text-muted)', opacity: 0.5, lineHeight: '10px', fontFamily: 'var(--font-arabic, serif)' }}
-            >
-              {d}
-            </div>
-          ))}
-        </div>
-
-        {/* Week columns */}
-        {cols.map((week, wi) => {
-          // Month label on first week of month
-          const firstDay    = week[0]?.date;
-          const showMonth   = firstDay && (firstDay.getDate() <= 7 || wi === 0);
-          const monthLabel  = (firstDay ? formatDate(firstDay, 'monthShort') : undefined);
-
-          return (
-            <div key={wi} className="flex flex-col gap-1 shrink-0">
-              {/* Month label */}
-              <div
-                style={{
-                  height: 14, fontSize: 8,
-                  color: showMonth ? 'var(--text-muted)' : 'transparent',
-                  opacity: 0.5,
-                  fontFamily: 'var(--font-arabic, serif)',
-                  whiteSpace: 'nowrap',
-                  lineHeight: '14px',
-                }}
-              >
-                {showMonth ? monthLabel : ''}
-              </div>
-
-              {week.map((cell) => (
-                <div
-                  key={cell.key}
-                  title={`${cell.key}: ${cell.count} إجراء`}
-                  style={{
-                    width:         10,
-                    height:        10,
-                    borderRadius:  2,
-                    background:    cellColor(cell.count),
-                    transition:    'transform 0.15s, background 0.2s',
-                    cursor:        cell.count ? 'pointer' : 'default',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                />
-              ))}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-1.5 mt-3">
-        <span style={{ fontSize: 9, color: 'var(--text-muted)', opacity: 0.5, fontFamily: 'var(--font-arabic, serif)' }}>أقل</span>
-        {[0, 0.2, 0.45, 0.7, 1].map((t) => (
-          <div
-            key={t}
-            style={{
-              width: 10, height: 10, borderRadius: 2,
-              background: t === 0
-                ? 'rgba(255,255,255,0.04)'
-                : `rgba(212,137,30,${t})`,
-            }}
-          />
-        ))}
-        <span style={{ fontSize: 9, color: 'var(--text-muted)', opacity: 0.5, fontFamily: 'var(--font-arabic, serif)' }}>أكثر</span>
-      </div>
     </div>
   );
 }
@@ -529,7 +407,8 @@ export default function DashboardPage({ contributor }) {
   const announcements      = useAnnouncementStore((s) => s.announcements);
   const annoLoading        = useAnnouncementStore((s) => !s.loaded);
   const fetchAnnouncements = useAnnouncementStore((s) => s.fetchAnnouncements);
-  const [activityMap,    setActivityMap]    = useState({});
+  // { days, summary, stats } from /api/contributors/activity — null until loaded.
+  const [activity,       setActivity]       = useState(null);
   // "first visit" flag — shown once per session via sessionStorage
   const [isFirstVisit,   setIsFirstVisit]   = useState(false);
 
@@ -544,16 +423,18 @@ export default function DashboardPage({ contributor }) {
   // No-op when the sidebar already fetched this session.
   useEffect(() => { fetchAnnouncements(); }, [fetchAnnouncements]);
 
-  // Fetch activity heatmap data
-  // Wire up: GET /api/contributors/activity returns { ok, data: { 'YYYY-MM-DD': count } }
+  // One request: the graph's days and summary, plus fresh stats.
   useEffect(() => {
     fetch('/api/contributors/activity')
       .then((r) => r.json())
-      .then((d) => { if (d.ok) setActivityMap(d.data); })
-      .catch(() => {}); // fails silently — heatmap shows empty grid until endpoint exists
+      .then((d) => { if (d.ok) setActivity(d.data); })
+      .catch(() => {}); // non-blocking — the graph stays empty
   }, []);
 
-  const stats = contributor?.stats || {};
+  // Prefer the stats read from the database with the graph. The session copy
+  // is a snapshot from sign-in — it is why this page showed 0 blocks while the
+  // public profile showed 7. It only fills in until the request returns.
+  const stats = activity?.stats || contributor?.stats || {};
 
   return (
     <EditorPage width="content" className="text-[color:var(--text-primary)]">
@@ -576,22 +457,18 @@ export default function DashboardPage({ contributor }) {
         </div>
       </div>
 
-      {/* ── Heatmap ── */}
-      <div
-        className="p-5 sm:p-6 rounded-2xl mb-8"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
+      {/* ── Activity ── */}
+      <Card
+        padding="lg"
+        className="mb-8"
+        title="نشاطك"
+        actions={<span className="t-caption text-fg-subtle">آخر 16 أسبوعاً · بتوقيت السودان</span>}
       >
-        <SectionLabel>نشاطك — 16 أسبوع الأخيرة</SectionLabel>
-        <ContributionHeatmap activityMap={activityMap} />
+        <ActivityGraph days={activity?.days} summary={activity?.summary} loading={!activity} weeks={16} />
         {stats.lastActiveAt && (
-          <p
-            className="text-xs font-arabic mt-3"
-            style={{ color: 'var(--text-muted)', opacity: 0.55 }}
-          >
-            آخر نشاط: {relativeTime(stats.lastActiveAt)}
-          </p>
+          <p className="t-caption text-fg-subtle mt-4">آخر نشاط: {relativeTime(stats.lastActiveAt)}</p>
         )}
-      </div>
+      </Card>
 
       {/* ── Announcements ── */}
       <div>
