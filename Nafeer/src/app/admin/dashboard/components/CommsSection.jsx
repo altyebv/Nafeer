@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CreateAnnouncementModal } from './modals/CreateAnnouncementModal';
 import { CreateSurveyModal } from './modals/CreateSurveyModal';
 import { SectionHeader } from './ui/SectionHeader';
+import { formatDate } from '@/lib/format';
 
 /* ── Tab config ─────────────────────────────────────────────────────────────── */
 const TABS = [
@@ -691,14 +692,4 @@ const TYPE_SHORT = {
   MULTIPLE_CHOICE: 'MC',
 };
 
-function formatDate(iso) {
-  if (!iso) return '';
-  try {
-    return new Date(iso).toLocaleDateString('ar-SA', {
-      day: 'numeric', month: 'short', year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-}
 export { CommsSection };

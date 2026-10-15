@@ -4,6 +4,7 @@ import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import { BLOCK_TYPE_CONFIG } from '@/shared/constants';
 import { wordDiff } from '@/lib/wordDiff';
+import { formatDate, formatNumber } from '@/lib/format';
 
 // ─── Sync marks ───────────────────────────────────────────────────────────────
 // Small pieces of the save/conflict UI, shared by the lesson header, sections
@@ -11,7 +12,7 @@ import { wordDiff } from '@/lib/wordDiff';
 
 // ── Arabic counting ───────────────────────────────────────────────────────────
 // 1 and 2 have their own forms; 3–10 take the plural; 11+ the singular.
-const num = (n) => n.toLocaleString('ar-EG');
+const num = formatNumber;
 export const arCount = (n, { one, two, few, many }) =>
   n === 1 ? one : n === 2 ? two : n <= 10 ? `${num(n)} ${few}` : `${num(n)} ${many}`;
 
@@ -26,7 +27,7 @@ export function minutesAgo(date) {
 const when = (date) => {
   if (!date) return '';
   try {
-    return new Date(date).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    return formatDate(date, 'shortDateTime');
   } catch {
     return '';
   }

@@ -548,7 +548,7 @@ export default function ConceptsPage({ subjectId }) {
                 type="text"
                 value={form.formula}
                 onChange={(e) => setForm({ ...form, formula: e.target.value })}
-                style={{ ...FIELD, fontFamily: 'monospace' }}
+                style={{ ...FIELD, fontFamily: 'var(--font-mono)' }}
                 placeholder="F = ma"
                 dir="ltr"
                 onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}

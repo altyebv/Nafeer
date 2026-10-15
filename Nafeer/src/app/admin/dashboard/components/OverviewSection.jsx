@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Eye, HandHeart, UserCheck, Hourglass, BookOpen, FileQuestion, Rss, ArrowUpLeft, Check } from 'lucide-react';
+import { formatDate, formatNumber } from '@/lib/format';
 
 // ── Metric card ────────────────────────────────────────────────────────────────
 function MetricCard({ icon: Icon, value, label, sub, accent = false }) {
@@ -224,7 +225,7 @@ export function OverviewSection({ allContributors }) {
   const reviewTotal = reviewData?.total || 0;
 
   const now     = new Date();
-  const dateStr = now.toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const dateStr = formatDate(now, 'long');
 
   if (loading) {
     return (
@@ -250,8 +251,8 @@ export function OverviewSection({ allContributors }) {
       <div>
         <Label>إحصائيات الموقع</Label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <MetricCard icon={Eye}       value={visits.toLocaleString('en-US')}  label="زيارة إجمالية" accent />
-          <MetricCard icon={HandHeart} value={support.toLocaleString('en-US')} label="طالب داعم" />
+          <MetricCard icon={Eye}       value={formatNumber(visits)}  label="زيارة إجمالية" accent />
+          <MetricCard icon={HandHeart} value={formatNumber(support)} label="طالب داعم" />
           <MetricCard icon={UserCheck} value={approved.length}                 label="مساهم نشط" />
           <MetricCard icon={Hourglass} value={pending.length}                  label="طلب معلّق" />
         </div>

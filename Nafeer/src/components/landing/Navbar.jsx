@@ -37,10 +37,10 @@ function CloseIcon() {
 }
 
 const navLinks = [
-  { href: '#problem',  label: 'المشكلة', step: '٠١' },
-  { href: '#features', label: 'التطبيق', step: '٠٢' },
-  { href: '#progress', label: 'المواد',  step: '٠٣' },
-  { href: '#nafeer',   label: 'ساهم',    step: '٠٤' },
+  { href: '#problem',  label: 'المشكلة', step: '01' },
+  { href: '#features', label: 'التطبيق', step: '02' },
+  { href: '#progress', label: 'المواد',  step: '03' },
+  { href: '#nafeer',   label: 'ساهم',    step: '04' },
 ];
 
 export default function Navbar() {

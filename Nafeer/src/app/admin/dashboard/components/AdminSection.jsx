@@ -4,6 +4,7 @@ import { Modal }         from './ui/modal';
 import { Btn }           from './ui/Btn';
 import { EmptyState }    from './ui/EmptyState';
 import { SectionHeader } from './ui/SectionHeader';
+import { formatDate } from '@/lib/format';
 
 // ─── Create / Edit modal ──────────────────────────────────────────────────────
 
@@ -153,7 +154,7 @@ function AdminCard({ admin, onEdit, onResetPw, onToggle, onDelete, acting }) {
         <p className="text-xs font-mono text-ink-700" dir="ltr">{admin.email}</p>
         {admin.lastSignedInAt && (
           <p className="text-2xs font-mono text-ink-800 mt-0.5">
-            آخر دخول: {new Date(admin.lastSignedInAt).toLocaleDateString('en-GB')}
+            آخر دخول: {formatDate(admin.lastSignedInAt)}
           </p>
         )}
       </div>

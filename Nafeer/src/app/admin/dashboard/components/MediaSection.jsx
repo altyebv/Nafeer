@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { SUBJECTS_CATALOG_REF } from '../constants';
 import { SectionHeader, EmptyState, Spinner, StatChips } from './ui/shared';
 import { Btn } from './ui/Btn';
+import { formatDate } from '@/lib/format';
 
 const ACCEPT    = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml';
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -55,7 +56,7 @@ function MediaLightbox({ item, onClose, onDelete, onCopy, copiedId }) {
           <div className="flex items-center gap-3 flex-wrap text-xs font-mono text-ink-500">
             <span className="font-arabic">{subjectLabel(item.subjectId)}</span>
             <span>·</span><span>{fmtBytes(item.size)}</span>
-            <span>·</span><span dir="ltr">{new Date(item.createdAt).toLocaleDateString('en-GB')}</span>
+            <span>·</span><span dir="ltr">{formatDate(item.createdAt)}</span>
             {item.alt && <><span>·</span><span className="text-ink-600 font-arabic">{item.alt}</span></>}
           </div>
 

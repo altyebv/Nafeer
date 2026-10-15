@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { REVIEW_TYPE, SUBJECT_MAP, SUBJECTS_CATALOG_REF, TRACK_CONFIG } from '../constants';
 import { SectionHeader, StatusChip, EmptyState, Spinner } from './ui/shared';
 import { Btn } from './ui/Btn';
+import { formatDate } from '@/lib/format';
 
 export function ReviewQueueSection({ onTotalChange, onUnauthorized }) {
   const [subjectId, setSubjectId]    = useState('');
@@ -133,7 +134,7 @@ export function ReviewQueueSection({ onTotalChange, onUnauthorized }) {
                               </div>
                               <p className="text-sm text-sand-300 font-arabic leading-relaxed">{item.label}</p>
                               <p className="text-2xs font-mono text-ink-700 mt-1.5">
-                                {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                {formatDate(item.createdAt)}
                               </p>
                             </div>
                             <div className="shrink-0 flex flex-col gap-1.5 min-w-[100px]">

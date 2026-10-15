@@ -112,8 +112,11 @@ export default function RootLayout({ children }) {
             emitted every <link rel="icon"> twice. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Naskh for reading and headings, IBM Plex Sans Arabic for interface
+            text, JetBrains Mono for Latin code and IDs. Playfair Display used
+            to ride along here — two weights no component used. */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=JetBrains+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
         {/* Runs before first paint — avoids theme flash. Normalises anything

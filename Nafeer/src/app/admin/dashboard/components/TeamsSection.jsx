@@ -64,7 +64,7 @@ function RoleBadge({ role }) {
     <span style={{
       fontSize: 11, padding: '2px 7px', borderRadius: 20,
       background: T.amberBg, border: `1px solid ${T.amberBorder}`,
-      color: T.amber, fontFamily: 'monospace', letterSpacing: '0.03em',
+      color: T.amber, fontFamily: 'var(--font-arabic)',
     }}>
       ⭑ قائد
     </span>
@@ -73,7 +73,7 @@ function RoleBadge({ role }) {
     <span style={{
       fontSize: 11, padding: '2px 7px', borderRadius: 20,
       background: T.surface, border: `1px solid ${T.border}`,
-      color: T.textMuted, fontFamily: 'monospace',
+      color: T.textMuted, fontFamily: 'var(--font-mono)',
     }}>
       عضو
     </span>

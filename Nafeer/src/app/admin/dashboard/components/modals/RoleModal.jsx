@@ -364,7 +364,7 @@ export function RoleModal({ role = null, onClose, onSaved }) {
               <div>
                 <Label>تعليمات المهمة</Label>
                 <textarea rows={5} value={microTask} onChange={(e) => setMicroTask(e.target.value)}
-                  placeholder="مثلاً: اكتب مقدمة درس قصيرة لمادة الكيمياء تشرح مفهوم التكافؤ لطالب ثانوي. لديك ١٠ دقائق."
+                  placeholder="مثلاً: اكتب مقدمة درس قصيرة لمادة الكيمياء تشرح مفهوم التكافؤ لطالب ثانوي. لديك 10 دقائق."
                   className={inp('resize-none leading-relaxed')} />
               </div>
               <div className="flex items-center gap-3">
@@ -374,7 +374,7 @@ export function RoleModal({ role = null, onClose, onSaved }) {
                     onChange={(e) => setMicroMinChars(Number(e.target.value))} className={inp()} />
                 </div>
                 <p className="flex-1 text-xs font-arabic text-ink-700 leading-relaxed pt-5">
-                  ١٢٠–٣٠٠ حرف للمهام القصيرة، أكثر للكتابة التفصيلية.
+                  120–300 حرف للمهام القصيرة، أكثر للكتابة التفصيلية.
                 </p>
               </div>
               {!microTask.trim() && (

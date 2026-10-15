@@ -8,7 +8,7 @@ export default function ContributorNotFound() {
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', gap: 16,
       background: '#080704', color: 'rgba(255,255,255,0.3)',
-      fontFamily: 'monospace',
+      fontFamily: 'var(--font-mono)',
     }}>
       <span style={{ fontSize: 40, opacity: 0.2 }}>◈</span>
       <p style={{ fontSize: 14 }}>ما لقينا المٌساهِم ده</p>

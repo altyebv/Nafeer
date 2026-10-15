@@ -284,9 +284,9 @@ export default function Hero() {
         {/* Stats row */}
         <div className="flex flex-wrap gap-7 sm:gap-12 pt-6 sm:pt-8" style={{ borderTop: '1px solid var(--border-subtle)' }}>
           {[
-            { value: '١٣',   label: 'مادة في متناولك' },
-            { value: '٠',    label: 'اتصال مطلوب'     },
-            { value: '١٠٠٪', label: 'مجاني — للأبد'   },
+            { value: '13',   label: 'مادة في متناولك' },
+            { value: '0',    label: 'اتصال مطلوب'     },
+            { value: '100%', label: 'مجاني — للأبد'   },
           ].map((s, i) => (
             <div key={i} className="gsap-hero-stat" style={{ opacity: 0, transform: 'translateY(12px)' }}>
               <div className="text-xl sm:text-2xl font-bold font-mono stat-number" style={{ color: 'var(--accent)' }}>{s.value}</div>

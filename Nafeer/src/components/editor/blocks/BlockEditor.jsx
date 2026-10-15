@@ -488,7 +488,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return (
         <div className="space-y-2">
           <div className="flex gap-1">
-            {[['BULLET', 'نقطي'], ['NUMBERED', '١ مرقّم']].map(([key, lbl]) => (
+            {[['BULLET', 'نقطي'], ['NUMBERED', '1 مرقّم']].map(([key, lbl]) => (
               <button key={key} onClick={() => patchMeta({ style: key })}
                 className={`px-3 py-1 text-xs rounded-md border font-arabic transition-all ${style === key ? 'bg-sand-900/50 text-sand-400 border-sand-800/60' : 'bg-ink-800 text-ink-600 border-ink-700 hover:text-ink-400'}`}>
                 {lbl}

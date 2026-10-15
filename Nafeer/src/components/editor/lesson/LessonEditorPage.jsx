@@ -43,6 +43,7 @@ import { useAutosave } from '@/hooks/useAutosave';
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { SyncDot } from '@/components/editor/layout/SyncBanner';
 import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
+import { formatNumber } from '@/lib/format';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 
@@ -53,14 +54,14 @@ const FIELD =
   'hover:border-ink-700';
 
 const TABS = [
-  { id: 'meta',      ar: '١', label: 'البيانات' },
-  { id: 'body',      ar: '٢', label: 'المحتوى'  },
-  { id: 'questions', ar: '٣', label: 'الأسئلة'  },
-  { id: 'feed',      ar: '٤', label: 'التغذية'  },
+  { id: 'meta',      ar: '1', label: 'البيانات' },
+  { id: 'body',      ar: '2', label: 'المحتوى'  },
+  { id: 'questions', ar: '3', label: 'الأسئلة'  },
+  { id: 'feed',      ar: '4', label: 'التغذية'  },
 ];
 
 const PART_NAMES_AR = ['الأوَّل', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
-const PART_NUMS_AR  = ['١', '٢', '٣', '٤', '٥', '٦'];
+const PART_NUMS_AR  = ['1', '2', '3', '4', '5', '6'];
 
 // Navigation props are gone: the lesson has its own route, so "back" and
 // "next lesson" are real URL moves and unitId is derived from the lesson
@@ -423,7 +424,7 @@ export default function LessonEditorPage({
             {isSyncing
               ? <><span className="w-3 h-3 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" />حفظ…</>
               : unsavedCount > 0
-                ? <><Upload size={13} strokeWidth={1.9} /> حفظ <span className="rounded-full bg-ink-950/25 px-1.5 font-mono leading-4">{unsavedCount.toLocaleString('ar-EG')}</span></>
+                ? <><Upload size={13} strokeWidth={1.9} /> حفظ <span className="rounded-full bg-ink-950/25 px-1.5 font-mono leading-4">{formatNumber(unsavedCount)}</span></>
                 : <><Check size={13} strokeWidth={2} /> محفوظ</>}
           </button>
           </div>
@@ -828,7 +829,7 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, u
               </div>
               <div className="flex items-end justify-between">
                 <div className="flex items-baseline gap-3">
-                  <span className="text-sm font-mono text-ink-500 tracking-[0.2em] uppercase">part</span>
+                  <span className="text-sm font-mono text-ink-500 uppercase">part</span>
                   <span className="text-sm font-semibold text-sand-600 font-arabic">
                     الجزء {PART_NAMES_AR[pi] || (pi + 1)}
                   </span>

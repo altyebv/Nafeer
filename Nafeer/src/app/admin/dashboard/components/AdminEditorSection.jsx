@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { SectionHeader } from './ui/shared';
 import { AdminEditorWorkspace } from './AdminEditorWorkspace';
 import { CreateTestSubjectModal } from './modals/CreateTestSubjectModal';
+import { formatDate } from '@/lib/format';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -575,7 +576,7 @@ function ContentPanel({ subject: s, onPublish, onMajorPublish, onFullPublish, on
             {s.isPublished && s.publishedAt && (
               <p className="text-2xs font-mono text-ink-600">
                 آخر نشر: {relativeTime(s.publishedAt)} ·{' '}
-                <span dir="ltr" className="text-ink-700">{new Date(s.publishedAt).toLocaleDateString('ar-SA')}</span>
+                <span dir="ltr" className="text-ink-700">{formatDate(s.publishedAt)}</span>
               </p>
             )}
 

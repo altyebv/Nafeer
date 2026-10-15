@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Send, RefreshCw, CircleCheck, CircleAlert, Trash2 } from 'lucide-react';
 import { SectionHeader, EmptyState, Spinner } from './ui/shared';
 import { emailStatus } from './ui/emailStatus';
+import { formatDate } from '@/lib/format';
 
 // ─── Template metadata ────────────────────────────────────────────────────────
 // Defines what fields each template needs and how to label them in Arabic.
@@ -84,8 +85,7 @@ function isProblem(log) {
 }
 
 function fmtTime(ts) {
-  if (!ts) return '—';
-  return new Date(ts).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' });
+  return formatDate(ts, 'dateTime');
 }
 
 // ─── Form primitives ──────────────────────────────────────────────────────────
@@ -377,9 +377,7 @@ const CLEANUP_OPTIONS = [
 ];
 
 function fmtMonth(month) {
-  return new Date(`${month}-01T00:00:00Z`).toLocaleDateString('ar-EG-u-nu-latn', {
-    month: 'long', year: 'numeric', timeZone: 'UTC',
-  });
+  return formatDate(`${month}-01T00:00:00Z`, 'month', { timeZone: 'UTC' });
 }
 
 function LogRow({ log, onDelete }) {

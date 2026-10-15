@@ -6,6 +6,7 @@ import {
 } from '../constants';
 import { Btn } from './ui/Btn';
 import { emailStatus } from './ui/emailStatus';
+import { formatDate } from '@/lib/format';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -52,8 +53,8 @@ const TRACK_LABELS = { COMMON: 'مشترك', SCIENCE: 'علمي', LITERARY: 'أ�
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 const COMMITMENT_LABELS = {
   occasional: 'بشكل متقطع',
-  '2-3h':     '٢–٣ ساعات / أسبوع',
-  '5h+':      '٥ ساعات أو أكثر',
+  '2-3h':     '2–3 ساعات / أسبوع',
+  '5h+':      '5 ساعات أو أكثر',
 };
 const AI_TOOL_LABELS = {
   chatgpt: 'ChatGPT', gemini: 'Gemini', notebooklm: 'NotebookLM',
@@ -74,8 +75,7 @@ function relativeTime(d) {
   return `منذ ${Math.floor(days / 30)} شهر`;
 }
 function shortDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(d);
 }
 
 function Initials({ name, size = 38, colorClass = 'from-sand-700 to-sand-900' }) {

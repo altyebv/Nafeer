@@ -4,6 +4,7 @@ import { Blocks, BookOpen, Circle, CircleHelp, ExternalLink, Globe2, Search, Spa
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { useAnnouncementStore } from '@/store/announcementStore';
+import { formatDate, formatNumber } from '@/lib/format';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
@@ -27,14 +28,12 @@ function relativeTime(dateStr) {
   if (mins  < 60) return `منذ ${mins} دقيقة`;
   if (hours < 24) return `منذ ${hours} ساعة`;
   if (days  < 30) return `منذ ${days} يوم`;
-  return new Date(dateStr).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+  return formatDate(dateStr, 'month');
 }
 
 function joinedLabel(dateStr) {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('ar-EG', {
-    year: 'numeric', month: 'long', day: 'numeric',
-  });
+  return formatDate(dateStr, 'full');
 }
 
 // ─── Animated counter ─────────────────────────────────────────────────────────
@@ -100,7 +99,7 @@ function StatCard({ icon, value, label, delay = 0 }) {
         className="text-3xl font-bold font-mono tabular-nums leading-none"
         style={{ color: 'var(--accent)' }}
       >
-        {animated.toLocaleString('en-US')}
+        {formatNumber(animated)}
       </span>
       <span
         className="text-xs font-arabic leading-snug"
@@ -141,7 +140,8 @@ function ContributionHeatmap({ activityMap = {} }) {
   const maxCount = Math.max(1, ...cells.map((c) => c.count));
 
   function cellColor(count) {
-    if (!count) return 'rgba(255,255,255,0.04)';
+    // A role, not white-at-4%: that wash vanished on the light theme's cream.
+    if (!count) return 'var(--surface-hover)';
     const t = Math.sqrt(count / maxCount); // sqrt for visual balance
     if (t < 0.25) return 'rgba(212,137,30,0.2)';
     if (t < 0.5)  return 'rgba(212,137,30,0.4)';
@@ -175,7 +175,7 @@ function ContributionHeatmap({ activityMap = {} }) {
           // Month label on first week of month
           const firstDay    = week[0]?.date;
           const showMonth   = firstDay && (firstDay.getDate() <= 7 || wi === 0);
-          const monthLabel  = firstDay?.toLocaleDateString('ar-EG', { month: 'short' });
+          const monthLabel  = (firstDay ? formatDate(firstDay, 'monthShort') : undefined);
 
           return (
             <div key={wi} className="flex flex-col gap-1 shrink-0">
@@ -502,7 +502,7 @@ function ImpactBar({ stats }) {
           className="text-3xl font-bold font-mono tabular-nums"
           style={{ color: 'var(--accent)' }}
         >
-          {totalCount.toLocaleString('ar-EG')}
+          {formatNumber(totalCount)}
         </p>
       </div>
       {published > 0 && (
@@ -514,7 +514,7 @@ function ImpactBar({ stats }) {
             className="text-3xl font-bold font-mono tabular-nums"
             style={{ color: '#7db87d' }}
           >
-            {pubCount.toLocaleString('ar-EG')}
+            {formatNumber(pubCount)}
           </p>
         </div>
       )}

@@ -1,0 +1,86 @@
+{
+  "note": "Violation counts per area. lint:design fails if any count rises. Lower with --update after a migration.",
+  "updated": "2026-10-15",
+  "counts": {
+    "hex": {
+      "landing": 27,
+      "editor": 102,
+      "admin": 77,
+      "flow": 14,
+      "profile": 17,
+      "other": 8
+    },
+    "rgba": {
+      "landing": 84,
+      "editor": 87,
+      "admin": 294,
+      "flow": 46,
+      "profile": 58,
+      "other": 4
+    },
+    "rawPalette": {
+      "landing": 1,
+      "editor": 152,
+      "admin": 220,
+      "flow": 5,
+      "profile": 0,
+      "other": 15
+    },
+    "rampDirect": {
+      "landing": 1,
+      "editor": 695,
+      "admin": 767,
+      "flow": 41,
+      "profile": 0,
+      "other": 4
+    },
+    "arbitraryText": {
+      "landing": 8,
+      "editor": 105,
+      "admin": 0,
+      "flow": 2,
+      "profile": 0,
+      "other": 0
+    },
+    "inlineStyle": {
+      "landing": 288,
+      "editor": 340,
+      "admin": 493,
+      "flow": 149,
+      "profile": 76,
+      "other": 7
+    },
+    "toLocale": {
+      "landing": 0,
+      "editor": 0,
+      "admin": 0,
+      "flow": 0,
+      "profile": 0,
+      "other": 0
+    },
+    "arabicIndic": {
+      "landing": 0,
+      "editor": 1,
+      "admin": 0,
+      "flow": 0,
+      "profile": 0,
+      "other": 0
+    },
+    "arabicTracking": {
+      "landing": 3,
+      "editor": 1,
+      "admin": 16,
+      "flow": 0,
+      "profile": 0,
+      "other": 0
+    },
+    "arabicMono": {
+      "landing": 3,
+      "editor": 8,
+      "admin": 58,
+      "flow": 2,
+      "profile": 0,
+      "other": 0
+    }
+  }
+}

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { SUBJECTS_CATALOG }              from '@/shared/curriculum';
 import { getEarnedBadges, TIERS }        from '@/lib/contributorBadges';
+import { formatDate, formatNumber } from '@/lib/format';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
@@ -133,7 +134,6 @@ function Chip({ children, tone = 'neutral', mono = false }) {
       fontSize: 11, fontFamily: mono ? 'monospace' : 'var(--font-arabic, serif)',
       padding: '4px 10px', borderRadius: 6,
       background: t.bg, border: `1px solid ${t.border}`, color: t.color,
-      letterSpacing: mono ? '0.04em' : 0,
     }}>
       {children}
     </span>
@@ -154,15 +154,15 @@ function StatCard({ icon: Icon, value, labelAr, labelEn, delay }) {
       }}>
         <Icon size={15} strokeWidth={1.8} color="rgba(212,137,30,0.75)" />
         <span style={{
-          fontSize: 30, fontWeight: 800, fontFamily: 'monospace',
+          fontSize: 30, fontWeight: 800, fontFamily: 'var(--font-mono)',
           color: '#e8d5a8', lineHeight: 1,
           letterSpacing: '-0.03em',
         }}>
-          {(value || 0).toLocaleString('en-US')}
+          {formatNumber(value || 0)}
         </span>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: 12, fontFamily: 'var(--font-arabic, serif)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3 }}>{labelAr}</p>
-          <p style={{ fontSize: 9, fontFamily: 'monospace', color: 'rgba(255,255,255,0.18)', marginTop: 2, letterSpacing: '0.06em' }}>{labelEn}</p>
+          <p style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.18)', marginTop: 2, letterSpacing: '0.06em' }}>{labelEn}</p>
         </div>
       </div>
     </Reveal>
@@ -173,9 +173,9 @@ function StatCard({ icon: Icon, value, labelAr, labelEn, delay }) {
 function SectionLabel({ children, count }) {
   return (
     <p style={{
-      fontSize: 10, fontFamily: 'monospace',
+      fontSize: 10, fontFamily: 'var(--font-mono)',
       color: 'rgba(255,255,255,0.2)',
-      letterSpacing: '0.14em', textTransform: 'uppercase',
+      textTransform: 'uppercase',
       marginBottom: 14,
       display: 'flex', alignItems: 'center', gap: 10,
     }}>
@@ -231,7 +231,7 @@ function BadgeCard({ badge, delay }) {
           {badge.nameAr}
         </p>
         <span style={{
-          fontSize: 8, fontFamily: 'monospace', letterSpacing: '0.06em',
+          fontSize: 8, fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
           color: tier.color, textTransform: 'uppercase', opacity: 0.85,
         }}>
           {tier.labelAr}
@@ -288,7 +288,7 @@ function ActivityHeatmap({ heatmap }) {
           return (
             <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
               <div style={{ height: 12, fontSize: 7, color: 'rgba(255,255,255,0.25)', whiteSpace: 'nowrap', fontFamily: 'var(--font-arabic, serif)' }}>
-                {showMonth ? firstDay.toLocaleDateString('ar-EG', { month: 'short' }) : ''}
+                {showMonth ? formatDate(firstDay, 'monthShort') : ''}
               </div>
               {week.map((cell) => (
                 <div
@@ -369,7 +369,7 @@ function ShareBtn() {
         background: copied ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.04)',
         border: `1px solid ${copied ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.1)'}`,
         color: copied ? '#34d399' : 'rgba(255,255,255,0.45)',
-        fontSize: 12, fontFamily: 'monospace',
+        fontSize: 12, fontFamily: 'var(--font-mono)',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
       }}
@@ -494,7 +494,7 @@ export default function ProfileView({ profile }) {
               </div>
 
               {profile.username && (
-                <p style={{ fontSize: 13, fontFamily: 'monospace', color: 'rgba(212,137,30,0.6)', margin: '0 0 12px', letterSpacing: '0.04em' }}>
+                <p style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'rgba(212,137,30,0.6)', margin: '0 0 12px', letterSpacing: '0.04em' }}>
                   @{profile.username}
                 </p>
               )}
@@ -505,7 +505,7 @@ export default function ProfileView({ profile }) {
                 {subject && (
                   <Chip tone="subtle">
                     {subject.nameAr}
-                    {subject.nameEn && <span style={{ fontFamily: 'monospace', fontSize: 9, marginRight: 5, opacity: 0.6 }}>{subject.nameEn}</span>}
+                    {subject.nameEn && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, marginRight: 5, opacity: 0.6 }}>{subject.nameEn}</span>}
                   </Chip>
                 )}
 
@@ -526,7 +526,7 @@ export default function ProfileView({ profile }) {
 
                 {teams.length > 0 && (
                   <Chip tone="violet">
-                    <span style={{ fontFamily: 'monospace', fontSize: 9 }}>⬡</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9 }}>⬡</span>
                     {teams.length === 1 ? teams[0].team.name : `${teams.length} فرق`}
                   </Chip>
                 )}
@@ -586,12 +586,12 @@ export default function ProfileView({ profile }) {
                       height: '100%',
                     }}>
                       <Clock size={15} strokeWidth={1.8} color="rgba(212,137,30,0.75)" />
-                      <span style={{ fontSize: 30, fontWeight: 800, fontFamily: 'monospace', color: '#e8d5a8', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                      <span style={{ fontSize: 30, fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#e8d5a8', lineHeight: 1, letterSpacing: '-0.03em' }}>
                         {timeVal.value}<span style={{ fontSize: 14 }}>{timeVal.suffix}</span>
                       </span>
                       <div style={{ textAlign: 'center' }}>
                         <p style={{ fontSize: 12, fontFamily: 'var(--font-arabic, serif)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3 }}>وقت مستثمر</p>
-                        <p style={{ fontSize: 9, fontFamily: 'monospace', color: 'rgba(255,255,255,0.18)', marginTop: 2, letterSpacing: '0.06em' }}>Time invested</p>
+                        <p style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.18)', marginTop: 2, letterSpacing: '0.06em' }}>Time invested</p>
                       </div>
                     </div>
                   </Reveal>
@@ -636,7 +636,7 @@ export default function ProfileView({ profile }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-arabic, serif)', color: 'rgba(212,137,30,0.5)' }}>نفير</span>
-              <span style={{ fontSize: 9, fontFamily: 'monospace', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.14em' }}>CONTRIBUTOR</span>
+              <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.14em' }}>CONTRIBUTOR</span>
             </div>
             <ShareBtn />
           </div>

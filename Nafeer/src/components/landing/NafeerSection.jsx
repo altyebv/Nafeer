@@ -4,10 +4,10 @@ import { ArrowLeft, Globe2, GraduationCap, Infinity, LaptopMinimal, Medal, Wrenc
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 
 const steps = [
-  { num: '١', title: 'تقدم بطلبك', desc: 'أخبرنا من أنت وأي مادة تريد بناءها. نقرأ كل طلب شخصياً ونرد خلال ٤٨ ساعة.' },
-  { num: '٢', title: 'احصل على صلاحياتك', desc: 'بعد الموافقة، حساب كامل في منصة نفير — والمادة التي اخترتها محجوزة لك.' },
-  { num: '٣', title: 'ابدأ البناء', desc: 'أداة تحرير مبنية لهذا الغرض تحديداً — وحدات، دروس، مفاهيم، وأسئلة. لا تقنية معقدة.' },
-  { num: '٤', title: 'شاهد أثرك', desc: 'محتواك يُصدَّر تلقائياً لتطبيق بشير. اسمك يظهر على كل درس بنيته — أمام كل من يفتحه.' },
+  { num: '1', title: 'تقدم بطلبك', desc: 'أخبرنا من أنت وأي مادة تريد بناءها. نقرأ كل طلب شخصياً ونرد خلال 48 ساعة.' },
+  { num: '2', title: 'احصل على صلاحياتك', desc: 'بعد الموافقة، حساب كامل في منصة نفير — والمادة التي اخترتها محجوزة لك.' },
+  { num: '3', title: 'ابدأ البناء', desc: 'أداة تحرير مبنية لهذا الغرض تحديداً — وحدات، دروس، مفاهيم، وأسئلة. لا تقنية معقدة.' },
+  { num: '4', title: 'شاهد أثرك', desc: 'محتواك يُصدَّر تلقائياً لتطبيق بشير. اسمك يظهر على كل درس بنيته — أمام كل من يفتحه.' },
 ];
 
 export default function NafeerSection() {
@@ -178,7 +178,7 @@ export default function NafeerSection() {
                 <span style={{ color: 'var(--accent)' }}> وتُستخدم آلاف المرات</span>
               </p>
               <div className="flex gap-8 shrink-0">
-                {[{ value: '١٢', label: 'مادة مفتوحة' }, { value: <Infinity size={28} strokeWidth={1.9} />, label: 'طالب يستفيد' }].map((s, i) => (
+                {[{ value: '12', label: 'مادة مفتوحة' }, { value: <Infinity size={28} strokeWidth={1.9} />, label: 'طالب يستفيد' }].map((s, i) => (
                   <div key={i} className="text-center">
                     <div className="flex h-9 items-center justify-center text-3xl font-bold stat-number" style={{ color: 'var(--accent)' }}>{s.value}</div>
                     <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{s.label}</div>
@@ -192,7 +192,7 @@ export default function NafeerSection() {
         {/* ── BEAT 2: How to Join ── */}
         <div className="mb-14 sm:mb-20">
           <p className="nafeer-steps-label text-xs font-mono mb-8 tracking-widest uppercase" style={{ color: 'var(--text-muted)', opacity: 0 }}>
-            الطريق أقصر مما تتخيل — ٤ خطوات
+            الطريق أقصر مما تتخيل — 4 خطوات
           </p>
 
           {/* Steps: horizontal list on desktop, stacked on mobile */}

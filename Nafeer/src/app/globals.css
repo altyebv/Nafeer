@@ -27,9 +27,20 @@
        default serif. Values mirror tailwind.config.js → theme.fontFamily.
     ──────────────────────────────────────────────────────────────────────── */
     --font-arabic:  'Noto Naskh Arabic', serif;
-    --font-display: 'Playfair Display', serif;
-    --font-mono:    'JetBrains Mono', monospace;
+    /* Naskh sits behind the mono face so Arabic inside a mono run renders in
+       the text face and keeps its joins — JetBrains Mono has no Arabic glyphs,
+       and the system fallback it used to reach was then letter-spaced apart. */
+    --font-mono:    'JetBrains Mono', 'Noto Naskh Arabic', ui-monospace, monospace;
     --font-sans:    'Noto Naskh Arabic', system-ui, sans-serif;
+    /* The interface face — buttons, tabs, labels, table rows, captions.
+       Naskh is a reading face: at 12–14px in dense controls it is tall and
+       busy. Naskh stays for headings and anything a student reads. */
+    --font-ui:      'IBM Plex Sans Arabic', 'Noto Naskh Arabic', system-ui, sans-serif;
+
+    /* Body text size — one fluid value shared by `body` and `.t-body`.
+       Replaces three px breakpoints (15/16/17) that the rest of the type
+       scale ignored. rem-based, so it follows the reader's browser setting. */
+    --fs-body: clamp(0.9375rem, 0.875rem + 0.2vw, 1.0625rem);
 
     --grain-opacity: 0.035;
 
@@ -50,14 +61,18 @@
     ────────────────────────────────────────────────────────────────────────── */
     --ink-50:  250 249 247;
     --ink-100: 238 236 231;
-    --ink-200: 221 216 207;   /* primary text     — 12.4:1 on ink-900 */
+    --ink-200: 221 216 207;   /* primary text     — 11.9:1 on ink-900 */
     --ink-300: 195 188 175;
-    --ink-400: 167 158 142;   /* secondary text   —  7.9:1 */
-    --ink-500: 141 132 116;   /* muted text       —  5.4:1 */
-    --ink-600: 134 126 110;   /* faint text — 4.6:1 (was 114 106 92 = 3.5:1, yet carried 99 small-text usages) */
+    --ink-400: 167 158 142;   /* secondary text   —  6.4:1 */
+    --ink-500: 141 132 116;   /* muted text       —  4.6:1 */
+    /* 600 is deliberately equal to 500. They sat 0.021 apart in OKLab — no
+       reader could tell them apart, so authors picked at random — and with
+       the lifted card below, 600 would have dropped to 4.2:1. Merged rather
+       than deleted so the ~99 existing `ink-600` usages stay valid. */
+    --ink-600: 141 132 116;
     --ink-700: 86 80 70;      /* strong border */
     --ink-800: 59 54 48;      /* border, hover surface */
-    --ink-900: 23 20 15;      /* card surface */
+    --ink-900: 32 28 22;      /* card surface — 1.15:1 on the page (was 23 20 15 at 1.06:1, so the border did all the work) */
     --ink-950: 14 12 9;       /* page surface */
 
     /* ── Accent ramp (dark) ──────────────────────────────────────────────── */
@@ -91,43 +106,97 @@
        emerald/amber/red, which have no light-theme variant — `text-emerald-600`
        on the cream page measured 2.64:1. These are tuned per theme.
     ────────────────────────────────────────────────────────────────────────── */
-    --success:        #34d399;
-    --success-surface: rgb(52 211 153 / 0.10);
-    --success-border:  rgb(52 211 153 / 0.24);
-    --warn:           #fbbf24;
-    --warn-surface:    rgb(251 191 36 / 0.10);
-    --warn-border:     rgb(251 191 36 / 0.24);
-    --danger:         #f87171;
-    --danger-surface:  rgb(248 113 113 / 0.10);
-    --danger-border:   rgb(248 113 113 / 0.24);
-    --info:           #60a5fa;
-    --info-surface:    rgb(96 165 250 / 0.10);
-    --info-border:     rgb(96 165 250 / 0.24);
-    --special:        #c084fc;
-    --special-surface: rgb(192 132 252 / 0.10);
-    --special-border:  rgb(192 132 252 / 0.24);
+    /* Warm set, tuned to sit on sand rather than beside it. Checked in OKLab:
+       the closest pair is ΔE 0.102 (warn/danger); the old amber warn was
+       0.051 from the accent text, so a "pending" badge read as a highlight.
+       All ≥ 5.9:1 on the card. Status is never colour alone — a badge carries
+       a dot or icon and a word. */
+    --success:        #8cc084;   /* sage */
+    --success-surface: rgb(140 192 132 / 0.10);
+    --success-border:  rgb(140 192 132 / 0.28);
+    --warn:           #f0904a;   /* burnt orange */
+    --warn-surface:    rgb(240 144 74 / 0.10);
+    --warn-border:     rgb(240 144 74 / 0.28);
+    --danger:         #f07178;   /* rose red */
+    --danger-surface:  rgb(240 113 120 / 0.10);
+    --danger-border:   rgb(240 113 120 / 0.28);
+    --info:           #6fb3c4;   /* slate teal — blue/orange stays safe for colour-blind readers */
+    --info-surface:    rgb(111 179 196 / 0.10);
+    --info-border:     rgb(111 179 196 / 0.28);
+    --special:        #c9a0dc;   /* warm lavender */
+    --special-surface: rgb(201 160 220 / 0.10);
+    --special-border:  rgb(201 160 220 / 0.28);
 
-    /* ── Dark theme (default) ─────────────────────────────────────────────── */
-    --bg-primary:    #15110d;
-    --bg-secondary:  #211b15;
-    --bg-card:       rgba(255,248,237,0.045);
-    --border-subtle: rgba(255,248,237,0.08);
-    --border-mid:    rgba(255,248,237,0.14);
-    --text-primary:  #fff8ed;
-    --text-secondary:#d8cdbb;
-    --text-muted:    #b3a590;
+    /* ── Semantic roles ──────────────────────────────────────────────────────
+       What a thing IS, not what colour it is. Components and pages read these
+       (as Tailwind `bg-raised`, `text-fg-muted`, `border-line` …), never the
+       ramps above and never a hex. Every role points at a ramp step, so the
+       ramps' per-theme values — and their audited contrast — carry through,
+       and most roles need no light-theme override at all.
+       Spec: docs/design-system.md §2.
+    ────────────────────────────────────────────────────────────────────────── */
+    --surface-page:     rgb(var(--ink-950));
+    --surface-raised:   rgb(var(--ink-900));
+    --surface-sunken:   rgb(var(--ink-950));
+    --surface-overlay:  rgb(var(--ink-900));
+    --surface-chrome:   var(--chrome-bg);
+    --surface-hover:    rgb(var(--ink-800) / 0.5);
+    --surface-selected: rgb(var(--sand-500) / 0.10);
+
+    --fg-strong:    rgb(var(--ink-100));
+    --fg:           rgb(var(--ink-200));
+    --fg-muted:     rgb(var(--ink-400));
+    --fg-subtle:    rgb(var(--ink-500));
+    --fg-accent:    rgb(var(--sand-300));
+    --fg-on-accent: rgb(var(--ink-950));
+
+    --line:         rgb(var(--ink-800) / 0.6);
+    --line-strong:  rgb(var(--ink-700));
+    --line-accent:  rgb(var(--sand-500) / 0.4);
+
+    /* The solid fill for the one primary action in a view. Named -fill
+       because the legacy --accent below is used ~230 times as a TEXT colour. */
+    --accent-fill:       rgb(var(--sand-600));
+    --accent-fill-hover: rgb(var(--sand-500));
+    --accent-wash:       rgb(var(--sand-500) / 0.10);
+
+    /* ── Depth ── borders separate surfaces; only these two shadows exist. */
+    --shadow-overlay: 0 16px 48px rgb(0 0 0 / 0.45), 0 0 0 1px var(--line);
+    --shadow-lift:    0 20px 60px rgb(0 0 0 / 0.34);
+
+    /* ── Motion ── */
+    --dur-fast: 120ms;
+    --dur:      200ms;
+    --dur-slow: 400ms;
+    --ease-out: cubic-bezier(.2, .8, .2, 1);
+
+    /* ── Legacy aliases ──────────────────────────────────────────────────────
+       The landing page and contributor-flow pages were built on their own
+       variable set with its own values — a second dark palette beside the ink
+       ramp. They now resolve to the roles, so the whole site shares one page
+       tone and one text ramp. New code uses the roles; these go away as each
+       surface migrates (docs/design-system.md §10).
+    ────────────────────────────────────────────────────────────────────────── */
+    --bg-primary:    var(--surface-page);
+    --bg-secondary:  var(--surface-raised);
+    --bg-card:       var(--surface-raised);
+    --border-subtle: var(--line);
+    --border-mid:    var(--line-strong);
+    --text-primary:  var(--fg-strong);
+    --text-secondary:var(--fg);
+    --text-muted:    var(--fg-muted);
     --accent:        rgb(var(--sand-500));
     --accent-hover:  rgb(var(--sand-400));
-    --accent-dim:    rgb(var(--sand-500) / 0.10);
-    /* Accent tuned for TEXT sitting on an --accent-dim wash, where plain
-       --accent only reached 4.07:1 in the light theme. */
-    --accent-text:   rgb(var(--sand-300));
+    --accent-dim:    var(--accent-wash);
+    --accent-text:   var(--fg-accent);
+    --card-hover-shadow: var(--shadow-lift);
+
+    /* ── Landing decoration (not part of the role system) ── */
     --mesh-1:        rgba(212,137,30,0.07);
     --mesh-2:        rgba(146,79,18,0.05);
     --watermark:     rgba(255,248,237,0.035);
-    --navbar-bg:     rgba(21,17,13,0.92);
-    --navbar-border: rgba(255,248,237,0.10);
-    --card-hover-shadow: 0 20px 60px rgba(0,0,0,0.34);
+    --navbar-bg:     rgb(var(--ink-950) / 0.92);
+    --navbar-border: var(--line);
     --glow:          rgba(212,137,30,0.28);
   }
 
@@ -157,7 +226,7 @@
     --ink-300: 74 55 23;
     --ink-400: 94 71 32;      /* secondary text   —  7.4:1 */
     --ink-500: 102 78 36;     /* muted text  — 5.3:1 on the page, 6.9:1 on cards */
-    --ink-600: 110 85 40;     /* faint text  — 4.8:1 (was 149 119 65 = 3.3:1) */
+    --ink-600: 102 78 36;     /* = 500, see the dark ramp */
     --ink-700: 192 168 120;   /* strong border */
     --ink-800: 217 200 164;   /* border, hover surface */
     --ink-900: 248 242 230;   /* card surface */
@@ -190,40 +259,44 @@
     /* ── Status (light) ──────────────────────────────────────────────────────
        Darkened so each clears AA as text on the cream page and cream cards.
     ────────────────────────────────────────────────────────────────────────── */
-    --success:        #065f46;   /* #047857 measured 3.46:1 on its own wash */
-    --success-surface: rgb(6 95 70 / 0.10);
-    --success-border:  rgb(6 95 70 / 0.28);
-    --warn:           #92580a;
-    --warn-surface:    rgb(146 88 10 / 0.10);
-    --warn-border:     rgb(146 88 10 / 0.28);
-    --danger:         #b3261e;
-    --danger-surface:  rgb(179 38 30 / 0.10);
-    --danger-border:   rgb(179 38 30 / 0.28);
-    --info:           #1d4ed8;
-    --info-surface:    rgb(29 78 216 / 0.10);
-    --info-border:     rgb(29 78 216 / 0.28);
-    --special:        #6b21a8;
-    --special-surface: rgb(107 33 168 / 0.10);
-    --special-border:  rgb(107 33 168 / 0.28);
+    /* Closest pair ΔE 0.119; all ≥ 5.1:1 on the cream card. */
+    --success:        #2f6b3a;
+    --success-surface: rgb(47 107 58 / 0.10);
+    --success-border:  rgb(47 107 58 / 0.28);
+    --warn:           #9c5410;
+    --warn-surface:    rgb(156 84 16 / 0.10);
+    --warn-border:     rgb(156 84 16 / 0.28);
+    --danger:         #9e1f4a;
+    --danger-surface:  rgb(158 31 74 / 0.10);
+    --danger-border:   rgb(158 31 74 / 0.28);
+    --info:           #1f5f7a;
+    --info-surface:    rgb(31 95 122 / 0.10);
+    --info-border:     rgb(31 95 122 / 0.28);
+    --special:        #6e3a8a;
+    --special-surface: rgb(110 58 138 / 0.10);
+    --special-border:  rgb(110 58 138 / 0.28);
 
-    --bg-primary:    #ead8b8;           /* deeper warm paper, not stark white */
-    --bg-secondary:  #ddc49d;           /* stronger section separation        */
-    --bg-card:       rgba(255,247,231,0.86); /* amber-tinted card surface    */
-    --border-subtle: rgba(88,50,12,0.20);
-    --border-mid:    rgba(88,50,12,0.32);
-    --text-primary:  #130d06;           /* warm near-black for body contrast  */
-    --text-secondary:#34210d;           /* compact copy stays readable        */
-    --text-muted:    #5c3d18;           /* subdued, but no longer washed out  */
-    --accent:        rgb(var(--sand-500));   /* was #9a550f — a second, dimmer accent definition */
+    /* ── Semantic roles (light) ──────────────────────────────────────────────
+       Only the roles whose alpha or ramp step differs from dark are restated;
+       the rest follow the ramps above automatically.
+    ────────────────────────────────────────────────────────────────────────── */
+    --surface-sunken:   rgb(var(--ink-950) / 0.6);
+    --surface-selected: rgb(var(--sand-500) / 0.14);
+    --fg-accent:        rgb(var(--sand-200));   /* accent text on cream — 8.6:1 */
+    --line:             rgb(var(--ink-800));
+    --accent-wash:      rgb(var(--sand-500) / 0.14);
+    /* Light sand-500 and -600 are 0.011 apart, so hovering the primary button
+       changed nothing visible. On cream, hover goes darker instead. */
+    --accent-fill-hover: rgb(var(--sand-300));
+    --shadow-overlay:   0 16px 48px rgb(82 45 8 / 0.18), 0 0 0 1px var(--line);
+    --shadow-lift:      0 20px 60px rgb(82 45 8 / 0.16);
+
     --accent-hover:  rgb(var(--sand-300));
-    --accent-dim:    rgb(var(--sand-500) / 0.14);
-    --accent-text:   rgb(var(--sand-200));
+
     --mesh-1:        rgba(154,85,15,0.12);
     --mesh-2:        rgba(116,60,12,0.09);
     --watermark:     rgba(19,13,6,0.045);
-    --navbar-bg:     rgba(234,216,184,0.95);
-    --navbar-border: rgba(88,50,12,0.24);
-    --card-hover-shadow: 0 20px 60px rgba(82,45,8,0.16);
+    --navbar-bg:     rgb(var(--ink-950) / 0.95);
     --glow:          rgba(154,85,15,0.24);
   }
 
@@ -231,15 +304,15 @@
     background-color: var(--bg-primary);
     color:            var(--text-primary);
     transition:       background-color 0.4s ease, color 0.4s ease;
-    /* Base readability — scale up on wide screens */
-    font-size: 15px;
+    /* Fluid 15 → 17px, shared with .t-body (see --fs-body). */
+    font-size: var(--fs-body);
   }
 
-  @media (min-width: 1280px) {
-    body { font-size: 16px; }
-  }
-  @media (min-width: 1536px) {
-    body { font-size: 17px; }
+  /* Placeholder colour is a property of the input, not a role authors pick —
+     it replaces the old `faint` text role. */
+  ::placeholder {
+    color: var(--fg-subtle);
+    opacity: 1;
   }
 }
 
@@ -260,6 +333,35 @@
   }
 
   .stat-number {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* ── Type roles ──────────────────────────────────────────────────────────
+     The nine named steps of docs/design-system.md §3.2. New code picks a
+     role instead of a size; arbitrary `text-[Npx]` is a lint violation.
+     12px (`t-caption`) is the floor for Arabic.
+  ─────────────────────────────────────────────────────────────────────── */
+  /* Reading roles — Noto Naskh: headings and anything a student reads. */
+  .t-display { font-family: var(--font-arabic); font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 1.15; font-weight: 700; }
+  .t-h1      { font-family: var(--font-arabic); font-size: 1.75rem;  line-height: 1.3; font-weight: 700; }
+  .t-h2      { font-family: var(--font-arabic); font-size: 1.375rem; line-height: 1.4; font-weight: 700; }
+  .t-body    { font-family: var(--font-arabic); font-size: var(--fs-body); line-height: 1.8; font-weight: 400; }
+  /* Interface roles — IBM Plex Sans Arabic: controls, labels, metadata. */
+  .t-title   { font-family: var(--font-ui); font-size: 1.125rem;  line-height: 1.5; font-weight: 600; }
+  .t-ui      { font-family: var(--font-ui); font-size: 0.875rem;  line-height: 1.6; font-weight: 500; }
+  .t-label   { font-family: var(--font-ui); font-size: 0.8125rem; line-height: 1.5; font-weight: 500; }
+  .t-caption { font-family: var(--font-ui); font-size: 0.75rem;   line-height: 1.5; font-weight: 400; }
+  /* The label above a heading. Replaces mono + tracking-widest, which broke
+     Arabic letter joins. */
+  .t-eyebrow { font-family: var(--font-ui); font-size: 0.8125rem; line-height: 1.4; font-weight: 600; color: var(--fg-accent); letter-spacing: normal; }
+  @media (min-width: 640px) {
+    .t-h1 { font-size: 2rem; }
+  }
+
+  /* Stats and counters: Western digits are the policy (src/lib/format.js);
+     this lines them up in columns without reaching for a mono face. */
+  .t-num {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
@@ -447,27 +549,6 @@ summary:focus-visible,
   outline-offset: 2px !important;
 }
 
-/* ── Admin dashboard type scale ─────────────────────────────────────────────
-   The dashboard was built at editor density: 300+ labels at `text-2xs` (11px)
-   and most body copy at `text-xs` (12px), which reads as cramped on a page
-   people scan rather than work inside. Rather than touch every call site,
-   the two smallest steps are lifted one notch inside `.admin-shell` only —
-   the editor keeps its compact scale.
-
-   Unlayered so it beats the utilities layer regardless of source order.
-─────────────────────────────────────────────────────────────────────────── */
-.admin-shell .text-2xs { font-size: 12px; line-height: 1.125rem; }
-.admin-shell .text-xs  { font-size: 13px; line-height: 1.25rem; }
-
-/* Arabic labels were set in `font-mono` with wide tracking — a Latin "eyebrow"
-   idiom. JetBrains Mono has no Arabic glyphs, so the browser fell back to a
-   system monospace Arabic face and then letter-spaced it, pulling the joined
-   letters apart. Inside the dashboard, Arabic in a mono run falls through to
-   the Arabic text face instead, and tracking is neutralised; Latin text and
-   digits in the same run still render in the mono face. */
-.admin-shell .font-mono {
-  font-family: 'JetBrains Mono', 'Noto Naskh Arabic', ui-monospace, monospace;
-}
-.admin-shell .tracking-wide,
-.admin-shell .tracking-wider,
-.admin-shell .tracking-widest { letter-spacing: normal; }
+/* The admin dashboard's scoped type lift and mono/tracking fix used to live
+   here under `.admin-shell`. Both are now site-wide, in tailwind.config.js
+   (fontSize, fontFamily.mono, letterSpacing). */

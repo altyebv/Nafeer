@@ -120,7 +120,7 @@ function TabBtn({ label, count, active, onClick, alert }) {
     >
       {label}
       <span style={{
-        fontFamily: 'monospace', fontSize: 11, padding: '1px 7px', borderRadius: 6,
+        fontFamily: 'var(--font-mono)', fontSize: 11, padding: '1px 7px', borderRadius: 6,
         background: active ? 'rgba(212,137,30,0.18)' : 'rgba(255,255,255,0.06)',
         color: active ? T.accentText : T.textMuted,
         transition: 'all 0.15s',
@@ -157,7 +157,7 @@ function FilterChip({ label, icon, count, active, onClick }) {
       <span style={{ fontSize: 11, opacity: active ? 1 : 0.5 }}>{icon}</span>
       {label}
       <span style={{
-        fontFamily: 'monospace', fontSize: 11, padding: '0 5px', borderRadius: 5,
+        fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0 5px', borderRadius: 5,
         background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.05)',
         color: active ? T.accentText : T.textMuted,
       }}>{count}</span>
@@ -173,7 +173,7 @@ function Empty({ text }) {
       gap: 10, padding: '48px 0', color: T.textMuted,
     }}>
       <span style={{ fontSize: 28, opacity: 0.15 }}>◈</span>
-      <p style={{ fontSize: 12, fontFamily: 'monospace' }}>{text}</p>
+      <p style={{ fontSize: 12, fontFamily: 'var(--font-mono)' }}>{text}</p>
     </div>
   );
 }

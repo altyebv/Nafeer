@@ -1,6 +1,7 @@
 'use client';
 import { Check, TriangleAlert } from 'lucide-react';
 import { useEditorStore } from '@/store/editorStore';
+import { formatDate } from '@/lib/format';
 
 /**
  * SYNC STATUS
@@ -26,7 +27,7 @@ function describe({ isSyncing, syncError, lastSynced }) {
   if (syncError) return { tone: 'danger',  label: 'خطأ في الحفظ', detail: typeof syncError === 'string' ? syncError : null };
   if (isSyncing) return { tone: 'warn',    label: 'جاري الحفظ…',  detail: null };
   if (lastSynced) {
-    const time = new Date(lastSynced).toLocaleTimeString('ar-SD', { hour: '2-digit', minute: '2-digit' });
+    const time = formatDate(lastSynced, 'time');
     return { tone: 'success', label: `محفوظ · ${time}`, detail: null };
   }
   return null;

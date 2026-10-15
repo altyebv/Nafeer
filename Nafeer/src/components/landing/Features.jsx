@@ -7,7 +7,7 @@ import { gsap, ScrollTrigger } from '@/lib/gsap';
 const CONTENT_FEATURES = [
   {
     id: 'lessons',
-    num: '٠١',
+    num: '01',
     layer: 'content',
     icon: (
       <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
@@ -27,7 +27,7 @@ const CONTENT_FEATURES = [
   },
   {
     id: 'feed',
-    num: '٠٢',
+    num: '02',
     layer: 'content',
     icon: (
       <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
@@ -48,7 +48,7 @@ const CONTENT_FEATURES = [
   },
   {
     id: 'quizbank',
-    num: '٠٣',
+    num: '03',
     layer: 'content',
     icon: (
       <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
@@ -72,7 +72,7 @@ const CONTENT_FEATURES = [
 const INTELLIGENCE_FEATURES = [
   {
     id: 'spaced',
-    num: '٠٤',
+    num: '04',
     layer: 'intelligence',
     icon: (
       <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
@@ -89,7 +89,7 @@ const INTELLIGENCE_FEATURES = [
   },
   {
     id: 'weakareas',
-    num: '٠٥',
+    num: '05',
     layer: 'intelligence',
     icon: (
       <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
@@ -105,7 +105,7 @@ const INTELLIGENCE_FEATURES = [
   },
   {
     id: 'practice',
-    num: '٠٦',
+    num: '06',
     layer: 'intelligence',
     icon: (
       <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
@@ -122,7 +122,7 @@ const INTELLIGENCE_FEATURES = [
   },
   {
     id: 'streaks',
-    num: '٠٧',
+    num: '07',
     layer: 'intelligence',
     icon: (
       <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
@@ -165,7 +165,7 @@ function LayerDivider() {
         </span>
         <span>طبقة الذكاء</span>
         <span className="opacity-40">·</span>
-        <span className="opacity-50" style={{ fontFamily: 'monospace' }}>Intelligence Layer</span>
+        <span className="opacity-50" style={{ fontFamily: 'var(--font-mono)' }}>Intelligence Layer</span>
       </div>
 
       {/* Right line */}

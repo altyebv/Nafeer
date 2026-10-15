@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ScrollText, X } from 'lucide-react';
 import Drawer from '@/components/editor/shared/Drawer';
+import { formatDate } from '@/lib/format';
 
 // ─── LessonHistoryDrawer ──────────────────────────────────────────────────────
 // Slide-in panel from the right showing the full lesson audit trail.
@@ -47,7 +48,7 @@ function relativeTime(dateStr) {
   if (diff < 3600)    return `منذ ${Math.floor(diff / 60)} دقيقة`;
   if (diff < 86400)   return `منذ ${Math.floor(diff / 3600)} ساعة`;
   if (diff < 2592000) return `منذ ${Math.floor(diff / 86400)} يوم`;
-  return new Date(dateStr).toLocaleDateString('ar-SD', { day: 'numeric', month: 'short', year: 'numeric' });
+  return formatDate(dateStr);
 }
 
 function formatValue(field, val) {

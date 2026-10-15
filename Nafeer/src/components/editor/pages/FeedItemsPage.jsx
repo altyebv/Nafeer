@@ -616,7 +616,7 @@ export default function FeedItemsPage({ subjectId }) {
               type="text"
               value={form.imageUrl}
               onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              style={{ ...FIELD, fontFamily: 'monospace' }}
+              style={{ ...FIELD, fontFamily: 'var(--font-mono)' }}
               placeholder="images/diagram.png"
               dir="ltr"
               onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}

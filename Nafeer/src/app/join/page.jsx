@@ -63,11 +63,11 @@ const AI_TOOLS = [
 
 // ─── Age ranges ────────────────────────────────────────────────────────────
 const AGE_RANGES = [
-  { value: 'under-18', label: 'أقل من ١٨' },
-  { value: '18-22',    label: '١٨ – ٢٢'  },
-  { value: '23-27',    label: '٢٣ – ٢٧'  },
-  { value: '28-35',    label: '٢٨ – ٣٥'  },
-  { value: 'over-35',  label: 'فوق ٣٥'   },
+  { value: 'under-18', label: 'أقل من 18' },
+  { value: '18-22',    label: '18 – 22'  },
+  { value: '23-27',    label: '23 – 27'  },
+  { value: '28-35',    label: '28 – 35'  },
+  { value: 'over-35',  label: 'فوق 35'   },
 ];
 
 // ─── Shared input style ────────────────────────────────────────────────────
@@ -170,8 +170,8 @@ function RoleSelector({ roles, selected, onSelect }) {
         const meta = CATEGORY_META[cat];
         return (
           <div key={cat}>
-            <p className="text-xs font-arabic mb-2.5 tracking-wide"
-              style={{ color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
+            <p className="text-xs font-arabic mb-2.5"
+              style={{ color: 'var(--text-muted)' }}>
               {meta.label}
             </p>
             <div className="space-y-2">
@@ -317,8 +317,8 @@ function SuccessScreen({ name }) {
           <p className="text-xs font-mono mb-4" style={{ color: 'var(--text-muted)' }}>ما الذي سيأتي بعد ذلك؟</p>
           <div className="space-y-3">
             {[
-              { n: '٢', text: 'بعض الأسئلة القصيرة لنفهمك أكثر' },
-              { n: '٣', text: 'مهمة صغيرة تُظهر أسلوبك في التفكير' },
+              { n: '2', text: 'بعض الأسئلة القصيرة لنفهمك أكثر' },
+              { n: '3', text: 'مهمة صغيرة تُظهر أسلوبك في التفكير' },
             ].map((item) => (
               <div key={item.n} className="flex items-start gap-3">
                 <span className="text-xs font-mono mt-0.5 shrink-0" style={{ color: 'var(--accent)', opacity: 0.7 }}>{item.n}</span>
@@ -618,7 +618,7 @@ export default function JoinPage() {
                   onChange={(e) => set('background', e.target.value)}
                   placeholder={
                     isBuilderRole(selectedRole)
-                      ? 'مثلاً: مطوّر واجهات — ٣ سنوات خبرة، React / Next.js'
+                      ? 'مثلاً: مطوّر واجهات — 3 سنوات خبرة، React / Next.js'
                       : isLearningRole(selectedRole)
                         ? 'مثلاً: طالب هندسة — جامعة الخرطوم، أدرّس الفيزياء لصفوف الثانوي'
                         : 'مثلاً: طالب هندسة — جامعة الخرطوم'
@@ -770,7 +770,7 @@ export default function JoinPage() {
             لديك حساب؟ سجّل الدخول
           </a>
           <p className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
-            خطوة {pageStep} من ٣
+            خطوة {pageStep} من 3
           </p>
         </div>
 

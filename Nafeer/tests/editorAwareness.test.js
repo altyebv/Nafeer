@@ -110,7 +110,8 @@ describe('Arabic counts', () => {
   it('uses the dual, the plural for 3–10 and the singular from 11', () => {
     expect(arCount(1, forms)).toBe('تغيير واحد');
     expect(arCount(2, forms)).toBe('تغييران');
-    expect(arCount(3, forms)).toBe('٣ تغييرات');
-    expect(arCount(11, forms)).toBe('١١ تغييراً');
+    // Western digits — the site's numeral policy (docs/design-system.md §3.3).
+    expect(arCount(3, forms)).toBe('3 تغييرات');
+    expect(arCount(11, forms)).toBe('11 تغييراً');
   });
 });

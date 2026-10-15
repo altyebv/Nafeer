@@ -1,5 +1,7 @@
 'use client';
 
+import { formatDate } from '@/lib/format';
+
 // ─── AttributionBar ───────────────────────────────────────────────────────────
 // Displays who created, last edited, and reviewed a lesson.
 // `attribution` shape:
@@ -20,7 +22,7 @@ function relativeTime(dateStr) {
   if (diff < 3600)     return `منذ ${Math.floor(diff / 60)} د`;
   if (diff < 86400)    return `منذ ${Math.floor(diff / 3600)} س`;
   if (diff < 2592000)  return `منذ ${Math.floor(diff / 86400)} يوم`;
-  return d.toLocaleDateString('ar-SD', { day: 'numeric', month: 'short' });
+  return formatDate(d, 'short');
 }
 
 function Avatar({ name, avatarUrl, size = 18 }) {

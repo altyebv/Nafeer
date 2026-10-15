@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Check, Hand } from 'lucide-react';
+import { formatNumber } from '@/lib/format';
 
 const STORAGE_KEY = 'nafeer-supported';
 
@@ -40,7 +41,7 @@ export default function SupportButton() {
     setTimeout(() => setAnimating(false), 600);
   };
 
-  const displayCount = count === null ? '...' : count.toLocaleString('ar-EG');
+  const displayCount = count === null ? '...' : formatNumber(count);
 
   return (
     <div
