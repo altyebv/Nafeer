@@ -33,6 +33,7 @@ const EXCLUDE = [
 ];
 
 const AREAS = [
+  ['ui',      /^components\/ui\//],        // the shared library — held at zero
   ['landing', /^components\/landing\//],
   ['editor',  /^(components\/editor\/|app\/editor\/)/],
   ['admin',   /^app\/admin\//],

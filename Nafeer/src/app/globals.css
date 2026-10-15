@@ -142,6 +142,7 @@
     --surface-chrome:   var(--chrome-bg);
     --surface-hover:    rgb(var(--ink-800) / 0.5);
     --surface-selected: rgb(var(--sand-500) / 0.10);
+    --scrim:            rgb(var(--ink-950) / 0.75);   /* backdrop behind dialogs and drawers */
 
     --fg-strong:    rgb(var(--ink-100));
     --fg:           rgb(var(--ink-200));

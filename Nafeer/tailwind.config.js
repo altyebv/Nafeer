@@ -75,6 +75,7 @@ module.exports = {
         chrome:   'var(--surface-chrome)',
         hover:    'var(--surface-hover)',
         selected: 'var(--surface-selected)',
+        scrim:    'var(--scrim)',
         fg: {
           strong:      'var(--fg-strong)',
           DEFAULT:     'var(--fg)',

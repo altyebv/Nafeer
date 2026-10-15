@@ -377,6 +377,19 @@ The demo is out of scope. It mirrors the Basheer app inside `.bsh` by design.
     board.
   - Plex shows up through the `t-*` roles and the DS1 components. Existing
     `font-arabic` call sites switch over when their surface migrates.
+- **DS1 landed on 2026-10-15** (the components):
+  - `src/components/ui/` holds `Button`, `IconButton`, `Field` (with
+    `Input`, `Textarea` and `Select`), `Card`, `Badge`, `Stat`, `Tabs` and
+    `TabPanel`, `Segmented`, `PageHeader`, `SaveStatus`, `EmptyState`,
+    `Dialog`, `Drawer`, `ConfirmButton`, `Eyebrow` and `SectionTitle`, all
+    exported from `@/components/ui`.
+  - `Drawer` moved there; the old `editor/shared/Drawer` path re-exports it.
+  - `arCount` and `changesLabel` moved into `format.js`.
+  - New `--scrim` token for the backdrop behind dialogs and drawers.
+  - `lint:design` has a `ui` area held at zero.
+  - `/dev/design` shows every token and component in both themes. It returns
+    404 in production.
+  - No call sites have been migrated yet; that is DS2.
 - **Known leftover:** text in a `font-mono` run that mixes Arabic and Latin
   still uses JetBrains Mono's wide space between words, as in the hero badge.
   It goes away when those labels move to `t-eyebrow` in DS3 and DS4.

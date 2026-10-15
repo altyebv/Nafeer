@@ -4,20 +4,15 @@ import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import { BLOCK_TYPE_CONFIG } from '@/shared/constants';
 import { wordDiff } from '@/lib/wordDiff';
-import { formatDate, formatNumber } from '@/lib/format';
+import { formatDate, arCount, changesLabel } from '@/lib/format';
 
 // ─── Sync marks ───────────────────────────────────────────────────────────────
 // Small pieces of the save/conflict UI, shared by the lesson header, sections
 // and blocks. All of it is drawn from local state — none of it costs a request.
 
-// ── Arabic counting ───────────────────────────────────────────────────────────
-// 1 and 2 have their own forms; 3–10 take the plural; 11+ the singular.
-const num = formatNumber;
-export const arCount = (n, { one, two, few, many }) =>
-  n === 1 ? one : n === 2 ? two : n <= 10 ? `${num(n)} ${few}` : `${num(n)} ${many}`;
-
-export const changesLabel = (n) =>
-  arCount(n, { one: 'تغيير واحد', two: 'تغييران', few: 'تغييرات', many: 'تغييراً' });
+// Arabic counting now lives in src/lib/format.js (ui/SaveStatus needs it too);
+// re-exported so existing imports keep working.
+export { arCount, changesLabel };
 
 export function minutesAgo(date) {
   const mins = Math.max(1, Math.round((Date.now() - new Date(date).getTime()) / 60000));

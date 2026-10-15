@@ -3,6 +3,7 @@
   "updated": "2026-10-15",
   "counts": {
     "hex": {
+      "ui": 0,
       "landing": 27,
       "editor": 102,
       "admin": 77,
@@ -11,6 +12,7 @@
       "other": 8
     },
     "rgba": {
+      "ui": 0,
       "landing": 84,
       "editor": 87,
       "admin": 294,
@@ -19,6 +21,7 @@
       "other": 4
     },
     "rawPalette": {
+      "ui": 0,
       "landing": 1,
       "editor": 152,
       "admin": 220,
@@ -27,14 +30,16 @@
       "other": 15
     },
     "rampDirect": {
+      "ui": 0,
       "landing": 1,
-      "editor": 695,
+      "editor": 691,
       "admin": 767,
       "flow": 41,
       "profile": 0,
       "other": 4
     },
     "arbitraryText": {
+      "ui": 0,
       "landing": 8,
       "editor": 105,
       "admin": 0,
@@ -43,14 +48,16 @@
       "other": 0
     },
     "inlineStyle": {
+      "ui": 0,
       "landing": 288,
-      "editor": 340,
+      "editor": 339,
       "admin": 493,
       "flow": 149,
       "profile": 76,
       "other": 7
     },
     "toLocale": {
+      "ui": 0,
       "landing": 0,
       "editor": 0,
       "admin": 0,
@@ -59,6 +66,7 @@
       "other": 0
     },
     "arabicIndic": {
+      "ui": 0,
       "landing": 0,
       "editor": 1,
       "admin": 0,
@@ -67,6 +75,7 @@
       "other": 0
     },
     "arabicTracking": {
+      "ui": 0,
       "landing": 3,
       "editor": 1,
       "admin": 16,
@@ -75,6 +84,7 @@
       "other": 0
     },
     "arabicMono": {
+      "ui": 0,
       "landing": 3,
       "editor": 8,
       "admin": 58,

@@ -49,6 +49,17 @@ export function formatNumber(n) {
 }
 
 /**
+ * Arabic counted noun: 1 and 2 have their own forms, 3–10 take the plural,
+ * 11 and up the singular accusative.
+ *   arCount(3, { one: 'تغيير واحد', two: 'تغييران', few: 'تغييرات', many: 'تغييراً' }) → "3 تغييرات"
+ */
+export const arCount = (n, { one, two, few, many }) =>
+  n === 1 ? one : n === 2 ? two : n <= 10 ? `${formatNumber(n)} ${few}` : `${formatNumber(n)} ${many}`;
+
+export const changesLabel = (n) =>
+  arCount(n, { one: 'تغيير واحد', two: 'تغييران', few: 'تغييرات', many: 'تغييراً' });
+
+/**
  * Format a date with one of the named presets above.
  * Accepts a Date, an ISO string or a timestamp; anything unparseable gives "—".
  * `timeZone` is for values that are calendar dates rather than instants
