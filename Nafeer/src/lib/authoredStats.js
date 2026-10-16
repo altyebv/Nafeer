@@ -45,7 +45,8 @@ async function countField(contributorId, field) {
   return (await model(name)).countDocuments({ createdBy: contributorId, ...extra });
 }
 
-async function countAll(contributorId) {
+// What a contributor has authored right now, every field.
+export async function countAuthored(contributorId) {
   const fields = Object.keys(AUTHORED);
   const counts = await Promise.all(fields.map((f) => countField(contributorId, f)));
   return Object.fromEntries(fields.map((f, i) => [f, counts[i]]));
@@ -75,7 +76,7 @@ export async function creditCreation(contributorId, field) {
 export async function recountAuthored(contributorIds) {
   const ids = uniqueIds(contributorIds);
   await Promise.all(ids.map(async (id) => {
-    const counts = await countAll(id);
+    const counts = await countAuthored(id);
     await Contributor.updateOne({ _id: id }, { $set: statsSet(counts) });
   }));
   return ids.length;

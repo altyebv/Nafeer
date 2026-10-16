@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { verifyAdminToken } from '@/lib/adminAuth';
 import { SYSTEM_SEED_USERNAME } from '@/lib/SeedActor';
+import { pipelineStage } from '@/lib/adminPipeline';
 import { appUrl } from '@/lib/appUrl';
 import { sendEmail } from '@/lib/email/emailService';
 import bcrypt from 'bcryptjs';
@@ -56,7 +57,12 @@ export async function GET(request) {
   const filter = { username: { $ne: SYSTEM_SEED_USERNAME } };
   if (status && status !== 'all') filter.status = status;
 
-  const contributors = await Contributor.find(filter).sort({ createdAt: -1 });
+  // The token is read only to work out the pipeline stage; it never leaves here.
+  const docs = await Contributor.find(filter).select('+interviewToken').sort({ createdAt: -1 }).lean();
+  const contributors = docs.map(({ interviewToken, ...c }) => ({
+    ...c,
+    stage: pipelineStage({ ...c, interviewToken }),
+  }));
   return NextResponse.json({ contributors });
 }
 

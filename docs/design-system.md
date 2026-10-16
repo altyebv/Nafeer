@@ -383,12 +383,25 @@ scope for now. The 14 sections fold into four screens:
 | # | Step | Canvas | Replaces | State |
 |---|---|---|---|---|
 | 0 | **Honest activity numbers.** Contributor counters (`stats.*`) disagree with the content collections: Geography counts 7 blocks with none saved, and one contributor counts 6 lessons and 22 questions that do not exist. Count from the content itself, or reconcile, before any screen shows them. Built: `lib/authoredStats.js` recounts the five created fields by `createdBy` on create and after deletes, effort counters stay as they were, `system_seed` is out of people lists, and `npm run stats:reconcile` fixed the stored numbers | — | — | ✓ |
-| 1 | **Subject page.** One page per subject: the unit/lesson tree with inline unit titles, coverage columns in words (sections, blocks, questions, feed cards), filters, and one publish action with delta/major/full as plain-language advanced options. Per-subject settings: visibility (`visibleSubjectIds`) and equation notation. Maintenance: complete missing units from the curriculum, restore from the last published copy. Lessons open in the real editor on their own route | AdSubject | Admin editor, Curriculum, Coverage map, Seed | |
-| 2 | **Overview.** "Waiting for your decision" (review, join requests, subjects with nobody, unseeded subjects), content per subject, the last 7 Sudan days, contributors, site and mail counts | AdOverview | Overview | |
-| 3 | **Contributors.** The six-stage joining pipeline, a list per stage, and a person page with facts, what they did, and actions. Roles and teams become attributes on this screen | AdPeople2 | Peoples, Roles, Teams | |
-| 4 | **Comms.** One composer: audience (contributors or students), scope, channels (contributor board, email via Resend, in-app centre, top banner), reach, and one history across channels. One app-settings panel for every manifest flag | AdComms | Comms, the flags half of Publish | |
+| 1 | **Subject page.** One page per subject: the unit/lesson tree with inline unit titles, coverage columns in words (sections, blocks, questions, feed cards), filters, and one publish action with delta/major/full as plain-language advanced options. Per-subject settings: visibility (`visibleSubjectIds`) and equation notation. Maintenance: complete missing units from the curriculum, restore from the last published copy. Lessons open in the real editor on their own route | AdSubject | Admin editor, Curriculum, Coverage map, Seed | ✓ |
+| 2 | **Overview.** "Waiting for your decision" (review, join requests, subjects with nobody, unseeded subjects), content per subject, the last 7 Sudan days, contributors, site and mail counts | AdOverview | Overview | ✓ |
+| 3 | **Contributors.** The six-stage joining pipeline, a list per stage, and a person page with facts, what they did, and actions. Roles and teams become attributes on this screen | AdPeople2 | Peoples, Roles, Teams | ✓ |
+| 4 | **Comms.** One composer: audience (contributors or students), scope, channels (contributor board, email via Resend, in-app centre, top banner), reach, and one history across channels. One app-settings panel for every manifest flag | AdComms | Comms, the flags half of Publish | ✓ |
 
 The reviewer side stays in DS2 step 3 (AdReview board).
+
+**Built (2026-10-17).** Each screen loads with one request: `/api/admin/overview`
+(shared by the overview and the subjects list), `/api/admin/subjects/[id]`,
+`/api/admin/contributors/[id]/activity` for a person, and
+`/api/admin/comms/history`. Subject pages and lessons have their own routes
+(`/admin/dashboard/subjects/[id]`, `…/lessons/[lessonId]`); the other screens
+stay on the dashboard hash, and the old `#editor`, `#curriculum` and
+`#coverage` links land on the subjects list. The person page embeds the old
+contributor card for its management actions (approve, links, password),
+under «الإجراءات والتفاصيل الكاملة»; restyling that card is still to do.
+`/api/dev/admin-login` is the admin twin of the dev autologin (development
+only). Not built: `PublishSection` (its orphaned-manifest panel) is still only
+reachable at `#publish`.
 `TeamsSection`, `RolesSection` and `ContributorsSection` were unused and are
 deleted. Firebase env vars are empty in `.env.local`, so the app-side data
 (manifest flags, `comm_items`) cannot be read locally until they are set.

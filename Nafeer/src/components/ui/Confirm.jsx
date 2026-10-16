@@ -30,6 +30,7 @@ export function ConfirmButton({
   icon,
   label,
   align = 'start',
+  disabled = false,   // the trigger itself, e.g. while the form is incomplete
   children,
 }) {
   const [open, setOpen] = useState(false);
@@ -64,6 +65,7 @@ export function ConfirmButton({
         size={size}
         icon={icon}
         aria-label={label}
+        disabled={disabled}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
