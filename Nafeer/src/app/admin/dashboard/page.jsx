@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminSidebar }           from './components/AdminSidebar';
-import { ReviewQueueSection }     from './components/ReviewQueueSection';
 import { MediaSection }           from './components/MediaSection';
 import { AdminsSection }          from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
@@ -15,6 +14,7 @@ import { OverviewScreen }         from './screens/OverviewScreen';
 import { SubjectsIndex }          from './screens/SubjectsIndex';
 import { ContributorsScreen }     from './screens/ContributorsScreen';
 import { CommsScreen }            from './screens/CommsScreen';
+import { ReviewScreen }           from './screens/ReviewScreen';
 import { AndroidInsightsSection } from './components/android/AndroidInsightsSection';
 
 
@@ -104,12 +104,7 @@ export default function AdminDashboard() {
         {section === 'contributors' && (
           <ContributorsScreen allContributors={allContributors} isLoading={isInitialLoad} onRefresh={loadAll} />
         )}
-        {section === 'review'     && (
-          <ReviewQueueSection
-            onTotalChange={setReviewTotal}
-            onUnauthorized={() => router.push('/admin/login')}
-          />
-        )}
+        {section === 'review'     && <ReviewScreen onTotalChange={setReviewTotal} />}
         {section === 'publish'    && <PublishSection />}
         {section === 'media'      && <MediaSection />}
         {section === 'admins'     && <AdminsSection />}

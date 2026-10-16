@@ -58,6 +58,8 @@ function mapItem(doc, type) {
     // Lessons only: which round this is — a resubmission after a return is
     // round 2+, so the reviewer knows to check the earlier comments.
     round:     doc.reviewState ? (doc.reviewState.round || 0) + 1 : null,
+    // When it entered review — the queue reads oldest first.
+    submittedAt: doc.reviewState?.submittedAt || doc.createdAt,
   };
 }
 
