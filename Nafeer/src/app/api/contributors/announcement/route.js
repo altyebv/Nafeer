@@ -42,11 +42,13 @@ export async function GET(req) {
     // Query: broadcast OR subject match OR team match OR direct target
     const query = {
       $or: [
-        // Broadcast — all three targeting arrays are empty
+        // Broadcast — all three targeting arrays are empty. Missing counts as
+        // empty: announcements saved before the team/contributor fields were
+        // in the schema have no such field, and `$size: 0` never matched them.
         {
-          targetSubjects:       { $size: 0 },
-          targetTeamIds:        { $size: 0 },
-          targetContributorIds: { $size: 0 },
+          targetSubjects:       { $in: [null, []] },
+          targetTeamIds:        { $in: [null, []] },
+          targetContributorIds: { $in: [null, []] },
         },
         // Subject-targeted and contributor has that subject
         ...(contributor.subject

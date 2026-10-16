@@ -36,6 +36,12 @@ const AnnouncementSchema = new mongoose.Schema(
 
     // Empty = show to all; populated = show only to these subject contributors
     targetSubjects: { type: [String], default: [] },
+
+    // Narrower audiences (see /api/contributors/announcement). They were sent
+    // by the admin UI but missing here, so strict mode dropped them and a
+    // message meant for one person went to everyone.
+    targetTeamIds:        { type: [mongoose.Schema.Types.ObjectId], default: [] },
+    targetContributorIds: { type: [mongoose.Schema.Types.ObjectId], default: [] },
   },
   { timestamps: true }
 );
