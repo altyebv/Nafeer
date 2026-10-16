@@ -14,7 +14,9 @@ export const PUBLIC_FIELDS = {
   subject: 1, role: 1, stats: 1, createdAt: 1, updatedAt: 1,
 };
 
-export const PUBLIC_FILTER = { status: 'approved', onboarded: true };
+// The system seed actor is approved and onboarded so content can point at it,
+// but it is not a person: no profile, no hall, no rank.
+export const PUBLIC_FILTER = { status: 'approved', onboarded: true, username: { $ne: SYSTEM_SEED_USERNAME } };
 
 // ── Indexability ──────────────────────────────────────────────────────────────
 //

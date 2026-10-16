@@ -1,6 +1,7 @@
 import { connectDB } from '@/lib/db';
 import { FeedItem } from '@/lib/models/FeedItem';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
+import { recountAuthoredLater } from '@/lib/authoredStats';
 
 // ─── getFeedItemsForSubject ───────────────────────────────────────────────────
 export async function getFeedItemsForSubject(subjectId, options = {}) {
@@ -74,7 +75,10 @@ export async function updateFeedItemStatus(contentId, newStatus, contributorId, 
 // ─── deleteFeedItem ───────────────────────────────────────────────────────────
 export async function deleteFeedItem(contentId) {
   await connectDB();
-  return FeedItem.deleteOne({ contentId });
+  const doc = await FeedItem.findOne({ contentId }, 'createdBy').lean();
+  const result = await FeedItem.deleteOne({ contentId });
+  if (doc) recountAuthoredLater([doc.createdBy]);
+  return result;
 }
 
 export async function getFeedItemById(contentId) {

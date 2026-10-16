@@ -2,6 +2,7 @@ import { connectDB } from '@/lib/db';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
+import { recountAuthoredLater } from '@/lib/authoredStats';
 
 // ─── Questions ────────────────────────────────────────────────────────────────
 
@@ -73,7 +74,10 @@ export async function updateQuestionStatus(contentId, newStatus, contributorId, 
 
 export async function deleteQuestion(contentId) {
   await connectDB();
-  return Question.deleteOne({ contentId });
+  const doc = await Question.findOne({ contentId }, 'createdBy').lean();
+  const result = await Question.deleteOne({ contentId });
+  if (doc) recountAuthoredLater([doc.createdBy]);
+  return result;
 }
 
 // ─── Exams ────────────────────────────────────────────────────────────────────
@@ -102,5 +106,8 @@ export async function updateExam(contentId, updates, contributorId) {
 
 export async function deleteExam(contentId) {
   await connectDB();
-  return Exam.deleteOne({ contentId });
+  const doc = await Exam.findOne({ contentId }, 'createdBy').lean();
+  const result = await Exam.deleteOne({ contentId });
+  if (doc) recountAuthoredLater([doc.createdBy]);
+  return result;
 }

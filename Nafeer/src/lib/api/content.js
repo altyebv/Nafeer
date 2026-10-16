@@ -3,6 +3,7 @@ import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { Question } from '@/lib/models/Question';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
+import { recountAuthoredLater } from '@/lib/authoredStats';
 import { VersionConflict, hasBaseVersion, updateAtVersion, settleBatch } from '@/lib/api/versionCheck';
 
 // ─── Sections ─────────────────────────────────────────────────────────────────
@@ -130,7 +131,9 @@ export async function deleteBlock(contentId) {
   if (block?.type === 'QUESTION') {
     await deleteCheckpointQuestionForBlock(block);
   }
-  return Block.deleteOne({ contentId });
+  const result = await Block.deleteOne({ contentId });
+  if (block) recountAuthoredLater([block.createdBy]);
+  return result;
 }
 
 export async function deleteCheckpointQuestionsForSections(sectionIds) {

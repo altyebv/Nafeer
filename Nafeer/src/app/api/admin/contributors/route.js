@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { verifyAdminToken } from '@/lib/adminAuth';
+import { SYSTEM_SEED_USERNAME } from '@/lib/SeedActor';
 import { appUrl } from '@/lib/appUrl';
 import { sendEmail } from '@/lib/email/emailService';
 import bcrypt from 'bcryptjs';
@@ -51,7 +52,9 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
-  const filter = status && status !== 'all' ? { status } : {};
+  // The system seed actor owns seeded content; it is not someone to manage.
+  const filter = { username: { $ne: SYSTEM_SEED_USERNAME } };
+  if (status && status !== 'all') filter.status = status;
 
   const contributors = await Contributor.find(filter).sort({ createdAt: -1 });
   return NextResponse.json({ contributors });

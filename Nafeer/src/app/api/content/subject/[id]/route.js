@@ -9,6 +9,7 @@ import { Concept } from '@/lib/models/Concept';
 import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { applyVersionBump } from '@/lib/models/versioning';
+import { reconcileAuthoredStatsLater } from '@/lib/authoredStats';
 
 const ok  = (data)          => Response.json({ ok: true, data });
 const err = (msg, status=400) => Response.json({ ok: false, error: msg }, { status });
@@ -94,6 +95,7 @@ export async function DELETE(request, { params }) {
     Question.deleteMany({ subjectId: id }),
     Subject.deleteOne({ subjectId: id }),
   ]);
+  reconcileAuthoredStatsLater();
 
   return ok({ deleted: id });
 }
