@@ -374,6 +374,25 @@ including the return-with-comments round trip.
 Each step gets its own commit and a review. No step adds a request,
 except the reviewer's return in step 3, which is one write.
 
+### DS5 plan: admin redesign (design agreed 2026-10-17)
+
+DS5 grows from "retire the overrides" into a redesign. The admin page of the
+design canvas has four boards, drawn with real data. The sidebar is out of
+scope for now. The 14 sections fold into four screens:
+
+| # | Step | Canvas | Replaces | State |
+|---|---|---|---|---|
+| 0 | **Honest activity numbers.** Contributor counters (`stats.*`) disagree with the content collections: Geography counts 7 blocks with none saved, and one contributor counts 6 lessons and 22 questions that do not exist. Count from the content itself, or reconcile, before any screen shows them | — | — | next |
+| 1 | **Subject page.** One page per subject: the unit/lesson tree with inline unit titles, coverage columns in words (sections, blocks, questions, feed cards), filters, and one publish action with delta/major/full as plain-language advanced options. Per-subject settings: visibility (`visibleSubjectIds`) and equation notation. Maintenance: complete missing units from the curriculum, restore from the last published copy. Lessons open in the real editor on their own route | AdSubject | Admin editor, Curriculum, Coverage map, Seed | |
+| 2 | **Overview.** "Waiting for your decision" (review, join requests, subjects with nobody, unseeded subjects), content per subject, the last 7 Sudan days, contributors, site and mail counts | AdOverview | Overview | |
+| 3 | **Contributors.** The six-stage joining pipeline, a list per stage, and a person page with facts, what they did, and actions. Roles and teams become attributes on this screen | AdPeople2 | Peoples, Roles, Teams | |
+| 4 | **Comms.** One composer: audience (contributors or students), scope, channels (contributor board, email via Resend, in-app centre, top banner), reach, and one history across channels. One app-settings panel for every manifest flag | AdComms | Comms, the flags half of Publish | |
+
+The reviewer side stays in DS2 step 3 (AdReview board).
+`TeamsSection`, `RolesSection` and `ContributorsSection` were unused and are
+deleted. Firebase env vars are empty in `.env.local`, so the app-side data
+(manifest flags, `comm_items`) cannot be read locally until they are set.
+
 ### Status
 
 - **DS0 landed on 2026-10-15.**

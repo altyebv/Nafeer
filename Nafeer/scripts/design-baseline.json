@@ -1,12 +1,12 @@
 {
   "note": "Violation counts per area. lint:design fails if any count rises. Lower with --update after a migration.",
-  "updated": "2026-10-15",
+  "updated": "2026-10-16",
   "counts": {
     "hex": {
       "ui": 0,
       "landing": 27,
       "editor": 101,
-      "admin": 77,
+      "admin": 62,
       "flow": 14,
       "profile": 16,
       "other": 8
@@ -15,7 +15,7 @@
       "ui": 0,
       "landing": 84,
       "editor": 82,
-      "admin": 294,
+      "admin": 247,
       "flow": 46,
       "profile": 51,
       "other": 4
@@ -24,7 +24,7 @@
       "ui": 0,
       "landing": 1,
       "editor": 137,
-      "admin": 220,
+      "admin": 209,
       "flow": 5,
       "profile": 0,
       "other": 15
@@ -33,7 +33,7 @@
       "ui": 0,
       "landing": 1,
       "editor": 662,
-      "admin": 767,
+      "admin": 745,
       "flow": 41,
       "profile": 0,
       "other": 4
@@ -51,7 +51,7 @@
       "ui": 0,
       "landing": 288,
       "editor": 330,
-      "admin": 493,
+      "admin": 396,
       "flow": 149,
       "profile": 68,
       "other": 7
@@ -87,7 +87,7 @@
       "ui": 0,
       "landing": 3,
       "editor": 7,
-      "admin": 58,
+      "admin": 55,
       "flow": 2,
       "profile": 0,
       "other": 0
