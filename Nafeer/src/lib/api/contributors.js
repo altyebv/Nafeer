@@ -1,6 +1,6 @@
 import { connectDB }        from '@/lib/db';
 import { Contributor }      from '@/lib/models/Contributor';
-import { SYSTEM_SEED_USERNAME } from '@/lib/SeedActor';
+import { SYSTEM_SEED_USERNAME, REAL_PEOPLE } from '@/lib/SeedActor';
 
 // ── Public contributor reads ──────────────────────────────────────────────────
 //
@@ -14,9 +14,10 @@ export const PUBLIC_FIELDS = {
   subject: 1, role: 1, stats: 1, createdAt: 1, updatedAt: 1,
 };
 
-// The system seed actor is approved and onboarded so content can point at it,
-// but it is not a person: no profile, no hall, no rank.
-export const PUBLIC_FILTER = { status: 'approved', onboarded: true, username: { $ne: SYSTEM_SEED_USERNAME } };
+// The system seed actor and the dev autologin account are approved and
+// onboarded so content can point at them, but they are not people: no
+// profile, no hall, no rank (REAL_PEOPLE in SeedActor.js).
+export const PUBLIC_FILTER = { status: 'approved', onboarded: true, ...REAL_PEOPLE };
 
 // ── Indexability ──────────────────────────────────────────────────────────────
 //

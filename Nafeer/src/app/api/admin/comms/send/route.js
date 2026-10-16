@@ -4,7 +4,7 @@ import { connectDB }          from '@/lib/db';
 import { Announcement }       from '@/lib/models/announcement';
 import { Contributor }        from '@/lib/models/Contributor';
 import { sendEmail }          from '@/lib/email/emailService';
-import { SYSTEM_SEED_USERNAME } from '@/lib/SeedActor';
+import { REAL_PEOPLE } from '@/lib/SeedActor';
 
 const DAY_MS = 86_400_000;
 const IDLE_DAYS = 14;
@@ -16,7 +16,7 @@ const IDLE_DAYS = 14;
 //   role     one role's contributors           (value: roleId)
 //   idle     nobody active in the last 14 days
 function audienceFilter(scope = {}) {
-  const base = { status: 'approved', onboarded: true, username: { $ne: SYSTEM_SEED_USERNAME } };
+  const base = { status: 'approved', onboarded: true, ...REAL_PEOPLE };
   switch (scope.kind) {
     case 'subject': return { ...base, subject: scope.value };
     case 'role':    return { ...base, roleId: scope.value };

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { verifyAdminToken } from '@/lib/adminAuth';
-import { SYSTEM_SEED_USERNAME } from '@/lib/SeedActor';
+import { REAL_PEOPLE } from '@/lib/SeedActor';
 import { pipelineStage } from '@/lib/adminPipeline';
 import { appUrl } from '@/lib/appUrl';
 import { sendEmail } from '@/lib/email/emailService';
@@ -54,7 +54,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
   // The system seed actor owns seeded content; it is not someone to manage.
-  const filter = { username: { $ne: SYSTEM_SEED_USERNAME } };
+  const filter = { ...REAL_PEOPLE };
   if (status && status !== 'all') filter.status = status;
 
   // The token is read only to work out the pipeline stage; it never leaves here.

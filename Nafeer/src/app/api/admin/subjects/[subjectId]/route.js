@@ -13,7 +13,7 @@ import { Media }           from '@/lib/models/Media';
 import { Contributor }     from '@/lib/models/Contributor';
 import { getManifest, updateFeatureFlags } from '@/lib/FirebaseAdmin';
 import { SUBJECTS_BY_ID, getMathNotation, MATH_NOTATION } from '@/shared/curriculum';
-import { SYSTEM_SEED_USERNAME } from '@/lib/SeedActor';
+import { REAL_PEOPLE } from '@/lib/SeedActor';
 
 const countBy = (rows) => Object.fromEntries(rows.map((r) => [r._id, r.n]));
 
@@ -50,7 +50,7 @@ export async function GET(_request, { params }) {
       Concept.countDocuments({ subjectId }),
       Media.countDocuments({ subjectId }).catch(() => 0),
       Contributor.find(
-        { subject: subjectId, status: 'approved', username: { $ne: SYSTEM_SEED_USERNAME } },
+        { subject: subjectId, status: 'approved', ...REAL_PEOPLE },
         'name username stats.lastActiveAt',
       ).lean(),
       readManifest(),

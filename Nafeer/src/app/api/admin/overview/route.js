@@ -11,7 +11,7 @@ import { Question }        from '@/lib/models/Question';
 import { Subject }         from '@/lib/models/Subject';
 import { SiteSettings }    from '@/lib/models/SiteSettings';
 import { EmailLog }        from '@/lib/models/EmailLog';
-import { SYSTEM_SEED_USERNAME } from '@/lib/SeedActor';
+import { REAL_PEOPLE } from '@/lib/SeedActor';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 import { dayKey, shiftKey } from '@/lib/activity';
 import { pipelineStage }   from '@/lib/adminPipeline';
@@ -44,7 +44,7 @@ export async function GET() {
       Section.aggregate([{ $group: { _id: { s: '$subjectId', l: '$lessonContentId' } } }, { $group: { _id: '$_id.s', n: { $sum: 1 } } }]),
       Subject.find({}, 'subjectId').lean(),
       Contributor.find(
-        { username: { $ne: SYSTEM_SEED_USERNAME } },
+        { ...REAL_PEOPLE },
         'status subject onboarded interviewToken interviewAnswers.submittedAt dynamicAnswersSubmittedAt stats.lastActiveAt',
       ).select('+interviewToken').lean(),
       Promise.all([Lesson, Concept, FeedItem, Question].map((M) => M.countDocuments({ status: 'review' }))),
