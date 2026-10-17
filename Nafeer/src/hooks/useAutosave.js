@@ -31,6 +31,8 @@ export function useAutosave(lessonId, subjectId, syncAll) {
     const save = () => {
       timer = null;
       if (!lessonHasUnsaved(lessonId)) return;
+      // No connection: keep the edits on this device; `online` below sends them.
+      if (!navigator.onLine) return;
       // Errors and conflicts are already shown by the sync status and the
       // conflict panel; an autosave has nothing to add.
       syncAll(lessonId, subjectId, { auto: true }).catch(() => {});
@@ -51,12 +53,16 @@ export function useAutosave(lessonId, subjectId, syncAll) {
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', warn);
+    // Back online: send what piled up straight away, not after the delay.
+    const reconnect = () => { if (lessonHasUnsaved(lessonId)) save(); };
+    window.addEventListener('online', reconnect);
 
     schedule();
     return () => {
       unsubContent();
       unsubSubject();
       window.removeEventListener('beforeunload', warn);
+      window.removeEventListener('online', reconnect);
       if (timer) clearTimeout(timer);
       // Leaving the lesson (another lesson, another page): save now.
       if (lessonHasUnsaved(lessonId)) save();

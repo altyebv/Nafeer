@@ -24,6 +24,7 @@ import {
   Smartphone,
   Target,
   TriangleAlert,
+  CloudOff,
   Upload,
   X,
 } from 'lucide-react';
@@ -35,10 +36,11 @@ import { useContentStore } from '@/store/contentStore';
 import LessonConflicts from '@/components/editor/lesson/LessonConflicts';
 import { minutesAgo } from '@/components/editor/lesson/SyncMarks';
 import { useAutosave } from '@/hooks/useAutosave';
+import { useOnline } from '@/hooks/useOnline';
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
 import { Badge, Button, Card as UiCard, Drawer, EmptyState, Field as UiField, IconButton, Input, TabPanel, Textarea } from '@/components/ui';
-import { arCount, formatNumber } from '@/lib/format';
+import { arCount, changesLabel as changesLabelShort, formatNumber } from '@/lib/format';
 import { SECTION_KIND_CONFIG } from '@/shared/constants';
 import { rememberLessonOpened } from '@/lib/lessonReadiness';
 
@@ -105,6 +107,7 @@ export default function LessonEditorPage({
   const [reviewComments,   setReviewComments]   = useState([]);
   const [resolvingId,      setResolvingId]      = useState(null);
   const [showReadiness,    setShowReadiness]    = useState(false);
+  const online = useOnline();
   // The phone beside the content tab (xl and up). Remembered in the browser;
   // below xl the same button opens the preview modal instead.
   const [livePreview,      setLivePreview]      = useState(false);
@@ -217,7 +220,10 @@ export default function LessonEditorPage({
   }));
 
   // One save state for the header pill, from what editorStore already tracks.
+  // Offline first: a failed save while disconnected is not an error to fix,
+  // it is work waiting for the connection (kept in local storage meanwhile).
   const saveState =
+    !online          ? 'offline' :
     syncError        ? 'error'  :
     isSyncing        ? 'saving' :
     unsavedCount > 0 ? 'dirty'  :
@@ -402,6 +408,15 @@ export default function LessonEditorPage({
               آخر من فتح هذا الدرس: {openedBy.name || 'زميل'}، {minutesAgo(openedBy.at)}. قد يكون العمل عليه جارياً الآن — تُحفظ تعديلاتك تلقائياً، وستُنبَّه إن تعارضت مع تعديلات أخرى.
             </span>
             <IconButton icon={X} label="إخفاء التنبيه" size="sm" onClick={() => setOpenedBy(null)} className="-my-1.5" />
+          </div>
+        )}
+
+        {!online && (
+          <div role="status" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-info-surface border border-info-border text-info t-label font-normal">
+            <CloudOff size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <p className="leading-relaxed">
+              انقطع الاتصال. تابع الكتابة — {unsavedCount ? `${changesLabelShort(unsavedCount)} محفوظة على هذا الجهاز` : 'كل ما تكتبه يُحفظ على هذا الجهاز'}، وتُرفع تلقائياً حين يعود الاتصال. لا تمسح بيانات المتصفح قبل ذلك.
+            </p>
           </div>
         )}
 

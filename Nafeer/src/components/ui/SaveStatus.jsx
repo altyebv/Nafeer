@@ -1,5 +1,5 @@
 'use client';
-import { Check, Loader2, AlertTriangle, CircleDot } from 'lucide-react';
+import { Check, Loader2, AlertTriangle, CircleDot, CloudOff } from 'lucide-react';
 import { formatDate, changesLabel } from '@/lib/format';
 import { cx } from './cx';
 
@@ -7,7 +7,9 @@ import { cx } from './cx';
 // A compact pill for the page header. Replaces the full-width green "محفوظ"
 // bar that took a whole strip above every editor page.
 //
-// state   saved · saving · dirty · error · idle (renders nothing)
+// state   saved · saving · dirty · offline · error · idle (renders nothing)
+//         offline: no connection — edits are kept on this device and go up
+//         when it returns
 // It is a polite live region, so a screen reader hears "جارٍ الحفظ…" and then
 // "محفوظ" without the user moving focus.
 
@@ -16,6 +18,7 @@ const LOOK = {
   saving: { icon: Loader2,       cls: 'bg-warn-surface text-warn', spin: true },
   dirty:  { icon: CircleDot,     cls: 'bg-accent-wash text-fg-accent' },
   error:  { icon: AlertTriangle, cls: 'bg-danger-surface text-danger' },
+  offline:{ icon: CloudOff,      cls: 'bg-info-surface text-info' },
 };
 
 export function SaveStatus({ state = 'idle', savedAt, dirtyCount = 0, onRetry, detail, className }) {
@@ -26,6 +29,7 @@ export function SaveStatus({ state = 'idle', savedAt, dirtyCount = 0, onRetry, d
     state === 'saved'  ? (savedAt ? `محفوظ · ${formatDate(savedAt, 'time')}` : 'محفوظ') :
     state === 'saving' ? 'جارٍ الحفظ…' :
     state === 'dirty'  ? `${changesLabel(dirtyCount || 1)} غير محفوظة` :
+    state === 'offline' ? (dirtyCount ? `غير متصل · ${changesLabel(dirtyCount)} على جهازك` : 'غير متصل') :
                          'تعذّر الحفظ';
 
   return (
