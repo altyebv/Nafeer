@@ -6,6 +6,7 @@ import EditorPage from '@/components/editor/layout/EditorPage';
 import { useAnnouncementStore } from '@/store/announcementStore';
 import { formatDate, formatNumber } from '@/lib/format';
 import { ActivityGraph, Card } from '@/components/ui';
+import { NextStepCard, UnitProgressCard } from './DashboardNext';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
@@ -441,7 +442,45 @@ export default function DashboardPage({ contributor }) {
       {/* ── Welcome hero ── */}
       <WelcomeHero contributor={contributor} isFirstVisit={isFirstVisit} />
 
-      {/* ── Impact bar ── */}
+      {/* ── What to do next, and where the subject stands (DS2 step 8) ── */}
+      <NextStepCard />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8 items-start">
+        <UnitProgressCard />
+        {/* ── Announcements ── */}
+        <div className="min-w-0">
+          <div className="flex items-center justify-between mb-4">
+            <SectionLabel>إعلانات الإدارة</SectionLabel>
+            {announcements.some((a) => a.pinned) && (
+              <span
+                className="text-[9px] font-mono px-2 py-0.5 rounded"
+                style={{ background: 'rgba(212,137,30,0.1)', color: 'var(--accent)' }}
+              >
+                {announcements.filter((a) => a.pinned).length} مثبّت
+              </span>
+            )}
+          </div>
+  
+          {annoLoading ? (
+            <div className="flex items-center gap-2 py-6" style={{ color: 'var(--text-muted)' }}>
+              <span
+                className="inline-block w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
+                style={{ borderColor: 'var(--accent) var(--accent) var(--accent) transparent' }}
+              />
+              <span className="text-xs font-arabic">جارٍ التحميل…</span>
+            </div>
+          ) : announcements.length === 0 ? (
+            <EmptyAnnouncements />
+          ) : (
+            <div className="flex flex-col gap-2">
+              {announcements.map((a) => (
+                <AnnouncementCard key={a.id} announcement={a} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       <ImpactBar stats={stats} />
 
       {/* ── Stats grid ── */}
@@ -470,38 +509,6 @@ export default function DashboardPage({ contributor }) {
         )}
       </Card>
 
-      {/* ── Announcements ── */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <SectionLabel>إعلانات الإدارة</SectionLabel>
-          {announcements.some((a) => a.pinned) && (
-            <span
-              className="text-[9px] font-mono px-2 py-0.5 rounded"
-              style={{ background: 'rgba(212,137,30,0.1)', color: 'var(--accent)' }}
-            >
-              {announcements.filter((a) => a.pinned).length} مثبّت
-            </span>
-          )}
-        </div>
-
-        {annoLoading ? (
-          <div className="flex items-center gap-2 py-6" style={{ color: 'var(--text-muted)' }}>
-            <span
-              className="inline-block w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: 'var(--accent) var(--accent) var(--accent) transparent' }}
-            />
-            <span className="text-xs font-arabic">جارٍ التحميل…</span>
-          </div>
-        ) : announcements.length === 0 ? (
-          <EmptyAnnouncements />
-        ) : (
-          <div className="flex flex-col gap-2">
-            {announcements.map((a) => (
-              <AnnouncementCard key={a.id} announcement={a} />
-            ))}
-          </div>
-        )}
-      </div>
     </EditorPage>
   );
 }
