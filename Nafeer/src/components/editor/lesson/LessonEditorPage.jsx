@@ -40,6 +40,7 @@ import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
 import { Badge, Button, Card as UiCard, Drawer, EmptyState, Field as UiField, IconButton, Input, TabPanel, Textarea } from '@/components/ui';
 import { arCount, formatNumber } from '@/lib/format';
 import { SECTION_KIND_CONFIG } from '@/shared/constants';
+import { rememberLessonOpened } from '@/lib/lessonReadiness';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 // Whether the content tab shows the phone beside it — a per-browser choice.
@@ -111,6 +112,8 @@ export default function LessonEditorPage({
   useEffect(() => {
     try { setLivePreview(localStorage.getItem(LIVE_PREVIEW_KEY) === '1'); } catch { /* storage blocked */ }
   }, []);
+  // Feeds the lessons list's «تابع من حيث توقفت» strip — browser only.
+  useEffect(() => { if (lessonId) rememberLessonOpened(lessonId); }, [lessonId]);
   const toggleLivePreview = () => {
     if (!window.matchMedia('(min-width: 1280px)').matches) { setShowPreview(true); return; }
     setLivePreview((on) => {
