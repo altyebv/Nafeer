@@ -37,6 +37,7 @@ import LessonConflicts from '@/components/editor/lesson/LessonConflicts';
 import { minutesAgo } from '@/components/editor/lesson/SyncMarks';
 import { useAutosave } from '@/hooks/useAutosave';
 import { useOnline } from '@/hooks/useOnline';
+import UndoToast from '@/components/editor/shared/UndoToast';
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
 import { Badge, Button, Card as UiCard, Drawer, EmptyState, Field as UiField, IconButton, Input, TabPanel, Textarea } from '@/components/ui';
@@ -507,6 +508,8 @@ export default function LessonEditorPage({
         </aside>
       )}
       </div>
+
+      <UndoToast />
 
       {/* Phones: the two things a writer reaches for, at the thumb (DS2 step 7). */}
       <div className="sm:hidden fixed bottom-0 inset-x-0 z-sticky flex items-center gap-2 px-4 py-2 bg-chrome border-t border-line pb-[max(0.5rem,env(safe-area-inset-bottom))]">

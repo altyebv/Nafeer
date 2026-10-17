@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { BLOCK_TYPE_CONFIG, HIGHLIGHT_STYLES, HEADING_LEVELS, QUESTION_TYPE_CONFIG } from '@/shared/constants';
 import { LessonTableEditor } from '@/components/editor/blocks/TableEditor';
-import DeleteButton from '@/components/editor/shared/DeleteButton';
+import { useUndoStore } from '@/store/undoStore';
 import MediaPicker from '@/components/editor/media/MediaPicker';
 import ImageMarkerEditor from '@/components/editor/media/ImageMarkerEditor';
 import { sanitiseMarkers } from '@/lib/markerUtils';
@@ -24,6 +24,7 @@ import {
   Check,
   CircleDot,
   Copy,
+  Trash2,
   Image as ImageIcon,
   Lightbulb,
   Pencil,
@@ -185,16 +186,15 @@ function BlockToolbar({ config, dragHandleProps, onEdit, canMoveUp, canMoveDown,
       {onMove && <button type="button" onClick={() => onMove(-1)} disabled={!canMoveUp} className={btn} aria-label="انقل لأعلى" title="انقل لأعلى"><ArrowUp size={13} /></button>}
       {onMove && <button type="button" onClick={() => onMove(1)} disabled={!canMoveDown} className={btn} aria-label="انقل لأسفل" title="انقل لأسفل"><ArrowDown size={13} /></button>}
       {onDuplicate && <button type="button" onClick={onDuplicate} className={btn} aria-label="تكرار" title="تكرار"><Copy size={13} /></button>}
-      <DeleteButton onDelete={onDelete} compact />
+      <button type="button" onClick={onDelete} className={`${btn} hover:text-danger`} aria-label="حذف" title="حذف (يمكن التراجع)"><Trash2 size={13} /></button>
     </div>
   );
 }
 
 export default function BlockEditor({ block, subjectId, dragHandleProps, lessonId, unitId, sectionId, canMoveUp, canMoveDown, onMove, onDuplicate }) {
-  const { concepts, updateBlock, deleteBlock } = useDataStore(
-    useShallow((s) => ({ concepts: s.concepts, updateBlock: s.updateBlock, deleteBlock: s.deleteBlock })),
+  const { concepts, updateBlock } = useDataStore(
+    useShallow((s) => ({ concepts: s.concepts, updateBlock: s.updateBlock })),
   );
-  const { deleteBlock: atlasDeleteBlock } = useAtlasSync();
 
   const config = BLOCK_TYPE_CONFIG[block.type] || BLOCK_TYPE_CONFIG.TEXT;
   const linkedConcept = concepts.find((c) => c.id === block.conceptRef);
@@ -211,9 +211,9 @@ export default function BlockEditor({ block, subjectId, dragHandleProps, lessonI
   const update = (patch) => updateBlock(block.id, patch);
   const patchMeta = (patch) => update({ metadata: { ...(block.metadata || {}), ...patch } });
 
+  // Gone at once, back with «تراجع» for a few seconds (store/undoStore.js).
   const handleDelete = () => {
-    deleteBlock(block.id);
-    atlasDeleteBlock(block.id);
+    useUndoStore.getState().deleteBlock(block, `«${config.label}»`);
   };
 
   // ── QUESTION — always shows its own editor UI, no preview/edit toggle ───────
@@ -298,7 +298,8 @@ export default function BlockEditor({ block, subjectId, dragHandleProps, lessonI
           </button>
         )}
 
-        <DeleteButton onDelete={handleDelete} />
+        <button type="button" onClick={handleDelete} aria-label="حذف" title="حذف (يمكن التراجع)"
+          className="w-8 h-8 inline-flex items-center justify-center rounded-control text-fg-muted hover:text-danger hover:bg-hover touch-target"><Trash2 size={15} /></button>
       </div>
 
       {/* Editor body */}

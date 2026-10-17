@@ -5,17 +5,16 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronDown, ChevronLeft, GripVertical, Lightbulb, Plus } from 'lucide-react';
+import { ChevronDown, ChevronLeft, GripVertical, Lightbulb, Plus, Trash2 } from 'lucide-react';
 
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
-import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { LEARNING_TYPES, LEARNING_TYPE_CONFIG, SECTION_KIND_CONFIG, BLOCK_TYPE_CONFIG } from '@/shared/constants';
 import { Badge, Segmented, Select, cx } from '@/components/ui';
 import BlockEditor    from '@/components/editor/blocks/BlockEditor';
 import AddBlockMenu   from '@/components/editor/blocks/AddBlockMenu';
 import ConceptLinker  from '@/components/editor/shared/ConceptLinker';
-import DeleteButton   from '@/components/editor/shared/DeleteButton';
+import { useUndoStore } from '@/store/undoStore';
 import { ConflictCard, UnsavedBar, UnsavedDot, useConflict } from '@/components/editor/lesson/SyncMarks';
 
 // ─── SectionEditor ────────────────────────────────────────────────────────────
@@ -74,13 +73,12 @@ function SortableBlockItem({ block, index, count, subjectId, lessonId, unitId, s
 }
 
 export default function SectionEditor({ section, index = 0, maxPart = 0, subjectId, lessonId, unitId }) {
-  const { blocks, concepts, updateSection, deleteSection, addBlock, updateBlock, reorderBlocks } = useDataStore(
+  const { blocks, concepts, updateSection, addBlock, updateBlock, reorderBlocks } = useDataStore(
     useShallow((s) => ({
-      blocks: s.blocks, concepts: s.concepts, updateSection: s.updateSection, deleteSection: s.deleteSection,
+      blocks: s.blocks, concepts: s.concepts, updateSection: s.updateSection,
       addBlock: s.addBlock, updateBlock: s.updateBlock, reorderBlocks: s.reorderBlocks,
     })),
   );
-  const { deleteSection: atlasDeleteSection } = useAtlasSync();
   const conflict = useConflict(lessonId, section.id);
 
   const [isEditingTitle, setIsEditingTitle] = useState(!section.title || /^قسم \d+$/.test(section.title.trim()));
@@ -98,9 +96,9 @@ export default function SectionEditor({ section, index = 0, maxPart = 0, subject
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
+  // Gone at once with its blocks, back with «تراجع» for a few seconds.
   const handleDelete = () => {
-    deleteSection(section.id);
-    atlasDeleteSection(section.id);
+    useUndoStore.getState().deleteSection(section, `القسم «${section.title}»`);
   };
 
   const pickType = (type) => {
@@ -201,7 +199,8 @@ export default function SectionEditor({ section, index = 0, maxPart = 0, subject
           <span className="hidden sm:inline t-caption text-fg-subtle tabular-nums shrink-0">
             {sectionBlocks.length ? `${sectionBlocks.length} عناصر` : 'فارغ'}
           </span>
-          <DeleteButton onDelete={handleDelete} title={`حذف «${section.title}» وكل عناصره؟`} />
+          <button type="button" onClick={handleDelete} aria-label={`حذف القسم «${section.title}»`} title="حذف القسم (يمكن التراجع)"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-control text-fg-muted hover:text-danger hover:bg-hover touch-target"><Trash2 size={15} /></button>
         </div>
 
         {!collapsed && (
