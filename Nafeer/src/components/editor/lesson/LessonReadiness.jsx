@@ -111,6 +111,20 @@ function ReviewBlock({ lesson, reviewState, comments, onJump, onResolve, resolvi
   );
 }
 
+// What good looks like, one line per check — shown under the next one to do
+// (UX queue 3). Keyed by the checklist ids in LessonEditorPage.
+const HELP = {
+  title:     'اسم الفكرة لا رقم الدرس — مثلاً «قراءة الصور الجوية».',
+  summary:   'جملتان: ما الذي سيفهمه الطالب، وما الذي سيستطيع فعله بعد الدرس.',
+  sections:  'ابدأ بقسم «الفكرة» يشرح المفهوم، ثم «مثال محلول» يطبّقه.',
+  content:   'فقرة قصيرة أولاً، ثم صورة أو مثال. اكتب «/» في فقرة فارغة لتختار النوع.',
+  questions: 'سؤال يختبر الفهم لا الحفظ — «لماذا» أفضل من «ما هو».',
+  feed:      'بطاقة تعريف لأهم مصطلح في الدرس، يراجعه الطالب لاحقاً.',
+};
+
+// The seed account creates every scaffolded lesson; it is not an author.
+const SEED_NAME = 'System Seed';
+
 export default function LessonReadiness({
   lesson, reviewState, comments = [], onResolve, resolvingId,
   checks, onJump,
@@ -154,6 +168,9 @@ export default function LessonReadiness({
                   <span className="flex-1">{c.label}</span>
                   {!c.done && <span className="t-caption text-fg-accent">اذهب ←</span>}
                 </button>
+                {isNext && HELP[c.id] && (
+                  <p className="ps-7 pb-2 t-caption text-fg-muted leading-relaxed">{HELP[c.id]}</p>
+                )}
               </li>
             );
           })}
@@ -166,10 +183,10 @@ export default function LessonReadiness({
       </section>
 
       <section className="flex flex-col gap-1.5 px-1 t-caption text-fg-subtle">
-        {attribution?.createdBy?.name && <span>أنشأه {attribution.createdBy.name}</span>}
+        {attribution?.createdBy?.name && attribution.createdBy.name !== SEED_NAME && <span>أنشأه {attribution.createdBy.name}</span>}
         <span>
           الإصدار {formatNumber(lesson._v ?? lesson.version ?? 1)}
-          {attribution?.updatedBy?.name ? ` · آخر تعديل بواسطة ${attribution.updatedBy.name}` : ''}
+          {attribution?.updatedBy?.name && attribution.updatedBy.name !== SEED_NAME ? ` · آخر تعديل بواسطة ${attribution.updatedBy.name}` : ''}
         </span>
         {lessonIndex >= 0 && <span>الدرس {formatNumber(lessonIndex + 1)} من {formatNumber(unitLessonCount)} في الوحدة</span>}
         {(prevLesson || nextLesson) && (
