@@ -86,12 +86,16 @@ export function useAtlasSync() {
   const bootstrapSubject = useCallback(async (subjectId) => {
     try {
       setLoading();
-      await apiFetch('/api/content/subject', {
-        method: 'POST',
-        body: JSON.stringify({ subjectId }),
-      });
       try {
-        const atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`);
+        // Read first; create only when the subject is not in Atlas yet. The
+        // create (POST) used to run on every editor load — idempotent, but a
+        // request and a dozen queries per visit on the free tier. Completing
+        // a partly seeded subject is now the admin subject page's «أكمل».
+        let atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`).catch(() => null);
+        if (!atlasData?.subject) {
+          await apiFetch('/api/content/subject', { method: 'POST', body: JSON.stringify({ subjectId }) });
+          atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`);
+        }
         if (atlasData?.units) {
           const units = atlasData.units.map((u) => ({
             id: u.contentId,
