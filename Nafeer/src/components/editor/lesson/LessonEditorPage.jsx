@@ -8,7 +8,7 @@ import SectionEditor        from '@/components/editor/lesson/SectionEditor';
 import LessonQuestionsPanel from '@/components/editor/lesson/LessonQuestionsPanel';
 import LessonFeedPanel      from '@/components/editor/lesson/LessonFeedPanel';
 import LessonHeader         from '@/components/editor/lesson/LessonHeader';
-import LessonPreviewModal   from '@/components/editor/lesson/LessonPreviewModal';
+import LessonPreviewModal, { LessonPhone } from '@/components/editor/lesson/LessonPreviewModal';
 import { MathNotationContext } from '@/components/editor/shared/MathNotationContext';
 import { getMathNotation }  from '@/shared/curriculum';
 import LessonReadiness, { SIXTHS } from '@/components/editor/lesson/LessonReadiness';
@@ -42,8 +42,11 @@ import EditorPage from '@/components/editor/layout/EditorPage';
 import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
 import { Badge, Button, Drawer, EmptyState, IconButton, TabPanel } from '@/components/ui';
 import { arCount, formatNumber } from '@/lib/format';
+import { SECTION_KIND_CONFIG } from '@/shared/constants';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
+// Whether the content tab shows the phone beside it — a per-browser choice.
+const LIVE_PREVIEW_KEY = 'nafeer-editor-live-preview';
 
 const FIELD =
   'w-full px-4 py-3 bg-ink-950 border border-ink-800 rounded-xl text-sand-200 ' +
@@ -110,6 +113,21 @@ export default function LessonEditorPage({
   const [reviewComments,   setReviewComments]   = useState([]);
   const [resolvingId,      setResolvingId]      = useState(null);
   const [showReadiness,    setShowReadiness]    = useState(false);
+  // The phone beside the content tab (xl and up). Remembered in the browser;
+  // below xl the same button opens the preview modal instead.
+  const [livePreview,      setLivePreview]      = useState(false);
+  const [focusSectionId,   setFocusSectionId]   = useState(null);
+  useEffect(() => {
+    try { setLivePreview(localStorage.getItem(LIVE_PREVIEW_KEY) === '1'); } catch { /* storage blocked */ }
+  }, []);
+  const toggleLivePreview = () => {
+    if (!window.matchMedia('(min-width: 1280px)').matches) { setShowPreview(true); return; }
+    setLivePreview((on) => {
+      try { localStorage.setItem(LIVE_PREVIEW_KEY, on ? '0' : '1'); } catch { /* storage blocked */ }
+      return !on;
+    });
+  };
+  const showPhone = livePreview && activeTab === 'body';
 
   const lesson         = lessons.find((l) => l.id === lessonId);
   // unitId used to arrive as a prop alongside lessonId; with a single-segment
@@ -372,7 +390,7 @@ export default function LessonEditorPage({
       {/* Content column + readiness panel. The panel sits beside the steps at
           xl and up, where there is room; below that a one-line bar opens it as
           a drawer (DS2 step 2, canvas board «الجاهزية والإرسال»). */}
-      <div className="flex-1 w-full max-w-[68rem] mx-auto flex gap-8 px-4 sm:px-6">
+      <div className={`flex-1 w-full ${showPhone ? 'max-w-[76rem]' : 'max-w-[68rem]'} mx-auto flex gap-8 px-4 sm:px-6`}>
       <div className="flex-1 min-w-0 max-w-4xl mx-auto xl:mx-0 xl:max-w-none flex flex-col">
 
       {/* Notices sit in the content column, above the step — not in the sticky
@@ -402,7 +420,7 @@ export default function LessonEditorPage({
         <button
           type="button"
           onClick={() => setShowReadiness(true)}
-          className="xl:hidden flex items-center gap-3 w-full px-4 h-12 rounded-card bg-raised border border-line text-start t-ui hover:border-line-strong transition-colors"
+          className={`${showPhone ? '' : 'xl:hidden '}flex items-center gap-3 w-full px-4 h-12 rounded-card bg-raised border border-line text-start t-ui hover:border-line-strong transition-colors`}
         >
           <span className="text-fg-strong">جاهزية الدرس</span>
           <span dir="ltr" className="t-num text-fg-muted">{formatNumber(completedChecks)} / 6</span>
@@ -430,6 +448,7 @@ export default function LessonEditorPage({
           <StepBody
             lesson={lesson} lessonSections={lessonSections} lessonBlocks={lessonBlocks}
             subjectId={subjectId} lessonId={lessonId} unitId={unitId} onAddSection={handleAddSection} onAddNewPart={handleAddNewPart}
+            livePreview={showPhone} onToggleLivePreview={toggleLivePreview} onFocusSection={setFocusSectionId}
             onPrev={() => setActiveTab('meta')} onNext={() => setActiveTab('questions')}
           />
         </TabPanel>
@@ -460,11 +479,21 @@ export default function LessonEditorPage({
       </div>
       </div>
 
-      <aside aria-label="جاهزية الدرس والمراجعة" className="hidden xl:block w-80 shrink-0 py-8">
-        <div className="sticky top-32 max-h-[calc(100dvh-9rem)] overflow-y-auto scrollbar-none">
-          {readinessPanel}
-        </div>
-      </aside>
+      {showPhone ? (
+        <aside aria-label="معاينة حية" className="hidden xl:block w-[22rem] shrink-0 py-8">
+          <div className="sticky top-32 flex flex-col gap-2">
+            <span className="t-caption text-fg-subtle">كما يراه الطالب في بشير · يتبع ما تختاره في المخطط</span>
+            <LessonPhone lesson={lesson} sections={lessonSections} blocks={lessonBlocks} questions={lessonQuestions}
+              focusSectionId={focusSectionId} height="calc(100dvh - 11rem)" />
+          </div>
+        </aside>
+      ) : (
+        <aside aria-label="جاهزية الدرس والمراجعة" className="hidden xl:block w-80 shrink-0 py-8">
+          <div className="sticky top-32 max-h-[calc(100dvh-9rem)] overflow-y-auto scrollbar-none">
+            {readinessPanel}
+          </div>
+        </aside>
+      )}
       </div>
 
       {showReadiness && (
@@ -685,8 +714,31 @@ function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completed
   );
 }
 
+// ─── Lesson outline ───────────────────────────────────────────────────────────
+// The sections at a glance: role, title, how full. Jumping scrolls the editor
+// and, when it is open, the phone beside it (DS2 step 4, EdContentTab).
+function LessonOutline({ sections, blocks, onPick }) {
+  if (sections.length < 2) return null;
+  return (
+    <nav aria-label="مخطط الدرس" className="flex gap-2 overflow-x-auto scrollbar-none pb-1 mb-2">
+      {sections.map((s, i) => {
+        const n = blocks.filter((b) => b.sectionId === s.id).length;
+        const role = s.kind && s.kind !== 'GENERAL' ? SECTION_KIND_CONFIG[s.kind]?.label : null;
+        return (
+          <button key={s.id} type="button" onClick={() => onPick(s.id)}
+            className="shrink-0 max-w-56 flex flex-col items-start gap-0.5 px-3 py-2 rounded-control border border-line bg-raised hover:border-line-strong text-start">
+            <span className="t-caption text-fg-subtle">{i + 1}{role ? ` · ${role}` : ''}</span>
+            <span className="t-label text-fg-strong truncate max-w-full">{s.title}</span>
+            <span className={`t-caption ${n ? 'text-fg-muted' : 'text-warn'}`}>{n ? `${n} عناصر` : 'فارغ'}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 // ─── Step 2: Body ─────────────────────────────────────────────────────────────
-function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, unitId, onAddSection, onAddNewPart, onPrev, onNext }) {
+function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, unitId, onAddSection, onAddNewPart, onPrev, onNext, livePreview, onToggleLivePreview, onFocusSection }) {
   const partsMap = lessonSections.reduce((acc, s) => {
     const p = s.partIndex ?? 0;
     if (!acc[p]) acc[p] = [];
@@ -706,11 +758,20 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, u
           {lessonBlocks.length > 0 && ` · ${lessonBlocks.length} عنصر`}
         </span>
         {isMultiPart && (
-          <span className="mr-auto text-sm text-ink-500 font-arabic px-2 py-0.5 bg-ink-800/40 rounded-full border border-ink-800">
+          <span className="text-sm text-ink-500 font-arabic px-2 py-0.5 bg-ink-800/40 rounded-full border border-ink-800">
             {partKeys.length} أجزاء
           </span>
         )}
+        <Button size="sm" variant={livePreview ? 'primary' : 'secondary'} icon={Smartphone} onClick={onToggleLivePreview}
+          aria-pressed={livePreview} className="ms-auto">
+          {livePreview ? 'إخفاء المعاينة' : 'معاينة بجانبه'}
+        </Button>
       </div>
+
+      <LessonOutline sections={lessonSections} blocks={lessonBlocks} onPick={(id) => {
+        document.querySelector(`[data-sync-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        onFocusSection(id);
+      }} />
 
       {lessonSections.length === 0 && (
         <div
@@ -754,7 +815,7 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, u
           )}
 
           {partsMap[partIdx].map((section) => (
-            <SectionEditor key={section.id} section={section} maxPart={maxPart} 
+            <SectionEditor key={section.id} section={section} index={lessonSections.indexOf(section)} maxPart={maxPart}
             subjectId={subjectId} lessonId={lessonId} unitId={unitId} />
           ))}
 

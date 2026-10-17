@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { HIGHLIGHT_STYLES } from '@/shared/constants';
+import { useEffect, useRef, useState } from 'react';
+import { HIGHLIGHT_STYLES, SECTION_KIND_CONFIG } from '@/shared/constants';
 import FormulaPreview from '@/components/editor/shared/FormulaPreview';
 import MathText from '@/components/editor/shared/MathText';
 import {
@@ -33,22 +33,10 @@ const HIGHLIGHT_ICONS = {
 };
 
 // ─── Phone frame preview — Android Basheer mocker ────────────────────────────
+// The modal (any tab) and the live preview beside the content tab both draw
+// LessonPhone. `focusSectionId` follows the editor: the phone switches to
+// the part that section is in and scrolls it into view.
 export default function LessonPreviewModal({ lesson, sections, blocks, questions, onClose }) {
-  // Group sections by partIndex, sorted by order
-  const sortedSections = [...sections].sort((a, b) => a.order - b.order);
-  const partsMap = sortedSections.reduce((acc, s) => {
-    const p = s.partIndex ?? 0;
-    if (!acc[p]) acc[p] = [];
-    acc[p].push(s);
-    return acc;
-  }, {});
-  const partKeys = Object.keys(partsMap).map(Number).sort((a, b) => a - b);
-
-  const [activePart, setActivePart] = useState(partKeys[0] ?? 0);
-  const partNames = ['الجزء الأول', 'الجزء الثاني', 'الجزء الثالث', 'الجزء الرابع'];
-
-  const activeSections = partsMap[activePart] || [];
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir="rtl">
       {/* Backdrop */}
@@ -68,117 +56,7 @@ export default function LessonPreviewModal({ lesson, sections, blocks, questions
           </button>
         </div>
 
-        {/* Phone frame — width was hardcoded at 360px, which together with the
-            3px border and the wrapper's p-4 pushed the frame ~42px off the
-            left edge on a 375px phone. Now it shrinks to fit the viewport and
-            drops the bezel chrome when there is no room for it. */}
-        <div
-          className="relative flex flex-col overflow-hidden"
-          style={{
-            width: 'min(360px, calc(100vw - 2rem))',
-            height: 'min(780px, 88dvh)',
-            background: '#0e0c09',
-            borderRadius: 'clamp(16px, 8vw, 40px)',
-            border: '3px solid #2a2520',
-            boxShadow: '0 0 0 1px #1a1713, 0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)',
-          }}
-        >
-          {/* Status bar */}
-          <div className="flex items-center justify-between px-6 pt-4 pb-1 shrink-0" style={{ background: '#0e0c09' }}>
-            <span className="text-[11px] text-white/60 font-mono">10:35</span>
-            <div className="w-20 h-5 rounded-full bg-black absolute top-2 left-1/2 -translate-x-1/2" />
-            <div className="flex items-center gap-1">
-              <SignalIcon />
-              <WifiIcon />
-              <BatteryIcon />
-            </div>
-          </div>
-
-          {/* App top bar */}
-          <div className="flex items-center gap-3 px-4 py-3 shrink-0 border-b" style={{ borderColor: '#1a1713', background: '#0e0c09' }}>
-            <button className="text-white/60 text-sm">←</button>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-semibold font-arabic truncate">{lesson.title}</p>
-              <p className="text-white/40 text-[10px] font-arabic">{lesson.estimatedMinutes} دقيقة</p>
-            </div>
-            {/* Progress pills */}
-            <div className="flex gap-1">
-              {partKeys.map((p) => (
-                <div
-                  key={p}
-                  className="h-1.5 rounded-full transition-all"
-                  style={{
-                    width: p === activePart ? 20 : 8,
-                    background: p === activePart ? '#d4891e' : '#2a2520',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Part tabs — only if multiple parts */}
-          {partKeys.length > 1 && (
-            <div className="flex border-b shrink-0" style={{ borderColor: '#1a1713', background: '#0e0c09' }}>
-              {partKeys.map((p, pi) => (
-                <button
-                  key={p}
-                  onClick={() => setActivePart(p)}
-                  className="flex-1 py-2.5 text-xs font-arabic transition-colors"
-                  style={{
-                    color: p === activePart ? '#d4891e' : '#4a4540',
-                    borderBottom: p === activePart ? '2px solid #d4891e' : '2px solid transparent',
-                  }}
-                >
-                  {partNames[pi] || `الجزء ${pi + 1}`}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-            {activeSections.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-48 gap-2">
-                <FileText size={34} strokeWidth={1.5} className="text-white/20" />
-                <span className="text-white/30 text-xs font-arabic">لا يوجد محتوى في هذا الجزء</span>
-              </div>
-            )}
-
-            {activeSections.map((section) => {
-              const sectionBlocks = blocks
-                .filter((b) => b.sectionId === section.id)
-                .sort((a, b) => a.order - b.order);
-              const checkpoint = questions.find((q) => q.sectionId === section.id && q.isCheckpoint);
-
-              return (
-                <div key={section.id}>
-                  {/* Section header */}
-                  <SectionHeader title={section.title} type={section.learningType} />
-
-                  {/* Blocks */}
-                  <div className="px-4 space-y-3 py-2">
-                    {sectionBlocks.map((block) => (
-                      <BlockPreview key={block.id} block={block} />
-                    ))}
-                    {sectionBlocks.length === 0 && (
-                      <div className="py-4 text-center text-white/20 text-xs font-arabic">قسم فارغ</div>
-                    )}
-                  </div>
-
-                  {/* Checkpoint card */}
-                  {checkpoint && <CheckpointPreview question={checkpoint} />}
-                </div>
-              );
-            })}
-
-            {/* Lesson complete card */}
-            {activePart === partKeys[partKeys.length - 1] && activeSections.length > 0 && (
-              <LessonCompleteCard lesson={lesson} />
-            )}
-
-            <div className="h-8" />
-          </div>
-        </div>
+        <LessonPhone lesson={lesson} sections={sections} blocks={blocks} questions={questions} />
 
         {/* Legend */}
         <div className="flex items-center gap-4 text-[10px] text-ink-500 font-arabic">
@@ -191,14 +69,159 @@ export default function LessonPreviewModal({ lesson, sections, blocks, questions
   );
 }
 
+export function LessonPhone({ lesson, sections, blocks, questions, focusSectionId = null, height = 'min(780px, 88dvh)' }) {
+  // Group sections by partIndex, sorted by order
+  const sortedSections = [...sections].sort((a, b) => a.order - b.order);
+  const partsMap = sortedSections.reduce((acc, s) => {
+    const p = s.partIndex ?? 0;
+    if (!acc[p]) acc[p] = [];
+    acc[p].push(s);
+    return acc;
+  }, {});
+  const partKeys = Object.keys(partsMap).map(Number).sort((a, b) => a - b);
+
+  const [activePart, setActivePart] = useState(partKeys[0] ?? 0);
+  const partNames = ['الجزء الأول', 'الجزء الثاني', 'الجزء الثالث', 'الجزء الرابع'];
+  const scrollRef = useRef(null);
+
+  const focusPart = sortedSections.find((x) => x.id === focusSectionId)?.partIndex ?? null;
+  useEffect(() => {
+    if (focusSectionId == null) return;
+    if (focusPart != null) setActivePart(focusPart);
+    requestAnimationFrame(() => {
+      const el = scrollRef.current?.querySelector(`[data-preview-id="${focusSectionId}"]`);
+      if (el && scrollRef.current) scrollRef.current.scrollTo({ top: el.offsetTop - 8, behavior: 'smooth' });
+    });
+  }, [focusSectionId, focusPart]);
+
+  const activeSections = partsMap[activePart] || [];
+
+  // Phone frame — width was hardcoded at 360px, which together with the 3px
+  // border and the wrapper's p-4 pushed the frame ~42px off the left edge on
+  // a 375px phone. Now it shrinks to fit the viewport.
+  return (
+    <div
+      className="relative flex flex-col overflow-hidden"
+      style={{
+        width: 'min(360px, calc(100vw - 2rem))',
+        height,
+        background: '#0e0c09',
+        borderRadius: 'clamp(16px, 8vw, 40px)',
+        border: '3px solid #2a2520',
+        boxShadow: '0 0 0 1px #1a1713, 0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)',
+      }}
+    >
+      {/* Status bar */}
+      <div className="flex items-center justify-between px-6 pt-4 pb-1 shrink-0" style={{ background: '#0e0c09' }}>
+        <span className="text-[11px] text-white/60 font-mono">10:35</span>
+        <div className="w-20 h-5 rounded-full bg-black absolute top-2 left-1/2 -translate-x-1/2" />
+        <div className="flex items-center gap-1">
+          <SignalIcon />
+          <WifiIcon />
+          <BatteryIcon />
+        </div>
+      </div>
+
+      {/* App top bar */}
+      <div className="flex items-center gap-3 px-4 py-3 shrink-0 border-b" style={{ borderColor: '#1a1713', background: '#0e0c09' }}>
+        <button className="text-white/60 text-sm">←</button>
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-sm font-semibold font-arabic truncate">{lesson.title}</p>
+          <p className="text-white/40 text-[10px] font-arabic">{lesson.estimatedMinutes} دقيقة</p>
+        </div>
+        {/* Progress pills */}
+        <div className="flex gap-1">
+          {partKeys.map((p) => (
+            <div
+              key={p}
+              className="h-1.5 rounded-full transition-all"
+              style={{
+                width: p === activePart ? 20 : 8,
+                background: p === activePart ? '#d4891e' : '#2a2520',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Part tabs — only if multiple parts */}
+      {partKeys.length > 1 && (
+        <div className="flex border-b shrink-0" style={{ borderColor: '#1a1713', background: '#0e0c09' }}>
+          {partKeys.map((p, pi) => (
+            <button
+              key={p}
+              onClick={() => setActivePart(p)}
+              className="flex-1 py-2.5 text-xs font-arabic transition-colors"
+              style={{
+                color: p === activePart ? '#d4891e' : '#4a4540',
+                borderBottom: p === activePart ? '2px solid #d4891e' : '2px solid transparent',
+              }}
+            >
+              {partNames[pi] || `الجزء ${pi + 1}`}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Scrollable content */}
+      <div ref={scrollRef} className="relative flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+        {activeSections.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-48 gap-2">
+            <FileText size={34} strokeWidth={1.5} className="text-white/20" />
+            <span className="text-white/30 text-xs font-arabic">لا يوجد محتوى في هذا الجزء</span>
+          </div>
+        )}
+
+        {activeSections.map((section) => {
+          const sectionBlocks = blocks
+            .filter((b) => b.sectionId === section.id)
+            .sort((a, b) => a.order - b.order);
+          const checkpoint = questions.find((q) => q.sectionId === section.id && q.isCheckpoint);
+
+          return (
+            <div key={section.id} data-preview-id={section.id}>
+              {/* Section header */}
+              <SectionHeader title={section.title} type={section.learningType} kind={section.kind} />
+
+              {/* Blocks */}
+              <div className="px-4 space-y-3 py-2">
+                {sectionBlocks.map((block) => (
+                  <BlockPreview key={block.id} block={block} />
+                ))}
+                {sectionBlocks.length === 0 && (
+                  <div className="py-4 text-center text-white/20 text-xs font-arabic">قسم فارغ</div>
+                )}
+              </div>
+
+              {/* Checkpoint card */}
+              {checkpoint && <CheckpointPreview question={checkpoint} />}
+            </div>
+          );
+        })}
+
+        {/* Lesson complete card */}
+        {activePart === partKeys[partKeys.length - 1] && activeSections.length > 0 && (
+          <LessonCompleteCard lesson={lesson} />
+        )}
+
+        <div className="h-8" />
+      </div>
+    </div>
+  );
+}
+
 // ─── Section header (matches Android SectionHeader.kt) ────────────────────────
-function SectionHeader({ title, type }) {
+function SectionHeader({ title, type, kind }) {
   const typeColor = type === 'MEMORIZATION' ? '#7c6fc4' : type === 'HYBRID' ? '#d4891e' : '#5b8dd9';
   const Icon = LEARNING_ICONS[type] || Brain;
+  const role = kind && kind !== 'GENERAL' ? SECTION_KIND_CONFIG[kind]?.label : null;
   return (
     <div className="flex items-center gap-2 px-4 py-3 mt-2" style={{ borderBottom: '1px solid #1a1713' }}>
       <div className="w-0.5 h-4 rounded-full" style={{ background: typeColor }} />
-      <span className="text-white/80 text-sm font-semibold font-arabic">{title}</span>
+      <span className="flex flex-col">
+        {role && <span className="text-[10px] font-arabic text-white/50">{role}</span>}
+        <span className="text-white/80 text-sm font-semibold font-arabic">{title}</span>
+      </span>
       <span className="text-[10px] mr-auto" style={{ color: typeColor }}>
         <Icon size={13} strokeWidth={1.9} />
       </span>
