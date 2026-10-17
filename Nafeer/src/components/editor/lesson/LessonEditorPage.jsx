@@ -417,7 +417,7 @@ export default function LessonEditorPage({
         <button
           type="button"
           onClick={() => setShowReadiness(true)}
-          className={`${showPhone ? '' : 'xl:hidden '}flex items-center gap-3 w-full px-4 h-12 rounded-card bg-raised border border-line text-start t-ui hover:border-line-strong transition-colors`}
+          className={`${showPhone ? '' : 'xl:hidden '}hidden sm:flex items-center gap-3 w-full px-4 h-12 rounded-card bg-raised border border-line text-start t-ui hover:border-line-strong transition-colors`}
         >
           <span className="text-fg-strong">جاهزية الدرس</span>
           <span dir="ltr" className="t-num text-fg-muted">{formatNumber(completedChecks)} / 6</span>
@@ -430,7 +430,7 @@ export default function LessonEditorPage({
       </div>
 
       {/* ── Step canvas ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 w-full py-8">
+      <div className="flex-1 w-full pt-8 pb-28 sm:pb-8">
         <TabPanel idBase="lesson" id="meta" active={activeTab === 'meta'}>
           <StepMeta
             lesson={lesson} unit={unit} unitLessons={unitLessons} lessonIndex={lessonIndex}
@@ -491,6 +491,25 @@ export default function LessonEditorPage({
           </div>
         </aside>
       )}
+      </div>
+
+      {/* Phones: the two things a writer reaches for, at the thumb (DS2 step 7). */}
+      <div className="sm:hidden fixed bottom-0 inset-x-0 z-sticky flex items-center gap-2 px-4 py-2 bg-chrome border-t border-line pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <button type="button" onClick={() => setShowReadiness(true)}
+          className="flex items-center gap-2 h-11 px-3 rounded-control border border-line-strong t-label text-fg">
+          الجاهزية <span dir="ltr" className="tabular-nums text-fg-muted">{completedChecks}/6</span>
+          {openComments > 0 && <Badge tone="warn" size="sm">{openComments}</Badge>}
+        </button>
+        {activeTab === 'body' ? (
+          <Button variant="primary" className="flex-1 h-11" onClick={() => {
+            const adds = document.querySelectorAll('[data-add-block]');
+            const last = adds[adds.length - 1];
+            if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'center' }); last.click(); }
+            else handleAddNewPart();
+          }}>+ إضافة عنصر</Button>
+        ) : (
+          <Button variant="secondary" className="flex-1 h-11" onClick={handleSave}>حفظ الآن</Button>
+        )}
       </div>
 
       {showReadiness && (
@@ -1102,7 +1121,7 @@ function OrientationInput({ value = [], onChange }) {
         <div key={i} className="flex items-start gap-2 group">
           <span className="text-sand-700 text-sm mt-2.5 shrink-0">•</span>
           <span className="flex-1 text-sm text-ink-200 font-arabic py-1.5 leading-relaxed">{item}</span>
-          <button onClick={() => removeItem(i)} aria-label="حذف البند" className="hover-reveal transition-opacity text-ink-500 hover:text-red-500 text-xs mt-2"><X size={13} strokeWidth={1.9} /></button>
+          <button type="button" onClick={() => removeItem(i)} aria-label="حذف البند" className="hover-reveal transition-opacity w-8 h-8 inline-flex items-center justify-center rounded-control text-fg-subtle hover:text-danger touch-target"><X size={13} strokeWidth={1.9} /></button>
         </div>
       ))}
       <div className="flex gap-2">
@@ -1111,9 +1130,9 @@ function OrientationInput({ value = [], onChange }) {
             pushed itself and the + button off the edge on a phone. */}
         <input value={draft} onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
-          className="min-w-0 flex-1 px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-600 focus:outline-none focus:border-sand-700 transition-colors"
+          className="min-w-0 flex-1 h-10 px-3 rounded-control bg-sunken border border-line-strong text-fg text-sm font-ui placeholder:text-fg-subtle focus:outline-none focus:border-accent-hover touch-target"
           placeholder="ستتعلم في هذا الدرس… ثم اضغط Enter" />
-        <button onClick={addItem} className="shrink-0 px-3 py-2 bg-ink-800 border border-ink-700 rounded-lg text-ink-400 hover:text-sand-400 text-sm transition-colors">+</button>
+        <button type="button" onClick={addItem} aria-label="أضف البند" className="shrink-0 w-10 h-10 rounded-control border border-line-strong text-fg-muted hover:text-fg hover:bg-hover touch-target">+</button>
       </div>
     </div>
   );

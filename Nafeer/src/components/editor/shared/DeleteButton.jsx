@@ -1,55 +1,38 @@
 'use client';
-import { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
+import { ConfirmButton } from '@/components/ui';
 
 /**
- * Two-stage delete button — replaces native confirm() dialogs.
- * First click → shows تأكيد / إلغاء inline.
- * Second click (تأكيد) → calls onDelete.
- * Auto-resets after 3s if the user does nothing.
+ * Delete with a confirm — now a thin wrapper over the shared ConfirmButton.
+ *
+ * It used to show تأكيد / إلغاء inline and reset itself after 3 seconds, so
+ * the confirm could vanish before it was clicked (the DS review), and its
+ * 23px target was too small on a phone. ConfirmButton stays open until the
+ * writer answers and is 44px on touch screens.
  *
  * Props:
- *   onDelete   — function called on confirmed delete
- *   label      — idle button label (default: null; renders trash icon)
- *   className  — extra classes on the idle button
+ *   onDelete   — called on confirmed delete
+ *   label      — visible label (default: trash icon only)
+ *   title      — the question in the popover (default: «حذف هذا؟»)
  *   size       — 'sm' | 'md' (default 'sm')
+ *   compact    — accepted for old call sites; the icon button is compact already
  */
-export default function DeleteButton({ onDelete, label = null, className = '', size = 'sm' }) {
-  const [pending, setPending] = useState(false);
-
-  // Auto-cancel if the user walks away
-  useEffect(() => {
-    if (!pending) return;
-    const t = setTimeout(() => setPending(false), 3000);
-    return () => clearTimeout(t);
-  }, [pending]);
-
-  if (pending) {
-    return (
-      <span className="flex items-center gap-1">
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); setPending(false); }}
-          className="text-xs text-red-400 hover:text-red-300 transition-colors font-arabic px-1.5 py-0.5 rounded bg-red-900/20 border border-red-800/50"
-        >
-          تأكيد
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); setPending(false); }}
-          className="text-xs text-ink-600 hover:text-ink-400 transition-colors font-arabic"
-        >
-          إلغاء
-        </button>
-      </span>
-    );
-  }
-
+export default function DeleteButton({ onDelete, label = null, title = 'حذف هذا؟', size = 'sm', className, compact: _compact }) {
   return (
-    <button
-      onClick={(e) => { e.stopPropagation(); setPending(true); }}
-      className={`transition-colors ${size === 'sm' ? 'p-1 text-sm' : 'p-1.5 text-base'} text-ink-600 hover:text-red-500 ${className}`}
-      aria-label="حذف"
-    >
-      {label || <Trash2 size={size === 'sm' ? 15 : 17} strokeWidth={2} />}
-    </button>
+    <span className={className}>
+      <ConfirmButton
+        variant="ghost"
+        size={size === 'md' ? 'md' : 'sm'}
+        icon={label ? undefined : Trash2}
+        label={label ? undefined : 'حذف'}
+        title={title}
+        description="لا يمكن التراجع بعد الحفظ."
+        confirmLabel="حذف"
+        align="end"
+        onConfirm={onDelete}
+      >
+        {label}
+      </ConfirmButton>
+    </span>
   );
 }

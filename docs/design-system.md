@@ -368,7 +368,7 @@ including the return-with-comments round trip.
 | 4 | **Content tab.** Labelled section header (فهم / حفظ, role). One grouped add menu, opened from "+ إضافة" or `/`. Block states: a hover toolbar, an unsaved edge, and the restyled conflict compare. Optional live phone preview beside the editor, reusing the preview renderer. Lesson outline | EdContentTab, EdBlockMenu | ✓ |
 | 5 | **البيانات tab tidy-up.** `Field` and `Card`, a subject-based example for the group ID, and wiring «وسم الإصدار» to the save (it is never sent today) | — | ✓ |
 | 6 | **Lessons list.** Search and status filters. A «تابع من حيث توقفت» strip (recently opened lessons, remembered in the browser, so no request). Full-width rows with readiness marks, details in words, a returned badge, and a flag on auto-titled lessons | EdLessonsList | ✓ |
-| 7 | **Phone pass.** Bottom bar with the readiness count and "+ إضافة عنصر", full-width selectors, 44px controls | EdPhone | |
+| 7 | **Phone pass.** Bottom bar with the readiness count and "+ إضافة عنصر", full-width selectors, 44px controls | EdPhone | ✓ |
 | 8 | **Dashboard.** A «خطوتك التالية» card and per-unit progress, around the new graph | Dashboard | |
 
 Each step gets its own commit and a review. No step adds a request,

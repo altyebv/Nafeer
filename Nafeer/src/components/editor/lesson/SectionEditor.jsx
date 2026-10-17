@@ -165,7 +165,7 @@ export default function SectionEditor({ section, index = 0, maxPart = 0, subject
       {/* ── Header: what this section is ─────────────────────────────────── */}
       <div className="flex flex-col gap-3 px-4 py-3 bg-sunken border-b border-line">
         <div className="flex items-center gap-2">
-          <GripVertical size={16} className="shrink-0 text-fg-subtle cursor-grab" aria-hidden="true" />
+          <GripVertical size={16} className="hidden sm:block shrink-0 text-fg-subtle cursor-grab" aria-hidden="true" />
           <button type="button" onClick={() => setCollapsed(!collapsed)} aria-expanded={!collapsed}
             aria-label={collapsed ? 'افتح القسم' : 'طيّ القسم'}
             className="w-7 h-7 shrink-0 inline-flex items-center justify-center rounded-control text-fg-muted hover:bg-hover touch-target">
@@ -191,30 +191,30 @@ export default function SectionEditor({ section, index = 0, maxPart = 0, subject
               />
             ) : (
               <button id={titleId} type="button" onClick={() => setIsEditingTitle(true)} title="انقر لتعديل العنوان"
-                className="text-start t-title text-fg-strong hover:text-fg-accent truncate">
+                className="text-start t-title text-fg-strong hover:text-fg-accent truncate touch-target">
                 {section.title}
               </button>
             )}
           </div>
 
           <UnsavedDot show={!!section._dirty && !conflict} />
-          <span className="t-caption text-fg-subtle tabular-nums shrink-0">
+          <span className="hidden sm:inline t-caption text-fg-subtle tabular-nums shrink-0">
             {sectionBlocks.length ? `${sectionBlocks.length} عناصر` : 'فارغ'}
           </span>
-          <DeleteButton onDelete={handleDelete} />
+          <DeleteButton onDelete={handleDelete} title={`حذف «${section.title}» وكل عناصره؟`} />
         </div>
 
         {!collapsed && (
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 ps-9">
-            <span className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-5 gap-y-3 sm:ps-9">
+            <span className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
               <span className="t-caption text-fg-muted">الغرض</span>
               <Segmented label="غرض القسم" size="sm" value={purpose}
                 onChange={(v) => updateSection(section.id, { learningType: v })} items={PURPOSE_ITEMS} />
             </span>
-            <label className="flex items-center gap-2">
+            <label className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
               <span className="t-caption text-fg-muted">الدور</span>
               <Select value={kind} onChange={(e) => updateSection(section.id, { kind: e.target.value })}
-                title="يظهر للطالب فوق عنوان القسم" className="h-8 w-36">
+                title="يظهر للطالب فوق عنوان القسم" className="h-10 sm:h-8 w-full sm:w-36">
                 {Object.entries(SECTION_KIND_CONFIG).map(([key, cfg]) => (
                   <option key={key} value={key}>{cfg.label}</option>
                 ))}
@@ -244,7 +244,7 @@ export default function SectionEditor({ section, index = 0, maxPart = 0, subject
               <Badge key={c.id} tone="accent" size="sm" icon={Lightbulb}>{c.titleAr}</Badge>
             ))}
             <button type="button" onClick={() => setShowConceptLinker(!showConceptLinker)}
-              className="t-caption text-fg-muted hover:text-fg-accent">
+              className="t-caption text-fg-muted hover:text-fg-accent touch-target">
               {showConceptLinker ? 'إغلاق' : linkedConcepts.length ? '+ مفهوم آخر' : '+ ربط مفهوم'}
             </button>
           </div>
@@ -255,9 +255,9 @@ export default function SectionEditor({ section, index = 0, maxPart = 0, subject
               <span className="t-label text-fg-muted">ابدأ القسم بفقرة تشرح الفكرة، ثم أضف صورة أو مثالاً.</span>
               <span className="flex gap-2">
                 <button type="button" onClick={() => pickType('TEXT')}
-                  className="h-8 px-3 rounded-control bg-accent text-fg-on-accent t-label font-semibold">+ فقرة</button>
-                <button type="button" onClick={() => setMenu({ mode: 'append' })}
-                  className="h-8 px-3 rounded-control border border-line-strong text-fg t-label hover:bg-hover">عنصر آخر…</button>
+                  className="h-8 px-3 rounded-control bg-accent text-fg-on-accent t-label font-semibold touch-target">+ فقرة</button>
+                <button type="button" data-add-block onClick={() => setMenu({ mode: 'append' })}
+                  className="h-8 px-3 rounded-control border border-line-strong text-fg t-label hover:bg-hover touch-target">عنصر آخر…</button>
               </span>
             </div>
           )}
@@ -288,8 +288,8 @@ export default function SectionEditor({ section, index = 0, maxPart = 0, subject
               title={menu.mode === 'replace' ? 'حوّل الفقرة الفارغة إلى…' : 'إضافة عنصر'} />
           ) : sectionBlocks.length > 0 && (
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setMenu({ mode: 'append' })}
-                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-control border border-dashed border-line-strong text-fg-muted hover:text-fg-accent hover:border-line-accent t-label">
+              <button type="button" data-add-block onClick={() => setMenu({ mode: 'append' })}
+                className="inline-flex items-center gap-1.5 h-9 px-3 touch-target rounded-control border border-dashed border-line-strong text-fg-muted hover:text-fg-accent hover:border-line-accent t-label">
                 <Plus size={14} /> إضافة عنصر
               </button>
               <span className="t-caption text-fg-subtle hidden sm:inline">أو اكتب <kbd className="px-1 rounded-chip border border-line t-caption">/</kbd> في فقرة فارغة</span>
