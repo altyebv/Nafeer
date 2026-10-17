@@ -154,7 +154,7 @@ export default function Navbar() {
             </a>
 
             <a
-              href="/prejoin"
+              href="/join"
               className="text-sm px-3.5 sm:px-5 py-2 font-bold rounded-lg transition-all duration-200"
               style={{ background: 'var(--accent)', color: '#0e0c09' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 24px var(--glow)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
@@ -201,7 +201,7 @@ export default function Navbar() {
           </div>
           <div className="flex items-center gap-2.5" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
             <a href="/signin" onClick={() => setMenuOpen(false)} className="flex-1 py-2.5 text-center text-sm rounded-xl transition-colors" style={{ color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}>تسجيل الدخول</a>
-            <a href="/prejoin" onClick={() => setMenuOpen(false)} className="flex-1 py-2.5 text-center text-sm font-bold rounded-xl" style={{ background: 'var(--accent)', color: '#0e0c09' }}>انضم للنفير</a>
+            <a href="/join" onClick={() => setMenuOpen(false)} className="flex-1 py-2.5 text-center text-sm font-bold rounded-xl" style={{ background: 'var(--accent)', color: '#0e0c09' }}>انضم للنفير</a>
           </div>
         </div>
       )}

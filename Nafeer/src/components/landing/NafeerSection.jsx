@@ -297,7 +297,7 @@ export default function NafeerSection() {
               كن جزءاً من التحول الرقمي — بطريقتنا، بقصصنا، بمعرفتنا
             </p>
             <a
-              href="/prejoin"
+              href="/join"
               className="inline-flex items-center gap-3 px-10 sm:px-12 py-4 font-bold rounded-xl transition-all duration-300 text-base"
               style={{ background: 'var(--accent)', color: '#0e0c09' }}
               onMouseEnter={e => {

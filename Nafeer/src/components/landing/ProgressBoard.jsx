@@ -184,7 +184,7 @@ export default function ProgressBoard() {
             <span className="block text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>احجز مقعدك في النفير</span>
           </p>
           <a
-            href="/prejoin"
+            href="/join"
             className="shrink-0 inline-flex items-center gap-2 px-7 py-3 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
             style={{ background: 'var(--accent)', color: '#0e0c09' }}
             onMouseEnter={e => {
@@ -269,7 +269,7 @@ function SubjectRow({ subject, isMajor = false }) {
       {/* CTA or contributor name */}
       {isAvailable ? (
         <a
-          href="/prejoin"
+          href="/join"
           className="text-xs px-2 py-1 rounded-lg font-mono shrink-0 transition-all duration-200"
           style={{
             color:      'var(--accent)',

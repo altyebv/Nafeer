@@ -55,7 +55,7 @@ export async function GET(request) {
 
   const contributor = await Contributor
     .findOne({ interviewToken: token })
-    .select('+interviewToken');
+    .select('+interviewToken +statusToken');
 
   if (!contributor) {
     return NextResponse.json(
@@ -102,6 +102,9 @@ export async function GET(request) {
     ok: true,
     data: {
       name:               contributor.name,
+      // The applicant's lasting link (/join/status) — the page offers it on
+      // "later" and after sending.
+      statusToken:        contributor.statusToken || null,
       subjectsOfInterest: contributor.subjectsOfInterest || [],
       roleName,
       questions,

@@ -123,7 +123,7 @@ function MicroTaskStep({ microTask, value, onChange }) {
 
 // ─── Done screen ─────────────────────────────────────────────────────────────
 
-function SuccessScreen({ name }) {
+function SuccessScreen({ name, statusToken }) {
   return (
     <div className="text-center py-8">
       <div
@@ -136,9 +136,11 @@ function SuccessScreen({ name }) {
         شكراً {name?.split(' ')[0]}
       </h2>
       <p className="text-sm leading-loose mb-6" style={{ color: 'var(--text-secondary)' }}>
-        وصلت إجاباتك. سنراجعها ونتواصل معك قريباً.
+        وصلت إجاباتك. فريق الإدارة يقرأ طلبك كاملاً، وتتابع القرار من رابط طلبك.
       </p>
-      <a href="/" className="text-sm" style={{ color: 'var(--text-muted)' }}>العودة للرئيسية</a>
+      {statusToken
+        ? <a href={`/join/status?token=${statusToken}`} className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>تابع حالة طلبك ←</a>
+        : <a href="/" className="text-sm" style={{ color: 'var(--text-muted)' }}>العودة للرئيسية</a>}
     </div>
   );
 }
@@ -167,6 +169,8 @@ function ErrorScreen({ message }) {
 
 // ─── Main interview content ──────────────────────────────────────────────────
 
+const draftKey = (token) => `nafeer-interview-draft:${String(token || '').slice(0, 12)}`;
+
 function InterviewContent() {
   const searchParams = useSearchParams();
   const token        = searchParams.get('token');
@@ -179,6 +183,7 @@ function InterviewContent() {
   const [microAnswer, setMicroAnswer] = useState('');
   const [submitting,  setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [savedAt,     setSavedAt]    = useState(null);
 
   const cardRef = useRef(null);
 
@@ -192,11 +197,25 @@ function InterviewContent() {
         // Init answers keyed by question _id
         const init = {};
         (data.data.questions || []).forEach((q) => { init[String(q._id)] = ''; });
-        setAnswers(init);
+        // Answers typed earlier on this device come back (draft below).
+        let draft = null;
+        try { draft = JSON.parse(localStorage.getItem(draftKey(token)) || 'null'); } catch { /* storage blocked */ }
+        setAnswers({ ...init, ...(draft?.answers || {}) });
+        if (draft?.micro) setMicroAnswer(draft.micro);
+        if (Number.isInteger(draft?.step)) setStep(draft.step);
         setPhase('interview');
       })
       .catch(() => { setErrorMsg('تعذّر الاتصال بالخادم.'); setPhase('error'); });
   }, [token]);
+
+  // Keep a draft on this device: a dropped connection or a closed tab loses nothing.
+  useEffect(() => {
+    if (phase !== 'interview') return;
+    try {
+      localStorage.setItem(draftKey(token), JSON.stringify({ answers, micro: microAnswer, step }));
+      setSavedAt(Date.now());
+    } catch { /* storage blocked */ }
+  }, [answers, microAnswer, step, phase, token]);
 
   if (!config && phase === 'interview') return null;
 
@@ -270,6 +289,7 @@ function InterviewContent() {
       });
       const data = await res.json();
       if (!data.ok) { setSubmitError(data.error || 'حدث خطأ ما'); setSubmitting(false); return; }
+      try { localStorage.removeItem(draftKey(token)); } catch { /* ignore */ }
       setPhase('done');
     } catch {
       setSubmitError('تعذّر الاتصال بالخادم.');
@@ -318,7 +338,7 @@ function InterviewContent() {
           )}
 
           {phase === 'error' && <ErrorScreen message={errorMsg} />}
-          {phase === 'done'  && <SuccessScreen name={config?.name} />}
+          {phase === 'done'  && <SuccessScreen name={config?.name} statusToken={config?.statusToken} />}
 
           {phase === 'interview' && total > 0 && (
             <>
@@ -337,6 +357,7 @@ function InterviewContent() {
 
               {/* Progress */}
               <ProgressLine current={step + 1} total={total} />
+              {savedAt && <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }} role="status">✓ حُفظت مسودتك على هذا الجهاز — يمكنك الإغلاق والعودة من الرابط نفسه.</p>}
 
               {/* Animated step */}
               <div ref={cardRef}>

@@ -65,6 +65,10 @@ const AGE_LABELS = {
   '29-35': '29 – 35', '36+': '36+',
 };
 
+// Answers from the join form (src/app/join/page.jsx), in words.
+const RELATION_LABELS = { uni: 'يدرسها في الجامعة', grad: 'تخرّج فيها', teacher: 'يدرّسها', student: 'جلس لها حديثاً', other: 'غير ذلك' };
+const HOURS_LABELS = { '1-2': 'ساعة أو ساعتان', '2-4': '2 – 4 ساعات', '5+': '5 أو أكثر', '?': 'لا يعرف بعد' };
+
 function relativeTime(d) {
   if (!d) return '—';
   const diff = Date.now() - new Date(d).getTime();
@@ -821,6 +825,8 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
             <InfoPill label="الخلفية"         value={c.background || c.fieldOfStudy} />
             <InfoPill label="الفئة العمرية"   value={AGE_LABELS[c.age] || c.age}    />
             <InfoPill label="المدينة"          value={c.town}                         />
+            <InfoPill label="علاقته بالمادة"  value={RELATION_LABELS[c.subjectRelation] || c.subjectRelation} />
+            <InfoPill label="ساعات أسبوعياً"   value={HOURS_LABELS[c.weeklyHours] || c.weeklyHours} />
             <InfoPill label="حاسب / لوحي"     value={c.hasPcOrTablet}               />
             <InfoPill label="إنترنت مستقر"    value={c.hasStableInternet}            />
             <InfoPill label="يستخدم أدوات AI" value={c.usesAiTools}                 />

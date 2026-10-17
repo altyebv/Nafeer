@@ -206,7 +206,7 @@ export default function FinalCTA() {
             </div>
 
             <Link
-              href="/prejoin"
+              href="/join"
               className="relative z-10 inline-flex items-center justify-center gap-3 w-full py-4 font-bold rounded-xl transition-all duration-300 text-sm sm:text-base"
               style={{
                 border: '1px solid var(--accent)',

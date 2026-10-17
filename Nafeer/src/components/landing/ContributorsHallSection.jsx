@@ -307,7 +307,7 @@ function EmptyHall() {
         كن من أوائل المساهمين — اسمك الأول في قاعة شرف تصنع أثراً حقيقياً لآلاف الطلاب.
       </p>
       <a
-        href="/prejoin"
+        href="/join"
         className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm transition-all duration-300"
         style={{ background: 'var(--accent)', color: '#0e0c09' }}
         onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 40px var(--glow)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
@@ -458,7 +458,7 @@ export default function ContributorsHallSection() {
                 مقعدك في القاعة ينتظرك
               </p>
               <a
-                href="/prejoin"
+                href="/join"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300"
                 style={{ border: '1px solid var(--border-mid)', color: 'var(--text-secondary)' }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 24px var(--glow)'; }}

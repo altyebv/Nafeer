@@ -270,7 +270,7 @@ export default function Hero() {
 
           <a
             ref={cta2Ref}
-            href="/prejoin"
+            href="/join"
             className="gsap-hero-cta group inline-flex items-center gap-2 sm:gap-3 px-7 sm:px-9 py-3.5 sm:py-4 rounded-xl transition-colors duration-200 text-sm sm:text-base font-bold"
             style={{ border: '1px solid var(--border-mid)', color: 'var(--text-secondary)', opacity: 0, transform: 'translateY(16px) scale(0.96)' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-dim)'; }}

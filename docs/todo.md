@@ -25,3 +25,20 @@ item when it is finished; put the commit next to it in the commit message.
   the seed actor own anything a person should? Local development writes to
   the live database, so a separate development database belongs in the
   same review.
+
+## Join flow (built 2026-10-18)
+
+- [ ] **Write the reasons in «لماذا نسأل هذا كله».** The panel beside the
+  join form gives one general paragraph; the exact guideline wording for
+  gender, age, city, device and AI tools is the team's to write.
+- [ ] **Interview at submit is now automatic.** Every valid application gets
+  its interview link at once. If the team wants to screen before the
+  interview, gate `issueInterview` in `api/contributors/request` on a flag.
+- [ ] **Rejection is still silent.** The status page shows it, but no email
+  is sent; decide whether to send `application_rejected`.
+- [ ] **Sign in by email link.** The welcome board offers it; the
+  `magic_link` template exists but no route uses it. No "forgot password" yet.
+- [ ] **The three-step tour** promised on the onboarding page (`?welcome=1`
+  on the first lesson) is not built.
+- [ ] **Fix the role name «صانِع مٌتحتوى تعليمي»** and «نافير» in the role
+  texts — data in `contributorroles`, editable in the admin roles tab.

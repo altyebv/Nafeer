@@ -183,7 +183,7 @@ export default function DemoPage() {
           أعجبك ما رأيت؟
         </p>
         <Link
-          href="/prejoin"
+          href="/join"
           className="font-arabic"
           style={{
             display:       'inline-block',

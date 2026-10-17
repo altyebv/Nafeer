@@ -12,6 +12,7 @@ export const LIMITS = {
   signin:             { limit: 10, windowSec: 15 * 60 },
   adminLogin:         { limit: 5,  windowSec: 15 * 60 },
   contributorRequest: { limit: 3,  windowSec: 60 * 60 },
+  statusResend:       { limit: 3,  windowSec: 60 * 60 },
   support:            { limit: 5,  windowSec: 60 * 60 },
   visit:              { limit: 60, windowSec: 10 * 60 },
 };
