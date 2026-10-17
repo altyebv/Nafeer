@@ -16,15 +16,12 @@ import LessonNotesDrawer    from '@/components/editor/lesson/LessonNotesDrawer';
 import LessonHistoryDrawer  from '@/components/editor/lesson/LessonHistoryDrawer';
 import LinkVariationModal, { VARIATION_CONFIG } from '@/components/editor/lesson/LinkVariationModal';
 import {
-  Check,
-  Circle,
   CircleDot,
   Clock3,
   FileText,
   Link2,
   NotebookPen,
   Smartphone,
-  Sparkles,
   Target,
   TriangleAlert,
   Upload,
@@ -40,19 +37,13 @@ import { minutesAgo } from '@/components/editor/lesson/SyncMarks';
 import { useAutosave } from '@/hooks/useAutosave';
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
-import { Badge, Button, Drawer, EmptyState, IconButton, TabPanel } from '@/components/ui';
+import { Badge, Button, Card as UiCard, Drawer, EmptyState, Field as UiField, IconButton, Input, TabPanel, Textarea } from '@/components/ui';
 import { arCount, formatNumber } from '@/lib/format';
 import { SECTION_KIND_CONFIG } from '@/shared/constants';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 // Whether the content tab shows the phone beside it — a per-browser choice.
 const LIVE_PREVIEW_KEY = 'nafeer-editor-live-preview';
-
-const FIELD =
-  'w-full px-4 py-3 bg-ink-950 border border-ink-800 rounded-xl text-sand-200 ' +
-  'focus:ring-1 focus:ring-sand-600 focus:border-sand-700 focus:outline-none ' +
-  'font-arabic placeholder-ink-600 text-sm leading-relaxed transition-colors ' +
-  'hover:border-ink-700';
 
 // The variations step had a component but no tab — nothing could open it. It
 // is the fifth tab now, named as its own heading names it: an alternative is
@@ -233,7 +224,10 @@ export default function LessonEditorPage({
   // conflicts surface there and in LessonConflicts.
   const handleSave = async () => {
     if (!subjectId) return;
-    try { await syncAll(lessonId, subjectId); } catch { /* shown by SaveStatus */ }
+    try {
+      await syncAll(lessonId, subjectId, { versionLabel });
+      setVersionLabel('');   // the label tagged this save; the next one starts clean
+    } catch { /* shown by SaveStatus */ }
   };
 
   // Open a tab and, when given a section or block id, scroll it into view —
@@ -542,172 +536,112 @@ export default function LessonEditorPage({
 }
 
 // ─── Step 1: Meta ─────────────────────────────────────────────────────────────
-function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completedChecks, statusCfg, lessonSections, lessonBlocks, updateLesson, patchMeta, versionLabel, onVersionLabelChange, onNext }) {
+// DS2 step 5: the shared Field and Card, every control labelled and wired to
+// its hint, a group ID example taken from this lesson's own unit, and the
+// version label that now actually travels with the next manual save.
+function StepMeta({ lesson, unit, unitLessons, lessonIndex, statusCfg, lessonSections, lessonBlocks, updateLesson, patchMeta, versionLabel, onVersionLabelChange, onNext }) {
+  const scaffoldTitle = lesson.title && SCAFFOLD_TITLE_RE.test(lesson.title.trim());
+  const groupExample = `${lesson.unitId || 'UNIT'}_G1`;
+  const groupDescription = (() => {
+    if (!lesson.groupMetadata) return '';
+    try { return JSON.parse(lesson.groupMetadata)?.description || ''; } catch { return ''; }
+  })();
+
   return (
-    <div className="space-y-5 max-w-2xl">
-      <div className="flex items-center gap-3 pb-1">
-        <div>
-          <h2 className="text-base font-semibold text-sand-200 font-arabic">بيانات الدرس</h2>
-          <p className="text-sm text-ink-400 font-arabic mt-0.5">
-            {unit?.title} · درس {lessonIndex + 1} من {unitLessons.length}
-          </p>
+    <div className="flex flex-col gap-5 max-w-2xl">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="t-h3 text-fg-strong">بيانات الدرس</h2>
+          <p className="t-label text-fg-muted">{unit?.title} · درس {lessonIndex + 1} من {unitLessons.length}</p>
         </div>
-        <div className="flex-1" />
-        <span className={`text-xs font-arabic px-2.5 py-1 rounded-full border ${statusCfg.badge}`}>
-          {statusCfg.label}
-        </span>
+        <span className={`t-caption px-2.5 py-1 rounded-chip border ${statusCfg.badge}`}>{statusCfg.label}</span>
       </div>
 
-      <Card>
-        <CardHeader icon={<NotebookPen size={13} strokeWidth={1.9} />} title="المعلومات الأساسية" hint="تظهر للطالب قبل دخول الدرس" />
-        <div className="p-5 space-y-4">
-          <Field label="عنوان الدرس" required>
-            <input type="text" value={lesson.title}
-              onChange={(e) => updateLesson(lesson.id, { title: e.target.value })}
-              className={FIELD} placeholder="أدخل عنوان الدرس…" />
-            {lesson.title && SCAFFOLD_TITLE_RE.test(lesson.title.trim()) && (
-              <p className="text-sm text-amber-600 font-arabic mt-1.5 inline-flex items-center gap-1"><TriangleAlert size={14} strokeWidth={1.9} /> هذا عنوان تلقائي — أدخل عنواناً حقيقياً</p>
-            )}
-          </Field>
-          <Field label="ملخص الدرس">
-            <textarea value={lesson.summary || ''}
-              onChange={(e) => updateLesson(lesson.id, { summary: e.target.value })}
-              className={`${FIELD} resize-y min-h-[88px]`}
-              placeholder="ملخص قصير يصف محتوى الدرس — يظهر في قائمة الدروس…" />
-          </Field>
+      <UiCard title="المعلومات الأساسية" actions={<span className="t-caption text-fg-subtle">تظهر للطالب قبل دخول الدرس</span>}>
+        <div className="flex flex-col gap-4">
+          <UiField label="عنوان الدرس" required
+            error={scaffoldTitle ? 'هذا عنوان تلقائي — اكتب عنوان الدرس الحقيقي' : undefined}>
+            <Input value={lesson.title} onChange={(e) => updateLesson(lesson.id, { title: e.target.value })} placeholder="مثال: قراءة الصور الجوية" />
+          </UiField>
+          <UiField label="ملخص الدرس" hint="جملتان عمّا سيتعلمه الطالب — يظهر في قائمة الدروس">
+            <Textarea rows={3} value={lesson.summary || ''} onChange={(e) => updateLesson(lesson.id, { summary: e.target.value })} />
+          </UiField>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="الوقت المقدر">
-              <div className="flex items-center gap-2">
-                <input type="number" value={lesson.estimatedMinutes || 15}
-                  onChange={(e) => updateLesson(lesson.id, { estimatedMinutes: parseInt(e.target.value) || 15 })}
-                  className="w-20 px-3 py-2.5 bg-ink-950 border border-ink-800 rounded-xl text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none text-center font-mono"
-                  min="1" />
-                <span className="text-sm text-ink-400 font-arabic">دقيقة</span>
-              </div>
-            </Field>
-            <Field label="الإحصائيات">
-              <div className="flex gap-5 pt-1">
-                <Stat label="أقسام" val={lessonSections.length} />
-                <Stat label="عناصر" val={lessonBlocks.length} />
-              </div>
-            </Field>
+            <UiField label="الوقت المقدّر بالدقائق" hint="لقراءة الدرس وحلّ أسئلته">
+              <Input type="number" min="1" inputMode="numeric" className="w-28 tabular-nums"
+                value={lesson.estimatedMinutes || 15}
+                onChange={(e) => updateLesson(lesson.id, { estimatedMinutes: parseInt(e.target.value, 10) || 15 })} />
+            </UiField>
+            <div className="flex flex-col gap-1.5">
+              <span className="t-label text-fg">ما في الدرس الآن</span>
+              <span className="t-body text-fg-muted">{lessonSections.length} أقسام · {lessonBlocks.length} عناصر</span>
+            </div>
           </div>
         </div>
-      </Card>
+      </UiCard>
 
-      <Card>
-        <CardHeader icon={<Sparkles size={13} strokeWidth={1.9} />} title="التحفيز والتوجيه" hint="اختياري — يُشاهده الطالب قبل بدء الدرس" />
-        <div className="p-5 space-y-4">
-          <Field label="السؤال التحفيزي" hint="يستثير فضول الطالب قبل البدء">
-            <textarea value={lesson.metadata?.hook || ''}
-              onChange={(e) => patchMeta({ hook: e.target.value || null })}
-              className={`${FIELD} resize-y min-h-[68px]`}
-              placeholder="هل تساءلت كيف يحدد الملاحون موقعهم؟…" />
-          </Field>
-          <Field label="إجابة السؤال التحفيزي" hint="تظهر قرب نهاية الدرس، بعد أن يقرأ الطالب ما يكفي لفهمها">
-            <textarea value={lesson.metadata?.hookAnswer || ''}
-              onChange={(e) => patchMeta({ hookAnswer: e.target.value || null })}
-              className={`${FIELD} resize-y min-h-[68px]`}
-              placeholder="باستخدام خطوط الطول والعرض…" />
-          </Field>
-          <Field label="ستتعلم في هذا الدرس" hint="نقاط توجيهية تظهر قبل المحتوى">
+      <UiCard title="التحفيز والتوجيه" actions={<span className="t-caption text-fg-subtle">اختياري · يراه الطالب قبل البدء</span>}>
+        <div className="flex flex-col gap-4">
+          <UiField label="السؤال التحفيزي" hint="يستثير فضول الطالب قبل البدء">
+            <Textarea rows={2} value={lesson.metadata?.hook || ''} onChange={(e) => patchMeta({ hook: e.target.value || null })}
+              placeholder="هل تساءلت كيف يحدد الملاحون موقعهم؟" />
+          </UiField>
+          <UiField label="إجابة السؤال التحفيزي" hint="تظهر قرب نهاية الدرس، بعد أن يقرأ الطالب ما يكفي لفهمها">
+            <Textarea rows={2} value={lesson.metadata?.hookAnswer || ''} onChange={(e) => patchMeta({ hookAnswer: e.target.value || null })} />
+          </UiField>
+          <div className="flex flex-col gap-1.5">
+            <span className="t-label text-fg">ستتعلم في هذا الدرس</span>
             <OrientationInput value={lesson.metadata?.orientation || []} onChange={(v) => patchMeta({ orientation: v })} />
-          </Field>
-          <Field label="الجملة الشدّاءة" hint="على بطاقة الإتمام — تشجع على الدرس التالي">
-            <input type="text" value={lesson.metadata?.forwardPull || ''}
-              onChange={(e) => patchMeta({ forwardPull: e.target.value || null })}
-              className={FIELD} placeholder="درس واحد يفصلك عن إكمال الوحدة…" />
-          </Field>
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="تجميع الدروس" hint="اختياري — يُنظِّم الدروس في مجموعات داخل الوحدة" />
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="معرّف المجموعة" hint="ثابت — مثال: ARABIC_U1_G1">
-              <input
-                type="text"
-                value={lesson.groupId || ''}
-                onChange={(e) => updateLesson(lesson.id, { groupId: e.target.value.trim().toUpperCase() || null })}
-                className={FIELD}
-                placeholder="ARABIC_U1_G1"
-                dir="ltr"
-              />
-            </Field>
-            <Field label="اسم المجموعة" hint="يظهر كعنوان فرعي في التطبيق">
-              <input
-                type="text"
-                value={lesson.groupTitle || ''}
-                onChange={(e) => updateLesson(lesson.id, { groupTitle: e.target.value || null })}
-                className={FIELD}
-                placeholder="فهم المقروء"
-              />
-            </Field>
+            <span className="t-caption text-fg-subtle">نقاط توجيهية تظهر قبل المحتوى</span>
           </div>
+          <UiField label="جملة الانتقال للدرس التالي" hint="على بطاقة الإتمام — تشجّع على الدرس التالي">
+            <Input value={lesson.metadata?.forwardPull || ''} onChange={(e) => patchMeta({ forwardPull: e.target.value || null })}
+              placeholder="درس واحد يفصلك عن إكمال الوحدة…" />
+          </UiField>
+        </div>
+      </UiCard>
 
-          <Field label="وصف المجموعة" hint="اختياري — ملاحظات عن هذه المجموعة">
-            <textarea
-              value={lesson.groupMetadata ? (() => { try { return JSON.parse(lesson.groupMetadata)?.description || ''; } catch { return ''; } })() : ''}
+      <UiCard title="تجميع الدروس" actions={<span className="t-caption text-fg-subtle">اختياري</span>}>
+        <div className="flex flex-col gap-4">
+          <p className="t-label text-fg-muted">
+            الدروس التي تحمل المعرّف نفسه تظهر في التطبيق تحت عنوان فرعي واحد داخل الوحدة.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <UiField label="معرّف المجموعة" hint={`ثابت، بالإنجليزية — مثلاً ${groupExample}`}>
+              <Input dir="ltr" value={lesson.groupId || ''} placeholder={groupExample}
+                onChange={(e) => updateLesson(lesson.id, { groupId: e.target.value.trim().toUpperCase() || null })} />
+            </UiField>
+            <UiField label="اسم المجموعة" hint="يظهر كعنوان فرعي في التطبيق">
+              <Input value={lesson.groupTitle || ''} onChange={(e) => updateLesson(lesson.id, { groupTitle: e.target.value || null })} />
+            </UiField>
+          </div>
+          <UiField label="وصف المجموعة" hint="للمحررين فقط — لا يظهر للطالب">
+            <Textarea rows={2} value={groupDescription}
               onChange={(e) => {
                 const desc = e.target.value.trim();
-                updateLesson(lesson.id, {
-                  groupMetadata: desc ? JSON.stringify({ description: desc }) : null,
-                });
-              }}
-              className={`${FIELD} resize-y min-h-[60px]`}
-              placeholder="وصف يساعد المحررين على فهم منطق هذه المجموعة…"
-            />
-          </Field>
-
-          {/* Live preview of how it appears in the app */}
-          {lesson.groupTitle && (
-            <div className="mt-1 pt-4 border-t border-ink-800/40">
-              <p className="text-xs text-ink-500 font-arabic mb-2">معاينة في التطبيق</p>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-ink-800/30 border border-ink-800/60 w-fit">
-                <span className="w-1 h-3 rounded-full bg-sand-700/60" />
-                <span className="text-xs font-arabic text-ink-400">{lesson.groupTitle}</span>
-              </div>
-            </div>
+                updateLesson(lesson.id, { groupMetadata: desc ? JSON.stringify({ description: desc }) : null });
+              }} />
+          </UiField>
+          {lesson.groupId && !lesson.groupTitle && (
+            <p role="status" className="t-caption text-warn">المعرّف موجود دون اسم — أضف الاسم حتى تظهر المجموعة في التطبيق.</p>
           )}
-
-          {/* Warning when groupId is set but groupTitle is missing (or vice versa) */}
-          {(lesson.groupId && !lesson.groupTitle) && (
-            <p className="text-xs text-amber-600 font-arabic inline-flex items-center gap-1"><TriangleAlert size={12} strokeWidth={1.9} /> معرّف المجموعة موجود دون اسم — أضف الاسم حتى يظهر في التطبيق</p>
-          )}
-          {(!lesson.groupId && lesson.groupTitle) && (
-            <p className="text-xs text-amber-600 font-arabic inline-flex items-center gap-1"><TriangleAlert size={12} strokeWidth={1.9} /> اسم المجموعة موجود دون معرّف — أضف المعرّف لربط الدروس معاً</p>
+          {!lesson.groupId && lesson.groupTitle && (
+            <p role="status" className="t-caption text-warn">الاسم موجود دون معرّف — أضف المعرّف لربط الدروس معاً.</p>
           )}
           {lesson.groupId && lesson.groupTitle && (
-            <p className="text-xs text-emerald-700 font-arabic inline-flex items-center gap-1"><Check size={12} strokeWidth={2} /> مجموعة محددة — ستظهر الدروس ذات المعرّف نفسه تحت عنوان واحد</p>
+            <p role="status" className="t-caption text-success">مجموعة جاهزة: «{lesson.groupTitle}».</p>
           )}
         </div>
-      </Card>
+      </UiCard>
 
-      {/* The completion checklist that sat here moved to the readiness panel
-          (LessonReadiness), which stays in view on every tab. */}
-      <Card>
-        <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="وسم الإصدار" />
-        <div className="p-5">
-          {/* Version label — attaches a short note to the next save/submit */}
-          <div>
-            <label className="text-sm text-ink-400 font-arabic block mb-1.5">
-              وسم الإصدار
-              <span className="text-ink-500 mr-1">(اختياري — يظهر في سجل التعديلات)</span>
-            </label>
-            <input
-              type="text"
-              value={versionLabel}
-              onChange={(e) => onVersionLabelChange(e.target.value.slice(0, 80))}
-              placeholder="مثال: مراجعة بعد الفيدباك، تصحيح أمثلة…"
-              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-600 focus:outline-none focus:border-sand-700 transition-colors"
-            />
-            {versionLabel && (
-              <p className="text-xs text-ink-500 font-mono mt-1 text-left">{versionLabel.length}/80</p>
-            )}
-          </div>
-        </div>
-      </Card>
+      <UiCard title="وسم الإصدار" actions={<span className="t-caption text-fg-subtle">اختياري</span>}>
+        <UiField label="اسم قصير لهذه النسخة"
+          hint="يُرفق بالحفظ اليدوي التالي (زر «حفظ») ويظهر في سجل التعديلات، ثم يُفرَّغ. الحفظ التلقائي لا يحمله.">
+          <Input value={versionLabel} maxLength={80} onChange={(e) => onVersionLabelChange(e.target.value.slice(0, 80))}
+            placeholder="مثال: بعد ملاحظات المراجِع" />
+        </UiField>
+        {versionLabel && <p className="mt-1 t-caption text-fg-subtle tabular-nums" dir="ltr">{versionLabel.length}/80</p>}
+      </UiCard>
 
       <StepFooter onNext={onNext} nextLabel="المحتوى ←" />
     </div>
@@ -1099,29 +1033,6 @@ function CardHeader({ icon, title, hint }) {
       <span className="text-sand-700 text-xs">{icon}</span>
       <h3 className="text-sm font-semibold text-sand-300 font-arabic">{title}</h3>
       {hint && <span className="text-sm text-ink-500 font-arabic mr-auto">{hint}</span>}
-    </div>
-  );
-}
-
-function Field({ label, required, hint, children }) {
-  return (
-    <div>
-      <div className="flex items-baseline gap-2 mb-1.5">
-        <label className="text-sm font-medium text-ink-500 font-arabic">
-          {label}{required && <span className="text-red-600 mr-0.5">*</span>}
-        </label>
-        {hint && <span className="text-sm text-ink-500 font-arabic">{hint}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Stat({ label, val }) {
-  return (
-    <div className="text-center">
-      <p className="text-lg font-mono text-ink-400">{val}</p>
-      <p className="text-sm text-ink-500 font-arabic">{label}</p>
     </div>
   );
 }

@@ -213,7 +213,9 @@ export function useAtlasSync() {
   // { auto: true } is the autosave: items already waiting on a conflict are
   // left out (resending them would only conflict again) and stay listed.
   // Resolves to { saved } — how many items were written.
-  const syncAll = useCallback(async (lessonId, subjectId, { auto = false } = {}) => {
+  // `versionLabel` (manual saves only) tags this save in the lesson's history;
+  // with a label the lesson is written even if only its content changed.
+  const syncAll = useCallback(async (lessonId, subjectId, { auto = false, versionLabel = '' } = {}) => {
     // Read at call time, not render time — see the note at the top of the hook.
     const { lessons, markLessonSaved } = useSubjectStore.getState();
     const { sections, blocks, markSaved } = useContentStore.getState();
@@ -238,11 +240,12 @@ export function useAtlasSync() {
     try {
       setLoading();
 
-      if (send(lesson)) {
+      const label = auto ? '' : versionLabel.trim();
+      if (send(lesson) || (label && !heldIds.has(lesson.id))) {
         const lessonRes = await fetch(`/api/content/lessons/${lessonId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(lessonPayload(lesson)),
+          body: JSON.stringify({ ...lessonPayload(lesson), ...(label ? { versionLabel: label } : {}) }),
         });
         const lessonJson = await lessonRes.json();
 
