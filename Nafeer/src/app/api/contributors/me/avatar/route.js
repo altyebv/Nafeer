@@ -78,3 +78,26 @@ export async function POST(request) {
 
   return NextResponse.json({ ok: true, data: { avatarUrl: avatarUrlWithBust } });
 }
+
+// DELETE /api/contributors/me/avatar
+// Removes the photo: deletes the stored file, clears avatarUrl/avatarPath and
+// re-issues the JWT so the editor chrome falls back to initials.
+export async function DELETE() {
+  const user = await getCurrentUser();
+  if (!user?.id) return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
+
+  await connectDB();
+  const existing = await Contributor.findById(user.id).select('+avatarPath');
+  if (!existing) return NextResponse.json({ ok: false, error: 'المساهم غير موجود' }, { status: 404 });
+  if (existing.avatarPath) deleteFile(USERS_BUCKET, existing.avatarPath).catch(() => {});
+
+  const contributor = await Contributor.findByIdAndUpdate(
+    user.id,
+    { $set: { avatarUrl: null, avatarPath: null } },
+    { new: true }
+  );
+  const token = await signToken(buildTokenPayload(contributor));
+  await setAuthCookie(token);
+
+  return NextResponse.json({ ok: true, data: { avatarUrl: null } });
+}

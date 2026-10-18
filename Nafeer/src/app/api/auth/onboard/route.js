@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-const USERNAME_RE = /^[w؀-ۿ._-]{3,20}$/;
+const USERNAME_RE = /^[\w؀-ۿ._-]{3,20}$/; // same rule as models/Contributor.js
 
 // The first lesson of the subject, in unit then lesson order, with no section yet.
 async function firstEmptyLesson(subjectId) {

@@ -1,4 +1,4 @@
-import { BookOpen, CircleHelp, Image, LayoutDashboard, Sparkles, Smartphone } from 'lucide-react';
+import { BookOpen, CircleHelp, Image, LayoutDashboard, Sparkles, Smartphone, UserRound } from 'lucide-react';
 
 /**
  * EDITOR NAVIGATION
@@ -17,6 +17,7 @@ export const NAV = [
   { id: 'quizbank',  href: '/editor/quizbank', icon: CircleHelp,      label: 'الأسئلة',  sub: 'Quiz Bank' },
   { id: 'concepts',  href: '/editor/concepts', icon: Sparkles,        label: 'المفاهيم', sub: 'Concepts'  },
   { id: 'media',     href: '/editor/media',    icon: Image,           label: 'الوسائط',  sub: 'Media'     },
+  { id: 'profile',   href: '/editor/profile',  icon: UserRound,       label: 'ملفي',     sub: 'Profile'   },
 ];
 
 /** Items that get their own slot in the mobile bottom bar; the rest go in "المزيد". */
