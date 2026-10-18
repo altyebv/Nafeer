@@ -1,6 +1,8 @@
 import { verifyAdminToken } from '@/lib/adminAuth';
 import { getReviewQueue, approveOrReject, returnLesson } from '@/lib/api/reviewQueue';
 import { ReviewError } from '@/lib/review';
+import { after } from 'next/server';
+import { notifyLessonReviewed } from '@/lib/reviewNotify';
 
 const REVIEW_ERROR_STATUS = { NOT_FOUND: 404, NOT_IN_REVIEW: 409, CONFLICT: 409 };
 
@@ -50,10 +52,12 @@ export async function PATCH(request) {
         { comments: comments ?? [], summary: note || '' },
         { id: admin.id, name: admin.displayName || admin.username || 'المراجِع' },
       );
+      after(() => notifyLessonReviewed(contentId, 'returned', { comments: result.comments }));
       return ok(result);
     }
 
     const result = await approveOrReject(contentId, type, status, admin.id, note || '');
+    if (type === 'lesson' && status === 'approved') after(() => notifyLessonReviewed(contentId, 'approved'));
     return ok(result);
   } catch (e) {
     if (e instanceof ReviewError) return err(e.message, REVIEW_ERROR_STATUS[e.code] || 400);
