@@ -57,5 +57,5 @@ item when it is finished; put the commit next to it in the commit message.
   with a one-click message.
 - [ ] **A finished sample lesson** to show applicants — content work: finish
   Chemistry unit 1 lesson 1 and link it from the join flow.
-- [ ] Then DS3 (contributor pages) and DS4 (landing, including the
+- [x] Then DS3 (contributor pages) and DS4 (landing, including the
   accessibility pass: contrast, reduced motion).

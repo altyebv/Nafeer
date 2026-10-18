@@ -1,6 +1,8 @@
 'use client';
-import { useEffect, useRef } from 'react';
-import { gsap, ScrollTrigger } from '@/lib/gsap';
+import { useRef } from 'react';
+import { gsap, useMotion, reveal } from '@/lib/gsap';
+import { SectionTitle } from '@/components/ui';
+import { LandingSection } from './Section';
 
 const scenes = [
   {
@@ -26,140 +28,79 @@ const scenes = [
 export default function ProblemSection() {
   const sectionRef = useRef(null);
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-
-      // Eyebrow: slide up
-      gsap.fromTo('.problem-eyebrow',
-        { opacity: 0, y: 24 },
-        {
-          opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
-          scrollTrigger: { trigger: '.problem-eyebrow', start: 'top 90%', once: true },
-        }
-      );
-
-      // Scenes: stagger with a larger reveal — each row draws a separator then slides content
-      gsap.fromTo('.problem-scene',
-        { opacity: 0, y: 44 },
-        {
-          opacity: 1, y: 0, duration: 0.85, stagger: 0.22, ease: 'power3.out',
-          scrollTrigger: { trigger: '.problem-scenes', start: 'top 88%', once: true },
-        }
-      );
-
-      // Scene separators: draw from right → left (RTL reading direction)
-      gsap.fromTo('.problem-separator',
-        { scaleX: 0, transformOrigin: 'right center' },
-        {
-          scaleX: 1, duration: 0.7, stagger: 0.22, ease: 'expo.out',
-          scrollTrigger: { trigger: '.problem-scenes', start: 'top 88%', once: true },
-        }
-      );
-
-      // Pivot card: scale + fade in
-      gsap.fromTo('.problem-pivot',
-        { opacity: 0, y: 32, scale: 0.96 },
-        {
-          opacity: 1, y: 0, scale: 1, duration: 1, ease: 'power3.out',
-          scrollTrigger: { trigger: '.problem-pivot', start: 'top 92%', once: true },
-        }
-      );
-
-      // Pivot accent bar: grows in
-      gsap.fromTo('.problem-pivot-bar',
-        { scaleY: 0, transformOrigin: 'top center' },
-        {
-          scaleY: 1, duration: 0.9, ease: 'expo.out',
-          scrollTrigger: { trigger: '.problem-pivot', start: 'top 92%', once: true },
-        }
-      );
-
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+  useMotion(sectionRef, () => {
+    reveal('.problem-eyebrow', { y: 24 });
+    reveal('.problem-scene', { trigger: '.problem-scenes', y: 44, stagger: 0.22, duration: 0.85 });
+    gsap.from('.problem-separator', {
+      scaleX: 0, transformOrigin: 'right center', duration: 0.7, stagger: 0.22, ease: 'expo.out',
+      scrollTrigger: { trigger: '.problem-scenes', start: 'top 88%', once: true },
+    });
+    reveal('.problem-pivot', { y: 32, scale: 0.96, duration: 1 });
+    gsap.from('.problem-pivot-bar', {
+      scaleY: 0, transformOrigin: 'top center', duration: 0.9, ease: 'expo.out',
+      scrollTrigger: { trigger: '.problem-pivot', start: 'top 92%', once: true },
+    });
+  });
 
   return (
-    <section
+    <LandingSection
       ref={sectionRef}
       id="problem"
-      className="py-20 sm:py-32 px-4 sm:px-6 relative overflow-hidden"
+      width="content"
+      decoration={(
+        <div aria-hidden="true" className="absolute inset-0 pointer-events-none l-wash flex items-center justify-center select-none">
+          <span className="l-watermark opacity-[0.018] l-mark-30 font-arabic font-bold leading-none">الإمكانية</span>
+        </div>
+      )}
     >
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(212,137,30,0.03) 0%, transparent 70%)' }}
+      <SectionTitle
+        className="problem-eyebrow mb-14 sm:mb-20"
+        eyebrow="لماذا بشير"
+        title={(
+          <>
+            <span className="block text-3xl sm:text-4xl md:text-5xl leading-tight">الإمكانية موجودة دائماً</span>
+            <span className="block mt-2 text-2xl sm:text-3xl md:text-4xl font-normal text-fg-muted">نحتاج فقط الأداة المناسبة لإطلاقها</span>
+          </>
+        )}
       />
 
-      {/* Faint background watermark */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style={{ opacity: 0.018 }}>
-        <span className="text-[30vw] font-arabic font-bold leading-none" style={{ color: 'var(--text-primary)' }}>الإمكانية</span>
-      </div>
-
-      <div className="max-w-4xl mx-auto relative z-10">
-
-        {/* Eyebrow */}
-        <div className="problem-eyebrow mb-14 sm:mb-20" style={{ opacity: 0 }}>
-          <span className="inline-block text-xs sm:text-sm font-mono tracking-widest uppercase mb-4" style={{ color: 'var(--accent)' }}>
-            لماذا بشير
-          </span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-arabic font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>
-            الإمكانية موجودة دائماً
-            <br />
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75em', fontWeight: 400 }}>نحتاج فقط الأداة المناسبة لإطلاقها</span>
-          </h2>
-        </div>
-
-        {/* Three scenes */}
-        <div className="problem-scenes space-y-0">
-          {scenes.map((scene, i) => (
-            <div key={i} className="problem-scene group" style={{ opacity: 0 }}>
-              {/* Separator line — animates separately */}
-              <div className="problem-separator" style={{ borderTop: '1px solid var(--border-subtle)', transform: 'scaleX(0)' }} />
-              <div className="py-8 sm:py-10 flex flex-col sm:flex-row sm:items-start gap-5 sm:gap-12 transition-all duration-500">
-                {/* Label column */}
-                <div className="sm:w-48 shrink-0 flex sm:flex-col items-center sm:items-start gap-4 sm:gap-2">
-                  <span className="text-3xl sm:text-4xl font-mono font-bold leading-none" style={{ color: 'var(--accent)', opacity: 0.22 }}>
-                    {scene.num}
-                  </span>
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{scene.label}</p>
-                    <p className="text-xs font-mono mt-0.5" style={{ color: 'var(--text-muted)' }}>{scene.labelEn}</p>
-                  </div>
+      <ol className="problem-scenes">
+        {scenes.map((scene) => (
+          <li key={scene.num} className="problem-scene">
+            <div aria-hidden="true" className="problem-separator border-t border-line" />
+            <div className="py-8 sm:py-10 flex flex-col sm:flex-row sm:items-start gap-5 sm:gap-12">
+              <div className="sm:w-48 shrink-0 flex sm:flex-col items-center sm:items-start gap-4 sm:gap-2">
+                <span aria-hidden="true" className="t-num text-3xl sm:text-4xl font-ui font-bold leading-none text-fg-accent opacity-40">{scene.num}</span>
+                <div>
+                  <h3 className="t-title text-fg-strong">{scene.label}</h3>
+                  <p dir="ltr" className="t-caption text-fg-subtle mt-0.5 text-right">{scene.labelEn}</p>
                 </div>
-
-                {/* Scene text */}
-                <p className="text-base sm:text-lg leading-loose font-arabic flex-1" style={{ color: 'var(--text-secondary)' }}>
-                  {scene.text}
-                </p>
               </div>
+              <p className="read t-body sm:text-lg leading-loose flex-1 text-fg-muted">{scene.text}</p>
             </div>
-          ))}
-          <div className="problem-separator" style={{ borderTop: '1px solid var(--border-subtle)', transform: 'scaleX(0)' }} />
-        </div>
+          </li>
+        ))}
+        <li aria-hidden="true" className="problem-separator border-t border-line" />
+      </ol>
 
-        {/* Pivot card */}
-        <div className="problem-pivot mt-14 sm:mt-20" style={{ opacity: 0 }}>
-          <div
-            className="p-8 sm:p-10 rounded-2xl relative overflow-hidden"
-            style={{ background: 'var(--bg-card)', border: '1px solid rgba(212,137,30,0.15)' }}
-          >
-            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, rgba(212,137,30,0.05), transparent 70%)' }} />
-            <div className="relative z-10 flex items-start gap-5">
-              <div className="problem-pivot-bar w-1 self-stretch rounded-full shrink-0 hidden sm:block" style={{ background: 'var(--accent)', opacity: 0.5, transform: 'scaleY(0)' }} />
-              <div>
-                <p className="text-md font-mono mb-3 tracking-widest uppercase" style={{ color: 'var(--accent)' }}>الفرق الذي يصنعه بشير</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-arabic font-bold leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-                  بشير لا يُبدّل المنهج —
-                  <span style={{ color: 'var(--accent)' }}> يُبدّل طريقة عيشِه.</span>
-                </p>
-                <p className="text-base leading-loose mt-3 font-arabic" style={{ color: 'var(--text-muted)' }}>
-                  نفس المقررات، نفس المواد، نفس الدُروس — لكن بتجربة تعلّم مرئية، تفاعليه و ممتعة . مصممة للطالب السوداني تحديداً.
-                </p>
-              </div>
+      <div className="problem-pivot mt-14 sm:mt-20">
+        <div className="relative overflow-hidden p-8 sm:p-10 rounded-panel bg-raised border border-line-accent">
+          <div aria-hidden="true" className="absolute inset-0 pointer-events-none l-wash" />
+          <div className="relative flex items-start gap-5">
+            <div aria-hidden="true" className="problem-pivot-bar w-1 self-stretch rounded-full shrink-0 hidden sm:block bg-accent opacity-50" />
+            <div>
+              <p className="t-eyebrow mb-3">الفرق الذي يصنعه بشير</p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-arabic font-bold leading-relaxed text-fg-strong">
+                بشير لا يُبدّل المنهج —
+                <span className="text-fg-accent"> يُبدّل طريقة عيشِه.</span>
+              </p>
+              <p className="read t-body leading-loose mt-3 text-fg-muted">
+                نفس المقررات، نفس المواد، نفس الدُروس — لكن بتجربة تعلّم مرئية، تفاعليه و ممتعة . مصممة للطالب السوداني تحديداً.
+              </p>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 }

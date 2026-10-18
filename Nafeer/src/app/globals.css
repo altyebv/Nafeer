@@ -419,6 +419,35 @@
       radial-gradient(ellipse 60% 40% at 80% 80%, var(--mesh-2) 0%, transparent 60%);
   }
 
+  /* ── Landing decoration (DS4) ─────────────────────────────────────────
+     Glows, washes and watermarks are landing-only (design-system §5). They
+     live here so the components carry no colour literals, and they follow
+     the theme through the accent and mesh variables.
+  ─────────────────────────────────────────────────────────────────────── */
+  .l-wash      { background: radial-gradient(ellipse 80% 60% at 50% 50%, color-mix(in srgb, var(--accent) 5%, transparent) 0%, transparent 70%); }
+  .l-wash-top  { background: radial-gradient(ellipse 80% 55% at 50% 0%,   color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 65%); }
+  .l-orb-1     { background: radial-gradient(circle, var(--mesh-1) 0%, transparent 70%); }
+  .l-orb-2     { background: radial-gradient(circle, var(--mesh-2) 0%, transparent 70%); }
+  .l-orb-3     { background: radial-gradient(circle, color-mix(in srgb, var(--accent) 6%, transparent) 0%, transparent 70%); }
+  .l-watermark { color: var(--fg-strong); opacity: 0.03; }
+  .l-glow-text {
+    color: var(--accent);
+    text-shadow:
+      0 0 40px  var(--accent),
+      0 0 90px  color-mix(in srgb, var(--accent) 70%, transparent),
+      0 0 160px color-mix(in srgb, var(--accent) 40%, transparent),
+      0 0 240px color-mix(in srgb, var(--accent) 20%, transparent);
+    /* Off-screen until the pointer moves over it (Hero sets the mask). */
+    -webkit-mask-image: radial-gradient(circle 260px at -9999px -9999px, black 0%, transparent 72%);
+    mask-image:         radial-gradient(circle 260px at -9999px -9999px, black 0%, transparent 72%);
+  }
+  /* Watermark sizes and the hero wordmark: decoration, not type roles. */
+  .l-mark-24 { font-size: 24vw; } .l-mark-30 { font-size: 30vw; } .l-mark-32 { font-size: 32vw; } .l-mark-40 { font-size: 40vw; }
+  .l-wordmark { font-size: 3.75rem; } @media (min-width: 640px) { .l-wordmark { font-size: 4.5rem; } } @media (min-width: 768px) { .l-wordmark { font-size: 9rem; } }
+  .l-navbar    { background: var(--navbar-bg); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .l-fade-down { background: linear-gradient(to bottom, var(--fg-subtle), transparent); }
+  .l-fade-side { background: linear-gradient(90deg, var(--line-strong), transparent); }
+
   .glass {
     background: var(--bg-card);
     backdrop-filter: blur(12px);
