@@ -1,30 +1,28 @@
 'use client';
 import { useState, useEffect, useRef, Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { gsap } from 'gsap';
+import { Button, Card, Textarea, cx } from '@/components/ui';
+
+// ─── /interview?token=… ───────────────────────────────────────────────────────
+// DS3: the written interview on the shared components and role tokens — one
+// question per screen, a draft kept on this device, a link to the status page
+// at the end (canvas board «المقابلة الآن»).
 
 const MIN = 80; // fallback minimum
 
-// ─── Progress bar ────────────────────────────────────────────────────────────
+// ─── Progress ────────────────────────────────────────────────────────────────
 
 function ProgressLine({ current, total }) {
-  const pct = Math.round((current / total) * 100);
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
-          سؤال {current} من {total}
-        </span>
-        <span className="text-xs font-mono" style={{ color: 'var(--accent)', opacity: 0.7 }}>
-          {pct}%
-        </span>
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-1.5" role="progressbar" aria-valuemin={1} aria-valuemax={total} aria-valuenow={current} aria-label={`${current} من ${total}`}>
+        {Array.from({ length: total }, (_, i) => (
+          <span key={i} className={cx('flex-1 h-1 rounded-chip', i < current - 1 ? 'bg-success' : i === current - 1 ? 'bg-accent' : 'bg-hover')} />
+        ))}
       </div>
-      <div className="w-full h-0.5 rounded-full" style={{ background: 'var(--border-subtle)' }}>
-        <div
-          className="h-0.5 rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${pct}%`, background: 'var(--accent)' }}
-        />
-      </div>
+      <span className="t-caption text-fg-muted">{current} من {total}</span>
     </div>
   );
 }
@@ -32,137 +30,69 @@ function ProgressLine({ current, total }) {
 // ─── Character counter ───────────────────────────────────────────────────────
 
 function CharCount({ value, min }) {
-  const len    = (value || '').trim().length;
+  const len = (value || '').trim().length;
   const enough = len >= min;
   return (
-    <div className="flex items-center justify-between mt-2">
-      <span className="text-xs" style={{ color: enough ? 'var(--accent)' : 'var(--text-muted)', opacity: 0.6 }}>
-        {enough ? 'ممتاز' : `${min - len} حرفاً على الأقل`}
-      </span>
-      <span className="text-xs font-mono" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>{len}</span>
+    <div className="flex items-center justify-between gap-3 t-caption">
+      <span className={enough ? 'text-success' : 'text-fg-subtle'}>{enough ? `${len} حرفاً ✓` : `${len} من ${min} حرفاً على الأقل`}</span>
+      <span className="text-fg-subtle">لا إجابة صحيحة واحدة — نريد أن نرى طريقة تفكيرك.</span>
     </div>
   );
 }
 
-// ─── Textarea input style ────────────────────────────────────────────────────
+// ─── One step: a question, or the task at the end ────────────────────────────
 
-const textareaStyle = {
-  background:   'rgba(255,255,255,0.04)',
-  border:       '1px solid var(--border-mid)',
-  color:        'var(--text-primary)',
-  outline:      'none',
-  width:        '100%',
-  borderRadius: '12px',
-  padding:      '12px 16px',
-  fontSize:     '14px',
-  lineHeight:   '1.8',
-  resize:       'vertical',
-  fontFamily:   'var(--font-arabic, inherit)',
-};
-
-// ─── A single open-text question step ───────────────────────────────────────
-
-function QuestionStep({ question, value, onChange }) {
-  const minChars = question.minChars ?? MIN;
+function Step({ kicker, prompt, hint, value, onChange, min, rows = 7, placeholder }) {
   return (
-    <div>
-      <span
-        className="inline-block text-xs font-mono mb-3 tracking-widest uppercase"
-        style={{ color: 'var(--accent)', opacity: 0.7 }}
-      >
-        سؤال
-      </span>
-      <h2 className="text-lg sm:text-xl font-arabic font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-        {question.text}
-      </h2>
-      <textarea
-        rows={5}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={question.placeholder || 'اكتب إجابتك هنا...'}
-        style={textareaStyle}
-        onFocus={(e)  => { e.target.style.borderColor = 'rgba(212,137,30,0.5)'; }}
-        onBlur={(e)   => { e.target.style.borderColor = 'var(--border-mid)';    }}
-      />
-      <CharCount value={value} min={minChars} />
+    <div className="flex flex-col gap-3">
+      <span className="t-label text-fg-accent">{kicker}</span>
+      <h2 className="read t-h3 leading-relaxed text-fg-strong">{prompt}</h2>
+      {hint && <p className="t-label font-normal text-fg-muted">{hint}</p>}
+      <Textarea rows={rows} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+        aria-label={prompt} className="read text-base leading-loose" />
+      <CharCount value={value} min={min} />
     </div>
   );
 }
 
-// ─── Micro task step ─────────────────────────────────────────────────────────
+function QuestionStep({ question, index, value, onChange }) {
+  return (
+    <Step kicker={`السؤال ${index + 1}`} prompt={question.text} hint="فقرة أو فقرتان تكفيان."
+      value={value} onChange={onChange} min={question.minChars ?? MIN} placeholder={question.placeholder || 'اكتب إجابتك هنا…'} />
+  );
+}
 
 function MicroTaskStep({ microTask, value, onChange }) {
-  const minChars = microTask.minChars ?? MIN;
   return (
-    <div>
-      <span
-        className="inline-block text-xs font-mono mb-3 tracking-widest uppercase"
-        style={{ color: 'var(--accent)', opacity: 0.7 }}
-      >
-        مهمة تطبيقية
-      </span>
-      <h2 className="text-lg sm:text-xl font-arabic font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-        {microTask.prompt}
-      </h2>
-      <p className="text-sm mb-5 leading-loose" style={{ color: 'var(--text-muted)' }}>
-        لا توجد إجابة مثالية — نريد أن نرى أسلوبك في التفكير والتعبير.
-      </p>
-      <textarea
-        rows={6}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="اكتب هنا..."
-        style={textareaStyle}
-        onFocus={(e)  => { e.target.style.borderColor = 'rgba(212,137,30,0.5)'; }}
-        onBlur={(e)   => { e.target.style.borderColor = 'var(--border-mid)';    }}
-      />
-      <CharCount value={value} min={minChars} />
-    </div>
+    <Step kicker="المهمة الأخيرة · نحو 5 دقائق" prompt={microTask.prompt} hint="اكتبها كما ستظهر للطالب في بشير."
+      value={value} onChange={onChange} min={microTask.minChars ?? MIN} rows={8} placeholder="اكتب هنا…" />
   );
 }
 
-// ─── Done screen ─────────────────────────────────────────────────────────────
+// ─── Done ────────────────────────────────────────────────────────────────────
 
 function SuccessScreen({ name, statusToken }) {
   return (
-    <div className="text-center py-8">
-      <div
-        className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6"
-        style={{ background: 'rgba(212,137,30,0.12)', border: '1px solid rgba(212,137,30,0.25)' }}
-      >
-        <span style={{ color: 'var(--accent)', fontSize: '22px' }}>✓</span>
-      </div>
-      <h2 className="text-xl font-arabic font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-        شكراً {name?.split(' ')[0]}
-      </h2>
-      <p className="text-sm leading-loose mb-6" style={{ color: 'var(--text-secondary)' }}>
-        وصلت إجاباتك. فريق الإدارة يقرأ طلبك كاملاً، وتتابع القرار من رابط طلبك.
-      </p>
+    <div className="flex flex-col items-center gap-4 py-8 text-center">
+      <span aria-hidden="true" className="w-14 h-14 rounded-chip bg-success-surface border border-success-border text-success inline-flex items-center justify-center t-h3">✓</span>
+      <h2 className="t-h2 text-fg-strong">شكراً {name?.split(' ')[0]}</h2>
+      <p className="t-body text-fg-muted max-w-md">وصلت إجاباتك. فريق الإدارة يقرأ طلبك كاملاً، وتتابع القرار من رابط طلبك.</p>
       {statusToken
-        ? <a href={`/join/status?token=${statusToken}`} className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>تابع حالة طلبك ←</a>
-        : <a href="/" className="text-sm" style={{ color: 'var(--text-muted)' }}>العودة للرئيسية</a>}
+        ? <Button as={Link} href={`/join/status?token=${statusToken}`} variant="primary">تابع حالة طلبك ←</Button>
+        : <Link href="/" className="t-label text-fg-accent hover:underline">العودة للرئيسية</Link>}
     </div>
   );
 }
 
-// ─── Error screen ────────────────────────────────────────────────────────────
+// ─── Error ───────────────────────────────────────────────────────────────────
 
 function ErrorScreen({ message }) {
   return (
-    <div className="text-center py-8">
-      <div
-        className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6"
-        style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)' }}
-      >
-        <span style={{ color: '#f87171', fontSize: '20px' }}>✕</span>
-      </div>
-      <h2 className="text-lg font-arabic font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-        تعذّر تحميل المقابلة
-      </h2>
-      <p className="text-sm leading-loose mb-6" style={{ color: 'var(--text-secondary)' }}>
-        {message || 'الرابط غير صالح أو انتهت صلاحيته.'}
-      </p>
-      <a href="/" className="text-sm" style={{ color: 'var(--text-muted)' }}>العودة للرئيسية</a>
+    <div className="flex flex-col items-center gap-4 py-8 text-center">
+      <span aria-hidden="true" className="w-14 h-14 rounded-chip bg-danger-surface border border-danger-border text-danger inline-flex items-center justify-center t-h3">✕</span>
+      <h2 className="t-h2 text-fg-strong">تعذّر فتح المقابلة</h2>
+      <p className="t-body text-fg-muted max-w-md">{message || 'الرابط غير صالح أو انتهت صلاحيته.'}</p>
+      <p className="t-label text-fg-muted">تجد رابطاً صالحاً في <Link href="/join/status" className="text-fg-accent hover:underline">صفحة حالة طلبك</Link>.</p>
     </div>
   );
 }
@@ -297,157 +227,59 @@ function InterviewContent() {
     }
   };
 
+  const valid = isCurrentValid();
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-16 relative" dir="rtl">
-
-      {/* Ambient */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[70vw] h-[50vh] rounded-full"
-          style={{
-            background: 'radial-gradient(ellipse, rgba(212,137,30,0.05), transparent 70%)',
-            filter: 'blur(50px)',
-          }}
-        />
-      </div>
-
-      <div className="relative z-10 w-full max-w-xl">
-
-        {/* Logo */}
-        <div className="mb-8">
-          <a href="/" className="inline-block">
-            <span className="text-xl font-arabic font-bold" style={{ color: 'var(--accent)' }}>نفير</span>
-          </a>
+    <div className="min-h-screen bg-page text-fg font-ui" dir="rtl">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="t-title font-bold text-fg-accent">نفير</Link>
+          {phase === 'interview' && savedAt && (
+            <span role="status" className="t-caption text-success">✓ حُفظت مسودتك على هذا الجهاز</span>
+          )}
         </div>
 
-        {/* Main card */}
-        <div
-          className="rounded-2xl p-6 sm:p-8"
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-subtle)',
-            backdropFilter: 'blur(12px)',
-          }}
-        >
-          {phase === 'loading' && (
-            <div className="text-center py-12">
-              <p className="text-sm font-arabic animate-pulse" style={{ color: 'var(--text-muted)' }}>
-                جاري التحقق من الرابط...
-              </p>
-            </div>
-          )}
-
+        <Card padding="lg">
+          {phase === 'loading' && <p className="py-12 text-center t-body text-fg-subtle">جارٍ التحقق من الرابط…</p>}
           {phase === 'error' && <ErrorScreen message={errorMsg} />}
-          {phase === 'done'  && <SuccessScreen name={config?.name} statusToken={config?.statusToken} />}
+          {phase === 'done' && <SuccessScreen name={config?.name} statusToken={config?.statusToken} />}
 
           {phase === 'interview' && total > 0 && (
-            <>
-              {/* Greeting header */}
-              <div className="mb-6 pb-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                <p className="text-xs font-mono mb-1" style={{ color: 'var(--text-muted)' }}>
-                  المقابلة — بشير × نفير{config.roleName ? ` — ${config.roleName}` : ''}
-                </p>
-                <h1 className="text-base font-arabic font-bold" style={{ color: 'var(--text-primary)' }}>
-                  أهلاً {config.name?.split(' ')[0]} —{' '}
-                  <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>
-                    {total} {total === 1 ? 'سؤال' : total <= 10 ? 'أسئلة' : 'سؤالاً'}، لا توجد إجابات خاطئة
-                  </span>
-                </h1>
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-1 pb-4 border-b border-line">
+                <span className="t-caption text-fg-subtle">مقابلة{config.roleName ? ` · ${config.roleName}` : ''}</span>
+                <h1 className="t-title text-fg-strong">أهلاً {config.name?.split(' ')[0]}</h1>
               </div>
 
-              {/* Progress */}
               <ProgressLine current={step + 1} total={total} />
-              {savedAt && <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }} role="status">✓ حُفظت مسودتك على هذا الجهاز — يمكنك الإغلاق والعودة من الرابط نفسه.</p>}
 
-              {/* Animated step */}
               <div ref={cardRef}>
                 {currentStep?.type === 'question' && (
-                  <QuestionStep
-                    question={currentStep.data}
-                    value={currentValue()}
-                    onChange={setCurrentValue}
-                  />
+                  <QuestionStep question={currentStep.data} index={step} value={currentValue()} onChange={setCurrentValue} />
                 )}
                 {currentStep?.type === 'microtask' && (
-                  <MicroTaskStep
-                    microTask={currentStep.data}
-                    value={currentValue()}
-                    onChange={setCurrentValue}
-                  />
+                  <MicroTaskStep microTask={currentStep.data} value={currentValue()} onChange={setCurrentValue} />
                 )}
               </div>
 
-              {/* Submit error */}
               {submitError && (
-                <div
-                  className="mt-4 p-3 rounded-lg text-sm text-center"
-                  style={{
-                    background: 'rgba(220,38,38,0.08)',
-                    border: '1px solid rgba(220,38,38,0.2)',
-                    color: '#f87171',
-                  }}
-                >
-                  {submitError}
-                </div>
+                <p role="alert" className="p-3 rounded-control bg-danger-surface border border-danger-border t-label text-danger text-center">{submitError}</p>
               )}
 
-              {/* Navigation */}
-              <div className="flex items-center justify-between mt-8">
-                {step > 0 ? (
-                  <button
-                    onClick={goBack}
-                    className="text-sm px-4 py-2 rounded-lg transition-all"
-                    style={{ color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}
-                    onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-                  >
-                    ← السابق
-                  </button>
-                ) : (
-                  <div />
-                )}
-
-                {step < total - 1 ? (
-                  <button
-                    onClick={goNext}
-                    disabled={!isCurrentValid()}
-                    className="text-sm px-6 py-2.5 rounded-lg font-bold transition-all duration-200"
-                    style={{
-                      background: isCurrentValid() ? 'var(--accent)' : 'var(--bg-card)',
-                      color:      isCurrentValid() ? '#0e0c09'        : 'var(--text-muted)',
-                      border:     isCurrentValid() ? 'none'            : '1px solid var(--border-subtle)',
-                      cursor:     isCurrentValid() ? 'pointer'         : 'not-allowed',
-                    }}
-                    onMouseEnter={e => { if (isCurrentValid()) e.currentTarget.style.background = 'var(--accent-hover)'; }}
-                    onMouseLeave={e => { if (isCurrentValid()) e.currentTarget.style.background = 'var(--accent)'; }}
-                  >
-                    التالي →
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={submitting || !isCurrentValid()}
-                    className="text-sm px-6 py-2.5 rounded-lg font-bold transition-all duration-200"
-                    style={{
-                      background: (submitting || !isCurrentValid()) ? 'var(--bg-card)' : 'var(--accent)',
-                      color:      (submitting || !isCurrentValid()) ? 'var(--text-muted)' : '#0e0c09',
-                      border:     (submitting || !isCurrentValid()) ? '1px solid var(--border-subtle)' : 'none',
-                      cursor:     submitting ? 'wait' : 'pointer',
-                    }}
-                    onMouseEnter={e => { if (!submitting && isCurrentValid()) e.currentTarget.style.background = 'var(--accent-hover)'; }}
-                    onMouseLeave={e => { if (!submitting && isCurrentValid()) e.currentTarget.style.background = 'var(--accent)'; }}
-                  >
-                    {submitting ? 'جاري الإرسال...' : 'إرسال الإجابات ✓'}
-                  </button>
-                )}
+              <div className="flex items-center justify-between gap-3 pt-4 border-t border-line">
+                {step > 0
+                  ? <Button variant="secondary" onClick={goBack}>→ السابق</Button>
+                  : <span />}
+                {step < total - 1
+                  ? <Button variant="primary" onClick={goNext} disabled={!valid}>التالي ←</Button>
+                  : <Button variant="primary" onClick={handleSubmit} loading={submitting} disabled={!valid}>أرسل المقابلة</Button>}
               </div>
-            </>
+            </div>
           )}
-        </div>
+        </Card>
 
         {phase === 'interview' && (
-          <p className="text-center text-xs mt-5" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
-            يمكنك التنقل بين الأسئلة بحرية قبل الإرسال
+          <p className="text-center t-caption text-fg-subtle">
+            يمكنك التنقل بين الأسئلة قبل الإرسال، والإغلاق والعودة من الرابط في بريدك.
           </p>
         )}
       </div>
@@ -457,13 +289,7 @@ function InterviewContent() {
 
 export default function InterviewPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-sm font-arabic animate-pulse" style={{ color: 'var(--text-muted)' }}>
-          جاري التحميل...
-        </p>
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen bg-page" />}>
       <InterviewContent />
     </Suspense>
   );

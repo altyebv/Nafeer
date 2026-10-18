@@ -1,59 +1,59 @@
 {
   "note": "Violation counts per area. lint:design fails if any count rises. Lower with --update after a migration.",
-  "updated": "2026-10-16",
+  "updated": "2026-10-18",
   "counts": {
     "hex": {
       "ui": 0,
       "landing": 27,
-      "editor": 101,
-      "admin": 62,
-      "flow": 14,
-      "profile": 16,
+      "editor": 90,
+      "admin": 47,
+      "flow": 0,
+      "profile": 0,
       "other": 8
     },
     "rgba": {
       "ui": 0,
       "landing": 84,
-      "editor": 82,
-      "admin": 247,
-      "flow": 46,
-      "profile": 51,
+      "editor": 71,
+      "admin": 176,
+      "flow": 0,
+      "profile": 0,
       "other": 4
     },
     "rawPalette": {
       "ui": 0,
       "landing": 1,
-      "editor": 137,
-      "admin": 209,
-      "flow": 5,
+      "editor": 104,
+      "admin": 131,
+      "flow": 0,
       "profile": 0,
       "other": 15
     },
     "rampDirect": {
       "ui": 0,
       "landing": 1,
-      "editor": 662,
-      "admin": 745,
-      "flow": 41,
+      "editor": 588,
+      "admin": 497,
+      "flow": 0,
       "profile": 0,
       "other": 4
     },
     "arbitraryText": {
       "ui": 0,
       "landing": 8,
-      "editor": 104,
+      "editor": 98,
       "admin": 0,
-      "flow": 2,
+      "flow": 0,
       "profile": 0,
       "other": 0
     },
     "inlineStyle": {
       "ui": 0,
       "landing": 288,
-      "editor": 330,
-      "admin": 396,
-      "flow": 149,
-      "profile": 68,
+      "editor": 298,
+      "admin": 296,
+      "flow": 1,
+      "profile": 0,
       "other": 7
     },
     "toLocale": {
@@ -78,7 +78,7 @@
       "ui": 0,
       "landing": 3,
       "editor": 1,
-      "admin": 16,
+      "admin": 7,
       "flow": 0,
       "profile": 0,
       "other": 0
@@ -87,8 +87,8 @@
       "ui": 0,
       "landing": 3,
       "editor": 7,
-      "admin": 55,
-      "flow": 2,
+      "admin": 38,
+      "flow": 0,
       "profile": 0,
       "other": 0
     }
