@@ -1,228 +1,185 @@
 'use client';
-import { useDataStore }                    from '@/store/dataStore';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Search } from 'lucide-react';
+import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
-import { SUBJECTS_BY_ID, TRACK_CONFIG }    from '@/shared/curriculum';
-import { computeProgress }                 from '@/lib/LessonStatus';
-import { useCoverageData }                 from '@/hooks/useCoverageData';
-import UnitCard                            from '@/components/editor/units/UnitCard';
-import EditorPage                          from '@/components/editor/layout/EditorPage';
+import { SUBJECTS_BY_ID, TRACK_CONFIG } from '@/shared/curriculum';
+import { lessonReadiness, isAutoTitle, recentLessons } from '@/lib/lessonReadiness';
+import { formatRelative } from '@/lib/format';
+import { lessonHref } from '@/components/editor/layout/nav';
+import { EmptyState, Input, Segmented, cx } from '@/components/ui';
+import UnitCard from '@/components/editor/units/UnitCard';
+import LessonItem from '@/components/editor/lesson/LessonItem';
+import EditorPage from '@/components/editor/layout/EditorPage';
 
-// Lessons no longer takes an onEditLesson callback — LessonItem links straight
-// to /editor/lessons/[id], so the route is the navigation.
+// ─── Lessons ──────────────────────────────────────────────────────────────────
+// DS2 step 6 (canvas board EdLessonsList). Where the subject stands in words,
+// a «تابع من حيث توقفت» strip (lessons opened in this browser — no request),
+// search and status filters, and full-width rows with readiness marks.
+// Everything is computed from the stores the editor already loaded; the old
+// per-page coverage request is gone.
+
+const FILTERS = [
+  { id: 'all', label: 'الكل' },
+  { id: 'started', label: 'فيه عمل' },
+  { id: 'returned', label: 'أُعيد' },
+  { id: 'review', label: 'بانتظار المراجعة' },
+  { id: 'approved', label: 'معتمد' },
+  { id: 'untitled', label: 'عنوان تلقائي' },
+];
+
 export default function LessonsPage() {
-  const { subject, units, lessons, sections, blocks } = useDataStore(
-    useShallow((s) => ({ subject: s.subject, units: s.units, lessons: s.lessons, sections: s.sections, blocks: s.blocks })),
+  const { subject, units, lessons, sections, blocks, questions, feedItems } = useDataStore(
+    useShallow((s) => ({ subject: s.subject, units: s.units, lessons: s.lessons, sections: s.sections, blocks: s.blocks, questions: s.questions, feedItems: s.feedItems })),
   );
-  const { coverageMap, unitMap } = useCoverageData(subject?.id);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [recent, setRecent] = useState([]);
+  useEffect(() => { setRecent(recentLessons()); }, []);
 
-  const sortedUnits  = [...units].sort((a, b) => a.order - b.order);
-  const catalogEntry = subject ? SUBJECTS_BY_ID[subject.id] : null;
-  const trackCfg     = catalogEntry ? TRACK_CONFIG[catalogEntry.track] : null;
+  const sortedUnits = useMemo(() => [...units].sort((a, b) => a.order - b.order), [units]);
+  const unitPos = useMemo(() => Object.fromEntries(sortedUnits.map((u, i) => [u.id, i + 1])), [sortedUnits]);
+  const ordered = useMemo(() => sortedUnits.flatMap((u) => lessons.filter((l) => l.unitId === u.id).sort((a, b) => a.order - b.order)), [sortedUnits, lessons]);
 
-  const lessonsMap          = Object.fromEntries(lessons.map((l) => [l.id, l]));
-  const { done, total, pct } = computeProgress(
-    lessons.map((l) => l.id), sections, blocks, lessonsMap,
-  );
+  const info = useMemo(() => {
+    const stores = { sections, blocks, questions, feedItems };
+    return Object.fromEntries(ordered.map((l) => [l.id, lessonReadiness(l, stores)]));
+  }, [ordered, sections, blocks, questions, feedItems]);
+
+  // One predicate per filter, used for both the list and the counts.
+  const is = (id, l) => {
+    const r = info[l.id];
+    switch (id) {
+      case 'started': return r.counts.sections > 0;
+      case 'returned': return !!l.reviewState?.returned;
+      case 'review': return l.atlasStatus === 'review';
+      case 'approved': return l.atlasStatus === 'approved';
+      case 'untitled': return isAutoTitle(l.title);
+      default: return true;
+    }
+  };
+  const q = query.trim();
+  const unitTitle = (l) => sortedUnits.find((u) => u.id === l.unitId)?.title || '';
+  const results = ordered.filter((l) => is(filter, l) && (!q || l.title?.includes(q) || unitTitle(l).includes(q)));
+  const counts = Object.fromEntries(FILTERS.map((f) => [f.id, ordered.filter((l) => is(f.id, l)).length]));
 
   if (!subject) {
-    return (
-      <div className="flex flex-col items-center justify-center py-40 gap-4">
-        <div className="w-5 h-5 rounded-full border-2 border-sand-700 border-t-sand-400 animate-spin" />
-        <p className="font-arabic" style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل…</p>
-      </div>
-    );
+    return <div className="py-40 text-center t-body text-fg-subtle">جارٍ التحميل…</div>;
   }
+
+  const catalog = SUBJECTS_BY_ID[subject.id];
+  const track = catalog ? TRACK_CONFIG[catalog.track] : null;
+  const ready = ordered.filter((l) => info[l.id].done === 6).length;
+  const working = counts.started - ready;
+  const pct = (n) => (ordered.length ? (n / ordered.length) * 100 : 0);
+
+  // «تابع من حيث توقفت»: lessons of this subject opened here, newest first,
+  // then the first lesson in order that nobody has started.
+  const byId = Object.fromEntries(ordered.map((l) => [l.id, l]));
+  const recentHere = recent.filter((r) => byId[r.id]).slice(0, 2);
+  const nextEmpty = ordered.find((l) => info[l.id].counts.sections === 0 && !recentHere.some((r) => r.id === l.id));
+  const where = (l) => `الوحدة ${unitPos[l.unitId]} · الدرس ${lessons.filter((x) => x.unitId === l.unitId).sort((a, b) => a.order - b.order).indexOf(l) + 1}`;
 
   return (
     <EditorPage width="wide">
-
-      {/* ── Subject masthead ──────────────────────────────────────────────── */}
-      <header className="mb-8">
-
-        {/* Top row: title + dial */}
-        <div className="flex items-start justify-between gap-6 mb-5">
-          <div className="min-w-0 flex-1">
-            {trackCfg && (
-              <span className={`inline-flex items-center text-[10px] font-arabic px-2.5 py-0.5 rounded border mb-3 ${trackCfg.badge}`}>
-                {trackCfg.label}
-                {catalogEntry?.isMajor && <span className="mr-1.5 opacity-60">· تخصص</span>}
-              </span>
-            )}
-
-            <h1
-              className="font-bold font-arabic leading-tight mb-1"
-              style={{ fontSize: 28, color: 'var(--text-primary)' }}
-            >
-              {subject.nameAr}
-            </h1>
-
-            {subject.nameEn && (
-              <p className="font-mono" dir="ltr" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                {subject.nameEn}
-              </p>
-            )}
+      <header className="flex flex-col gap-4 mb-6">
+        <div className="flex items-start justify-between gap-6 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <span className="t-caption text-fg-subtle">{subject.nameAr}{track ? ` · ${track.label}` : ''}</span>
+            <h1 className="t-h1 text-fg-strong">الدروس</h1>
+            <span className="t-label text-fg-muted">
+              {units.length} وحدات · {ordered.length} درساً · <strong className="text-fg-strong">{ready} جاهز</strong>
+              {counts.review ? ` · ${counts.review} بانتظار المراجعة` : ''}{counts.returned ? ` · ${counts.returned} أُعيد إليك` : ''}
+            </span>
           </div>
-
-          <div className="shrink-0 flex flex-col items-center gap-1.5 pt-1">
-            <ProgressDial pct={pct} size={60} />
-            <p className="font-arabic whitespace-nowrap" style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
-              {done}/{total} مكتمل
-            </p>
+          <div className="w-full sm:w-72 flex flex-col gap-1.5">
+            <span className="flex justify-between t-caption text-fg-muted"><span>جاهزية المادة</span><span dir="ltr">{Math.round(pct(ready))}%</span></span>
+            <span className="flex h-2 rounded-chip bg-hover overflow-hidden" aria-hidden="true">
+              <span className="bg-success" style={{ width: `${pct(ready)}%` }} />
+              <span className="bg-accent" style={{ width: `${pct(working)}%` }} />
+            </span>
+            <span className="flex gap-3 t-caption text-fg-subtle">
+              <span>● جاهز {ready}</span><span>● قيد العمل {working}</span><span>● لم يبدأ {ordered.length - counts.started}</span>
+            </span>
           </div>
         </div>
 
-        {/* Coverage strip — one dot per lesson, grouped by unit */}
-        <div className="flex items-center gap-0.5 flex-wrap mb-4">
-          {sortedUnits.map((unit, ui) => {
-            const unitLessons = lessons
-              .filter((l) => l.unitId === unit.id)
-              .sort((a, b) => a.order - b.order);
-            return (
-              <div key={unit.id} className="flex items-center gap-0.5">
-                {ui > 0 && <div className="w-px h-3 mx-1" style={{ background: 'var(--border-subtle)' }} />}
-                {unitLessons.map((lesson) => {
-                  const ls = sections.filter((s) => s.lessonId === lesson.id);
-                  const lb = blocks.filter((b) => ls.some((s) => s.id === b.sectionId));
-                  const hasSummary = !!lesson.summary?.trim();
-                  const color = ls.length > 0 && lb.length > 0 && hasSummary
-                    ? '#10b981'
-                    : ls.length > 0 && lb.length > 0
-                      ? '#3b82f6'
-                      : ls.length > 0
-                        ? '#f59e0b'
-                        : 'rgba(128,128,128,0.2)';
-                  return (
-                    <div
-                      key={lesson.id}
-                      title={lesson.title}
-                      className="w-2 h-2 rounded-sm transition-colors cursor-default"
-                      style={{ background: color }}
-                    />
-                  );
-                })}
-              </div>
-            );
-          })}
-          <div className="flex items-center gap-3 mr-4">
-            <LegendDot color="#10b981" label="مكتمل" />
-            <LegendDot color="#3b82f6" label="قيد العمل" />
-            <LegendDot color="#f59e0b" label="بدأ" />
-            <LegendDot color="rgba(128,128,128,0.3)" label="فارغ" />
-          </div>
-        </div>
+        {(recentHere.length > 0 || nextEmpty) && (
+          <section aria-label="تابع من حيث توقفت" className="flex flex-col gap-2">
+            <h2 className="t-caption font-semibold text-fg-subtle">تابع من حيث توقفت</h2>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {recentHere.map((r, i) => {
+                const l = byId[r.id];
+                const ri = info[l.id];
+                return (
+                  <Link key={r.id} href={lessonHref(l.id)}
+                    className={cx('flex flex-col gap-1 p-3 rounded-card border bg-raised hover:border-line-strong transition-colors', i === 0 ? 'border-line-accent' : 'border-line')}>
+                    <span className="t-caption text-fg-subtle">{where(l)} · فتحته {formatRelative(r.at)}</span>
+                    <strong className="t-ui text-fg-strong truncate">{l.title}</strong>
+                    <span className={cx('t-caption', l.reviewState?.returned ? 'text-warn' : 'text-fg-muted')}>
+                      {l.reviewState?.returned ? 'أُعيد إليك بملاحظات من المراجِع' : ri.missing.length ? `ينقصه: ${ri.missing.join('، ')}` : 'جاهز للإرسال'}
+                    </span>
+                  </Link>
+                );
+              })}
+              {nextEmpty && (
+                <Link href={lessonHref(nextEmpty.id)} className="flex flex-col gap-1 p-3 rounded-card border border-dashed border-line-strong hover:border-line-accent transition-colors">
+                  <span className="t-caption text-fg-subtle">التالي في الترتيب · {where(nextEmpty)}</span>
+                  <strong className="t-ui text-fg-strong truncate">{nextEmpty.title}</strong>
+                  <span className="t-caption text-fg-muted">لم يبدأ أحد بعد — ابدأه أنت</span>
+                </Link>
+              )}
+            </div>
+          </section>
+        )}
 
-        {/* Stats row */}
-        <div
-          className="flex items-center gap-6 pt-4"
-          style={{ borderTop: '1px solid var(--border-subtle)' }}
-        >
-          <Stat n={units.length}   label="وحدات"  />
-          <Stat n={lessons.length} label="دروس"   />
-          <Stat
-            n={sections.filter(s => lessons.some(l => l.id === s.lessonId)).length}
-            label="أقسام"
-          />
-          <Stat
-            n={blocks.filter(b => sections.some(s => s.id === b.sectionId)).length}
-            label="عناصر"
-          />
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="relative flex-1 min-w-56 max-w-md">
+            <span className="sr-only">ابحث في الدروس</span>
+            <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-fg-subtle" aria-hidden="true" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث بعنوان الدرس أو الوحدة…" className="ps-9" />
+          </label>
+          <Segmented label="تصفية حسب الحالة" size="sm" value={filter} onChange={setFilter}
+            className="overflow-x-auto" items={FILTERS.map((f) => ({ ...f, label: `${f.label} · ${counts[f.id]}` }))} />
         </div>
       </header>
 
-      {/* ── Units — grouped by book when bookId is set (e.g. Arabic) ──────── */}
-      <div className="space-y-6">
-        {(() => {
-          let lastBookId = '__none__';
-          return sortedUnits.map((unit, index) => {
-            const showBookDivider = unit.bookId && unit.bookId !== lastBookId;
-            if (unit.bookId) lastBookId = unit.bookId;
-            return (
-              <div key={unit.id}>
-                {showBookDivider && (
-                  <BookDivider title={unit.bookTitle || unit.bookId} first={index === 0} />
-                )}
-                <UnitCard
-                  unit={unit}
-                  index={index}
-                  coverageMap={coverageMap}
-                  unitCoverage={unitMap[unit.contentId]}
-                />
-              </div>
-            );
-          });
-        })()}
-      </div>
-
+      {filter === 'all' && !q ? (
+        <div className="space-y-6">
+          {(() => {
+            let lastBookId = '__none__';
+            return sortedUnits.map((unit, index) => {
+              const showBook = unit.bookId && unit.bookId !== lastBookId;
+              if (unit.bookId) lastBookId = unit.bookId;
+              return (
+                <div key={unit.id}>
+                  {showBook && <BookDivider title={unit.bookTitle || unit.bookId} />}
+                  <UnitCard unit={unit} index={index} />
+                </div>
+              );
+            });
+          })()}
+        </div>
+      ) : results.length ? (
+        <div className="flex flex-col gap-1 rounded-card border border-line bg-raised p-2">
+          <span className="px-3 py-1 t-caption text-fg-subtle">{results.length} درساً</span>
+          {results.map((l) => (
+            <LessonItem key={l.id} lesson={l} index={ordered.indexOf(l)} unitLabel={`الوحدة ${unitPos[l.unitId]}`} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState title="لا دروس هنا" description={q ? `لا شيء يطابق «${q}» في هذا التصنيف.` : 'لا درس في هذه الحالة الآن.'} />
+      )}
     </EditorPage>
   );
 }
 
-// ─── ProgressDial ─────────────────────────────────────────────────────────────
-function ProgressDial({ pct, size = 56 }) {
-  const r   = (size / 2) - 5;
-  const c   = size / 2;
-  const len = 2 * Math.PI * r;
+function BookDivider({ title }) {
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-      <circle cx={c} cy={c} r={r} fill="none" stroke="currentColor"
-        strokeWidth="2.5" style={{ color: 'var(--border-subtle)' }} />
-      <circle cx={c} cy={c} r={r} fill="none" stroke="#10b981"
-        strokeWidth="2.5" className="transition-all duration-700"
-        strokeDasharray={`${(pct / 100) * len} ${len}`}
-        strokeLinecap="round" />
-      <text
-        x={c} y={c + 1}
-        dominantBaseline="middle"
-        textAnchor="middle"
-        fontSize={size * 0.21}
-        fontFamily="monospace"
-        style={{ fill: 'var(--text-secondary)', transform: `rotate(90deg)`, transformOrigin: `${c}px ${c}px` }}
-      >
-        {pct}%
-      </text>
-    </svg>
-  );
-}
-
-function LegendDot({ color, label }) {
-  return (
-    <span className="flex items-center gap-1">
-      <span className="w-1.5 h-1.5 rounded-sm" style={{ background: color }} />
-      <span className="font-arabic" style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{label}</span>
-    </span>
-  );
-}
-
-function Stat({ n, label }) {
-  return (
-    <span className="flex items-baseline gap-1.5">
-      <span className="font-mono font-semibold" style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{n}</span>
-      <span className="font-arabic" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</span>
-    </span>
-  );
-}
-
-// ─── BookDivider ──────────────────────────────────────────────────────────────
-// Rendered between unit groups when a subject uses multiple named books (Arabic).
-function BookDivider({ title, first }) {
-  return (
-    <div
-      className="flex items-center gap-3"
-      style={{ marginBottom: 12, marginTop: first ? 0 : 28 }}
-    >
-      <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
-      <span
-        className="font-arabic font-semibold shrink-0 px-3 py-1 rounded-full"
-        style={{
-          fontSize:    12,
-          color:       'var(--accent)',
-          background:  'rgba(212,137,30,0.08)',
-          border:      '1px solid rgba(212,137,30,0.18)',
-        }}
-      >
-        {title}
-      </span>
-      <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+    <div className="flex items-center gap-3 mb-3 mt-2">
+      <span className="t-label font-semibold text-fg-accent">{title}</span>
+      <span className="flex-1 h-px bg-line" />
     </div>
   );
 }

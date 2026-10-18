@@ -11,6 +11,11 @@ const ALLOWED_KEYS = [
   'hotspotEnabled',        // HOTSPOT question type — off by default until QA'd
   'announcementBanner',    // Arabic string or null
   'visibleSubjectIds',     // [] = all visible; ['PHYSICS', 'CHEMISTRY'] = soft-launch
+  // Student comms switches — also written by /api/admin/comms/feature-flags.
+  // Listed here so the admin's one app-settings panel can save them all.
+  'commCenterEnabled',
+  'feedbackEnabled',
+  'toursEnabled',
 ];
 
 const DEFAULT_FLAGS = {
@@ -19,6 +24,9 @@ const DEFAULT_FLAGS = {
   hotspotEnabled:     false,
   announcementBanner: null,
   visibleSubjectIds:  [],
+  commCenterEnabled:  false,
+  feedbackEnabled:    false,
+  toursEnabled:       false,
 };
 
 // GET /api/content/flags
@@ -64,6 +72,9 @@ export async function POST(request) {
   if ('feedEnabled'       in updates && typeof updates.feedEnabled       !== 'boolean') return typErr('feedEnabled');
   if ('examModeEnabled'   in updates && typeof updates.examModeEnabled   !== 'boolean') return typErr('examModeEnabled');
   if ('hotspotEnabled'    in updates && typeof updates.hotspotEnabled    !== 'boolean') return typErr('hotspotEnabled');
+  for (const key of ['commCenterEnabled', 'feedbackEnabled', 'toursEnabled']) {
+    if (key in updates && typeof updates[key] !== 'boolean') return typErr(key);
+  }
   if ('visibleSubjectIds' in updates && !Array.isArray(updates.visibleSubjectIds))      return typErr('visibleSubjectIds');
   if ('announcementBanner' in updates) {
     const v = updates.announcementBanner;

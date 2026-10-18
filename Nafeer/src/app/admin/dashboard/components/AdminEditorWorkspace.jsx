@@ -458,7 +458,9 @@ function ReSyncStrip({ subjectId, hasRemote, onReloaded, onRemoteDeleted }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRemoteDeleted }) {
+// `initialLessonId` opens straight on that lesson (the lesson route under the
+// subject page); `onExit` replaces the editor's back button there.
+export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRemoteDeleted, initialLessonId, onExit }) {
 
   // ── Reactive data ────────────────────────────────────────────────────────
   const storeSubject = useSubjectStore((s) => s.subject);
@@ -540,6 +542,11 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
         importData(json.data);
 
         setOrigin(json.origin || 'atlas');
+
+        if (initialLessonId) {
+          const lesson = useSubjectStore.getState().lessons.find((l) => l.id === initialLessonId);
+          if (lesson) setEditorRoute('editor', { lessonId: lesson.id, unitId: lesson.unitId });
+        }
       } catch (e) {
         if (!cancelled) {
           const message = e.message || 'تعذّر تحميل محتوى المادة';
@@ -572,7 +579,7 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
             unitId={selectedUnit}
             subjectId={subjectId}
             currentUser={{ role: 'admin' }}
-            onBack={() => navigateTo('lessons')}
+            onBack={onExit || (() => navigateTo('lessons'))}
             onNavigateLesson={(lessonId, unitId) => navigateTo('editor', { lessonId, unitId })}
             onOpenGlobal={(page) => navigateTo(page)}
           />
@@ -698,8 +705,10 @@ export function AdminEditorWorkspace({ subjectId, subjectMeta, onImported, onRem
       </div>
 
       {/* ══ SYNC BAR ══════════════════════════════════════════════════════════ */}
-      {/* Reads editorStore directly — useAtlasSync above writes the same state. */}
-      <SyncBanner />
+      {/* Reads editorStore directly — useAtlasSync above writes the same state.
+          Hidden while the lesson editor is open: its header carries its own
+          SaveStatus, as on the contributor route (EditorChrome). */}
+      {currentPage !== 'editor' && <SyncBanner />}
       <WorkspaceRefreshBanner
         refreshing={refreshing}
         error={refreshError}

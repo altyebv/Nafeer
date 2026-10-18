@@ -3,9 +3,30 @@ import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { signToken, setAuthCookie, buildTokenPayload } from '@/lib/auth';
 import { SUBJECT_IDS } from '@/shared/curriculum';
+import { Unit } from '@/lib/models/Unit';
+import { Lesson } from '@/lib/models/Lesson';
+import { Section } from '@/lib/models/Section';
 import bcrypt from 'bcryptjs';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
+
+const USERNAME_RE = /^[w؀-ۿ._-]{3,20}$/;
+
+// The first lesson of the subject, in unit then lesson order, with no section yet.
+async function firstEmptyLesson(subjectId) {
+  if (!subjectId) return null;
+  const [units, lessons, started] = await Promise.all([
+    Unit.find({ subjectId }, 'contentId order').sort({ order: 1 }).lean(),
+    Lesson.find({ subjectId, status: 'draft' }, 'contentId unitContentId order').sort({ order: 1 }).lean(),
+    Section.distinct('lessonContentId', { subjectId }),
+  ]);
+  const busy = new Set(started);
+  for (const u of units) {
+    const hit = lessons.find((l) => l.unitContentId === u.contentId && !busy.has(l.contentId));
+    if (hit) return hit.contentId;
+  }
+  return null;
+}
 
 async function generateUsername(name) {
   // Build a base slug from the first two words of the name (Arabic or Latin)
@@ -84,6 +105,8 @@ export async function GET(request) {
     data: {
       name:               contributor.name,
       username:           contributor.username,
+      // Shown and editable before it is created (it becomes a public URL).
+      suggestedUsername:  contributor.username || await generateUsername(contributor.name),
       subject:            contributor.subject,
       subjectsOfInterest: interests,
       needsSubjectChoice,
@@ -103,7 +126,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { token, password, bio, chosenSubject } = await request.json();
+    const { token, password, bio, chosenSubject, username } = await request.json();
 
     // Both must be strings: the token goes straight into a Mongo filter, where
     // an object such as { "$ne": null } would match any pending contributor.
@@ -181,7 +204,17 @@ export async function POST(request) {
       // The admin will assign it later; the card warning will prompt them.
     }
 
-    // ── Generate username if not yet assigned ─────────────────────────────────
+    // ── Username: the one they chose, else a generated one ────────────────────
+    if (typeof username === 'string' && username.trim() && username.trim() !== contributor.username) {
+      const wanted = username.trim();
+      if (!USERNAME_RE.test(wanted)) {
+        return NextResponse.json({ ok: false, error: 'اسم المستخدم 3–20 حرفاً: أحرف أو أرقام أو _ . -', field: 'username' }, { status: 400 });
+      }
+      if (await Contributor.exists({ username: wanted, _id: { $ne: contributor._id } })) {
+        return NextResponse.json({ ok: false, error: 'هذا الاسم مأخوذ — جرّب غيره', field: 'username' }, { status: 409 });
+      }
+      contributor.username = wanted;
+    }
     if (!contributor.username) {
       contributor.username = await generateUsername(contributor.name);
     }
@@ -202,6 +235,8 @@ export async function POST(request) {
 
     return NextResponse.json({
       ok: true,
+      // Onboarding ends inside the work: the first lesson nobody has started.
+      firstLessonId: await firstEmptyLesson(contributor.subject),
       contributor: {
         id:        contributor._id,
         name:      contributor.name,

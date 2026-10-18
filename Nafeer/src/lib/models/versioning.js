@@ -18,10 +18,12 @@ export const versioningFields = {
     default: 'draft',
   },
 
+  // Indexed: the contributor stats are counted from this (authoredStats.js).
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Contributor',
     required: true,
+    index: true,
   },
 
   updatedBy: {

@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { BLOCK_TYPE_CONFIG, HIGHLIGHT_STYLES, HEADING_LEVELS, QUESTION_TYPE_CONFIG } from '@/shared/constants';
 import { LessonTableEditor } from '@/components/editor/blocks/TableEditor';
-import DeleteButton from '@/components/editor/shared/DeleteButton';
+import { useUndoStore } from '@/store/undoStore';
 import MediaPicker from '@/components/editor/media/MediaPicker';
 import ImageMarkerEditor from '@/components/editor/media/ImageMarkerEditor';
 import { sanitiseMarkers } from '@/lib/markerUtils';
@@ -19,8 +19,12 @@ import { FormulaBlock } from '@/components/demo/blocks/FormulaBlock';
 import { ExampleBlock } from '@/components/demo/blocks/ExampleBlock';
 import '@/components/demo/demo.css';
 import {
+  ArrowDown,
+  ArrowUp,
   Check,
   CircleDot,
+  Copy,
+  Trash2,
   Image as ImageIcon,
   Lightbulb,
   Pencil,
@@ -167,11 +171,30 @@ function BlockPreview({ block }) {
 }
 
 // ─── BlockEditor ─────────────────────────────────────────────────────────────
-export default function BlockEditor({ block, subjectId, dragHandleProps, lessonId, unitId, sectionId }) {
-  const { concepts, updateBlock, deleteBlock } = useDataStore(
-    useShallow((s) => ({ concepts: s.concepts, updateBlock: s.updateBlock, deleteBlock: s.deleteBlock })),
+// ─── BlockToolbar ─────────────────────────────────────────────────────────────
+// Appears on hover or keyboard focus; stays on touch screens, which have no
+// hover (DS2 step 4, EdBlockMenu board). Move, copy and delete in words-backed
+// icons, with the block's type named first.
+function BlockToolbar({ config, dragHandleProps, onEdit, canMoveUp, canMoveDown, onMove, onDuplicate, onDelete, concept }) {
+  const btn = 'w-7 h-7 inline-flex items-center justify-center rounded-control text-fg-muted hover:text-fg hover:bg-hover disabled:opacity-30 disabled:cursor-not-allowed touch-target';
+  return (
+    <div className="absolute top-1 left-1 z-10 flex items-center gap-0.5 p-0.5 rounded-control bg-overlay border border-line shadow-overlay opacity-0 group-hover/block:opacity-100 group-focus-within/block:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+      <DragHandle dragHandleProps={dragHandleProps} />
+      <span className="px-1.5 t-caption text-fg-subtle whitespace-nowrap">{config.label}</span>
+      {concept && <span className="px-1.5 t-caption text-fg-accent whitespace-nowrap inline-flex items-center gap-1"><Lightbulb size={11} strokeWidth={1.8} />{concept.titleAr}</span>}
+      {onEdit && <button type="button" onClick={onEdit} className={btn} aria-label="تعديل" title="تعديل"><Pencil size={13} /></button>}
+      {onMove && <button type="button" onClick={() => onMove(-1)} disabled={!canMoveUp} className={btn} aria-label="انقل لأعلى" title="انقل لأعلى"><ArrowUp size={13} /></button>}
+      {onMove && <button type="button" onClick={() => onMove(1)} disabled={!canMoveDown} className={btn} aria-label="انقل لأسفل" title="انقل لأسفل"><ArrowDown size={13} /></button>}
+      {onDuplicate && <button type="button" onClick={onDuplicate} className={btn} aria-label="تكرار" title="تكرار"><Copy size={13} /></button>}
+      <button type="button" onClick={onDelete} className={`${btn} hover:text-danger`} aria-label="حذف" title="حذف (يمكن التراجع)"><Trash2 size={13} /></button>
+    </div>
   );
-  const { deleteBlock: atlasDeleteBlock } = useAtlasSync();
+}
+
+export default function BlockEditor({ block, subjectId, dragHandleProps, lessonId, unitId, sectionId, canMoveUp, canMoveDown, onMove, onDuplicate }) {
+  const { concepts, updateBlock } = useDataStore(
+    useShallow((s) => ({ concepts: s.concepts, updateBlock: s.updateBlock })),
+  );
 
   const config = BLOCK_TYPE_CONFIG[block.type] || BLOCK_TYPE_CONFIG.TEXT;
   const linkedConcept = concepts.find((c) => c.id === block.conceptRef);
@@ -188,20 +211,17 @@ export default function BlockEditor({ block, subjectId, dragHandleProps, lessonI
   const update = (patch) => updateBlock(block.id, patch);
   const patchMeta = (patch) => update({ metadata: { ...(block.metadata || {}), ...patch } });
 
+  // Gone at once, back with «تراجع» for a few seconds (store/undoStore.js).
   const handleDelete = () => {
-    deleteBlock(block.id);
-    atlasDeleteBlock(block.id);
+    useUndoStore.getState().deleteBlock(block, `«${config.label}»`);
   };
 
   // ── QUESTION — always shows its own editor UI, no preview/edit toggle ───────
   if (isQuestion) {
     return (
       <div className="relative group/block">
-        {/* Hover toolbar */}
-        <div className="absolute top-1 left-1 z-10 flex items-center gap-1 opacity-0 group-hover/block:opacity-100 transition-opacity">
-          <DragHandle dragHandleProps={dragHandleProps} />
-          <DeleteButton onDelete={handleDelete} compact />
-        </div>
+        <BlockToolbar config={config} dragHandleProps={dragHandleProps} canMoveUp={canMoveUp} canMoveDown={canMoveDown}
+          onMove={onMove} onDuplicate={onDuplicate} onDelete={handleDelete} />
         <CheckpointBlockEditor block={block} update={update} subjectId={subjectId} lessonId={lessonId} unitId={unitId} sectionId={sectionId} />
       </div>
     );
@@ -214,33 +234,9 @@ export default function BlockEditor({ block, subjectId, dragHandleProps, lessonI
     return (
       <div className="relative group/block">
 
-        {/* Hover toolbar — floats top-left, only visible on hover */}
-        <div className="absolute top-1 left-1 z-10 flex items-center gap-1 opacity-0 group-hover/block:opacity-100 transition-opacity">
-          <DragHandle dragHandleProps={dragHandleProps} />
-
-          {/* Only show edit button for non-dividers */}
-          {!isDivider && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs font-arabic text-ink-600 hover:text-sand-300 hover:bg-ink-800/70 transition-colors"
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              تعديل
-            </button>
-          )}
-
-          {/* Concept badge — shown in toolbar so it's still discoverable */}
-          {linkedConcept && (
-            <span className="px-2 py-0.5 bg-sand-900/40 text-sand-600 text-[10px] rounded-full border border-sand-800/40 font-arabic leading-none">
-              <Lightbulb size={11} strokeWidth={1.8} /> {linkedConcept.titleAr}
-            </span>
-          )}
-
-          <DeleteButton onDelete={handleDelete} compact />
-        </div>
+        <BlockToolbar config={config} dragHandleProps={dragHandleProps} concept={linkedConcept}
+          onEdit={isDivider ? null : () => setIsEditing(true)} canMoveUp={canMoveUp} canMoveDown={canMoveDown}
+          onMove={onMove} onDuplicate={onDuplicate} onDelete={handleDelete} />
 
         {/* Block content — click to edit (except dividers) */}
         <div
@@ -302,7 +298,8 @@ export default function BlockEditor({ block, subjectId, dragHandleProps, lessonI
           </button>
         )}
 
-        <DeleteButton onDelete={handleDelete} />
+        <button type="button" onClick={handleDelete} aria-label="حذف" title="حذف (يمكن التراجع)"
+          className="w-8 h-8 inline-flex items-center justify-center rounded-control text-fg-muted hover:text-danger hover:bg-hover touch-target"><Trash2 size={15} /></button>
       </div>
 
       {/* Editor body */}
@@ -488,7 +485,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return (
         <div className="space-y-2">
           <div className="flex gap-1">
-            {[['BULLET', 'نقطي'], ['NUMBERED', '١ مرقّم']].map(([key, lbl]) => (
+            {[['BULLET', 'نقطي'], ['NUMBERED', '1 مرقّم']].map(([key, lbl]) => (
               <button key={key} onClick={() => patchMeta({ style: key })}
                 className={`px-3 py-1 text-xs rounded-md border font-arabic transition-all ${style === key ? 'bg-sand-900/50 text-sand-400 border-sand-800/60' : 'bg-ink-800 text-ink-600 border-ink-700 hover:text-ink-400'}`}>
                 {lbl}

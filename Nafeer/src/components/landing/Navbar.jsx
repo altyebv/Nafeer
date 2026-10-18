@@ -1,207 +1,127 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Menu, Moon, Sun, X } from 'lucide-react';
 import { useThemeStore } from '@/store/themeStore';
-import { gsap } from '@/lib/gsap';
-
-function SunIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="4"/>
-      <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
-      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-      <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
-      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-    </svg>
-  );
-}
-function MoonIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  );
-}
-function MenuIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-    </svg>
-  );
-}
-function CloseIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  );
-}
+import { gsap, useMotion } from '@/lib/gsap';
+import { Button, IconButton, cx } from '@/components/ui';
 
 const navLinks = [
-  { href: '#problem',  label: 'المشكلة', step: '٠١' },
-  { href: '#features', label: 'التطبيق', step: '٠٢' },
-  { href: '#progress', label: 'المواد',  step: '٠٣' },
-  { href: '#nafeer',   label: 'ساهم',    step: '٠٤' },
+  { href: '#problem',  label: 'المشكلة', step: '01' },
+  { href: '#features', label: 'التطبيق', step: '02' },
+  { href: '#progress', label: 'المواد',  step: '03' },
+  { href: '#nafeer',   label: 'ساهم',    step: '04' },
 ];
 
 export default function Navbar() {
+  const navRef = useRef(null);
   const [scrolled, setScrolled]    = useState(false);
   const theme       = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const [menuOpen, setMenuOpen]    = useState(false);
   const [activeSection, setActive] = useState('');
 
-  // ── Entrance animation ──────────────────────────────────────────────────────
-  useEffect(() => {
-    gsap.fromTo('nav',
-      { y: -20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out', delay: 0.05 }
-    );
-  }, []);
+  // Entrance: animates FROM hidden, so the bar is there without JS.
+  useMotion(navRef, (nav) => {
+    gsap.from(nav, { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out', delay: 0.05 });
+  });
 
   useEffect(() => {
-    // Theme is read from the shared store now; ThemeSync in the root layout
-    // reconciles it with the pre-paint script, so no localStorage read here.
     const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
-    const sectionIds = navLinks.map(l => l.href.slice(1));
-    const observers  = [];
-    sectionIds.forEach(id => {
-      const el = document.getElementById(id);
+    const observers = [];
+    navLinks.forEach(({ href }) => {
+      const el = document.getElementById(href.slice(1));
       if (!el) return;
       const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActive(id); },
-        { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+        ([entry]) => { if (entry.isIntersecting) setActive(href.slice(1)); },
+        { rootMargin: '-20% 0px -60% 0px', threshold: 0 },
       );
       obs.observe(el);
       observers.push(obs);
     });
-    return () => observers.forEach(o => o.disconnect());
+    return () => observers.forEach((o) => o.disconnect());
   }, []);
 
-  // toggleTheme now comes from the shared store (see the declarations above).
+  // Escape closes the phone menu.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   return (
     <>
-      <nav
-        className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
-          scrolled ? 'py-2.5 border-b' : 'bg-transparent py-5 md:py-6'
-        }`}
-        style={{
-          opacity: 0, // pre-hidden — GSAP entrance handles reveal
-          ...(scrolled ? {
-            background:     'var(--navbar-bg)',
-            backdropFilter: 'blur(20px)',
-            borderColor:    'var(--navbar-border)',
-          } : {}),
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:right-3 focus:z-toast focus:px-4 focus:py-2 focus:rounded-control focus:bg-accent focus:text-fg-on-accent t-ui">
+        تخطَّ إلى المحتوى
+      </a>
 
-          {/* Logo */}
+      <nav
+        ref={navRef}
+        aria-label="الرئيسية"
+        className={cx('fixed top-0 inset-x-0 z-nav transition-[padding,background-color,border-color] duration-500',
+          scrolled ? 'py-2.5 border-b border-line l-navbar' : 'bg-transparent py-5 md:py-6 border-b border-transparent')}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+
           <a href="#" className="flex items-center gap-2.5">
-            <span className="text-xl sm:text-2xl font-arabic font-bold" style={{ color: 'var(--accent)' }}>نفير</span>
-            <div className="hidden sm:block w-px h-4" style={{ background: 'var(--border-mid)' }} />
-            <span className="hidden sm:block text-xs font-mono tracking-wider" style={{ color: 'var(--text-muted)' }}>بوابة المساهمين</span>
+            <span className="text-xl sm:text-2xl font-arabic font-bold text-fg-accent">نفير</span>
+            <span aria-hidden="true" className="hidden sm:block w-px h-4 bg-line-strong" />
+            <span className="hidden sm:block t-caption text-fg-muted">بوابة المساهمين</span>
           </a>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-0.5">
-            {navLinks.map(l => {
+          <ul className="hidden md:flex items-center gap-0.5">
+            {navLinks.map((l) => {
               const isActive = activeSection === l.href.slice(1);
               return (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  className="relative px-3.5 py-2 rounded-lg text-sm font-arabic transition-all duration-200"
-                  style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--accent-dim)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = isActive ? 'var(--accent)' : 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
-                >
-                  {isActive && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ background: 'var(--accent)' }} />
-                  )}
-                  {l.label}
-                </a>
+                <li key={l.href}>
+                  <a href={l.href} aria-current={isActive ? 'location' : undefined}
+                    className={cx('relative block px-3.5 py-2 rounded-control t-ui font-normal transition-colors duration-200 hover:bg-accent-wash',
+                      isActive ? 'text-fg-accent' : 'text-fg-muted hover:text-fg-strong')}>
+                    {isActive && <span aria-hidden="true" className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />}
+                    {l.label}
+                  </a>
+                </li>
               );
             })}
-          </div>
+          </ul>
 
-          {/* Right controls */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg transition-all duration-200"
-              style={{ color: 'var(--text-muted)' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-              aria-label="تبديل المظهر"
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
-
-            <a
-              href="/signin"
-              className="hidden sm:block text-sm px-3 py-1.5 rounded-lg transition-all duration-200"
-              style={{ color: 'var(--text-muted)' }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
-            >
-              دخول
-            </a>
-
-            <a
-              href="/prejoin"
-              className="text-sm px-3.5 sm:px-5 py-2 font-bold rounded-lg transition-all duration-200"
-              style={{ background: 'var(--accent)', color: '#0e0c09' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 24px var(--glow)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              انضم
-            </a>
-
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden p-2 rounded-lg transition-colors"
-              style={{ color: 'var(--text-secondary)', background: menuOpen ? 'var(--bg-card)' : 'transparent' }}
-              aria-label="القائمة"
-            >
-              {menuOpen ? <CloseIcon /> : <MenuIcon />}
-            </button>
+            <IconButton icon={theme === 'dark' ? Sun : Moon} label="تبديل المظهر" onClick={toggleTheme} />
+            <Button as="a" href="/signin" variant="ghost" size="sm" className="hidden sm:inline-flex">دخول</Button>
+            <Button as="a" href="/join" variant="primary" size="sm">انضم</Button>
+            <IconButton icon={menuOpen ? X : Menu} label="القائمة" className="md:hidden"
+              aria-expanded={menuOpen} aria-controls="landing-menu" onClick={() => setMenuOpen(!menuOpen)} />
           </div>
         </div>
       </nav>
 
-      {/* Mobile drawer */}
       {menuOpen && (
-        <div
-          className="fixed inset-x-0 top-0 z-40 pt-16 pb-5 px-4 md:hidden mobile-menu-open"
-          style={{ background: 'var(--navbar-bg)', backdropFilter: 'blur(24px)', borderBottom: '1px solid var(--navbar-border)' }}
-        >
-          <p className="text-xs font-mono tracking-widest uppercase mb-3 px-2" style={{ color: 'var(--text-muted)' }}>اقرأ القصة ↓</p>
-          <div className="flex flex-col gap-0.5 mb-4">
-            {navLinks.map(l => {
+        <div id="landing-menu" className="fixed inset-x-0 top-0 z-sticky pt-16 pb-5 px-4 md:hidden mobile-menu-open l-navbar border-b border-line">
+          <p className="t-caption mb-3 px-2 text-fg-muted">اقرأ القصة ↓</p>
+          <ul className="flex flex-col gap-0.5 mb-4">
+            {navLinks.map((l) => {
               const isActive = activeSection === l.href.slice(1);
               return (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-between py-3 px-3 rounded-xl transition-all duration-200"
-                  style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)', background: isActive ? 'var(--accent-dim)' : 'transparent' }}
-                >
-                  <span className="text-base font-arabic">{l.label}</span>
-                  <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{l.step}</span>
-                </a>
+                <li key={l.href}>
+                  <a href={l.href} onClick={() => setMenuOpen(false)} aria-current={isActive ? 'location' : undefined}
+                    className={cx('flex items-center justify-between py-3 px-3 rounded-card transition-colors duration-200',
+                      isActive ? 'text-fg-accent bg-accent-wash' : 'text-fg-muted hover:bg-hover')}>
+                    <span className="t-body">{l.label}</span>
+                    <span aria-hidden="true" className="t-caption t-num text-fg-subtle">{l.step}</span>
+                  </a>
+                </li>
               );
             })}
-          </div>
-          <div className="flex items-center gap-2.5" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
-            <a href="/signin" onClick={() => setMenuOpen(false)} className="flex-1 py-2.5 text-center text-sm rounded-xl transition-colors" style={{ color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}>تسجيل الدخول</a>
-            <a href="/prejoin" onClick={() => setMenuOpen(false)} className="flex-1 py-2.5 text-center text-sm font-bold rounded-xl" style={{ background: 'var(--accent)', color: '#0e0c09' }}>انضم للنفير</a>
+          </ul>
+          <div className="flex items-center gap-2.5 border-t border-line pt-4">
+            <Button as="a" href="/signin" variant="secondary" block onClick={() => setMenuOpen(false)}>تسجيل الدخول</Button>
+            <Button as="a" href="/join" variant="primary" block onClick={() => setMenuOpen(false)}>انضم للنفير</Button>
           </div>
         </div>
       )}

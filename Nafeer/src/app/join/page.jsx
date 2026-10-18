@@ -1,780 +1,362 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { SUBJECTS_CATALOG } from '@/shared/curriculum';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button, Field, Input, Textarea, cx } from '@/components/ui';
+import { SUBJECTS_CATALOG, TRACK_CONFIG } from '@/shared/curriculum';
 
-// ─── Curriculum subject groups ─────────────────────────────────────────────
-const SUBJECT_GROUPS = [
-  { trackKey: 'COMMON',   label: 'مشترك' },
-  { trackKey: 'SCIENCE',  label: 'علمي'  },
-  { trackKey: 'LITERARY', label: 'أدبي'  },
-];
+// ─── /join ────────────────────────────────────────────────────────────────────
+// The application (canvas page «مسار الانضمام», boards 1–2):
+//   1  أين تساعد   — subjects first, with what each needs now; then the role
+//   2  عنك         — one step in two halves; finishing the first half moves the
+//                    bar halfway. Every field the admission guidelines use.
+// Sending opens the interview at once (or the status page for "later"); both
+// links also arrive by email. The draft is kept in this browser, so a dropped
+// connection or a reload loses nothing.
 
-// ─── Category metadata ─────────────────────────────────────────────────────
-const CATEGORY_META = {
-  learning:    { label: 'بناء التجربة التعليمية' },
-  core:        { label: 'بناء المنصة'            },
-  growth:      { label: 'نشر الفكرة'             },
-  operations:  { label: 'تنظيم نفير'             },
-  // legacy
-  content:     { label: 'محتوى تعليمي'           },
-  development: { label: 'تطوير'                  },
-  design:      { label: 'تصميم'                  },
+const DRAFT_KEY = 'nafeer-join-draft';
+
+const GENDERS   = [['male', 'ذكر'], ['female', 'أنثى']];
+const AGES      = [['under-18', 'أقل من 18'], ['18-22', '18 – 22'], ['23-27', '23 – 27'], ['28-35', '28 – 35'], ['over-35', 'فوق 35']];
+const RELATIONS = [['uni', 'أدرسها في الجامعة'], ['grad', 'تخرّجت فيها'], ['teacher', 'أدرّسها'], ['student', 'جلستُ لها حديثاً'], ['other', 'غير ذلك']];
+const HOURS     = [['1-2', 'ساعة أو ساعتان'], ['2-4', '2 – 4 ساعات'], ['5+', '5 ساعات أو أكثر'], ['?', 'لا أعرف بعد']];
+const INTERNET  = [['yes', 'مستقر'], ['mostly', 'غالباً'], ['no', 'متقطع']];
+const AI_TOOLS  = [['chatgpt', 'ChatGPT'], ['gemini', 'Gemini'], ['notebooklm', 'NotebookLM'], ['claude', 'Claude'], ['copilot', 'Copilot'], ['perplexity', 'Perplexity']];
+
+const EMPTY = {
+  subject: '', roleId: '', name: '', email: '', gender: '', age: '', town: '', relation: '', background: '',
+  device: '', internet: '', hours: '', usesAi: '', aiTools: [], portfolioUrl: '',
 };
 
-const CATEGORY_COLORS = {
-  learning:    { active: 'rgba(212,137,30,0.15)',  border: 'rgba(212,137,30,0.45)',  text: 'var(--accent)'  },
-  core:        { active: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.35)',  text: '#93c5fd'        },
-  growth:      { active: 'rgba(168,85,247,0.12)',  border: 'rgba(168,85,247,0.35)',  text: '#d8b4fe'        },
-  operations:  { active: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.30)',   text: '#86efac'        },
-  content:     { active: 'rgba(212,137,30,0.15)',  border: 'rgba(212,137,30,0.45)',  text: 'var(--accent)'  },
-  development: { active: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.35)',  text: '#93c5fd'        },
-  design:      { active: 'rgba(168,85,247,0.12)',  border: 'rgba(168,85,247,0.35)',  text: '#d8b4fe'        },
-};
+const CATEGORY_LABEL = { development: 'بناء المنصة', design: 'التصميم', operations: 'تنظيم نفير', community: 'المجتمع', core: 'بناء المنصة', growth: 'نشر الفكرة', content: 'المحتوى' };
 
-// ─── Role category helpers ─────────────────────────────────────────────────
-// Returns true for roles that build the platform (devs, designers)
-const isBuilderRole = (role) =>
-  role && ['core', 'development', 'design'].includes(role.category);
-
-// Returns true for roles that need subject-specific content knowledge
-const isLearningRole = (role) =>
-  role && ['learning', 'content'].includes(role.category);
-
-// ─── Context banners per category ─────────────────────────────────────────
-const ROLE_CONTEXT = {
-  learning:    { icon: '◈', text: 'سنحتاج معرفة المواد التي تتقنها وخلفيتك في التعليم.' },
-  core:        { icon: '⬡', text: 'سنحتاج رابط مشاريعك — GitHub أو أي عمل سابق يمكننا مراجعته.' },
-  growth:      { icon: '◉', text: 'سنحتاج معرفة تجربتك مع المحتوى والمجتمعات الرقمية.' },
-  operations:  { icon: '▦', text: 'سنحتاج فهم أسلوبك في التنظيم ومتابعة الفرق.' },
-  content:     { icon: '◈', text: 'سنحتاج معرفة المواد التي تتقنها وخلفيتك في التعليم.' },
-  development: { icon: '⬡', text: 'سنحتاج رابط مشاريعك — GitHub أو أي عمل سابق يمكننا مراجعته.' },
-  design:      { icon: '◇', text: 'سنحتاج رابط أعمالك — Behance أو Figma أو أي معرض تصميم.' },
-};
-
-// ─── AI tools ──────────────────────────────────────────────────────────────
-const AI_TOOLS = [
-  { id: 'chatgpt',    label: 'ChatGPT'    },
-  { id: 'gemini',     label: 'Gemini'     },
-  { id: 'notebooklm', label: 'NotebookLM' },
-  { id: 'claude',     label: 'Claude'     },
-  { id: 'copilot',    label: 'Copilot'    },
-  { id: 'perplexity', label: 'Perplexity' },
-];
-
-// ─── Age ranges ────────────────────────────────────────────────────────────
-const AGE_RANGES = [
-  { value: 'under-18', label: 'أقل من ١٨' },
-  { value: '18-22',    label: '١٨ – ٢٢'  },
-  { value: '23-27',    label: '٢٣ – ٢٧'  },
-  { value: '28-35',    label: '٢٨ – ٣٥'  },
-  { value: 'over-35',  label: 'فوق ٣٥'   },
-];
-
-// ─── Shared input style ────────────────────────────────────────────────────
-const inputStyle = {
-  background: 'rgba(255,255,255,0.04)',
-  border:     '1px solid var(--border-mid)',
-  color:      'var(--text-primary)',
-  outline:    'none',
-};
-
-// ─── Step bar ──────────────────────────────────────────────────────────────
-function StepBar({ current = 1 }) {
-  const steps = [
-    { n: 1, label: 'اختيار الدور'  },
-    { n: 2, label: 'التعريف بنفسك' },
-    { n: 3, label: 'إرسال الطلب'   },
-  ];
-  return (
-    <div className="mb-10">
-      <div className="flex items-center justify-between mb-3">
-        {steps.map((s, i) => (
-          <div key={s.n} className="flex items-center flex-1">
-            <div className="flex flex-col items-center shrink-0">
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-mono font-bold transition-all duration-300"
-                style={{
-                  background: s.n === current ? 'var(--accent)' : s.n < current ? 'rgba(212,137,30,0.2)' : 'var(--bg-card)',
-                  border:     s.n === current ? '2px solid var(--accent)' : s.n < current ? '2px solid rgba(212,137,30,0.4)' : '1px solid var(--border-mid)',
-                  color:      s.n === current ? '#0e0c09' : s.n < current ? 'var(--accent)' : 'var(--text-muted)',
-                }}
-              >
-                {s.n < current ? '✓' : s.n}
-              </div>
-              <span className="text-xs mt-1.5 text-center leading-tight hidden sm:block"
-                style={{ color: s.n === current ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: '10px' }}>
-                {s.label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className="flex-1 h-px mx-2"
-                style={{ background: s.n < current ? 'rgba(212,137,30,0.35)' : 'var(--border-subtle)', transition: 'background 0.4s ease' }} />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Role card ─────────────────────────────────────────────────────────────
-function RoleCard({ role, selected, onSelect }) {
-  const colors = CATEGORY_COLORS[role.category] || CATEGORY_COLORS.learning;
-  const meta   = CATEGORY_META[role.category]   || {};
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(role)}
-      className="w-full text-right p-4 rounded-xl transition-all duration-200"
-      style={{
-        background: selected ? colors.active : 'var(--bg-card)',
-        border:     selected ? `1px solid ${colors.border}` : '1px solid var(--border-subtle)',
-        transform:  selected ? 'translateY(-1px)' : 'none',
-        boxShadow:  selected ? `0 4px 20px ${colors.active}` : 'none',
-      }}
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <span className="font-arabic font-bold text-base" style={{ color: 'var(--text-primary)' }}>
-            {role.name}
-          </span>
-          {role.description && (
-            <p className="text-sm leading-loose mt-1" style={{ color: 'var(--text-muted)' }}>
-              {role.description}
-            </p>
-          )}
-        </div>
-        <div className="shrink-0 w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center"
-          style={{ borderColor: selected ? colors.text : 'var(--border-mid)', background: selected ? colors.active : 'transparent' }}>
-          {selected && <span className="text-[8px]" style={{ color: colors.text }}>✓</span>}
-        </div>
-      </div>
-    </button>
-  );
-}
-
-// ─── Role selector ─────────────────────────────────────────────────────────
-function RoleSelector({ roles, selected, onSelect }) {
-  const categoryOrder = ['learning', 'core', 'growth', 'operations', 'content', 'development', 'design'];
-  const grouped = roles.reduce((acc, r) => {
-    if (!acc[r.category]) acc[r.category] = [];
-    acc[r.category].push(r);
-    return acc;
-  }, {});
-
-  return (
-    <div className="space-y-6">
-      {categoryOrder.map((cat) => {
-        const catRoles = grouped[cat];
-        if (!catRoles?.length) return null;
-        const meta = CATEGORY_META[cat];
-        return (
-          <div key={cat}>
-            <p className="text-xs font-arabic mb-2.5 tracking-wide"
-              style={{ color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-              {meta.label}
-            </p>
-            <div className="space-y-2">
-              {catRoles.map((role) => (
-                <RoleCard key={role._id} role={role} selected={selected?._id === role._id} onSelect={onSelect} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-
-      <div>
-        <p className="text-xs font-arabic mb-2.5" style={{ color: 'var(--text-muted)' }}>لست متأكداً بعد</p>
-        <button
-          type="button"
-          onClick={() => onSelect(null)}
-          className="w-full text-right p-3 rounded-xl transition-all duration-200 text-xs font-arabic"
-          style={{
-            background: selected === null ? 'rgba(212,137,30,0.08)' : 'transparent',
-            border:     selected === null ? '1px solid rgba(212,137,30,0.3)' : '1px solid var(--border-subtle)',
-            color:      'var(--text-muted)',
-          }}
-        >
-          سنساعدك في اختيار المسار المناسب
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Field wrapper ─────────────────────────────────────────────────────────
-function Field({ label, hint, required, children }) {
-  return (
-    <div>
-      <label className="block mb-1.5">
-        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {label}
-          {required && <span className="mr-1" style={{ color: 'var(--accent)' }}>*</span>}
-        </span>
-        {hint && <span className="block text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{hint}</span>}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-// ─── Section divider ───────────────────────────────────────────────────────
-function SectionLabel({ children }) {
-  return (
-    <div className="flex items-center gap-3 pt-2">
-      <span className="text-xs font-mono tracking-widest" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
-        {children}
-      </span>
-      <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
-    </div>
-  );
-}
-
-// ─── Yes / No toggle ───────────────────────────────────────────────────────
-function YesNo({ value, onChange }) {
-  return (
-    <div className="flex gap-2">
-      {[{ v: true, label: 'نعم' }, { v: false, label: 'لا' }].map(({ v, label }) => {
-        const active = value === v;
-        return (
-          <button key={String(v)} type="button" onClick={() => onChange(active ? null : v)}
-            className="px-5 py-2 rounded-lg text-sm font-arabic transition-all duration-200"
-            style={{
-              background: active ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
-              border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
-              color:      active ? 'var(--accent)' : 'var(--text-muted)',
-            }}>
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Generic pill chip ─────────────────────────────────────────────────────
-function Chip({ label, selected, onToggle, mono = false }) {
-  return (
-    <button type="button" onClick={onToggle}
-      className="px-3 py-1.5 rounded-lg text-xs transition-all duration-200"
-      style={{
-        background: selected ? 'rgba(212,137,30,0.15)' : 'var(--bg-card)',
-        border:     selected ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
-        color:      selected ? 'var(--accent)' : 'var(--text-muted)',
-        fontFamily: mono ? 'var(--font-mono, monospace)' : 'var(--font-arabic, inherit)',
-        transform:  selected ? 'translateY(-1px)' : 'none',
-      }}>
-      {label}
-    </button>
-  );
-}
-
-// ─── Subject chip ──────────────────────────────────────────────────────────
-function SubjectChip({ subject, selected, onToggle }) {
-  return <Chip label={subject.nameAr} selected={selected} onToggle={() => onToggle(subject.id)} />;
-}
-
-// ─── Role context banner (shown at top of step 2) ──────────────────────────
-function RoleContextBanner({ role }) {
-  if (!role) return null;
-  const colors = CATEGORY_COLORS[role.category] || CATEGORY_COLORS.learning;
-  const ctx    = ROLE_CONTEXT[role.category];
-  if (!ctx) return null;
-  return (
-    <div className="mb-6 px-4 py-3 rounded-xl flex items-start gap-3"
-      style={{ background: colors.active, border: `1px solid ${colors.border}` }}>
-      <span className="text-base shrink-0 mt-0.5" style={{ color: colors.text }}>{ctx.icon}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-arabic font-bold mb-0.5" style={{ color: colors.text }}>{role.name}</p>
-        <p className="text-xs font-arabic leading-relaxed" style={{ color: 'var(--text-muted)' }}>{ctx.text}</p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Success screen ────────────────────────────────────────────────────────
-function SuccessScreen({ name }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center px-6 relative">
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[40vh] rounded-full"
-          style={{ background: 'radial-gradient(ellipse, rgba(212,137,30,0.07), transparent 70%)', filter: 'blur(40px)' }} />
-      </div>
-      <div className="relative z-10 text-center max-w-md">
-        <div className="mb-10 text-right" dir="rtl"><StepBar current={3} /></div>
-        <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6"
-          style={{ background: 'rgba(212,137,30,0.12)', border: '1px solid rgba(212,137,30,0.25)' }}>
-          <span style={{ color: 'var(--accent)', fontSize: '22px' }}>✓</span>
-        </div>
-        <h1 className="text-2xl font-arabic font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-          وصل طلبك، {name.split(' ')[0]}
-        </h1>
-        <p className="text-sm leading-loose mb-8" style={{ color: 'var(--text-secondary)' }}>
-          سنراجع طلبك ونتواصل معك على بريدك الإلكتروني لنكمل باقي الخطوات.
-        </p>
-        <div className="p-5 rounded-xl text-right mb-8"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-          <p className="text-xs font-mono mb-4" style={{ color: 'var(--text-muted)' }}>ما الذي سيأتي بعد ذلك؟</p>
-          <div className="space-y-3">
-            {[
-              { n: '٢', text: 'بعض الأسئلة القصيرة لنفهمك أكثر' },
-              { n: '٣', text: 'مهمة صغيرة تُظهر أسلوبك في التفكير' },
-            ].map((item) => (
-              <div key={item.n} className="flex items-start gap-3">
-                <span className="text-xs font-mono mt-0.5 shrink-0" style={{ color: 'var(--accent)', opacity: 0.7 }}>{item.n}</span>
-                <p className="text-xs leading-loose" style={{ color: 'var(--text-muted)' }}>{item.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <a href="/" className="text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
-          العودة للرئيسية
-        </a>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main page ─────────────────────────────────────────────────────────────
 export default function JoinPage() {
-  const [pageStep,      setPageStep]      = useState(1);
-  const [roles,         setRoles]         = useState([]);
-  const [rolesLoading,  setRolesLoading]  = useState(true);
-  const [selectedRole,  setSelectedRole]  = useState(undefined); // undefined=not chosen, null=undecided
-  const [loading,       setLoading]       = useState(false);
-  const [error,         setError]         = useState('');
-  const [submitted,     setSubmitted]     = useState(false);
-  const formTopRef = useRef(null);
+  const router = useRouter();
+  const [form, setForm] = useState(EMPTY);
+  const [step, setStep] = useState('where');       // where · about-a · about-b
+  const [roles, setRoles] = useState([]);
+  const [people, setPeople] = useState({});          // subject → working contributors
+  const [tab, setTab] = useState('subjects');
+  const [errors, setErrors] = useState({});
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(null);
+  const restored = useRef(false);
+  const top = useRef(null);
 
-  const [form, setForm] = useState({
-    name:               '',
-    email:              '',
-    gender:             null,
-    age:                null,
-    town:               '',
-    background:         '',
-    subjectsOfInterest: [],
-    portfolioUrl:       '',
-    hasPcOrTablet:      null,
-    hasStableInternet:  null,
-    usesAiTools:        null,
-    aiToolsList:        [],
-  });
-
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const toggleSubject = (id) => {
-    setForm((f) => ({
-      ...f,
-      subjectsOfInterest: f.subjectsOfInterest.includes(id)
-        ? f.subjectsOfInterest.filter((s) => s !== id)
-        : [...f.subjectsOfInterest, id],
-    }));
-  };
-
-  const toggleAiTool = (id) => {
-    setForm((f) => ({
-      ...f,
-      aiToolsList: f.aiToolsList.includes(id)
-        ? f.aiToolsList.filter((t) => t !== id)
-        : [...f.aiToolsList, id],
-    }));
-  };
-
-  // Load active roles
+  // Restore the draft once, then keep it in sync.
   useEffect(() => {
-    fetch('/api/admin/roles?active=true')
-      .then((r) => r.json())
-      .then((data) => { setRoles(data.roles || []); })
-      .catch(() => {})
-      .finally(() => setRolesLoading(false));
+    try {
+      const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+      if (saved?.form) { setForm({ ...EMPTY, ...saved.form }); setStep(saved.step || 'where'); setTab(saved.tab || 'subjects'); }
+    } catch { /* storage blocked — start fresh */ }
+    restored.current = true;
+  }, []);
+  useEffect(() => {
+    if (!restored.current) return;
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, step, tab })); } catch { /* ignore */ }
+  }, [form, step, tab]);
+
+  useEffect(() => {
+    fetch('/api/admin/roles?active=true').then((r) => r.json()).then((d) => setRoles(d.roles || [])).catch(() => {});
+    fetch('/api/contributors/public').then((r) => r.json()).then((d) => {
+      const n = {};
+      for (const c of d.contributors || []) if (c.subject) n[c.subject] = (n[c.subject] || 0) + 1;
+      setPeople(n);
+    }).catch(() => {});
   }, []);
 
-  // Scroll to top of form when moving to step 2
-  const handleRoleContinue = () => {
-    if (selectedRole === undefined) return;
-    setPageStep(2);
-    setTimeout(() => formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  const learningRoles = useMemo(() => roles.filter((r) => r.category === 'learning'), [roles]);
+  const otherRoles = useMemo(() => roles.filter((r) => r.category !== 'learning'), [roles]);
+  const role = roles.find((r) => r._id === form.roleId) || null;
+  const learning = role?.category === 'learning';
+  const subject = SUBJECTS_CATALOG.find((s) => s.id === form.subject) || null;
+
+  const set = (patch) => { setForm((f) => ({ ...f, ...patch })); setErrors({}); };
+  const go = (next) => { setStep(next); setErrors({}); top.current?.scrollIntoView({ behavior: 'smooth' }); };
+
+  // ── Validation per part ────────────────────────────────────────────────────
+  const check = (part) => {
+    const e = {};
+    if (part === 'where') {
+      if (!role) e.role = 'اختر ما ستفعله';
+      if (learning && !form.subject) e.subject = 'اختر المادة';
+    }
+    if (part === 'about-a') {
+      if (!form.name.trim()) e.name = 'اكتب اسمك';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'بريد غير صحيح';
+      if (!form.gender) e.gender = 'اختر';
+      if (!form.age) e.age = 'اختر';
+      if (!form.town.trim()) e.town = 'اكتب مدينتك أو ولايتك';
+      if (learning && !form.relation) e.relation = 'اختر';
+      if (!form.background.trim()) e.background = 'اكتب خلفيتك باختصار';
+    }
+    if (part === 'about-b') {
+      if (!form.device) e.device = 'اختر';
+      if (!form.internet) e.internet = 'اختر';
+      if (!form.hours) e.hours = 'اختر';
+      if (!form.usesAi) e.usesAi = 'اختر';
+      if (role?.portfolioPrompt && !form.portfolioUrl.trim()) e.portfolioUrl = 'أضف الرابط';
+    }
+    setErrors(e);
+    return !Object.keys(e).length;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    // Learning roles require at least one subject
-    if (isLearningRole(selectedRole) && form.subjectsOfInterest.length === 0) {
-      setError('يرجى اختيار مادة واحدة على الأقل');
-      return;
-    }
-    // Builder roles require a portfolio URL if the role has a portfolioPrompt
-    if (isBuilderRole(selectedRole) && selectedRole?.portfolioPrompt && !form.portfolioUrl.trim()) {
-      setError('يرجى إضافة رابط مشاريعك أو أعمالك');
-      return;
-    }
-    setLoading(true);
-    setError('');
+  const submit = async (startNow) => {
+    if (!check('about-b')) return;
+    setSending(true); setSendError(null);
     try {
       const res = await fetch('/api/contributors/request', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          ...form,
-          gender: form.gender || '',
-          roleId: selectedRole?._id || null,
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name, email: form.email, gender: form.gender, age: form.age, town: form.town,
+          background: form.background, subjectsOfInterest: form.subject ? [form.subject] : [],
+          subjectRelation: form.relation, weeklyHours: form.hours, hasPcOrTablet: form.device === 'yes',
+          internet: form.internet, usesAiTools: form.usesAi === 'yes', aiToolsList: form.aiTools,
+          portfolioUrl: form.portfolioUrl, roleId: form.roleId,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.message || 'حدث خطأ ما'); return; }
-      setSubmitted(true);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setSendError(data.message || 'تعذّر الإرسال، حاول مرة أخرى'); setSending(false); return; }
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      router.push(startNow ? `/interview?token=${data.interviewToken}` : `/join/status?token=${data.statusToken}&sent=1`);
     } catch {
-      setError('تعذّر الاتصال بالخادم');
-    } finally {
-      setLoading(false);
+      setSendError('تعذّر الاتصال. إجاباتك محفوظة على جهازك — أعد المحاولة حين يعود الاتصال.');
+      setSending(false);
     }
   };
 
-  if (submitted) return <SuccessScreen name={form.name} />;
-
-  // Derived flags — drive adaptive form sections
-  const showSubjects    = !selectedRole || isLearningRole(selectedRole);
-  const showPortfolio   = !!selectedRole?.portfolioPrompt;
-  const showDevReadiness = isBuilderRole(selectedRole);
+  // The step bar: «عنك» is one step; its first half fills it halfway.
+  const fill = { where: [10, 0, 0], 'about-a': [100, 10, 0], 'about-b': [100, 50, 0] }[step];
+  const STEPS = ['أين تساعد', 'عنك', 'المقابلة'];
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-20 relative" dir="rtl">
+    <div className="min-h-screen bg-page text-fg font-ui" dir="rtl">
+      <div ref={top} className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
+        <header className="flex items-center justify-between">
+          <Link href="/" className="t-title font-bold text-fg-accent">نفير</Link>
+          <span className="t-label text-fg-muted">لديك حساب؟ <Link href="/signin" className="text-fg-accent hover:underline">ادخل</Link></span>
+        </header>
 
-      {/* Ambient glow */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70vw] h-[50vh] rounded-full"
-          style={{ background: 'radial-gradient(ellipse, rgba(212,137,30,0.05), transparent 70%)', filter: 'blur(50px)' }} />
-      </div>
+        <ol aria-label="خطوات الطلب" className="flex gap-2">
+          {STEPS.map((label, i) => (
+            <li key={label} className="flex-1 flex flex-col gap-1.5">
+              <span className="h-1 rounded-chip bg-hover overflow-hidden flex" aria-hidden="true">
+                <span className={cx('transition-all duration-300', fill[i] === 100 ? 'bg-success' : 'bg-accent')} style={{ width: `${fill[i]}%` }} />
+              </span>
+              <span className={cx('t-caption', fill[i] > 0 ? 'text-fg-strong' : 'text-fg-subtle')}>
+                {i + 1} · {label}{i === 1 && step === 'about-b' ? ' — ظروف العمل' : ''}
+              </span>
+            </li>
+          ))}
+        </ol>
 
-      <div ref={formTopRef} className="relative z-10 w-full max-w-lg">
+        {step === 'where' && (
+          <section className="flex flex-col gap-5" aria-labelledby="where-title">
+            <div className="flex flex-col gap-1.5">
+              <h1 id="where-title" className="t-h1 text-fg-strong">أين تريد أن تساعد؟</h1>
+              <p className="t-body text-fg-muted max-w-2xl">
+                بشير تطبيق مجاني لطلاب الشهادة السودانية. أكثر ما ينقصه الآن: من يكتب دروس المواد. اختر مادة تعرفها جيداً — أو ساعد في بناء المنصة نفسها.
+                {' '}<Link href="/prejoin" className="text-fg-accent hover:underline">لماذا نفير؟</Link>
+              </p>
+            </div>
 
-        {/* Back link */}
-        {pageStep === 1 ? (
-          <a href="/prejoin" className="inline-flex items-center gap-2 text-xs mb-8 transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
-            ← العودة لصفحة التعريف
-          </a>
-        ) : (
-          <button type="button" onClick={() => setPageStep(1)}
-            className="inline-flex items-center gap-2 text-xs mb-8 transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
-            ← العودة لاختيار الدور
-          </button>
-        )}
+            <div role="tablist" aria-label="نوع المساهمة" className="flex gap-1 border-b border-line">
+              {[['subjects', 'مادة دراسية'], ['build', 'بناء المنصة وتنظيمها']].map(([id, label]) => (
+                <button key={id} type="button" role="tab" aria-selected={tab === id}
+                  onClick={() => { setTab(id); set({ roleId: '', subject: id === 'subjects' ? form.subject : '' }); }}
+                  className={cx('h-11 px-4 t-ui border-b-2 -mb-px touch-target', tab === id ? 'border-accent text-fg-strong font-semibold' : 'border-transparent text-fg-muted hover:text-fg')}>
+                  {label}
+                </button>
+              ))}
+            </div>
 
-        {/* Header */}
-        <div className="mb-8">
-          <a href="/" className="inline-block mb-5">
-            <span className="text-2xl font-arabic font-bold" style={{ color: 'var(--accent)' }}>نفير</span>
-          </a>
-          <h1 className="text-xl sm:text-2xl font-arabic font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-            {pageStep === 1 ? 'كيف تريد المساهمة؟' : 'أخبرنا عن نفسك'}
-          </h1>
-          <p className="text-sm leading-loose" style={{ color: 'var(--text-muted)' }}>
-            {pageStep === 1
-              ? 'كل شخص يساهم بطريقة مختلفة — اختر المسار الأقرب لك'
-              : 'لا نطلب الكثير في البداية — فقط ما يكفي لنبدأ المحادثة.'}
-          </p>
-        </div>
-
-        <StepBar current={pageStep} />
-
-        {/* ── Step 1: Role selector ────────────────────────────────────── */}
-        {pageStep === 1 && (
-          <div className="rounded-2xl p-6 sm:p-8"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>
-            {rolesLoading ? (
-              <div className="py-12 text-center">
-                <p className="text-sm font-arabic animate-pulse" style={{ color: 'var(--text-muted)' }}>
-                  جاري تحميل الأدوار...
-                </p>
-              </div>
-            ) : (
-              <RoleSelector roles={roles} selected={selectedRole} onSelect={setSelectedRole} />
-            )}
-
-            <button
-              type="button"
-              onClick={handleRoleContinue}
-              disabled={selectedRole === undefined || rolesLoading}
-              className="w-full py-3.5 font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm mt-6"
-              style={{
-                background: (selectedRole === undefined || rolesLoading) ? 'var(--bg-card)' : 'var(--accent)',
-                color:      (selectedRole === undefined || rolesLoading) ? 'var(--text-muted)' : '#0e0c09',
-                border:     (selectedRole === undefined || rolesLoading) ? '1px solid var(--border-subtle)' : 'none',
-                cursor:     (selectedRole === undefined || rolesLoading) ? 'not-allowed' : 'pointer',
-              }}
-              onMouseEnter={(e) => { if (selectedRole !== undefined && !rolesLoading) { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 30px var(--glow)'; } }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = (selectedRole !== undefined && !rolesLoading) ? 'var(--accent)' : 'var(--bg-card)'; e.currentTarget.style.boxShadow = 'none'; }}
-            >
-              <span>متابعة</span>
-              <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span>
-            </button>
-          </div>
-        )}
-
-        {/* ── Step 2: Personal info (adaptive) ────────────────────────── */}
-        {pageStep === 2 && (
-          <div className="rounded-2xl p-6 sm:p-8"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>
-
-            {/* Role context banner */}
-            <RoleContextBanner role={selectedRole} />
-
-            {/* Error */}
-            {error && (
-              <div className="mb-6 p-3 rounded-lg text-sm text-center"
-                style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', color: '#f87171' }}>
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-
-              {/* ── الهوية ── */}
-              <SectionLabel>الهوية</SectionLabel>
-
-              <Field label="الاسم" required>
-                <input type="text" required value={form.name}
-                  onChange={(e) => set('name', e.target.value)}
-                  placeholder="اسمك الكريم"
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all"
-                  style={inputStyle}
-                  onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
-                  onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
-                />
-              </Field>
-
-              <Field label="البريد الإلكتروني" required>
-                <input type="email" required dir="ltr" value={form.email}
-                  onChange={(e) => set('email', e.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all"
-                  style={inputStyle}
-                  onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
-                  onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
-                />
-              </Field>
-
-              <Field label="الجنس">
-                <div className="flex gap-2">
-                  {[{ v: 'male', label: 'ذكر' }, { v: 'female', label: 'أنثى' }].map(({ v, label }) => {
-                    const active = form.gender === v;
-                    return (
-                      <button key={v} type="button" onClick={() => set('gender', active ? null : v)}
-                        className="flex-1 py-2.5 rounded-xl text-sm font-arabic transition-all duration-200"
-                        style={{
-                          background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.03)',
-                          border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
-                          color:      active ? 'var(--accent)' : 'var(--text-muted)',
-                        }}>
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
-
-              <Field label="الفئة العمرية">
-                <div className="flex flex-wrap gap-2">
-                  {AGE_RANGES.map((r) => {
-                    const active = form.age === r.value;
-                    return (
-                      <button key={r.value} type="button" onClick={() => set('age', active ? null : r.value)}
-                        className="px-4 py-2 rounded-lg text-sm font-arabic transition-all duration-200"
-                        style={{
-                          background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.03)',
-                          border:     active ? '1px solid rgba(212,137,30,0.5)' : '1px solid var(--border-subtle)',
-                          color:      active ? 'var(--accent)' : 'var(--text-muted)',
-                        }}>
-                        {r.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
-
-              <Field label="المدينة أو الولاية" hint="أين تعيش حالياً؟">
-                <input type="text" value={form.town}
-                  onChange={(e) => set('town', e.target.value)}
-                  placeholder="مثلاً: الخرطوم، بورتسودان، أم درمان"
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all"
-                  style={inputStyle}
-                  onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
-                  onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
-                />
-              </Field>
-
-              {/* ── الخلفية ── */}
-              <SectionLabel>الخلفية</SectionLabel>
-
-              <Field label="الخلفية التعليمية أو المهنية" hint="جامعة، كلية، تخصص — أو وصف مختصر">
-                <input type="text" value={form.background}
-                  onChange={(e) => set('background', e.target.value)}
-                  placeholder={
-                    isBuilderRole(selectedRole)
-                      ? 'مثلاً: مطوّر واجهات — ٣ سنوات خبرة، React / Next.js'
-                      : isLearningRole(selectedRole)
-                        ? 'مثلاً: طالب هندسة — جامعة الخرطوم، أدرّس الفيزياء لصفوف الثانوي'
-                        : 'مثلاً: طالب هندسة — جامعة الخرطوم'
-                  }
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all"
-                  style={inputStyle}
-                  onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
-                  onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
-                />
-              </Field>
-
-              {/* Portfolio link — only for roles that have a portfolioPrompt */}
-              {showPortfolio && (
-                <Field
-                  label={selectedRole.portfolioPrompt}
-                  hint="رابط يمكننا فتحه مباشرة"
-                  required={true}
-                >
-                  <div className="relative">
-                    <input
-                      type="url"
-                      dir="ltr"
-                      value={form.portfolioUrl}
-                      onChange={(e) => set('portfolioUrl', e.target.value)}
-                      placeholder="https://github.com/username"
-                      className="w-full px-4 py-3 rounded-xl text-sm transition-all"
-                      style={inputStyle}
-                      onFocus={(e) => e.target.style.borderColor = 'rgba(212,137,30,0.5)'}
-                      onBlur={(e)  => e.target.style.borderColor = 'var(--border-mid)'}
-                    />
-                    {form.portfolioUrl && (
-                      <a
-                        href={form.portfolioUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-mono transition-colors"
-                        style={{ color: 'var(--text-muted)' }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                      >
-                        ↗
-                      </a>
-                    )}
-                  </div>
-                </Field>
-              )}
-
-              {/* Subjects — only for learning/content roles or undecided */}
-              {showSubjects && (
-                <Field
-                  label="المواد التي تريد المساهمة فيها"
-                  hint="اختر واحدة أو أكثر"
-                  required={isLearningRole(selectedRole)}
-                >
-                  <div className="space-y-3 mt-1">
-                    {SUBJECT_GROUPS.map(({ trackKey, label }) => {
-                      const subjects = SUBJECTS_CATALOG.filter((s) => s.track === trackKey);
+            {tab === 'subjects' ? (
+              <>
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="t-label text-fg mb-2">المادة {errors.subject && <span className="text-danger ms-2">{errors.subject}</span>}</legend>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {SUBJECTS_CATALOG.map((s) => {
+                      const n = people[s.id] || 0;
+                      const on = form.subject === s.id;
                       return (
-                        <div key={trackKey}>
-                          <p className="text-xs font-mono mb-2" style={{ color: 'var(--text-muted)' }}>{label}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {subjects.map((s) => (
-                              <SubjectChip key={s.id} subject={s}
-                                selected={form.subjectsOfInterest.includes(s.id)}
-                                onToggle={toggleSubject} />
-                            ))}
-                          </div>
-                        </div>
+                        <button key={s.id} type="button" aria-pressed={on} onClick={() => set({ subject: s.id })}
+                          className={cx('flex flex-col gap-1 p-3 rounded-card border text-start transition-colors', on ? 'border-line-accent bg-selected' : 'border-line bg-raised hover:border-line-strong')}>
+                          <span className="flex justify-between gap-2 items-baseline">
+                            <strong className="t-ui text-fg-strong">{s.nameAr}</strong>
+                            <span className="t-caption text-fg-subtle">{TRACK_CONFIG[s.track]?.label}</span>
+                          </span>
+                          <span className={cx('t-caption', n ? 'text-fg-muted' : 'text-warn')}>
+                            {n === 0 ? 'لا أحد بعد — نحتاجك' : n === 1 ? 'مساهم واحد — مرحّب بالثاني' : `${n} مساهمين`}
+                          </span>
+                        </button>
                       );
                     })}
                   </div>
-                  {form.subjectsOfInterest.length > 0 && (
-                    <p className="text-xs mt-3 font-mono" style={{ color: 'var(--accent)', opacity: 0.8 }}>
-                      {form.subjectsOfInterest.length === 1
-                        ? 'مادة واحدة مختارة'
-                        : `${form.subjectsOfInterest.length} مواد مختارة`}
-                    </p>
-                  )}
-                </Field>
-              )}
+                </fieldset>
+                {subject && (
+                  <fieldset className="flex flex-col gap-2">
+                    <legend className="t-label text-fg mb-2">ماذا ستفعل في {subject.nameAr}؟ {errors.role && <span className="text-danger ms-2">{errors.role}</span>}</legend>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {learningRoles.map((r) => <RoleCard key={r._id} role={r} on={form.roleId === r._id} onPick={() => set({ roleId: r._id })} />)}
+                    </div>
+                  </fieldset>
+                )}
+              </>
+            ) : (
+              <fieldset className="flex flex-col gap-2">
+                <legend className="t-label text-fg mb-2">الدور {errors.role && <span className="text-danger ms-2">{errors.role}</span>}</legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {otherRoles.map((r) => <RoleCard key={r._id} role={r} on={form.roleId === r._id} onPick={() => set({ roleId: r._id })} />)}
+                </div>
+              </fieldset>
+            )}
 
-              {/* ── الاستعداد التقني ── */}
-              {/* Builder roles (devs/designers): skip the basic device questions — they obviously have a device */}
-              {!showDevReadiness && (
-                <>
-                  <SectionLabel>الاستعداد التقني</SectionLabel>
-
-                  <Field label="هل لديك وصول إلى حاسوب أو جهاز لوحي؟">
-                    <YesNo value={form.hasPcOrTablet} onChange={(v) => set('hasPcOrTablet', v)} />
-                  </Field>
-
-                  <Field label="هل لديك اتصال إنترنت مستقر؟">
-                    <YesNo value={form.hasStableInternet} onChange={(v) => set('hasStableInternet', v)} />
-                  </Field>
-                </>
-              )}
-
-              {/* ── الذكاء الاصطناعي ── */}
-              <SectionLabel>الذكاء الاصطناعي</SectionLabel>
-
-              <Field label="هل تستخدم أدوات ذكاء اصطناعي؟">
-                <YesNo value={form.usesAiTools} onChange={(v) => {
-                  set('usesAiTools', v);
-                  if (!v) set('aiToolsList', []);
-                }} />
-              </Field>
-
-              {form.usesAiTools === true && (
-                <Field label="أي منها؟" hint="اختر كل ما ينطبق">
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {AI_TOOLS.map((tool) => (
-                      <Chip key={tool.id} label={tool.label} mono
-                        selected={form.aiToolsList.includes(tool.id)}
-                        onToggle={() => toggleAiTool(tool.id)} />
-                    ))}
-                  </div>
-                </Field>
-              )}
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm"
-                style={{
-                  background: loading ? 'var(--bg-card)' : 'var(--accent)',
-                  color:      loading ? 'var(--text-muted)' : '#0e0c09',
-                  border:     loading ? '1px solid var(--border-subtle)' : 'none',
-                  cursor:     loading ? 'wait' : 'pointer',
-                  marginTop:  '8px',
-                }}
-                onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.boxShadow = '0 0 30px var(--glow)'; } }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = loading ? 'var(--bg-card)' : 'var(--accent)'; e.currentTarget.style.boxShadow = 'none'; }}
-              >
-                {loading
-                  ? <span>جاري الإرسال...</span>
-                  : <><span>إرسال الطلب</span><span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>←</span></>
-                }
-              </button>
-            </form>
-          </div>
+            <Footer
+              summary={role ? `${role.name}${learning && subject ? ` · ${subject.nameAr}` : ''}` : 'اختر مساراً لتكمل'}
+              next={<Button variant="primary" size="lg" onClick={() => check('where') && go('about-a')}>التالي: عنك ←</Button>} />
+          </section>
         )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between mt-6 px-1">
-          <a href="/signin" className="text-xs transition-colors" style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
-            لديك حساب؟ سجّل الدخول
-          </a>
-          <p className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
-            خطوة {pageStep} من ٣
-          </p>
-        </div>
+        {step !== 'where' && (
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-8 items-start">
+            <section className="flex flex-col gap-5" aria-labelledby="about-title">
+              <div className="flex flex-col gap-1">
+                <span className="t-caption text-fg-accent">الخطوة 2 من 3 · {step === 'about-a' ? 'نصفها الأول' : 'نصفها الثاني'}</span>
+                <h1 id="about-title" className="t-h1 text-fg-strong">{step === 'about-a' ? 'عنك' : 'عنك — ظروف العمل'}</h1>
+                <p className="t-body text-fg-muted">{step === 'about-a' ? 'من أنت، وما علاقتك بالمادة. نحو دقيقتين.' : 'كيف ومتى ستعمل. نحو دقيقة.'}</p>
+              </div>
 
+              {step === 'about-a' ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label="الاسم الكامل" required error={errors.name}><Input value={form.name} autoComplete="name" onChange={(e) => set({ name: e.target.value })} /></Field>
+                    <Field label="البريد الإلكتروني" required error={errors.email} hint="عليه يصلك رابط المقابلة ورابط طلبك.">
+                      <Input type="email" dir="ltr" autoComplete="email" value={form.email} onChange={(e) => set({ email: e.target.value })} placeholder="you@example.com" />
+                    </Field>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Choice label="الجنس" options={GENDERS} value={form.gender} onChange={(v) => set({ gender: v })} error={errors.gender} wide />
+                    <Choice label="الفئة العمرية" options={AGES} value={form.age} onChange={(v) => set({ age: v })} error={errors.age} />
+                  </div>
+                  <Field label="المدينة أو الولاية" required error={errors.town}><Input value={form.town} onChange={(e) => set({ town: e.target.value })} placeholder="مثلاً: بورتسودان، البحر الأحمر" /></Field>
+                  {learning && subject && (
+                    <Choice label={`علاقتك بال${subject.nameAr.replace(/^ال/, '')}`} options={RELATIONS} value={form.relation} onChange={(v) => set({ relation: v })} error={errors.relation} />
+                  )}
+                  <Field label="الخلفية التعليمية أو المهنية" required error={errors.background} hint="الجامعة والتخصص والسنة، وأي تدريس سابق.">
+                    <Textarea rows={3} value={form.background} onChange={(e) => set({ background: e.target.value })} />
+                  </Field>
+                  <Footer
+                    back={<Button variant="secondary" size="lg" onClick={() => go('where')}>→ أين تساعد</Button>}
+                    next={<Button variant="primary" size="lg" onClick={() => check('about-a') && go('about-b')}>متابعة ←</Button>}
+                    note="محفوظ على جهازك — لن يضيع إن انقطع الاتصال" />
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Choice label="هل لديك حاسوب أو جهاز لوحي؟" options={[['yes', 'نعم'], ['no', 'هاتف فقط']]} value={form.device} onChange={(v) => set({ device: v })} error={errors.device} wide hint="الكتابة ممكنة من الهاتف، لكنها أبطأ." />
+                    <Choice label="هل اتصالك بالإنترنت مستقر؟" options={INTERNET} value={form.internet} onChange={(v) => set({ internet: v })} error={errors.internet} wide />
+                  </div>
+                  <Choice label="كم ساعة في الأسبوع تستطيع أن تخصص؟" options={HOURS} value={form.hours} onChange={(v) => set({ hours: v })} error={errors.hours} />
+                  <Choice label="هل تستخدم أدوات ذكاء اصطناعي؟" options={[['yes', 'نعم'], ['no', 'لا']]} value={form.usesAi} onChange={(v) => set({ usesAi: v, aiTools: v === 'yes' ? form.aiTools : [] })} error={errors.usesAi} wide />
+                  {form.usesAi === 'yes' && (
+                    <fieldset className="flex flex-col gap-2 ps-4 border-s-2 border-line-accent">
+                      <legend className="t-label text-fg mb-1">أيّها؟ <span className="t-caption text-fg-subtle">اختر كل ما ينطبق</span></legend>
+                      <div className="flex flex-wrap gap-2">
+                        {AI_TOOLS.map(([id, label]) => {
+                          const on = form.aiTools.includes(id);
+                          return (
+                            <button key={id} type="button" dir="ltr" aria-pressed={on}
+                              onClick={() => set({ aiTools: on ? form.aiTools.filter((t) => t !== id) : [...form.aiTools, id] })}
+                              className={cx('h-9 px-3 rounded-chip border t-label touch-target', on ? 'border-line-accent bg-selected text-fg-accent' : 'border-line-strong text-fg hover:bg-hover')}>
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <span className="t-caption text-fg-subtle">لا يُحتسب ضدك. نريد أن نعرف كيف تعمل، ولدينا إرشادات لاستخدامها في كتابة الدروس.</span>
+                    </fieldset>
+                  )}
+                  {role?.portfolioPrompt && (
+                    <Field label={role.portfolioPrompt} required error={errors.portfolioUrl}>
+                      <Input dir="ltr" type="url" value={form.portfolioUrl} onChange={(e) => set({ portfolioUrl: e.target.value })} placeholder="https://" />
+                    </Field>
+                  )}
+                  {sendError && <p role="alert" className="t-label text-danger">{sendError}</p>}
+                  <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-line">
+                    <Button variant="secondary" size="lg" onClick={() => go('about-a')} disabled={sending}>→ عنك</Button>
+                    <Button variant="primary" size="lg" loading={sending} onClick={() => submit(true)}>أرسل وابدأ المقابلة ←</Button>
+                    <Button variant="ghost" size="lg" disabled={sending} onClick={() => submit(false)}>أرسل، وأكملها لاحقاً</Button>
+                  </div>
+                </>
+              )}
+            </section>
+
+            <aside className="flex flex-col gap-4 lg:sticky lg:top-6">
+              <div className="flex flex-col gap-3 p-5 rounded-card bg-raised border border-line-accent">
+                <h2 className="t-title text-fg-strong">لماذا نسأل هذا كله</h2>
+                <p className="t-label font-normal leading-relaxed text-fg-muted">
+                  نفير يكتب لطلاب الشهادة السودانية، ونقبل المساهمين وفق إرشادات واضحة: الخلفية في المادة، والقدرة على الالتزام، وظروف العمل الفعلية. كل حقل هنا يدخل في تقييم طلبك.
+                </p>
+              </div>
+              <p className="p-4 rounded-card bg-sunken border border-line t-caption leading-relaxed text-fg-muted">
+                <strong className="text-fg">بياناتك:</strong> يراها فريق الإدارة فقط لتقييم الطلب. لا يظهر شيء منها في ملفك العام إلا ما تختار نشره لاحقاً، ولا تُشارك مع أي جهة.
+              </p>
+              <div className="flex flex-col gap-2 p-4 rounded-card border border-line t-caption leading-relaxed text-fg-muted">
+                <strong className="t-label text-fg">بعد هذه الخطوة</strong>
+                <span>3 · المقابلة: أسئلة قصيرة ومهمة صغيرة (نحو 15 دقيقة) — الآن أو لاحقاً من رابط طلبك.</span>
+                <span>ثم يقرأ فريق الإدارة طلبك كاملاً ويقرر، وتتابع ذلك من الرابط نفسه.</span>
+              </div>
+            </aside>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function RoleCard({ role, on, onPick }) {
+  return (
+    <button type="button" aria-pressed={on} onClick={onPick}
+      className={cx('flex flex-col gap-1.5 p-4 rounded-card border text-start transition-colors', on ? 'border-line-accent bg-selected' : 'border-line bg-raised hover:border-line-strong')}>
+      <span className="flex justify-between gap-2 items-baseline">
+        <strong className="t-ui text-fg-strong">{role.name}</strong>
+        {role.category !== 'learning' && <span className="t-caption text-fg-subtle">{CATEGORY_LABEL[role.category] || ''}</span>}
+      </span>
+      {role.description && <span className="t-label font-normal leading-relaxed text-fg-muted">{role.description}</span>}
+    </button>
+  );
+}
+
+// A labelled set of single-choice chips. `wide` makes them share the row.
+function Choice({ label, options, value, onChange, error, hint, wide }) {
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="t-label text-fg mb-1">
+        {label} <span className="text-danger" aria-hidden="true">*</span>
+        {error && <span className="text-danger ms-2">{error}</span>}
+      </legend>
+      <div role="radiogroup" aria-label={label} className={cx('flex gap-2', wide ? '' : 'flex-wrap')}>
+        {options.map(([id, text]) => {
+          const on = value === id;
+          return (
+            <button key={id} type="button" role="radio" aria-checked={on} onClick={() => onChange(id)}
+              className={cx('h-11 px-4 border t-label touch-target transition-colors', wide ? 'flex-1 rounded-control' : 'rounded-chip',
+                on ? 'border-line-accent bg-selected text-fg-accent' : 'border-line-strong text-fg hover:bg-hover')}>
+              {text}
+            </button>
+          );
+        })}
+      </div>
+      {hint && <span className="t-caption text-fg-subtle">{hint}</span>}
+    </fieldset>
+  );
+}
+
+function Footer({ back, next, summary, note }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-line">
+      <span className="t-label text-fg-muted">{summary || note}</span>
+      <span className="flex gap-2">{back}{next}</span>
     </div>
   );
 }

@@ -7,28 +7,24 @@ import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
 import SectionEditor        from '@/components/editor/lesson/SectionEditor';
 import LessonQuestionsPanel from '@/components/editor/lesson/LessonQuestionsPanel';
 import LessonFeedPanel      from '@/components/editor/lesson/LessonFeedPanel';
-import StatusBadge          from '@/components/editor/shared/StatusBadge';
-import LessonPreviewModal   from '@/components/editor/lesson/LessonPreviewModal';
+import LessonHeader         from '@/components/editor/lesson/LessonHeader';
+import LessonPreviewModal, { LessonPhone } from '@/components/editor/lesson/LessonPreviewModal';
 import { MathNotationContext } from '@/components/editor/shared/MathNotationContext';
 import { getMathNotation }  from '@/shared/curriculum';
-import AttributionBar       from '@/components/editor/lesson/AttributionBar';
+import LessonReadiness, { SIXTHS } from '@/components/editor/lesson/LessonReadiness';
 import LessonNotesDrawer    from '@/components/editor/lesson/LessonNotesDrawer';
 import LessonHistoryDrawer  from '@/components/editor/lesson/LessonHistoryDrawer';
 import LinkVariationModal, { VARIATION_CONFIG } from '@/components/editor/lesson/LinkVariationModal';
 import {
-  Check,
-  Circle,
   CircleDot,
   Clock3,
-  Eye,
   FileText,
   Link2,
   NotebookPen,
-  Send,
   Smartphone,
-  Sparkles,
   Target,
   TriangleAlert,
+  CloudOff,
   Upload,
   X,
 } from 'lucide-react';
@@ -38,29 +34,34 @@ import { useEditorStore } from '@/store/editorStore';
 import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import LessonConflicts from '@/components/editor/lesson/LessonConflicts';
-import { UnsavedDot, changesLabel, minutesAgo } from '@/components/editor/lesson/SyncMarks';
+import { minutesAgo } from '@/components/editor/lesson/SyncMarks';
 import { useAutosave } from '@/hooks/useAutosave';
+import { useOnline } from '@/hooks/useOnline';
+import UndoToast from '@/components/editor/shared/UndoToast';
 import EditorPage from '@/components/editor/layout/EditorPage';
-import { SyncDot } from '@/components/editor/layout/SyncBanner';
 import { NAV_BY_ID, lessonHref } from '@/components/editor/layout/nav';
+import { Badge, Button, Card as UiCard, Drawer, EmptyState, Field as UiField, IconButton, Input, TabPanel, Textarea } from '@/components/ui';
+import { arCount, changesLabel as changesLabelShort, formatNumber } from '@/lib/format';
+import { SECTION_KIND_CONFIG } from '@/shared/constants';
+import { rememberLessonOpened } from '@/lib/lessonReadiness';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
+// Whether the content tab shows the phone beside it — a per-browser choice.
+const LIVE_PREVIEW_KEY = 'nafeer-editor-live-preview';
 
-const FIELD =
-  'w-full px-4 py-3 bg-ink-950 border border-ink-800 rounded-xl text-sand-200 ' +
-  'focus:ring-1 focus:ring-sand-600 focus:border-sand-700 focus:outline-none ' +
-  'font-arabic placeholder-ink-600 text-sm leading-relaxed transition-colors ' +
-  'hover:border-ink-700';
-
+// The variations step had a component but no tab — nothing could open it. It
+// is the fifth tab now, named as its own heading names it: an alternative is
+// only one of four variation types (بديل، متطلب، توسع، مبسطة).
 const TABS = [
-  { id: 'meta',      ar: '١', label: 'البيانات' },
-  { id: 'body',      ar: '٢', label: 'المحتوى'  },
-  { id: 'questions', ar: '٣', label: 'الأسئلة'  },
-  { id: 'feed',      ar: '٤', label: 'التغذية'  },
+  { id: 'meta',       label: 'البيانات'  },
+  { id: 'body',       label: 'المحتوى'   },
+  { id: 'questions',  label: 'الأسئلة'   },
+  { id: 'feed',       label: 'التغذية'   },
+  { id: 'variations', label: 'التنويعات' },
 ];
 
 const PART_NAMES_AR = ['الأوَّل', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
-const PART_NUMS_AR  = ['١', '٢', '٣', '٤', '٥', '٦'];
+const PART_NUMS_AR  = ['1', '2', '3', '4', '5', '6'];
 
 // Navigation props are gone: the lesson has its own route, so "back" and
 // "next lesson" are real URL moves and unitId is derived from the lesson
@@ -86,10 +87,9 @@ export default function LessonEditorPage({
   const { syncAll, submitForReview, approveAndSync } = useAtlasSync();
   const isSyncing  = useEditorStore((s) => s.isSyncing);
   const syncError  = useEditorStore((s) => s.syncError);
+  const lastSynced = useEditorStore((s) => s.lastSynced);
 
-  const [activeTab,     setActiveTab]     = useState(0);
-  // What the last manual save did, shown beside the button for a moment.
-  const [saveMsg,       setSaveMsg]       = useState(null);
+  const [activeTab,     setActiveTab]     = useState('meta');
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [approveSuccess, setApproveSuccess] = useState(false);
   const [showPreview,   setShowPreview]   = useState(false);
@@ -103,6 +103,29 @@ export default function LessonEditorPage({
   const [attribution,      setAttribution]      = useState(null);
   // Someone else who opened this lesson in the last half hour (lesson GET).
   const [openedBy,         setOpenedBy]         = useState(null);
+  // The reviewer's comments from the latest return (lesson GET — no request
+  // of their own), and the one being marked handled right now.
+  const [reviewComments,   setReviewComments]   = useState([]);
+  const [resolvingId,      setResolvingId]      = useState(null);
+  const [showReadiness,    setShowReadiness]    = useState(false);
+  const online = useOnline();
+  // The phone beside the content tab (xl and up). Remembered in the browser;
+  // below xl the same button opens the preview modal instead.
+  const [livePreview,      setLivePreview]      = useState(false);
+  const [focusSectionId,   setFocusSectionId]   = useState(null);
+  useEffect(() => {
+    try { setLivePreview(localStorage.getItem(LIVE_PREVIEW_KEY) === '1'); } catch { /* storage blocked */ }
+  }, []);
+  // Feeds the lessons list's «تابع من حيث توقفت» strip — browser only.
+  useEffect(() => { if (lessonId) rememberLessonOpened(lessonId); }, [lessonId]);
+  const toggleLivePreview = () => {
+    if (!window.matchMedia('(min-width: 1280px)').matches) { setShowPreview(true); return; }
+    setLivePreview((on) => {
+      try { localStorage.setItem(LIVE_PREVIEW_KEY, on ? '0' : '1'); } catch { /* storage blocked */ }
+      return !on;
+    });
+  };
+  const showPhone = livePreview && activeTab === 'body';
 
   const lesson         = lessons.find((l) => l.id === lessonId);
   // unitId used to arrive as a prop alongside lessonId; with a single-segment
@@ -128,6 +151,10 @@ export default function LessonEditorPage({
           setNotesCount(res.data.notesCount ?? 0);
           setVariations(res.data.variations  || []);
           setOpenedBy(res.data.recentlyOpenedBy || null);
+          const round = res.data.reviewState?.round || 0;
+          setReviewComments(round
+            ? (res.data.notes || []).filter((n) => n.noteType === 'review_feedback' && (n.round ?? 0) === round)
+            : []);
           useSubjectStore.getState().mergeServerLessonMeta(res.data);
           useContentStore.getState().mergeServerLesson(lessonId, res.data.sections || []);
         }
@@ -160,40 +187,65 @@ export default function LessonEditorPage({
   const unitLessons = lessons.filter((l) => l.unitId === unitId).sort((a, b) => a.order - b.order);
   const lessonIndex = unitLessons.findIndex((l) => l.id === lessonId);
 
+  // The six readiness checks — unchanged rules, now each naming the tab that
+  // fixes it, so the readiness panel can take the author there.
   const checklist = lesson ? [
-    { label: 'عنوان',  done: !!lesson.title?.trim() && !SCAFFOLD_TITLE_RE.test(lesson.title.trim()) },
-    { label: 'ملخص',  done: !!lesson.summary?.trim()   },
-    { label: 'أقسام', done: lessonSections.length > 0  },
-    { label: 'محتوى', done: lessonBlocks.length > 0    },
-    { label: 'أسئلة', done: lessonQuestions.length > 0 },
-    { label: 'تغذية', done: lessonFeedItems.length > 0 },
+    { id: 'title',    tab: 'meta',      label: 'عنوان حقيقي',          done: !!lesson.title?.trim() && !SCAFFOLD_TITLE_RE.test(lesson.title.trim()) },
+    { id: 'summary',  tab: 'meta',      label: 'ملخص',                 done: !!lesson.summary?.trim()   },
+    { id: 'sections', tab: 'body',      label: 'قسم واحد على الأقل',   done: lessonSections.length > 0  },
+    { id: 'content',  tab: 'body',      label: 'محتوى في الأقسام',     done: lessonBlocks.length > 0    },
+    { id: 'questions',tab: 'questions', label: 'سؤال واحد على الأقل',  done: lessonQuestions.length > 0 },
+    { id: 'feed',     tab: 'feed',      label: 'بطاقة تغذية واحدة',    done: lessonFeedItems.length > 0 },
   ] : [];
   const completedChecks = checklist.filter((c) => c.done).length;
 
-  const tabDone = (tab) => {
-    if (tab.id === 'meta')      return checklist.slice(0,2).every(c => c.done);
-    if (tab.id === 'body')      return checklist.slice(2,4).every(c => c.done);
-    if (tab.id === 'questions') return checklist[4]?.done;
-    if (tab.id === 'feed')      return checklist[5]?.done;
+  const tabDone = (id) => {
+    if (id === 'meta')      return checklist.slice(0,2).every(c => c.done);
+    if (id === 'body')      return checklist.slice(2,4).every(c => c.done);
+    if (id === 'questions') return !!checklist[4]?.done;
+    if (id === 'feed')      return !!checklist[5]?.done;
     return false;
   };
 
-  const flash = (msg) => {
-    setSaveMsg(msg);
-    setTimeout(() => setSaveMsg((m) => (m === msg ? null : m)), 3000);
+  const tabCount = {
+    body:       lessonSections.length,
+    questions:  lessonQuestions.length,
+    feed:       lessonFeedItems.length,
+    variations: variations.length,
   };
+  const tabItems = TABS.map((t) => ({
+    ...t,
+    count: tabCount[t.id] || undefined,   // no "0" badge on every empty tab
+    done:  tabDone(t.id) && t.id !== activeTab,
+    dirty: (t.id === 'meta' && !!lesson?._dirty) || (t.id === 'body' && contentUnsaved > 0),
+  }));
 
+  // One save state for the header pill, from what editorStore already tracks.
+  // Offline first: a failed save while disconnected is not an error to fix,
+  // it is work waiting for the connection (kept in local storage meanwhile).
+  const saveState =
+    !online          ? 'offline' :
+    syncError        ? 'error'  :
+    isSyncing        ? 'saving' :
+    unsavedCount > 0 ? 'dirty'  :
+    lastSynced       ? 'saved'  : 'idle';
+
+  // Manual save. The SaveStatus pill reports the outcome; errors and
+  // conflicts surface there and in LessonConflicts.
   const handleSave = async () => {
     if (!subjectId) return;
     try {
-      const { saved } = await syncAll(lessonId, subjectId);
-      flash(saved > 0 ? `حُفظ ${changesLabel(saved)}` : 'لا تغييرات للحفظ');
-    } catch { /* SyncBar and LessonConflicts handle it */ }
+      await syncAll(lessonId, subjectId, { versionLabel });
+      setVersionLabel('');   // the label tagged this save; the next one starts clean
+    } catch { /* shown by SaveStatus */ }
   };
 
-  // Header "go to conflict": conflicts live on the content tab.
-  const revealConflict = (contentId) => {
-    setActiveTab(TABS.findIndex((t) => t.id === 'body'));
+  // Open a tab and, when given a section or block id, scroll it into view —
+  // used by "go to conflict", the readiness checks and the review comments.
+  const jumpTo = (tab, contentId = null) => {
+    setActiveTab(tab);
+    setShowReadiness(false);
+    if (!contentId) return;
     setTimeout(() => {
       const block = blocks.find((b) => b.id === contentId);
       const el = document.querySelector(`[data-sync-id="${CSS.escape(contentId)}"]`)
@@ -201,15 +253,36 @@ export default function LessonEditorPage({
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 60);
   };
+  const revealConflict = (contentId) => jumpTo('body', contentId);
+
+  // Mark a reviewer's comment handled (or not). Optimistic; one request.
+  const resolveComment = async (noteId, resolved) => {
+    const before = reviewComments;
+    setResolvingId(noteId);
+    setReviewComments((list) => list.map((c) => (c._id === noteId
+      ? { ...c, resolved, resolvedAt: resolved ? new Date().toISOString() : null, resolvedByName: resolved ? (currentUser?.name || '') : '' }
+      : c)));
+    try {
+      const res = await fetch(`/api/content/lessons/${lessonId}/notes/${noteId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resolved }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setReviewComments(before);
+    } finally {
+      setResolvingId(null);
+    }
+  };
+  const openComments = lesson?.reviewState?.returned ? reviewComments.filter((c) => !c.resolved).length : 0;
 
   const handleSubmitForReview = async () => {
     if (!subjectId) return;
     try {
       await syncAll(lessonId, subjectId);
-      await submitForReview(lessonId, 'lesson');
+      if (!(await submitForReview(lessonId, 'lesson'))) return;   // SaveStatus shows why
       setReviewSuccess(true);
       setTimeout(() => setReviewSuccess(false), 3500);
-    } catch { /* SyncBar handles it */ }
+    } catch { /* SaveStatus shows it */ }
   };
 
   const handleApprove = async () => {
@@ -275,286 +348,197 @@ export default function LessonEditorPage({
   };
 
   if (!lesson) return (
-    <div className="text-center py-32">
-      <NotebookPen size={42} strokeWidth={1.5} className="mx-auto mb-4 text-ink-600" />
-      <h2 className="text-lg font-medium text-ink-400 mb-4 font-arabic">الدرس غير موجود</h2>
-      <button onClick={goBack} className="px-6 py-2 bg-sand-700 text-ink-950 rounded-lg font-arabic">العودة</button>
-    </div>
+    <EmptyState
+      icon={NotebookPen}
+      title="الدرس غير موجود"
+      description="ربما حُذف أو نُقل إلى وحدة أخرى."
+      action={<Button variant="primary" onClick={goBack}>العودة إلى الدروس</Button>}
+      className="m-6"
+    />
   );
 
-  // The third hand-rolled sync indicator is gone — SyncDot reads editorStore.
-  const circumference = 2 * Math.PI * 9;
+  const readinessPanel = (
+    <LessonReadiness
+      lesson={lesson} reviewState={lesson.reviewState} comments={reviewComments}
+      onResolve={resolveComment} resolvingId={resolvingId}
+      checks={checklist} onJump={jumpTo}
+      attribution={attribution} lessonIndex={lessonIndex} unitLessonCount={unitLessons.length}
+      prevLesson={prevLesson} nextLesson={nextLesson} onNavigateLesson={goToLesson}
+    />
+  );
 
   return (
     // Every formula on this page — editors, previews, inline — follows the subject.
     <MathNotationContext.Provider value={getMathNotation(subjectId)}>
     <EditorPage width="full" bleed className="flex min-h-[100dvh] flex-col">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-ink-950/98 backdrop-blur-md border-b border-ink-800/70">
+      <LessonHeader
+        lesson={lesson} unit={unit} lessonIndex={lessonIndex} unitLessonCount={unitLessons.length}
+        isAdmin={currentUser?.role === 'admin'}
+        saveState={saveState} savedAt={lastSynced} unsavedCount={unsavedCount}
+        syncError={syncError} isSyncing={isSyncing}
+        reviewSuccess={reviewSuccess} approveSuccess={approveSuccess} notesCount={notesCount}
+        tabs={tabItems} activeTab={activeTab} onTabChange={setActiveTab}
+        onBack={goBack} onSave={handleSave}
+        onPreview={() => setShowPreview(true)}
+        onHistory={() => setShowHistory(true)}
+        onNotes={() => setShowNotes(true)}
+        onSubmitForReview={handleSubmitForReview} onApprove={handleApprove}
+        missing={checklist.filter((c) => !c.done)} openComments={openComments}
+        onJump={jumpTo} onShowComments={() => setShowReadiness(true)}
+      />
 
-        {/* Two groups — identity and actions — that wrap as units rather than
-            eleven loose flex children. Below xl the actions drop to their own
-            line (and scroll horizontally if they still don't fit); at xl the
-            two groups share one row, as before. Previously everything sat in
-            one row and the title was the item that collapsed. */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 sm:px-5 py-2 xl:py-0 xl:h-12">
+      {/* Items another contributor changed first — see LessonConflicts */}
+      <LessonConflicts lessonId={lessonId} onReveal={revealConflict} />
 
-          {/* ── Identity ──
-              w-full below xl: with `flex-1` alone the group's flex-basis is 0,
-              so it never triggers a wrap — it just collapsed to nothing while
-              the action group kept its width. */}
-          <div className="flex w-full min-w-0 items-center gap-2 xl:w-auto xl:flex-1">
-            <button
-              onClick={goBack}
-              aria-label={`العودة إلى ${unit?.title ?? 'الدروس'}`}
-              className="touch-target flex items-center gap-1.5 text-sm text-ink-400 hover:text-sand-400 transition-colors font-arabic shrink-0 group"
-            >
-              <span className="group-hover:translate-x-0.5 transition-transform inline-block">→</span>
-              <span className="hidden sm:inline">{unit?.title ?? 'الدروس'}</span>
-            </button>
+      {/* Content column + readiness panel. The panel sits beside the steps at
+          xl and up, where there is room; below that a one-line bar opens it as
+          a drawer (DS2 step 2, canvas board «الجاهزية والإرسال»). */}
+      <div className={`flex-1 w-full ${showPhone ? 'max-w-[76rem]' : 'max-w-[68rem]'} mx-auto flex gap-8 px-4 sm:px-6`}>
+      <div className="flex-1 min-w-0 max-w-4xl mx-auto xl:mx-0 xl:max-w-none flex flex-col">
 
-            <span className="text-ink-400 text-xs shrink-0">›</span>
-
-            <h1 className="min-w-0 flex-1 text-sm font-semibold text-sand-200 font-arabic truncate">
-              {lesson.title}
-            </h1>
-
-            <SyncDot size={6} />
-            {lesson.atlasStatus && <StatusBadge status={lesson.atlasStatus} />}
-
-          {/* Progress ring */}
-          <div className="relative w-6 h-6 shrink-0">
-            <svg className="w-6 h-6 -rotate-90" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-400" />
-              <circle
-                cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5"
-                className="text-emerald-600 transition-all duration-500"
-                strokeDasharray={`${(completedChecks / 6) * circumference} ${circumference}`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[8px] font-mono text-ink-500">
-              {completedChecks}
+      {/* Notices sit in the content column, above the step — not in the sticky
+          header, which used to grow a row for each of them. */}
+      <div className="w-full pt-5 flex flex-col gap-3 empty:hidden">
+        {/* Someone else opened this lesson recently — they may be editing it.
+            Read from the lesson GET; costs nothing extra. */}
+        {openedBy && (
+          <div role="status" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-info-surface border border-info-border text-info t-label font-normal">
+            <Clock3 size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="flex-1 leading-relaxed">
+              آخر من فتح هذا الدرس: {openedBy.name || 'زميل'}، {minutesAgo(openedBy.at)}. قد يكون العمل عليه جارياً الآن — تُحفظ تعديلاتك تلقائياً، وستُنبَّه إن تعارضت مع تعديلات أخرى.
             </span>
-          </div>
-          </div>
-
-          {/* ── Actions — scroll horizontally rather than clip if they
-              still overflow on a very narrow phone. ── */}
-          <div className="flex w-full shrink-0 items-center gap-2 overflow-x-auto scrollbar-none -mx-1 px-1 xl:w-auto">
-
-          {(!lesson.atlasStatus || lesson.atlasStatus === 'draft') && (
-            currentUser?.role === 'admin' ? (
-              <button
-                onClick={handleApprove}
-                disabled={isSyncing}
-                className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-8 sm:h-7 text-green-400 text-xs font-semibold rounded-lg border border-green-800/50 bg-green-900/20 hover:bg-green-800/30 disabled:opacity-40 font-arabic transition-colors"
-              >
-                {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الاعتماد</> : <><Check size={13} strokeWidth={2} /> اعتماد مباشر</>}
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmitForReview}
-                disabled={isSyncing}
-                className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-8 sm:h-7 text-amber-400 text-xs font-semibold rounded-lg border border-amber-800/50 bg-amber-900/20 hover:bg-amber-800/30 disabled:opacity-40 font-arabic transition-colors"
-              >
-                {reviewSuccess ? <><Check size={13} strokeWidth={2} /> أُرسل</> : <><Send size={13} strokeWidth={1.9} /> مراجعة</>}
-              </button>
-            )
-          )}
-
-          {lesson.atlasStatus === 'approved' && currentUser?.role === 'admin' && (
-            <button
-              onClick={handleApprove}
-              disabled={isSyncing}
-              className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-8 sm:h-7 text-sand-400 text-xs font-semibold rounded-lg border border-sand-800/50 bg-sand-900/20 hover:bg-sand-800/30 disabled:opacity-40 font-arabic transition-colors"
-            >
-              {approveSuccess ? <><Check size={13} strokeWidth={2} /> تم الحفظ</> : <><Upload size={13} strokeWidth={1.9} /> حفظ + اعتماد</>}
-            </button>
-          )}
-
-          <button
-            onClick={() => setShowHistory(true)}
-            className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
-            title="سجل الإصدارات"
-          >
-            <Clock3 size={13} strokeWidth={1.9} />
-            <span className="hidden sm:inline">السجل</span>
-          </button>
-
-          <button
-            onClick={() => setShowNotes(true)}
-            className="touch-target shrink-0 relative flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
-          >
-            <NotebookPen size={13} strokeWidth={1.9} />
-            <span className="hidden sm:inline">ملاحظات</span>
-            {notesCount > 0 && (
-              <span className="absolute -top-1.5 -left-1 w-4 h-4 bg-sand-700 text-ink-950 text-xs font-bold rounded-full flex items-center justify-center font-mono leading-none">
-                {notesCount > 9 ? '9+' : notesCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setShowPreview(true)}
-            className="touch-target shrink-0 flex items-center gap-1.5 px-3 h-7 text-ink-400 hover:text-sand-300 text-xs font-semibold rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 font-arabic transition-colors"
-          >
-            <Eye size={13} strokeWidth={1.9} />
-            <span className="hidden sm:inline">معاينة</span>
-          </button>
-
-          {saveMsg && (
-            <span role="status" className="shrink-0 text-xs text-emerald-500 font-arabic whitespace-nowrap">{saveMsg}</span>
-          )}
-
-          {/* Counts unsaved changes; with none it reads "محفوظ". Autosave
-              (useAutosave) also saves after a pause and on leaving. */}
-          <button
-            onClick={handleSave}
-            disabled={isSyncing}
-            title={unsavedCount > 0 ? `${changesLabel(unsavedCount)} لم تُحفظ بعد — تُحفظ تلقائياً بعد توقفك عن الكتابة` : 'كل التغييرات محفوظة'}
-            className={`touch-target shrink-0 flex items-center gap-1.5 px-4 h-7 disabled:opacity-40 text-xs font-bold rounded-lg transition-colors font-arabic ${
-              unsavedCount > 0
-                ? 'bg-sand-700 hover:bg-sand-600 text-ink-950'
-                : 'border border-ink-700 bg-ink-800/60 text-ink-400 hover:text-sand-300'
-            }`}
-          >
-            {isSyncing
-              ? <><span className="w-3 h-3 border-2 border-ink-800 border-t-transparent rounded-full animate-spin" />حفظ…</>
-              : unsavedCount > 0
-                ? <><Upload size={13} strokeWidth={1.9} /> حفظ <span className="rounded-full bg-ink-950/25 px-1.5 font-mono leading-4">{unsavedCount.toLocaleString('ar-EG')}</span></>
-                : <><Check size={13} strokeWidth={2} /> محفوظ</>}
-          </button>
-          </div>
-        </div>
-
-        {/* Attribution bar — hidden on phones. It is supplementary metadata
-            (author, version) and cost 35px of a sticky header that was already
-            taking a quarter of the screen; the same information is in the
-            version history drawer. */}
-        {(attribution || lesson.version > 1) && (
-          <div className="hidden sm:block">
-            <AttributionBar lesson={lesson} attribution={attribution} />
+            <IconButton icon={X} label="إخفاء التنبيه" size="sm" onClick={() => setOpenedBy(null)} className="-my-1.5" />
           </div>
         )}
 
-        {/* Sync error */}
-        {syncError && (
-          <div className="flex items-center gap-2 px-5 py-1.5 bg-red-950/50 border-t border-red-900/30 text-red-400 text-sm font-arabic">
-            <TriangleAlert size={14} strokeWidth={1.9} />
-            <span className="flex-1 truncate">فشل الحفظ — {typeof syncError === 'string' ? syncError : 'تحقق من الاتصال'}</span>
-          </div>
-        )}
-
-        {/* Items another contributor changed first — see LessonConflicts */}
-        <LessonConflicts lessonId={lessonId} onReveal={revealConflict} />
-
-        {/* Row 2: tabs */}
-        {/* overflow-x-auto: at 375px this strip measures 417px, so the last
-            tab and the lesson counter were clipped with no way to reach them. */}
-        <div className="flex items-end gap-0 px-5 border-t border-ink-800/50 overflow-x-auto scrollbar-none">
-          {TABS.map((tab, i) => {
-            const isActive = i === activeTab;
-            const isDone   = tabDone(tab);
-            const unsaved  = (tab.id === 'meta' && lesson._dirty) || (tab.id === 'body' && contentUnsaved > 0);
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(i)}
-                className={`relative flex items-center gap-2 px-4 py-2.5 text-sm transition-all font-arabic whitespace-nowrap
-                  ${isActive ? 'text-sand-300' : isDone ? 'text-emerald-600 hover:text-emerald-500' : 'text-ink-400 hover:text-ink-400'}`}
-              >
-                {isActive && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-sand-500 rounded-t" />}
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs border transition-colors
-                  ${isActive ? 'border-sand-700 bg-sand-900/60 text-sand-400'
-                    : isDone  ? 'border-emerald-700 bg-emerald-900/20 text-emerald-500'
-                    :           'border-ink-700 text-ink-400'}`}
-                >
-                  {isDone && !isActive ? <Check size={11} strokeWidth={2.1} /> : tab.ar}
-                </span>
-                <span>{tab.label}</span>
-                <UnsavedDot show={unsaved} />
-              </button>
-            );
-          })}
-          <div className="flex-1" />
-          <span className="text-xs text-ink-500 font-mono pb-2.5 pr-1">
-            {lessonIndex + 1}/{unitLessons.length}
-          </span>
-        </div>
-      </header>
-
-      {/* Someone else opened this lesson recently — they may be editing it.
-          Read from the lesson GET; costs nothing extra. */}
-      {openedBy && (
-        <div className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-sky-950/30 border-b border-sky-900/40 text-sky-300 text-xs font-arabic">
-          <Clock3 size={13} strokeWidth={1.9} className="shrink-0" />
-          <span className="flex-1">
-            آخر من فتح هذا الدرس: {openedBy.name || 'زميل'}، {minutesAgo(openedBy.at)}. قد يكون العمل عليه جارياً الآن — تُحفظ تعديلاتك تلقائياً، وستُنبَّه إن تعارضت مع تعديلات أخرى.
-          </span>
-          <button onClick={() => setOpenedBy(null)} aria-label="إخفاء" className="touch-target shrink-0 text-sky-400 hover:text-sky-200">
-            <X size={13} strokeWidth={2} />
-          </button>
-        </div>
-      )}
-
-      {/* Approved warning — only shown to contributors, not admins */}
-      {lesson.atlasStatus === 'approved' && currentUser?.role !== 'admin' && (
-        <div className="max-w-4xl mx-auto w-full px-5 pt-4">
-          <div className="px-4 py-3 bg-amber-900/10 border border-amber-800/30 rounded-xl flex items-start gap-3">
-            <TriangleAlert size={15} strokeWidth={1.9} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-sm text-amber-400/90 font-arabic leading-relaxed">
-              هذا الدرس <strong>معتمد</strong>. أي تعديل سيُعيده إلى حالة المسودة.
+        {!online && (
+          <div role="status" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-info-surface border border-info-border text-info t-label font-normal">
+            <CloudOff size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <p className="leading-relaxed">
+              انقطع الاتصال. تابع الكتابة — {unsavedCount ? `${changesLabelShort(unsavedCount)} محفوظة على هذا الجهاز` : 'كل ما تكتبه يُحفظ على هذا الجهاز'}، وتُرفع تلقائياً حين يعود الاتصال. لا تمسح بيانات المتصفح قبل ذلك.
             </p>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Approved warning — only shown to contributors, not admins */}
+        {lesson.atlasStatus === 'approved' && currentUser?.role !== 'admin' && (
+          <div role="note" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-warn-surface border border-warn-border text-warn t-label font-normal">
+            <TriangleAlert size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <p className="leading-relaxed">هذا الدرس <strong>معتمد</strong>. أي تعديل سيُعيده إلى حالة المسودة.</p>
+          </div>
+        )}
+
+        {/* Below xl: the readiness panel folds into this bar. */}
+        <button
+          type="button"
+          onClick={() => setShowReadiness(true)}
+          className={`${showPhone ? '' : 'xl:hidden '}hidden sm:flex items-center gap-3 w-full px-4 h-12 rounded-card bg-raised border border-line text-start t-ui hover:border-line-strong transition-colors`}
+        >
+          <span className="text-fg-strong">جاهزية الدرس</span>
+          <span dir="ltr" className="t-num text-fg-muted">{formatNumber(completedChecks)} / 6</span>
+          <span className="flex-1 h-1.5 rounded-full bg-hover overflow-hidden" aria-hidden="true">
+            <span className={`block h-full rounded-full ${SIXTHS[completedChecks]} ${completedChecks === 6 ? 'bg-success' : 'bg-accent-hover'}`} />
+          </span>
+          {openComments > 0 && <Badge tone="warn" size="sm">{arCount(openComments, { one: 'ملاحظة', two: 'ملاحظتان', few: 'ملاحظات', many: 'ملاحظة' })}</Badge>}
+          <span className="t-caption text-fg-accent">التفاصيل</span>
+        </button>
+      </div>
 
       {/* ── Step canvas ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-5 py-8">
-        {activeTab === 0 && (
+      <div className="flex-1 w-full pt-8 pb-28 sm:pb-8">
+        <TabPanel idBase="lesson" id="meta" active={activeTab === 'meta'}>
           <StepMeta
             lesson={lesson} unit={unit} unitLessons={unitLessons} lessonIndex={lessonIndex}
             checklist={checklist} completedChecks={completedChecks} statusCfg={statusCfg}
             lessonSections={lessonSections} lessonBlocks={lessonBlocks}
             updateLesson={updateLesson} patchMeta={patchMeta}
             versionLabel={versionLabel} onVersionLabelChange={setVersionLabel}
-            onNext={() => setActiveTab(1)}
+            onNext={() => setActiveTab('body')}
           />
-        )}
-        {activeTab === 1 && (
+        </TabPanel>
+        <TabPanel idBase="lesson" id="body" active={activeTab === 'body'}>
           <StepBody
             lesson={lesson} lessonSections={lessonSections} lessonBlocks={lessonBlocks}
             subjectId={subjectId} lessonId={lessonId} unitId={unitId} onAddSection={handleAddSection} onAddNewPart={handleAddNewPart}
-            onPrev={() => setActiveTab(0)} onNext={() => setActiveTab(2)}
+            livePreview={showPhone} onToggleLivePreview={toggleLivePreview} onFocusSection={setFocusSectionId}
+            onPrev={() => setActiveTab('meta')} onNext={() => setActiveTab('questions')}
           />
-        )}
-        {activeTab === 2 && (
+        </TabPanel>
+        <TabPanel idBase="lesson" id="questions" active={activeTab === 'questions'}>
           <StepQuestions
             lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonSections={lessonSections}
             lessonQuestions={lessonQuestions} onOpenGlobal={openGlobal}
-            onPrev={() => setActiveTab(1)} onNext={() => setActiveTab(3)}
+            onPrev={() => setActiveTab('body')} onNext={() => setActiveTab('feed')}
           />
-        )}
-        {activeTab === 3 && (
+        </TabPanel>
+        <TabPanel idBase="lesson" id="feed" active={activeTab === 'feed'}>
           <StepFeed
             lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonConceptIds={lessonConceptIds}
             lessonFeedItems={lessonFeedItems} prevLesson={prevLesson} nextLesson={nextLesson}
-            units={units} onOpenGlobal={openGlobal} onPrev={() => setActiveTab(2)}
+            units={units} onOpenGlobal={openGlobal} onPrev={() => setActiveTab('questions')}
             onNavigateLesson={goToLesson} onBack={goBack}
           />
-        )}
-        {activeTab === 4 && (
+        </TabPanel>
+        <TabPanel idBase="lesson" id="variations" active={activeTab === 'variations'}>
           <StepVariations
             lesson={lesson}
             variations={variations}
             onOpenLinkModal={() => setShowLinkVariation(true)}
             onUnlink={handleUnlinkVariation}
-            onPrev={() => setActiveTab(3)}
+            onPrev={() => setActiveTab('feed')}
           />
+        </TabPanel>
+      </div>
+      </div>
+
+      {showPhone ? (
+        <aside aria-label="معاينة حية" className="hidden xl:block w-[22rem] shrink-0 py-8">
+          <div className="sticky top-32 flex flex-col gap-2">
+            <span className="t-caption text-fg-subtle">كما يراه الطالب في بشير · يتبع ما تختاره في المخطط</span>
+            <LessonPhone lesson={lesson} sections={lessonSections} blocks={lessonBlocks} questions={lessonQuestions}
+              focusSectionId={focusSectionId} height="calc(100dvh - 11rem)" />
+          </div>
+        </aside>
+      ) : (
+        <aside aria-label="جاهزية الدرس والمراجعة" className="hidden xl:block w-80 shrink-0 py-8">
+          <div className="sticky top-32 max-h-[calc(100dvh-9rem)] overflow-y-auto scrollbar-none">
+            {readinessPanel}
+          </div>
+        </aside>
+      )}
+      </div>
+
+      <UndoToast />
+
+      {/* Phones: the two things a writer reaches for, at the thumb (DS2 step 7). */}
+      <div className="sm:hidden fixed bottom-0 inset-x-0 z-sticky flex items-center gap-2 px-4 py-2 bg-chrome border-t border-line pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <button type="button" onClick={() => setShowReadiness(true)}
+          className="flex items-center gap-2 h-11 px-3 rounded-control border border-line-strong t-label text-fg">
+          الجاهزية <span dir="ltr" className="tabular-nums text-fg-muted">{completedChecks}/6</span>
+          {openComments > 0 && <Badge tone="warn" size="sm">{openComments}</Badge>}
+        </button>
+        {activeTab === 'body' ? (
+          <Button variant="primary" className="flex-1 h-11" onClick={() => {
+            const adds = document.querySelectorAll('[data-add-block]');
+            const last = adds[adds.length - 1];
+            if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'center' }); last.click(); }
+            else handleAddNewPart();
+          }}>+ إضافة عنصر</Button>
+        ) : (
+          <Button variant="secondary" className="flex-1 h-11" onClick={handleSave}>حفظ الآن</Button>
         )}
       </div>
+
+      {showReadiness && (
+        <Drawer onClose={() => setShowReadiness(false)} labelledBy="readiness-drawer-title">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-line">
+            <h2 id="readiness-drawer-title" className="t-title text-fg-strong">الجاهزية والمراجعة</h2>
+            <IconButton icon={X} label="إغلاق" size="sm" onClick={() => setShowReadiness(false)} />
+          </div>
+          <div className="p-5 overflow-y-auto">{readinessPanel}</div>
+        </Drawer>
+      )}
 
       {showPreview && (
         <LessonPreviewModal
@@ -592,194 +576,143 @@ export default function LessonEditorPage({
 }
 
 // ─── Step 1: Meta ─────────────────────────────────────────────────────────────
-function StepMeta({ lesson, unit, unitLessons, lessonIndex, checklist, completedChecks, statusCfg, lessonSections, lessonBlocks, updateLesson, patchMeta, versionLabel, onVersionLabelChange, onNext }) {
+// DS2 step 5: the shared Field and Card, every control labelled and wired to
+// its hint, a group ID example taken from this lesson's own unit, and the
+// version label that now actually travels with the next manual save.
+function StepMeta({ lesson, unit, unitLessons, lessonIndex, statusCfg, lessonSections, lessonBlocks, updateLesson, patchMeta, versionLabel, onVersionLabelChange, onNext }) {
+  const scaffoldTitle = lesson.title && SCAFFOLD_TITLE_RE.test(lesson.title.trim());
+  const groupExample = `${lesson.unitId || 'UNIT'}_G1`;
+  const groupDescription = (() => {
+    if (!lesson.groupMetadata) return '';
+    try { return JSON.parse(lesson.groupMetadata)?.description || ''; } catch { return ''; }
+  })();
+
   return (
-    <div className="space-y-5 max-w-2xl">
-      <div className="flex items-center gap-3 pb-1">
-        <div>
-          <h2 className="text-base font-semibold text-sand-200 font-arabic">بيانات الدرس</h2>
-          <p className="text-sm text-ink-400 font-arabic mt-0.5">
-            {unit?.title} · درس {lessonIndex + 1} من {unitLessons.length}
-          </p>
+    <div className="flex flex-col gap-5 max-w-2xl">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="t-h3 text-fg-strong">بيانات الدرس</h2>
+          <p className="t-label text-fg-muted">{unit?.title} · درس {lessonIndex + 1} من {unitLessons.length}</p>
         </div>
-        <div className="flex-1" />
-        <span className={`text-xs font-arabic px-2.5 py-1 rounded-full border ${statusCfg.badge}`}>
-          {statusCfg.label}
-        </span>
+        <span className={`t-caption px-2.5 py-1 rounded-chip border ${statusCfg.badge}`}>{statusCfg.label}</span>
       </div>
 
-      <Card>
-        <CardHeader icon={<NotebookPen size={13} strokeWidth={1.9} />} title="المعلومات الأساسية" hint="تظهر للطالب قبل دخول الدرس" />
-        <div className="p-5 space-y-4">
-          <Field label="عنوان الدرس" required>
-            <input type="text" value={lesson.title}
-              onChange={(e) => updateLesson(lesson.id, { title: e.target.value })}
-              className={FIELD} placeholder="أدخل عنوان الدرس…" />
-            {lesson.title && SCAFFOLD_TITLE_RE.test(lesson.title.trim()) && (
-              <p className="text-sm text-amber-600 font-arabic mt-1.5 inline-flex items-center gap-1"><TriangleAlert size={14} strokeWidth={1.9} /> هذا عنوان تلقائي — أدخل عنواناً حقيقياً</p>
-            )}
-          </Field>
-          <Field label="ملخص الدرس">
-            <textarea value={lesson.summary || ''}
-              onChange={(e) => updateLesson(lesson.id, { summary: e.target.value })}
-              className={`${FIELD} resize-y min-h-[88px]`}
-              placeholder="ملخص قصير يصف محتوى الدرس — يظهر في قائمة الدروس…" />
-          </Field>
+      <UiCard title="المعلومات الأساسية" actions={<span className="t-caption text-fg-subtle">تظهر للطالب قبل دخول الدرس</span>}>
+        <div className="flex flex-col gap-4">
+          <UiField label="عنوان الدرس" required
+            error={scaffoldTitle ? 'هذا عنوان تلقائي — اكتب عنوان الدرس الحقيقي' : undefined}>
+            <Input value={lesson.title} onChange={(e) => updateLesson(lesson.id, { title: e.target.value })} placeholder="مثال: قراءة الصور الجوية" />
+          </UiField>
+          <UiField label="ملخص الدرس" hint="جملتان عمّا سيتعلمه الطالب — يظهر في قائمة الدروس">
+            <Textarea rows={3} value={lesson.summary || ''} onChange={(e) => updateLesson(lesson.id, { summary: e.target.value })} />
+          </UiField>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="الوقت المقدر">
-              <div className="flex items-center gap-2">
-                <input type="number" value={lesson.estimatedMinutes || 15}
-                  onChange={(e) => updateLesson(lesson.id, { estimatedMinutes: parseInt(e.target.value) || 15 })}
-                  className="w-20 px-3 py-2.5 bg-ink-950 border border-ink-800 rounded-xl text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none text-center font-mono"
-                  min="1" />
-                <span className="text-sm text-ink-400 font-arabic">دقيقة</span>
-              </div>
-            </Field>
-            <Field label="الإحصائيات">
-              <div className="flex gap-5 pt-1">
-                <Stat label="أقسام" val={lessonSections.length} />
-                <Stat label="عناصر" val={lessonBlocks.length} />
-              </div>
-            </Field>
+            <UiField label="الوقت المقدّر بالدقائق" hint="لقراءة الدرس وحلّ أسئلته">
+              <Input type="number" min="1" inputMode="numeric" className="w-28 tabular-nums"
+                value={lesson.estimatedMinutes || 15}
+                onChange={(e) => updateLesson(lesson.id, { estimatedMinutes: parseInt(e.target.value, 10) || 15 })} />
+            </UiField>
+            <div className="flex flex-col gap-1.5">
+              <span className="t-label text-fg">ما في الدرس الآن</span>
+              <span className="t-body text-fg-muted">{lessonSections.length} أقسام · {lessonBlocks.length} عناصر</span>
+            </div>
           </div>
         </div>
-      </Card>
+      </UiCard>
 
-      <Card>
-        <CardHeader icon={<Sparkles size={13} strokeWidth={1.9} />} title="التحفيز والتوجيه" hint="اختياري — يُشاهده الطالب قبل بدء الدرس" />
-        <div className="p-5 space-y-4">
-          <Field label="السؤال التحفيزي" hint="يستثير فضول الطالب قبل البدء">
-            <textarea value={lesson.metadata?.hook || ''}
-              onChange={(e) => patchMeta({ hook: e.target.value || null })}
-              className={`${FIELD} resize-y min-h-[68px]`}
-              placeholder="هل تساءلت كيف يحدد الملاحون موقعهم؟…" />
-          </Field>
-          <Field label="إجابة السؤال التحفيزي" hint="تظهر قرب نهاية الدرس، بعد أن يقرأ الطالب ما يكفي لفهمها">
-            <textarea value={lesson.metadata?.hookAnswer || ''}
-              onChange={(e) => patchMeta({ hookAnswer: e.target.value || null })}
-              className={`${FIELD} resize-y min-h-[68px]`}
-              placeholder="باستخدام خطوط الطول والعرض…" />
-          </Field>
-          <Field label="ستتعلم في هذا الدرس" hint="نقاط توجيهية تظهر قبل المحتوى">
+      <UiCard title="التحفيز والتوجيه" actions={<span className="t-caption text-fg-subtle">اختياري · يراه الطالب قبل البدء</span>}>
+        <div className="flex flex-col gap-4">
+          <UiField label="السؤال التحفيزي" hint="يستثير فضول الطالب قبل البدء">
+            <Textarea rows={2} value={lesson.metadata?.hook || ''} onChange={(e) => patchMeta({ hook: e.target.value || null })}
+              placeholder="هل تساءلت كيف يحدد الملاحون موقعهم؟" />
+          </UiField>
+          <UiField label="إجابة السؤال التحفيزي" hint="تظهر قرب نهاية الدرس، بعد أن يقرأ الطالب ما يكفي لفهمها">
+            <Textarea rows={2} value={lesson.metadata?.hookAnswer || ''} onChange={(e) => patchMeta({ hookAnswer: e.target.value || null })} />
+          </UiField>
+          <div className="flex flex-col gap-1.5">
+            <span className="t-label text-fg">ستتعلم في هذا الدرس</span>
             <OrientationInput value={lesson.metadata?.orientation || []} onChange={(v) => patchMeta({ orientation: v })} />
-          </Field>
-          <Field label="الجملة الشدّاءة" hint="على بطاقة الإتمام — تشجع على الدرس التالي">
-            <input type="text" value={lesson.metadata?.forwardPull || ''}
-              onChange={(e) => patchMeta({ forwardPull: e.target.value || null })}
-              className={FIELD} placeholder="درس واحد يفصلك عن إكمال الوحدة…" />
-          </Field>
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="تجميع الدروس" hint="اختياري — يُنظِّم الدروس في مجموعات داخل الوحدة" />
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="معرّف المجموعة" hint="ثابت — مثال: ARABIC_U1_G1">
-              <input
-                type="text"
-                value={lesson.groupId || ''}
-                onChange={(e) => updateLesson(lesson.id, { groupId: e.target.value.trim().toUpperCase() || null })}
-                className={FIELD}
-                placeholder="ARABIC_U1_G1"
-                dir="ltr"
-              />
-            </Field>
-            <Field label="اسم المجموعة" hint="يظهر كعنوان فرعي في التطبيق">
-              <input
-                type="text"
-                value={lesson.groupTitle || ''}
-                onChange={(e) => updateLesson(lesson.id, { groupTitle: e.target.value || null })}
-                className={FIELD}
-                placeholder="فهم المقروء"
-              />
-            </Field>
+            <span className="t-caption text-fg-subtle">نقاط توجيهية تظهر قبل المحتوى</span>
           </div>
+          <UiField label="جملة الانتقال للدرس التالي" hint="على بطاقة الإتمام — تشجّع على الدرس التالي">
+            <Input value={lesson.metadata?.forwardPull || ''} onChange={(e) => patchMeta({ forwardPull: e.target.value || null })}
+              placeholder="درس واحد يفصلك عن إكمال الوحدة…" />
+          </UiField>
+        </div>
+      </UiCard>
 
-          <Field label="وصف المجموعة" hint="اختياري — ملاحظات عن هذه المجموعة">
-            <textarea
-              value={lesson.groupMetadata ? (() => { try { return JSON.parse(lesson.groupMetadata)?.description || ''; } catch { return ''; } })() : ''}
+      <UiCard title="تجميع الدروس" actions={<span className="t-caption text-fg-subtle">اختياري</span>}>
+        <div className="flex flex-col gap-4">
+          <p className="t-label text-fg-muted">
+            الدروس التي تحمل المعرّف نفسه تظهر في التطبيق تحت عنوان فرعي واحد داخل الوحدة.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <UiField label="معرّف المجموعة" hint={`ثابت، بالإنجليزية — مثلاً ${groupExample}`}>
+              <Input dir="ltr" value={lesson.groupId || ''} placeholder={groupExample}
+                onChange={(e) => updateLesson(lesson.id, { groupId: e.target.value.trim().toUpperCase() || null })} />
+            </UiField>
+            <UiField label="اسم المجموعة" hint="يظهر كعنوان فرعي في التطبيق">
+              <Input value={lesson.groupTitle || ''} onChange={(e) => updateLesson(lesson.id, { groupTitle: e.target.value || null })} />
+            </UiField>
+          </div>
+          <UiField label="وصف المجموعة" hint="للمحررين فقط — لا يظهر للطالب">
+            <Textarea rows={2} value={groupDescription}
               onChange={(e) => {
                 const desc = e.target.value.trim();
-                updateLesson(lesson.id, {
-                  groupMetadata: desc ? JSON.stringify({ description: desc }) : null,
-                });
-              }}
-              className={`${FIELD} resize-y min-h-[60px]`}
-              placeholder="وصف يساعد المحررين على فهم منطق هذه المجموعة…"
-            />
-          </Field>
-
-          {/* Live preview of how it appears in the app */}
-          {lesson.groupTitle && (
-            <div className="mt-1 pt-4 border-t border-ink-800/40">
-              <p className="text-xs text-ink-500 font-arabic mb-2">معاينة في التطبيق</p>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-ink-800/30 border border-ink-800/60 w-fit">
-                <span className="w-1 h-3 rounded-full bg-sand-700/60" />
-                <span className="text-xs font-arabic text-ink-400">{lesson.groupTitle}</span>
-              </div>
-            </div>
+                updateLesson(lesson.id, { groupMetadata: desc ? JSON.stringify({ description: desc }) : null });
+              }} />
+          </UiField>
+          {lesson.groupId && !lesson.groupTitle && (
+            <p role="status" className="t-caption text-warn">المعرّف موجود دون اسم — أضف الاسم حتى تظهر المجموعة في التطبيق.</p>
           )}
-
-          {/* Warning when groupId is set but groupTitle is missing (or vice versa) */}
-          {(lesson.groupId && !lesson.groupTitle) && (
-            <p className="text-xs text-amber-600 font-arabic inline-flex items-center gap-1"><TriangleAlert size={12} strokeWidth={1.9} /> معرّف المجموعة موجود دون اسم — أضف الاسم حتى يظهر في التطبيق</p>
-          )}
-          {(!lesson.groupId && lesson.groupTitle) && (
-            <p className="text-xs text-amber-600 font-arabic inline-flex items-center gap-1"><TriangleAlert size={12} strokeWidth={1.9} /> اسم المجموعة موجود دون معرّف — أضف المعرّف لربط الدروس معاً</p>
+          {!lesson.groupId && lesson.groupTitle && (
+            <p role="status" className="t-caption text-warn">الاسم موجود دون معرّف — أضف المعرّف لربط الدروس معاً.</p>
           )}
           {lesson.groupId && lesson.groupTitle && (
-            <p className="text-xs text-emerald-700 font-arabic inline-flex items-center gap-1"><Check size={12} strokeWidth={2} /> مجموعة محددة — ستظهر الدروس ذات المعرّف نفسه تحت عنوان واحد</p>
+            <p role="status" className="t-caption text-success">مجموعة جاهزة: «{lesson.groupTitle}».</p>
           )}
         </div>
-      </Card>
+      </UiCard>
 
-      <Card>
-        <CardHeader icon={<CircleDot size={13} strokeWidth={1.9} />} title="اكتمال الدرس" />
-        <div className="p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-1 bg-ink-800 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${(completedChecks / 6) * 100}%` }} />
-            </div>
-            <span className="text-sm font-mono text-ink-500">{completedChecks}/6</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {checklist.map((item) => (
-              <div key={item.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-arabic
-                ${item.done ? 'bg-emerald-900/15 border-emerald-800/30 text-emerald-500' : 'bg-ink-800/15 border-ink-800/60 text-ink-400'}`}>
-                <span className={item.done ? 'text-emerald-500' : 'text-ink-500'}>{item.done ? <Check size={13} strokeWidth={2} /> : <Circle size={13} strokeWidth={1.8} />}</span>
-                <span>{item.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Version label — attaches a short note to the next save/submit */}
-          <div className="mt-4 pt-4 border-t border-ink-800/50">
-            <label className="text-sm text-ink-400 font-arabic block mb-1.5">
-              وسم الإصدار
-              <span className="text-ink-500 mr-1">(اختياري — يظهر في سجل التعديلات)</span>
-            </label>
-            <input
-              type="text"
-              value={versionLabel}
-              onChange={(e) => onVersionLabelChange(e.target.value.slice(0, 80))}
-              placeholder="مثال: مراجعة بعد الفيدباك، تصحيح أمثلة…"
-              className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-600 focus:outline-none focus:border-sand-700 transition-colors"
-            />
-            {versionLabel && (
-              <p className="text-xs text-ink-500 font-mono mt-1 text-left">{versionLabel.length}/80</p>
-            )}
-          </div>
-        </div>
-      </Card>
+      <UiCard title="وسم الإصدار" actions={<span className="t-caption text-fg-subtle">اختياري</span>}>
+        <UiField label="اسم قصير لهذه النسخة"
+          hint="يُرفق بالحفظ اليدوي التالي (زر «حفظ») ويظهر في سجل التعديلات، ثم يُفرَّغ. الحفظ التلقائي لا يحمله.">
+          <Input value={versionLabel} maxLength={80} onChange={(e) => onVersionLabelChange(e.target.value.slice(0, 80))}
+            placeholder="مثال: بعد ملاحظات المراجِع" />
+        </UiField>
+        {versionLabel && <p className="mt-1 t-caption text-fg-subtle tabular-nums" dir="ltr">{versionLabel.length}/80</p>}
+      </UiCard>
 
       <StepFooter onNext={onNext} nextLabel="المحتوى ←" />
     </div>
   );
 }
 
+// ─── Lesson outline ───────────────────────────────────────────────────────────
+// The sections at a glance: role, title, how full. Jumping scrolls the editor
+// and, when it is open, the phone beside it (DS2 step 4, EdContentTab).
+function LessonOutline({ sections, blocks, onPick }) {
+  if (sections.length < 2) return null;
+  return (
+    <nav aria-label="مخطط الدرس" className="flex gap-2 overflow-x-auto scrollbar-none pb-1 mb-2">
+      {sections.map((s, i) => {
+        const n = blocks.filter((b) => b.sectionId === s.id).length;
+        const role = s.kind && s.kind !== 'GENERAL' ? SECTION_KIND_CONFIG[s.kind]?.label : null;
+        return (
+          <button key={s.id} type="button" onClick={() => onPick(s.id)}
+            className="shrink-0 max-w-56 flex flex-col items-start gap-0.5 px-3 py-2 rounded-control border border-line bg-raised hover:border-line-strong text-start">
+            <span className="t-caption text-fg-subtle">{i + 1}{role ? ` · ${role}` : ''}</span>
+            <span className="t-label text-fg-strong truncate max-w-full">{s.title}</span>
+            <span className={`t-caption ${n ? 'text-fg-muted' : 'text-warn'}`}>{n ? `${n} عناصر` : 'فارغ'}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 // ─── Step 2: Body ─────────────────────────────────────────────────────────────
-function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, unitId, onAddSection, onAddNewPart, onPrev, onNext }) {
+function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, unitId, onAddSection, onAddNewPart, onPrev, onNext, livePreview, onToggleLivePreview, onFocusSection }) {
   const partsMap = lessonSections.reduce((acc, s) => {
     const p = s.partIndex ?? 0;
     if (!acc[p]) acc[p] = [];
@@ -799,11 +732,20 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, u
           {lessonBlocks.length > 0 && ` · ${lessonBlocks.length} عنصر`}
         </span>
         {isMultiPart && (
-          <span className="mr-auto text-sm text-ink-500 font-arabic px-2 py-0.5 bg-ink-800/40 rounded-full border border-ink-800">
+          <span className="text-sm text-ink-500 font-arabic px-2 py-0.5 bg-ink-800/40 rounded-full border border-ink-800">
             {partKeys.length} أجزاء
           </span>
         )}
+        <Button size="sm" variant={livePreview ? 'primary' : 'secondary'} icon={Smartphone} onClick={onToggleLivePreview}
+          aria-pressed={livePreview} className="ms-auto">
+          {livePreview ? 'إخفاء المعاينة' : 'معاينة بجانبه'}
+        </Button>
       </div>
+
+      <LessonOutline sections={lessonSections} blocks={lessonBlocks} onPick={(id) => {
+        document.querySelector(`[data-sync-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        onFocusSection(id);
+      }} />
 
       {lessonSections.length === 0 && (
         <div
@@ -828,7 +770,7 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, u
               </div>
               <div className="flex items-end justify-between">
                 <div className="flex items-baseline gap-3">
-                  <span className="text-sm font-mono text-ink-500 tracking-[0.2em] uppercase">part</span>
+                  <span className="text-sm font-mono text-ink-500 uppercase">part</span>
                   <span className="text-sm font-semibold text-sand-600 font-arabic">
                     الجزء {PART_NAMES_AR[pi] || (pi + 1)}
                   </span>
@@ -847,7 +789,7 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, u
           )}
 
           {partsMap[partIdx].map((section) => (
-            <SectionEditor key={section.id} section={section} maxPart={maxPart} 
+            <SectionEditor key={section.id} section={section} index={lessonSections.indexOf(section)} maxPart={maxPart}
             subjectId={subjectId} lessonId={lessonId} unitId={unitId} />
           ))}
 
@@ -1135,29 +1077,6 @@ function CardHeader({ icon, title, hint }) {
   );
 }
 
-function Field({ label, required, hint, children }) {
-  return (
-    <div>
-      <div className="flex items-baseline gap-2 mb-1.5">
-        <label className="text-sm font-medium text-ink-500 font-arabic">
-          {label}{required && <span className="text-red-600 mr-0.5">*</span>}
-        </label>
-        {hint && <span className="text-sm text-ink-500 font-arabic">{hint}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Stat({ label, val }) {
-  return (
-    <div className="text-center">
-      <p className="text-lg font-mono text-ink-400">{val}</p>
-      <p className="text-sm text-ink-500 font-arabic">{label}</p>
-    </div>
-  );
-}
-
 function StatCard({ label, sublabel, value, note }) {
   return (
     <div className="bg-ink-800/30 rounded-xl border border-ink-800/70 p-4 text-center">
@@ -1220,7 +1139,7 @@ function OrientationInput({ value = [], onChange }) {
         <div key={i} className="flex items-start gap-2 group">
           <span className="text-sand-700 text-sm mt-2.5 shrink-0">•</span>
           <span className="flex-1 text-sm text-ink-200 font-arabic py-1.5 leading-relaxed">{item}</span>
-          <button onClick={() => removeItem(i)} aria-label="حذف البند" className="hover-reveal transition-opacity text-ink-500 hover:text-red-500 text-xs mt-2"><X size={13} strokeWidth={1.9} /></button>
+          <button type="button" onClick={() => removeItem(i)} aria-label="حذف البند" className="hover-reveal transition-opacity w-8 h-8 inline-flex items-center justify-center rounded-control text-fg-subtle hover:text-danger touch-target"><X size={13} strokeWidth={1.9} /></button>
         </div>
       ))}
       <div className="flex gap-2">
@@ -1229,9 +1148,9 @@ function OrientationInput({ value = [], onChange }) {
             pushed itself and the + button off the edge on a phone. */}
         <input value={draft} onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
-          className="min-w-0 flex-1 px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm font-arabic placeholder-ink-600 focus:outline-none focus:border-sand-700 transition-colors"
+          className="min-w-0 flex-1 h-10 px-3 rounded-control bg-sunken border border-line-strong text-fg text-sm font-ui placeholder:text-fg-subtle focus:outline-none focus:border-accent-hover touch-target"
           placeholder="ستتعلم في هذا الدرس… ثم اضغط Enter" />
-        <button onClick={addItem} className="shrink-0 px-3 py-2 bg-ink-800 border border-ink-700 rounded-lg text-ink-400 hover:text-sand-400 text-sm transition-colors">+</button>
+        <button type="button" onClick={addItem} aria-label="أضف البند" className="shrink-0 w-10 h-10 rounded-control border border-line-strong text-fg-muted hover:text-fg hover:bg-hover touch-target">+</button>
       </div>
     </div>
   );

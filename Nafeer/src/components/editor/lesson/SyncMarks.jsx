@@ -4,19 +4,15 @@ import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import { BLOCK_TYPE_CONFIG } from '@/shared/constants';
 import { wordDiff } from '@/lib/wordDiff';
+import { formatDate, arCount, changesLabel } from '@/lib/format';
 
 // ─── Sync marks ───────────────────────────────────────────────────────────────
 // Small pieces of the save/conflict UI, shared by the lesson header, sections
 // and blocks. All of it is drawn from local state — none of it costs a request.
 
-// ── Arabic counting ───────────────────────────────────────────────────────────
-// 1 and 2 have their own forms; 3–10 take the plural; 11+ the singular.
-const num = (n) => n.toLocaleString('ar-EG');
-export const arCount = (n, { one, two, few, many }) =>
-  n === 1 ? one : n === 2 ? two : n <= 10 ? `${num(n)} ${few}` : `${num(n)} ${many}`;
-
-export const changesLabel = (n) =>
-  arCount(n, { one: 'تغيير واحد', two: 'تغييران', few: 'تغييرات', many: 'تغييراً' });
+// Arabic counting now lives in src/lib/format.js (ui/SaveStatus needs it too);
+// re-exported so existing imports keep working.
+export { arCount, changesLabel };
 
 export function minutesAgo(date) {
   const mins = Math.max(1, Math.round((Date.now() - new Date(date).getTime()) / 60000));
@@ -26,7 +22,7 @@ export function minutesAgo(date) {
 const when = (date) => {
   if (!date) return '';
   try {
-    return new Date(date).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    return formatDate(date, 'shortDateTime');
   } catch {
     return '';
   }
@@ -40,7 +36,7 @@ export function UnsavedBar({ show }) {
     <span
       aria-hidden="true"
       title="تعديل غير محفوظ"
-      className="pointer-events-none absolute inset-y-1 -right-2.5 w-[3px] rounded-full bg-sand-500/80"
+      className="pointer-events-none absolute inset-y-1 -start-2.5 w-[3px] rounded-chip bg-accent"
     />
   );
 }
@@ -52,7 +48,7 @@ export function UnsavedDot({ show, className = '' }) {
       role="img"
       aria-label="تعديل غير محفوظ"
       title="تعديل غير محفوظ"
-      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-sand-500 ${className}`}
+      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-chip bg-accent ${className}`}
     />
   );
 }
@@ -94,7 +90,7 @@ function Tokens({ tokens, mark, budget = 320 }) {
     if (used >= budget) { out.push(<span key="more">…</span>); break; }
     used += t.text.length;
     out.push(t.changed
-      ? <mark key={i} className={`rounded px-0.5 ${mark}`}>{t.text}</mark>
+      ? <mark key={i} className={`rounded-[4px] px-0.5 ${mark}`}>{t.text}</mark>
       : <span key={i}>{t.text}</span>);
   }
   return out;
@@ -113,47 +109,47 @@ export function ConflictCard({ conflict: c }) {
   const who = c.byName ? `عُدّل بواسطة ${c.byName}` : 'عُدّل';
 
   return (
-    <div className="rounded-xl border border-amber-700/50 bg-amber-950/25 p-3 font-arabic" data-conflict-card>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-        <span className="font-semibold text-amber-300">تعارض · {label}</span>
-        <span className="text-ink-400">
+    <div role="alert" className="rounded-card border border-warn-border bg-warn-surface p-3" data-conflict-card>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 t-label">
+        <span className="font-semibold text-warn">تعارض · {label}</span>
+        <span className="text-fg-muted">
           {deleted ? 'حُذف بعد أن فتحتَ الدرس' : `${who} ${when(c.current?.updatedAt)}`}
         </span>
       </div>
 
-      <div className="mt-2 grid gap-2 sm:grid-cols-2 text-xs leading-relaxed">
-        <div className="rounded-lg bg-ink-950/70 px-3 py-2">
-          <p className="text-ink-500 mb-1">نسختك</p>
-          <p className="text-sand-200 break-words">
-            {diff ? <Tokens tokens={diff.a} mark="bg-sand-700/40 text-sand-100" /> : (mineText || '—')}
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 t-label font-normal leading-relaxed">
+        <div className="rounded-control bg-page px-3 py-2">
+          <p className="t-caption text-fg-subtle mb-1">نسختك</p>
+          <p className="text-fg break-words">
+            {diff ? <Tokens tokens={diff.a} mark="bg-accent-wash text-fg-accent" /> : (mineText || '—')}
           </p>
         </div>
-        <div className="rounded-lg bg-ink-950/70 px-3 py-2">
-          <p className="text-ink-500 mb-1">النسخة المحفوظة</p>
+        <div className="rounded-control bg-page px-3 py-2">
+          <p className="t-caption text-fg-subtle mb-1">النسخة المحفوظة</p>
           {deleted ? (
-            <p className="text-ink-500 italic">لم تعد موجودة</p>
+            <p className="text-fg-subtle">لم تعد موجودة</p>
           ) : (
-            <p className="text-sand-200 break-words">
-              {diff ? <Tokens tokens={diff.b} mark="bg-sky-700/40 text-sky-100" /> : (theirsText || '—')}
+            <p className="text-fg break-words">
+              {diff ? <Tokens tokens={diff.b} mark="bg-info-surface text-info" /> : (theirsText || '—')}
             </p>
           )}
         </div>
       </div>
 
       {sameText && (
-        <p className="mt-1.5 text-[11px] text-ink-500">النص متطابق — الاختلاف في الإعدادات أو الترتيب.</p>
+        <p className="mt-1.5 t-caption text-fg-subtle">النص متطابق — الاختلاف في الإعدادات أو الترتيب.</p>
       )}
 
       <div className="mt-2 flex flex-wrap gap-2">
         <button
           onClick={() => settleConflict(c, true)}
-          className="touch-target px-3 h-7 rounded-lg bg-sand-700 hover:bg-sand-600 text-ink-950 text-xs font-bold transition-colors"
+          className="touch-target px-3 h-8 rounded-control bg-accent hover:bg-accent-hover text-fg-on-accent t-label font-semibold transition-colors"
         >
           {deleted ? 'أعِد إنشاءها بنسختي' : 'احتفظ بنسختي'}
         </button>
         <button
           onClick={() => settleConflict(c, false)}
-          className="touch-target px-3 h-7 rounded-lg border border-ink-700 bg-ink-800/60 hover:bg-ink-700/60 text-ink-300 text-xs font-semibold transition-colors"
+          className="touch-target px-3 h-8 rounded-control border border-line-strong hover:bg-hover text-fg t-label transition-colors"
         >
           {deleted ? 'احذفها عندي أيضاً' : 'خذ النسخة المحفوظة'}
         </button>

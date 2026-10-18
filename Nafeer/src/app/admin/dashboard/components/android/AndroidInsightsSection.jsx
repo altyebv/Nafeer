@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { SectionHeader } from '../ui/SectionHeader';
+import { formatDate } from '@/lib/format';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TABS
@@ -195,7 +196,7 @@ function OverviewTab() {
       )}
 
       <p className="text-2xs font-mono text-ink-800 text-center">
-        آخر تحديث {data.generatedAt ? new Date(data.generatedAt).toLocaleTimeString('ar-SA') : '—'}
+        آخر تحديث {formatDate(data.generatedAt, 'time')}
       </p>
     </div>
   );
@@ -668,9 +669,7 @@ function FeedbackCard({ item }) {
 
       {item.createdAt && (
         <p className="text-2xs font-mono text-ink-700">
-          {new Date(item.createdAt).toLocaleString('ar-SA', {
-            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-          })}
+          {formatDate(item.createdAt, 'shortDateTime')}
           {item.deviceModel ? ` · ${item.deviceModel}` : ''}
         </p>
       )}
@@ -1007,15 +1006,5 @@ const TYPE_SHORT = {
   MULTIPLE_CHOICE: 'MC',
 };
 
-function formatDate(iso) {
-  if (!iso) return '';
-  try {
-    return new Date(iso).toLocaleDateString('ar-SA', {
-      day: 'numeric', month: 'short', year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-}
 
 export { AndroidInsightsSection };

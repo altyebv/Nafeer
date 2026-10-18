@@ -6,6 +6,7 @@ import {
 } from '../constants';
 import { Btn } from './ui/Btn';
 import { emailStatus } from './ui/emailStatus';
+import { formatDate } from '@/lib/format';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -52,8 +53,8 @@ const TRACK_LABELS = { COMMON: 'مشترك', SCIENCE: 'علمي', LITERARY: 'أ�
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 const COMMITMENT_LABELS = {
   occasional: 'بشكل متقطع',
-  '2-3h':     '٢–٣ ساعات / أسبوع',
-  '5h+':      '٥ ساعات أو أكثر',
+  '2-3h':     '2–3 ساعات / أسبوع',
+  '5h+':      '5 ساعات أو أكثر',
 };
 const AI_TOOL_LABELS = {
   chatgpt: 'ChatGPT', gemini: 'Gemini', notebooklm: 'NotebookLM',
@@ -63,6 +64,10 @@ const AGE_LABELS = {
   'under-18': 'أقل من 18', '18-22': '18 – 22', '23-28': '23 – 28',
   '29-35': '29 – 35', '36+': '36+',
 };
+
+// Answers from the join form (src/app/join/page.jsx), in words.
+const RELATION_LABELS = { uni: 'يدرسها في الجامعة', grad: 'تخرّج فيها', teacher: 'يدرّسها', student: 'جلس لها حديثاً', other: 'غير ذلك' };
+const HOURS_LABELS = { '1-2': 'ساعة أو ساعتان', '2-4': '2 – 4 ساعات', '5+': '5 أو أكثر', '?': 'لا يعرف بعد' };
 
 function relativeTime(d) {
   if (!d) return '—';
@@ -74,8 +79,7 @@ function relativeTime(d) {
   return `منذ ${Math.floor(days / 30)} شهر`;
 }
 function shortDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(d);
 }
 
 function Initials({ name, size = 38, colorClass = 'from-sand-700 to-sand-900' }) {
@@ -821,6 +825,8 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
             <InfoPill label="الخلفية"         value={c.background || c.fieldOfStudy} />
             <InfoPill label="الفئة العمرية"   value={AGE_LABELS[c.age] || c.age}    />
             <InfoPill label="المدينة"          value={c.town}                         />
+            <InfoPill label="علاقته بالمادة"  value={RELATION_LABELS[c.subjectRelation] || c.subjectRelation} />
+            <InfoPill label="ساعات أسبوعياً"   value={HOURS_LABELS[c.weeklyHours] || c.weeklyHours} />
             <InfoPill label="حاسب / لوحي"     value={c.hasPcOrTablet}               />
             <InfoPill label="إنترنت مستقر"    value={c.hasStableInternet}            />
             <InfoPill label="يستخدم أدوات AI" value={c.usesAiTools}                 />

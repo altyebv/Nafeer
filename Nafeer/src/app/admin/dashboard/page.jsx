@@ -3,28 +3,29 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminSidebar }           from './components/AdminSidebar';
-import { OverviewSection }        from './components/OverviewSection';
-import { PeopleSection }          from './components/PeoplesSection';
-import { ReviewQueueSection }     from './components/ReviewQueueSection';
-import { CoverageSection }        from './components/CoverageSection';
 import { MediaSection }           from './components/MediaSection';
 import { AdminsSection }          from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
 import { SiteSettingsSection }    from './components/SiteSettingSection';
 import { SeedSection }            from './components/SeedSection';
 import { PublishSection }         from './components/PublishSection';
-import { AdminEditorSection }     from './components/AdminEditorSection';
-import { CurriculumSection }      from './components/CurriculumSection';
 import { EmailSection }           from './components/EmailSection';
-import { CommsSection }          from './components/CommsSection';
+import { OverviewScreen }         from './screens/OverviewScreen';
+import { SubjectsIndex }          from './screens/SubjectsIndex';
+import { ContributorsScreen }     from './screens/ContributorsScreen';
+import { CommsScreen }            from './screens/CommsScreen';
+import { ReviewScreen }           from './screens/ReviewScreen';
 import { AndroidInsightsSection } from './components/android/AndroidInsightsSection';
 
 
 // Every section the dashboard can render — a hash outside this list is ignored.
 const SECTION_IDS = [
-  'overview', 'contributors', 'review', 'editor', 'coverage', 'curriculum', 'publish',
+  'overview', 'subjects', 'contributors', 'review', 'publish',
   'media', 'admins', 'settings', 'seed', 'email', 'comms', 'android',
 ];
+
+// Sections folded into the subject pages (DS5); old links land on the list.
+const MOVED = { editor: 'subjects', curriculum: 'subjects', coverage: 'subjects' };
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -60,8 +61,10 @@ export default function AdminDashboard() {
   // (/admin/dashboard#email). Read after mount to avoid a hydration mismatch.
   useEffect(() => {
     const fromHash = () => {
-      const id = window.location.hash.slice(1);
+      const hash = window.location.hash.slice(1);
+      const id = MOVED[hash] || hash;
       if (SECTION_IDS.includes(id)) setSectionState(id);
+      if (MOVED[hash]) window.history.replaceState(null, '', `#${id}`);
     };
     fromHash();
     window.addEventListener('hashchange', fromHash);
@@ -72,19 +75,6 @@ export default function AdminDashboard() {
     setSectionState(id);
     window.history.replaceState(null, '', `#${id}`);
     window.scrollTo(0, 0);
-  }, []);
-
-  // ── Optimistic helpers — instant, no refetch ───────────────────────────────
-  // Call these immediately after an API action succeeds to update UI in-place.
-
-  /** Replace one contributor's data with a partial patch. */
-  const optimisticUpdate = useCallback((id, patch) => {
-    setAll((prev) => prev.map((c) => (c._id === id ? { ...c, ...patch } : c)));
-  }, []);
-
-  /** Remove a contributor from the list instantly. */
-  const optimisticRemove = useCallback((id) => {
-    setAll((prev) => prev.filter((c) => c._id !== id));
   }, []);
 
   const handleSignOut = async () => {
@@ -109,32 +99,19 @@ export default function AdminDashboard() {
       />
 
       <main className="min-h-screen pt-14 lg:pt-0 lg:mr-64">
-        {section === 'overview'     && <OverviewSection allContributors={allContributors} isLoading={isInitialLoad} />}
+        {section === 'overview'     && <OverviewScreen onOpen={setSection} />}
+        {section === 'subjects'     && <SubjectsIndex />}
         {section === 'contributors' && (
-          <PeopleSection
-            allContributors={allContributors}
-            isLoading={isInitialLoad}
-            onRefresh={loadAll}
-            onOptimisticUpdate={optimisticUpdate}
-            onOptimisticRemove={optimisticRemove}
-          />
+          <ContributorsScreen allContributors={allContributors} isLoading={isInitialLoad} onRefresh={loadAll} />
         )}
-        {section === 'review'     && (
-          <ReviewQueueSection
-            onTotalChange={setReviewTotal}
-            onUnauthorized={() => router.push('/admin/login')}
-          />
-        )}
-        {section === 'editor'     && <AdminEditorSection />}
-        {section === 'coverage'   && <CoverageSection />}
-        {section === 'curriculum' && <CurriculumSection />}
+        {section === 'review'     && <ReviewScreen onTotalChange={setReviewTotal} />}
         {section === 'publish'    && <PublishSection />}
         {section === 'media'      && <MediaSection />}
         {section === 'admins'     && <AdminsSection />}
         {section === 'settings'   && <SiteSettingsSection />}
         {section === 'seed'       && <SeedSection />}
         {section === 'email'      && <EmailSection />}
-        {section === 'comms'      && <CommsSection />}
+        {section === 'comms'      && <CommsScreen allContributors={allContributors} />}
         {section === 'android'    && <AndroidInsightsSection />}
       </main>
 

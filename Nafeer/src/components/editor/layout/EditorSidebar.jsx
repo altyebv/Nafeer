@@ -217,7 +217,7 @@ export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
                 {contributor.name || ''}
               </p>
               {contributor.username && (
-                <p style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(212,137,30,0.55)', marginTop: 2 }}>
+                <p style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'rgba(212,137,30,0.55)', marginTop: 2 }}>
                   @{contributor.username}
                 </p>
               )}
@@ -228,7 +228,7 @@ export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
                   <span style={{ fontSize: 12, fontWeight: 700, color: accent, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.2 }}>
                     {subjectInfo.ar}
                   </span>
-                  <span style={{ fontSize: 9, color: 'rgba(212,137,30,0.5)', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: 9, color: 'rgba(212,137,30,0.5)', fontFamily: 'var(--font-mono)' }}>
                     {subjectInfo.en}
                   </span>
                 </div>
@@ -285,7 +285,7 @@ export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
           style={{ opacity: expanded ? 1 : 0, maxWidth: expanded ? 160 : 0, overflow: 'hidden', whiteSpace: 'nowrap' }}
         >
           <span style={{ fontSize: 14, fontWeight: 800, color: accent, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>نفير</span>
-          <span style={{ fontSize: 10, color: textDim, fontFamily: 'monospace', letterSpacing: '0.12em' }}>EDITOR</span>
+          <span style={{ fontSize: 10, color: textDim, fontFamily: 'var(--font-mono)', letterSpacing: '0.12em' }}>EDITOR</span>
         </div>
 
         {expanded && <ThemeToggle theme={theme} toggle={toggleTheme} />}
@@ -375,13 +375,13 @@ export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
                 <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-arabic, serif)', lineHeight: 1.35, color: 'inherit' }}>
                   {item.label}
                 </span>
-                <span style={{ fontSize: 10, fontFamily: 'monospace', color: textDim, lineHeight: 1.2 }}>{item.sub}</span>
+                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: textDim, lineHeight: 1.2 }}>{item.sub}</span>
               </div>
               {/* Count badge */}
               {count != null && count > 0 && (
                 <span className="shrink-0 transition-all duration-200"
                   style={{
-                    fontSize: 10, fontFamily: 'monospace',
+                    fontSize: 10, fontFamily: 'var(--font-mono)',
                     padding: '2px 6px', borderRadius: 6,
                     background: active ? 'rgba(212,137,30,0.18)' : 'rgba(128,128,128,0.08)',
                     color: active ? accent : textDim,
@@ -585,7 +585,7 @@ export function MobileBottomNav({ currentPage, contributor, moreOpen, onToggleMo
                     <Icon size={18} strokeWidth={1.9} style={{ color: active ? accent : 'inherit' }} />
                     <div className="flex flex-col text-right">
                       <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-arabic, serif)', color: 'inherit' }}>{item.label}</span>
-                      <span style={{ fontSize: 11, fontFamily: 'monospace', color: textDim }}>{item.sub}</span>
+                      <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: textDim }}>{item.sub}</span>
                     </div>
                   </Link>
                 );
@@ -604,7 +604,7 @@ export function MobileBottomNav({ currentPage, contributor, moreOpen, onToggleMo
                       {contributor.name}
                     </p>
                     {contributor.username && (
-                      <p style={{ fontSize: 11, fontFamily: 'monospace', color: textDim }}>@{contributor.username}</p>
+                      <p style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: textDim }}>@{contributor.username}</p>
                     )}
                   </div>
                   <button

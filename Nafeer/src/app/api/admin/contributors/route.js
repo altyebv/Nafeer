@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { verifyAdminToken } from '@/lib/adminAuth';
+import { REAL_PEOPLE } from '@/lib/SeedActor';
+import { pipelineStage } from '@/lib/adminPipeline';
 import { appUrl } from '@/lib/appUrl';
 import { sendEmail } from '@/lib/email/emailService';
 import bcrypt from 'bcryptjs';
@@ -51,9 +53,16 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
-  const filter = status && status !== 'all' ? { status } : {};
+  // The system seed actor owns seeded content; it is not someone to manage.
+  const filter = { ...REAL_PEOPLE };
+  if (status && status !== 'all') filter.status = status;
 
-  const contributors = await Contributor.find(filter).sort({ createdAt: -1 });
+  // The token is read only to work out the pipeline stage; it never leaves here.
+  const docs = await Contributor.find(filter).select('+interviewToken').sort({ createdAt: -1 }).lean();
+  const contributors = docs.map(({ interviewToken, ...c }) => ({
+    ...c,
+    stage: pipelineStage({ ...c, interviewToken }),
+  }));
   return NextResponse.json({ contributors });
 }
 

@@ -10,6 +10,7 @@ import { customMessageTemplate }       from './custom_message';
 import { interviewInviteTemplate }     from './interview_invite';
 import { applicationReceivedTemplate } from './application_received';
 import { applicationRejectedTemplate } from './application_rejected';
+import { lessonReviewedTemplate }      from './lesson_reviewed';
 
 /** @type {Record<string, (data: Record<string, any>) => { subject: string; html: string; text: string }>} */
 export const TEMPLATES = {
@@ -20,6 +21,7 @@ export const TEMPLATES = {
   interview_invite:     interviewInviteTemplate,
   application_received: applicationReceivedTemplate,
   application_rejected: applicationRejectedTemplate,
+  lesson_reviewed:      lessonReviewedTemplate,
 };
 
 /** All valid template keys — used for validation and UI dropdowns. */

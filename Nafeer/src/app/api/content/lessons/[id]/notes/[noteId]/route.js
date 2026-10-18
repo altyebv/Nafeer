@@ -22,7 +22,7 @@ export async function PATCH(request, { params }) {
       updates.text = text.trim();
     }
 
-    const note = await updateLessonNote(contentId, noteId, updates, user.id);
+    const note = await updateLessonNote(contentId, noteId, updates, user.id, user.name || '');
     if (!note) return err('الملاحظة غير موجودة', 404);
 
     return ok(note);

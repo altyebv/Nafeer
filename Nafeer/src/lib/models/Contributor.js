@@ -61,6 +61,11 @@ const ContributorSchema = new mongoose.Schema(
     hasPcOrTablet:    { type: Boolean, default: null },
     hasStableInternet:{ type: Boolean, default: null },
 
+    // How they relate to the subject (uni | grad | teacher | student | other)
+    // and roughly how many hours a week — asked on the join form since Oct 2026.
+    subjectRelation: { type: String, default: '' },
+    weeklyHours:     { type: String, default: '' },
+
     // AI familiarity
     usesAiTools: { type: Boolean, default: null },
     aiToolsList: { type: [String], default: [] }, // e.g. ['chatgpt', 'gemini', 'notebooklm']
@@ -73,6 +78,10 @@ const ContributorSchema = new mongoose.Schema(
 
     // ── Role assignment ───────────────────────────────────────────────────────
     roleId: { type: mongoose.Schema.Types.ObjectId, ref: 'ContributorRole', default: null },
+
+    // ── Application status link ───────────────────────────────────────────────
+    // /join/status?token=… — the applicant's one lasting link (lib/applicationLinks.js).
+    statusToken: { type: String, select: false, index: true },
 
     // ── Interview ─────────────────────────────────────────────────────────────
     interviewToken:     { type: String, select: false, default: null },

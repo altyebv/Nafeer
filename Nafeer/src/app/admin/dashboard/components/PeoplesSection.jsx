@@ -1,8 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { SetPasswordModal }  from './modals/SetPasswordModal';
 import { RoleModal }         from './modals/RoleModal';
-import { ActiveCard, RequestCard } from './ContributorCard';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -63,33 +61,7 @@ const CAT_META = {
 };
 const CAT_ORDER = ['learning', 'core', 'growth', 'operations', 'content', 'development', 'design'];
 
-const REQUEST_STAGES = [
-  { key: 'all',      label: 'الكل'           },
-  { key: 'new',      label: 'جديد'           },
-  { key: 'sent',     label: 'بانتظار المقابلة' },
-  { key: 'answered', label: 'أكمل المقابلة'  },
-  { key: 'rejected', label: 'مرفوض'          },
-];
-
 // ─── Tiny helpers ──────────────────────────────────────────────────────────────
-function matchStage(c, key) {
-  if (key === 'all')      return c.status === 'pending' || c.status === 'rejected';
-  if (key === 'rejected') return c.status === 'rejected';
-  if (c.status !== 'pending') return false;
-  const done = c.interviewAnswers?.submittedAt || c.dynamicAnswersSubmittedAt;
-  if (key === 'new')      return !c.interviewToken && !done;
-  if (key === 'sent')     return !!c.interviewToken && !done;
-  if (key === 'answered') return !!done;
-  return false;
-}
-
-function matchSearch(c, q) {
-  if (!q) return true;
-  const l = q.toLowerCase();
-  return c.name?.toLowerCase().includes(l) || c.email?.toLowerCase().includes(l) || c.username?.toLowerCase().includes(l);
-}
-
-// ─── Stat pill ────────────────────────────────────────────────────────────────
 function Stat({ label, value, color = C.textSub }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -100,62 +72,6 @@ function Stat({ label, value, color = C.textSub }) {
 }
 
 // ─── Top tab strip ─────────────────────────────────────────────────────────────
-function TopNav({ active, onChange, badges }) {
-  const tabs = [
-    { id: 'contributors', label: 'المساهمون',  badge: badges.pending },
-    { id: 'teams',        label: 'الفرق',      badge: null           },
-    { id: 'roles',        label: 'الأدوار',    badge: null           },
-  ];
-  return (
-    <div className="sticky top-14 lg:top-0 z-10 bg-ink-950/95 backdrop-blur-sm">
-      <div className="px-4 sm:px-6 lg:px-8 pt-5 overflow-x-auto" style={{
-        display: 'flex', alignItems: 'stretch', gap: 0,
-        borderBottom: `1px solid ${C.border}`,
-      }}>
-        {tabs.map((t) => {
-          const isActive = t.id === active;
-          return (
-            <button
-              key={t.id}
-              onClick={() => onChange(t.id)}
-              style={{
-                position: 'relative',
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '0 4px 16px',
-                marginLeft: 28,
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: isActive ? C.text : C.textMuted,
-                fontSize: 13,
-                fontWeight: isActive ? 600 : 400,
-                transition: 'color 0.15s',
-              }}
-            >
-              {t.label}
-              {t.badge > 0 && (
-                <span style={{
-                  fontSize: 12, padding: '1px 6px', borderRadius: 20,
-                  background: C.amberBg, border: `1px solid ${C.amberBorder}`,
-                  color: C.accentText, fontVariantNumeric: 'tabular-nums',
-                }}>
-                  {t.badge}
-                </span>
-              )}
-              {isActive && (
-                <span style={{
-                  position: 'absolute', bottom: -1, left: 0, right: 0,
-                  height: 2, borderRadius: 2,
-                  background: `linear-gradient(90deg, ${C.accent}, ${C.accentText})`,
-                }} />
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Search input ─────────────────────────────────────────────────────────────
 function SearchInput({ value, onChange, placeholder = 'بحث…' }) {
   const [focused, setFocused] = useState(false);
   return (
@@ -196,48 +112,6 @@ function SearchInput({ value, onChange, placeholder = 'بحث…' }) {
 }
 
 // ─── Filter chip ─────────────────────────────────────────────────────────────
-function Chip({ label, count, active, onClick }) {
-  const [hover, setHover] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        padding: '5px 12px', borderRadius: 8, fontSize: 12,
-        cursor: 'pointer', transition: 'all 0.13s',
-        background: active ? C.accentMid : hover ? C.surfaceHover : C.surface,
-        border: `1px solid ${active ? C.accentBorder : C.border}`,
-        color: active ? C.accentText : C.textSub,
-      }}
-    >
-      {label}
-      <span style={{
-        fontSize: 12, padding: '0 5px', borderRadius: 5,
-        background: active ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.05)',
-        color: active ? C.accentText : C.textMuted,
-        fontVariantNumeric: 'tabular-nums',
-      }}>{count}</span>
-    </button>
-  );
-}
-
-// ─── Alert banner ─────────────────────────────────────────────────────────────
-function AlertBanner({ icon, text, color, bg, border }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '9px 14px', borderRadius: 10,
-      background: bg, border: `1px solid ${border}`,
-    }}>
-      <span style={{ fontSize: 13, color }}>{icon}</span>
-      <span style={{ fontSize: 12, color }}>{text}</span>
-    </div>
-  );
-}
-
-// ─── Empty placeholder ────────────────────────────────────────────────────────
 function Empty({ icon = '◈', text, sub }) {
   return (
     <div style={{
@@ -298,194 +172,6 @@ function AvatarStack({ members, max = 4 }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTRIBUTORS SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
-
-function ContributorsScreen({ allContributors, onRefresh }) {
-  const [subTab,        setSubTab]   = useState('requests');
-  const [stage,         setStage]    = useState('all');
-  const [search,        setSearch]   = useState('');
-  const [actionLoading, setActLoad]  = useState(null);
-  const [passwordModal, setPwModal]  = useState(null);
-  const [roles,         setRoles]    = useState([]);
-
-  useEffect(() => {
-    fetch('/api/admin/roles').then((r) => r.json())
-      .then((d) => { if (d.ok) setRoles(d.roles || []); }).catch(() => {});
-  }, []);
-
-  const requests = useMemo(() => allContributors.filter((c) => c.status === 'pending' || c.status === 'rejected'), [allContributors]);
-  const active   = useMemo(() => allContributors.filter((c) => c.status === 'approved'),  [allContributors]);
-
-  const stageCounts = useMemo(() => {
-    const m = {};
-    REQUEST_STAGES.forEach(({ key }) => { m[key] = requests.filter((c) => matchStage(c, key)).length; });
-    return m;
-  }, [requests]);
-
-  const shownRequests = useMemo(
-    () => requests.filter((c) => matchStage(c, stage) && matchSearch(c, search)),
-    [requests, stage, search]
-  );
-  const shownActive = useMemo(
-    () => active.filter((c) => matchSearch(c, search)),
-    [active, search]
-  );
-
-  const act = async (id, action, extra = {}) => {
-    if (action === '_noop') { onRefresh(); return; }
-    setActLoad(id + action);
-    const res  = await fetch('/api/admin/contributors', {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, action, ...extra }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setActLoad(null);
-    // The link email is sent server-side; say so when it didn't go out.
-    if (data.email && !data.email.ok) {
-      alert(`تم تنفيذ الإجراء، لكن تعذّر إرسال البريد إلى ${data.email.to}. أنشئ رابط التأهيل من بطاقة المساهم وأرسله يدوياً.`);
-    }
-    onRefresh();
-  };
-
-  const del = async (id) => {
-    setActLoad(id + 'delete');
-    await fetch('/api/admin/contributors', {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    setActLoad(null);
-    onRefresh();
-  };
-
-  const unapprovedCount = active.filter((c) => !c.onboarded).length;
-  const noUsernames     = active.filter((c) => c.onboarded && !c.username).length;
-  const answeredCount   = stageCounts['answered'] || 0;
-
-  return (
-    <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-12" style={{ direction: 'rtl' }}>
-
-      {/* ── Stats row ── */}
-      <div style={{
-        display: 'flex', gap: 28, marginBottom: 28,
-        padding: '16px 20px', borderRadius: 14,
-        background: C.surface, border: `1px solid ${C.border}`,
-      }}>
-        <Stat label="إجمالي"  value={allContributors.length}     color={C.text}       />
-        <div style={{ width: 1, background: C.border, alignSelf: 'stretch' }} />
-        <Stat label="نشطون"  value={active.length}               color={C.green}      />
-        <Stat label="طلبات"  value={requests.length}             color={C.amber}      />
-        {answeredCount > 0 && <Stat label="أكملوا المقابلة" value={answeredCount} color={C.accentText} />}
-      </div>
-
-      {/* ── Sub-tab selector ── */}
-      <div style={{
-        display: 'inline-flex', gap: 2, padding: 3,
-        borderRadius: 11, marginBottom: 22,
-        background: C.sunken, border: `1px solid ${C.border}`,
-      }}>
-        {[
-          { id: 'requests', label: 'طلبات الانضمام',    count: requests.length, alert: answeredCount > 0  },
-          { id: 'active',   label: 'المساهمون النشطون', count: active.length,   alert: unapprovedCount > 0 },
-        ].map((t) => {
-          const isActive = t.id === subTab;
-          const [hover, setHover] = [false, () => {}];
-          return (
-            <button
-              key={t.id}
-              onClick={() => { setSubTab(t.id); setSearch(''); setStage('all'); }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '7px 16px', borderRadius: 8, fontSize: 12.5,
-                cursor: 'pointer', transition: 'all 0.13s', position: 'relative',
-                background: isActive ? C.accentFaint : 'transparent',
-                border: `1px solid ${isActive ? C.accentBorder : 'transparent'}`,
-                color: isActive ? C.accentText : C.textSub,
-                fontWeight: isActive ? 600 : 400,
-              }}
-            >
-              {t.label}
-              <span style={{
-                fontSize: 12, padding: '1px 6px', borderRadius: 5,
-                background: isActive ? 'rgba(212,137,30,0.15)' : 'rgba(255,255,255,0.05)',
-                color: isActive ? C.accentText : C.textMuted,
-              }}>{t.count}</span>
-              {t.alert && (
-                <span style={{
-                  position: 'absolute', top: 5, right: 5,
-                  width: 5, height: 5, borderRadius: '50%',
-                  background: C.amber, boxShadow: `0 0 5px ${C.amber}`,
-                }} />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── REQUESTS ── */}
-      {subTab === 'requests' && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
-              {REQUEST_STAGES.map((s) => (
-                <Chip key={s.key} label={s.label} count={stageCounts[s.key]} active={stage === s.key} onClick={() => setStage(s.key)} />
-              ))}
-            </div>
-            <SearchInput value={search} onChange={setSearch} placeholder="بحث بالاسم أو البريد…" />
-          </div>
-
-          {shownRequests.length === 0 ? (
-            <Empty icon="◌" text="لا يوجد طلبات في هذه الفئة" />
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 520px), 1fr))', gap: 10 }}>
-              {shownRequests.map((c) => (
-                <RequestCard key={c._id} c={c} actionLoading={actionLoading} onAct={act} onDelete={del}
-                  onSetPassword={(id, name) => setPwModal({ id, name })} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── ACTIVE ── */}
-      {subTab === 'active' && (
-        <>
-          {(unapprovedCount > 0 || noUsernames > 0) && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-              {unapprovedCount > 0 && (
-                <AlertBanner icon="⚠" text={`${unapprovedCount} مساهم لم يُكمل التأهيل بعد`} color={C.amber} bg={C.amberBg} border={C.amberBorder} />
-              )}
-              {noUsernames > 0 && (
-                <AlertBanner icon="◎" text={`${noUsernames} مساهم بدون username — لن تظهر صفحاتهم العامة`} color={C.accentText} bg={C.accentFaint} border={C.accentBorder} />
-              )}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
-            <SearchInput value={search} onChange={setSearch} placeholder="بحث بالاسم أو المستخدم…" />
-          </div>
-
-          {shownActive.length === 0 ? (
-            <Empty text="لا يوجد مساهمون نشطون" />
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 520px), 1fr))', gap: 10 }}>
-              {shownActive.map((c) => (
-                <ActiveCard key={c._id} c={c} actionLoading={actionLoading} onAct={act} onDelete={del}
-                  roles={roles} onSetPassword={(id, name) => setPwModal({ id, name })} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {passwordModal && (
-        <SetPasswordModal
-          name={passwordModal.name}
-          onClose={() => setPwModal(null)}
-          onSave={async (pw) => { await act(passwordModal.id, 'set_password', { password: pw }); setPwModal(null); }}
-        />
-      )}
-    </div>
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TEAMS SCREEN
@@ -817,7 +503,7 @@ function TeamCard({ team, allContributors, onUpdate, onDelete }) {
   );
 }
 
-function TeamsScreen({ allContributors }) {
+export function TeamsScreen({ allContributors }) {
   const [teams,      setTeams]      = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -998,7 +684,7 @@ function RoleCard({ role, onEdit, onToggle, onDelete, toggling, deleting }) {
   );
 }
 
-function RolesScreen() {
+export function RolesScreen() {
   const [roles,   setRoles]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal,   setModal]   = useState(null);
@@ -1103,33 +789,6 @@ function RolesScreen() {
           onClose={() => setModal(null)}
           onSaved={() => { setModal(null); load(); }}
         />
-      )}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ROOT — PeopleSection
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export function PeopleSection({ allContributors, isLoading, onRefresh, onOptimisticUpdate, onOptimisticRemove }) {
-  const [screen, setScreen] = useState('contributors');
-
-  const pendingCount = allContributors.filter((c) => c.status === 'pending').length;
-  const badges = { pending: pendingCount };
-
-  return (
-    <div style={{ minHeight: '100vh', direction: 'rtl' }}>
-      <TopNav active={screen} onChange={setScreen} badges={badges} />
-
-      {screen === 'contributors' && (
-        <ContributorsScreen allContributors={allContributors} onRefresh={onRefresh} />
-      )}
-      {screen === 'teams' && (
-        <TeamsScreen allContributors={allContributors} />
-      )}
-      {screen === 'roles' && (
-        <RolesScreen />
       )}
     </div>
   );

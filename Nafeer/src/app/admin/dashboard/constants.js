@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, PenLine, BookOpen, ClipboardCheck, LayoutGrid, Image as ImageIcon,
+  LayoutDashboard, BookOpen, ClipboardCheck, Image as ImageIcon,
   Users, Megaphone, Mail, Smartphone, ShieldCheck, Settings,
 } from 'lucide-react';
 import { SUBJECTS_CATALOG, TRACK_CONFIG } from '@/shared/curriculum';
@@ -34,10 +34,10 @@ export const NAV_GROUPS = [
   {
     label: 'المحتوى',
     items: [
-      { id: 'editor',       icon: PenLine,        label: 'محرر المشرف' },
-      { id: 'curriculum',   icon: BookOpen,       label: 'إدارة المنهج' },
+      // One page per subject: curriculum, coverage, publishing and settings
+      // (replaces the admin editor, curriculum manager and coverage map).
+      { id: 'subjects',     icon: BookOpen,       label: 'المواد' },
       { id: 'review',       icon: ClipboardCheck, label: 'طابور المراجعة', badgeKey: 'reviewTotal' },
-      { id: 'coverage',     icon: LayoutGrid,     label: 'خريطة التغطية' },
       { id: 'media',        icon: ImageIcon,      label: 'الوسائط' },
     ],
   },
@@ -46,7 +46,7 @@ export const NAV_GROUPS = [
     items: [
       { id: 'contributors', icon: Users,          label: 'المساهمون', badgeKey: 'pending' },
       // Announcements, surveys, and future app-level settings (feature flags, tours).
-      { id: 'comms',        icon: Megaphone,      label: 'مركز التحكم' },
+      { id: 'comms',        icon: Megaphone,      label: 'التواصل' },
       { id: 'email',        icon: Mail,           label: 'البريد الإلكتروني' },
       { id: 'android',      icon: Smartphone,     label: 'تحليلات الأندرويد' },
     ],

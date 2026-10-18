@@ -3,7 +3,10 @@ import { Lesson }   from '@/lib/models/Lesson';
 import { Concept }  from '@/lib/models/Concept';
 import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
+import { Section }  from '@/lib/models/Section';
+import { Block }    from '@/lib/models/Block';
 import { trackStat } from '@/lib/trackStat';
+import { ReviewError, validateReturnComments } from '@/lib/review';
 
 // ─── getReviewQueue ───────────────────────────────────────────────────────────
 // Returns all content items with status='review', optionally filtered by subjectId.
@@ -17,7 +20,7 @@ export async function getReviewQueue(subjectId = null) {
 
   const [lessons, concepts, feedItems, questions] = await Promise.all([
     Lesson.find(filter)
-      .select('contentId subjectId title unitContentId status version createdAt')
+      .select('contentId subjectId title unitContentId status version createdAt reviewState')
       .sort({ createdAt: -1 }).lean(),
     Concept.find(filter)
       .select('contentId subjectId titleAr type status version createdAt')
@@ -52,7 +55,100 @@ function mapItem(doc, type) {
     itemType:  doc.type || null,       // content sub-type (MCQ, FLASH_CARD, etc.)
     difficulty: doc.difficulty || null,
     unitId:    doc.unitContentId || null,
+    // Lessons only: which round this is — a resubmission after a return is
+    // round 2+, so the reviewer knows to check the earlier comments.
+    round:     doc.reviewState ? (doc.reviewState.round || 0) + 1 : null,
+    // When it entered review — the queue reads oldest first.
+    submittedAt: doc.reviewState?.submittedAt || doc.createdAt,
   };
+}
+
+// ─── returnLesson ─────────────────────────────────────────────────────────────
+// Reviewer sends a lesson in review back to its author with comments, each
+// anchored to where it applies (lib/review.js). One write:
+//   status review → draft, version +1, reviewState { returned, round+1, … },
+//   the comments pushed as review_feedback notes of that round.
+// The update is conditional on the lesson still being in review at the version
+// read, so two reviewers cannot both return it.
+//
+// @param reviewer { id, name } — the admin session
+//
+export async function returnLesson(contentId, { comments = [], summary = '' } = {}, reviewer) {
+  await connectDB();
+
+  const lesson = await Lesson.findOne({ contentId }).lean();
+  if (!lesson) throw new ReviewError('الدرس غير موجود', 'NOT_FOUND');
+  if (lesson.status !== 'review') throw new ReviewError('الدرس ليس بانتظار المراجعة', 'NOT_IN_REVIEW');
+
+  // What the lesson owns — anchors may only point here.
+  const sections = await Section.find({ lessonContentId: contentId }).select('contentId').lean();
+  const sectionIds = sections.map((s) => s.contentId);
+  const [blocks, questions, feedItems] = await Promise.all([
+    sectionIds.length ? Block.find({ sectionContentId: { $in: sectionIds } }).select('contentId').lean() : [],
+    Question.find({ lessonContentId: contentId }).select('contentId').lean(),
+    FeedItem.find({ lessonContentId: contentId }).select('contentId').lean(),
+  ]);
+  const owned = {
+    section:  new Set(sectionIds),
+    block:    new Set(blocks.map((b) => b.contentId)),
+    question: new Set(questions.map((q) => q.contentId)),
+    feed:     new Set(feedItems.map((f) => f.contentId)),
+  };
+
+  const all = summary?.trim()
+    ? [{ text: summary, anchor: { kind: 'lesson' } }, ...comments]
+    : comments;
+  const clean = validateReturnComments(all, owned);
+
+  const now = new Date();
+  const round = (lesson.reviewState?.round || 0) + 1;
+  const reviewerName = reviewer?.name || 'المراجِع';
+  const notes = clean.map((c) => ({
+    text:       c.text,
+    authorId:   null,              // admins have no Contributor _id
+    authorName: reviewerName,
+    authorRole: 'admin',
+    noteType:   'review_feedback',
+    resolved:   false,
+    createdAt:  now,
+    anchor:     c.anchor,
+    round,
+  }));
+
+  const version = (lesson.version || 1) + 1;
+  const entry = {
+    version,
+    action:    'edited',
+    by:        reviewer?.id,
+    note:      notes.length ? `أُعيد للمؤلف مع ${notes.length} ملاحظة` : 'أُعيد للمؤلف',
+    timestamp: now,
+  };
+
+  const updated = await Lesson.findOneAndUpdate(
+    { contentId, status: 'review', version: lesson.version },
+    {
+      $set: {
+        status:      'draft',
+        version,
+        reviewedBy:  reviewer?.id,
+        reviewedAt:  now,
+        changelog:   [...(lesson.changelog || []).slice(-9), entry],
+        reviewState: {
+          returned:       true,
+          round,
+          returnedAt:     now,
+          returnedByName: reviewerName,
+          submittedAt:    lesson.reviewState?.submittedAt || null,
+        },
+      },
+      $push: { notes: { $each: notes } },
+      $inc:  { notesCount: notes.length },
+    },
+    { new: true },
+  ).lean();
+
+  if (!updated) throw new ReviewError('تغيّر الدرس أثناء المراجعة — حدّث الصفحة وحاول مجدداً', 'CONFLICT');
+  return { contentId, status: 'draft', round, comments: notes.length };
 }
 
 // ─── approveOrReject ──────────────────────────────────────────────────────────
@@ -91,6 +187,8 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
       version:    newVersion,
       reviewedBy: adminObjId,
       changelog:  [...existing.slice(-9), entry],
+      // An approved lesson is no longer "returned", whatever happened before.
+      ...(type === 'lesson' && newStatus === 'approved' && { 'reviewState.returned': false }),
     },
   });
 

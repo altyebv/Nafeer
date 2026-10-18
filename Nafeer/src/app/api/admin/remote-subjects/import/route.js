@@ -14,6 +14,7 @@ import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
 import { initialChangelog } from '@/lib/models/versioning';
+import { reconcileAuthoredStatsLater } from '@/lib/authoredStats';
 
 export async function POST(request) {
   const admin = await verifyAdminToken();
@@ -109,6 +110,7 @@ async function wipeSubject(subjectId) {
     Exam.deleteMany({ subjectId }),
     Subject.deleteMany({ subjectId }),
   ]);
+  reconcileAuthoredStatsLater();
 }
 
 async function importRemoteSubject(data, actorId) {

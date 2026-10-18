@@ -86,12 +86,16 @@ export function useAtlasSync() {
   const bootstrapSubject = useCallback(async (subjectId) => {
     try {
       setLoading();
-      await apiFetch('/api/content/subject', {
-        method: 'POST',
-        body: JSON.stringify({ subjectId }),
-      });
       try {
-        const atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`);
+        // Read first; create only when the subject is not in Atlas yet. The
+        // create (POST) used to run on every editor load — idempotent, but a
+        // request and a dozen queries per visit on the free tier. Completing
+        // a partly seeded subject is now the admin subject page's «أكمل».
+        let atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`).catch(() => null);
+        if (!atlasData?.subject) {
+          await apiFetch('/api/content/subject', { method: 'POST', body: JSON.stringify({ subjectId }) });
+          atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`);
+        }
         if (atlasData?.units) {
           const units = atlasData.units.map((u) => ({
             id: u.contentId,
@@ -213,7 +217,9 @@ export function useAtlasSync() {
   // { auto: true } is the autosave: items already waiting on a conflict are
   // left out (resending them would only conflict again) and stay listed.
   // Resolves to { saved } — how many items were written.
-  const syncAll = useCallback(async (lessonId, subjectId, { auto = false } = {}) => {
+  // `versionLabel` (manual saves only) tags this save in the lesson's history;
+  // with a label the lesson is written even if only its content changed.
+  const syncAll = useCallback(async (lessonId, subjectId, { auto = false, versionLabel = '' } = {}) => {
     // Read at call time, not render time — see the note at the top of the hook.
     const { lessons, markLessonSaved } = useSubjectStore.getState();
     const { sections, blocks, markSaved } = useContentStore.getState();
@@ -238,11 +244,12 @@ export function useAtlasSync() {
     try {
       setLoading();
 
-      if (send(lesson)) {
+      const label = auto ? '' : versionLabel.trim();
+      if (send(lesson) || (label && !heldIds.has(lesson.id))) {
         const lessonRes = await fetch(`/api/content/lessons/${lessonId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(lessonPayload(lesson)),
+          body: JSON.stringify({ ...lessonPayload(lesson), ...(label ? { versionLabel: label } : {}) }),
         });
         const lessonJson = await lessonRes.json();
 
@@ -585,22 +592,33 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
   }, [apiFetch]);
 
   // ── Submit for review ─────────────────────────────────────────────────────
+  // Returns true when the item is now in review. It used to return nothing
+  // either way, so the lesson header announced "أُرسل" even when the request
+  // failed — and with the resubmit gate (lib/review.js) a refusal is normal.
   const submitForReview = useCallback(async (contentId, type) => {
     const TYPE_TO_PATH = { lesson: 'lessons', concept: 'concepts', feedItem: 'feed-items', question: 'questions' };
     const path = TYPE_TO_PATH[type];
-    if (!path) return;
+    if (!path) return false;
     try {
       setLoading();
       await apiFetch(`/api/content/${path}/${contentId}`, {
         method: 'PATCH', body: JSON.stringify({ status: 'review', note: 'إرسال للمراجعة من المحرر' }),
       });
-      if (type === 'lesson') updateLesson(contentId, { atlasStatus: 'review' });
+      if (type === 'lesson') {
+        const prev = useSubjectStore.getState().lessons.find((l) => l.id === contentId)?.reviewState;
+        updateLesson(contentId, {
+          atlasStatus: 'review',
+          reviewState: { ...(prev || {}), returned: false, submittedAt: new Date().toISOString() },
+        });
+      }
       if (type === 'concept') updateConcept(contentId, { atlasStatus: 'review' });
       if (type === 'feedItem') updateFeedItem(contentId, { atlasStatus: 'review' });
       if (type === 'question') updateQuestion(contentId, { atlasStatus: 'review' });
       setDone();
+      return true;
     } catch (e) {
       setError(`فشل إرسال للمراجعة: ${e.message}`);
+      return false;
     }
   }, [apiFetch, setLoading, setDone, setError, updateLesson, updateConcept, updateFeedItem, updateQuestion]);
 

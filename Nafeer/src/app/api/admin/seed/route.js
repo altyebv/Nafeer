@@ -12,6 +12,7 @@ import { Question } from '@/lib/models/Question';
 import { bootstrapSubject } from '@/lib/api/subject';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { SUBJECTS_CATALOG, buildSubjectScaffold } from '@/shared/curriculum';
+import { reconcileAuthoredStatsLater } from '@/lib/authoredStats';
 
 // ─── GET /api/admin/seed ──────────────────────────────────────────────────────
 // Returns the seeding status of every subject in the catalog:
@@ -166,6 +167,7 @@ export async function POST(request) {
       Question.deleteMany({ subjectId }),
       Subject.deleteOne({ subjectId }),
     ]);
+    reconcileAuthoredStatsLater();
 
     return NextResponse.json({
       ok: true,
@@ -197,6 +199,7 @@ export async function POST(request) {
       Lesson.deleteMany({ subjectId }),
       Subject.deleteOne({ subjectId }),
     ]);
+    reconcileAuthoredStatsLater();
 
     try {
       const result = await bootstrapSubject(subjectId, seedContributorId);
@@ -228,6 +231,7 @@ export async function POST(request) {
       staleUnitIds.length ? Unit.deleteMany({ contentId: { $in: staleUnitIds } }) : Promise.resolve({ deletedCount: 0 }),
       staleLessonIds.length ? Lesson.deleteMany({ contentId: { $in: staleLessonIds } }) : Promise.resolve({ deletedCount: 0 }),
     ]);
+    if (lessonDel.deletedCount) reconcileAuthoredStatsLater();
 
     return NextResponse.json({
       ok: true,

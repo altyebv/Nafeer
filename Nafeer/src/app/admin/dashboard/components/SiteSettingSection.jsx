@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Eye, HandHeart } from 'lucide-react';
 import { SectionHeader } from './ui/shared';
+import { formatNumber } from '@/lib/format';
 
 // ── Toggle switch ─────────────────────────────────────────────────────────────
 function Toggle({ checked, onChange, loading }) {
@@ -147,7 +148,7 @@ export function SiteSettingsSection() {
                         className="text-2xl font-bold font-mono tabular-nums"
                         style={{ color: 'var(--accent, #d4891e)' }}
                       >
-                        {stat.value === null ? '…' : stat.value.toLocaleString('en-US')}
+                        {stat.value === null ? '…' : formatNumber(stat.value)}
                       </p>
                       <p className="text-xs text-ink-500 font-arabic mt-0.5">{stat.label}</p>
                     </div>

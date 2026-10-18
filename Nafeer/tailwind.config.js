@@ -7,15 +7,97 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // The two smallest steps sit one notch above Tailwind's defaults: Noto
+      // Naskh closes up below 12px, and 300+ Arabic labels were set at 11px.
+      // This used to be an override scoped to `.admin-shell`; it is now the
+      // scale itself (docs/design-system.md §3.2).
       fontSize: {
-        '2xs': ['11px', { lineHeight: '1rem' }],
+        '2xs': ['0.75rem',   { lineHeight: '1.125rem' }],
+        xs:    ['0.8125rem', { lineHeight: '1.25rem' }],
       },
       fontFamily: {
         arabic:  ['Noto Naskh Arabic', 'serif'],
-        display: ['Playfair Display', 'serif'],
-        mono:    ['JetBrains Mono', 'monospace'],
+        // Interface face (docs/design-system.md §3.1). Naskh stays for
+        // headings and reading text.
+        ui:      ['IBM Plex Sans Arabic', 'Noto Naskh Arabic', 'system-ui', 'sans-serif'],
+        // Naskh behind the mono face: Arabic inside a mono run keeps its joins.
+        mono:    ['JetBrains Mono', 'Noto Naskh Arabic', 'ui-monospace', 'monospace'],
+      },
+      // Wide tracking pulls joined Arabic letters apart, and these utilities
+      // were used almost entirely on Arabic labels. Neutralised rather than
+      // removed so the ~70 call sites keep compiling until they migrate;
+      // `npm run lint:design` counts them.
+      letterSpacing: {
+        wide:    'normal',
+        wider:   'normal',
+        widest:  'normal',
+      },
+      // Semantic radii — named for what they round, so they never collide
+      // with Tailwind's size-named defaults the existing code relies on.
+      borderRadius: {
+        chip:    '6px',
+        control: '10px',
+        card:    '14px',
+        panel:   '20px',
+      },
+      // One stacking order, so layering stops being guesswork. Named for the
+      // layer, never a raw number in a component.
+      zIndex: {
+        sticky:  '10',
+        nav:     '20',
+        popover: '30',
+        modal:   '40',
+        toast:   '50',
+      },
+      boxShadow: {
+        overlay: 'var(--shadow-overlay)',
+        lift:    'var(--shadow-lift)',
+      },
+      transitionDuration: {
+        fast: '120ms',
+        base: '200ms',
+        slow: '400ms',
+      },
+      transitionTimingFunction: {
+        'out-soft': 'cubic-bezier(.2, .8, .2, 1)',
       },
       colors: {
+        // ── Semantic roles ───────────────────────────────────────────────────
+        // The vocabulary new code uses (docs/design-system.md §2.1). Each one
+        // resolves to a CSS variable in globals.css, which in turn points at a
+        // ramp step, so a role follows the theme by itself. Roles carry their
+        // own alpha where they need one, so opacity modifiers (`/50`) are not
+        // supported on them — pick the role that means what you want instead.
+        page:     'var(--surface-page)',
+        raised:   'var(--surface-raised)',
+        sunken:   'var(--surface-sunken)',
+        overlay:  'var(--surface-overlay)',
+        chrome:   'var(--surface-chrome)',
+        hover:    'var(--surface-hover)',
+        selected: 'var(--surface-selected)',
+        scrim:    'var(--scrim)',
+        heat: {
+          0: 'var(--heat-0)', 1: 'var(--heat-1)', 2: 'var(--heat-2)', 3: 'var(--heat-3)', 4: 'var(--heat-4)',
+        },
+        fg: {
+          strong:      'var(--fg-strong)',
+          DEFAULT:     'var(--fg)',
+          muted:       'var(--fg-muted)',
+          subtle:      'var(--fg-subtle)',
+          accent:      'var(--fg-accent)',
+          'on-accent': 'var(--fg-on-accent)',
+        },
+        line: {
+          DEFAULT: 'var(--line)',
+          strong:  'var(--line-strong)',
+          accent:  'var(--line-accent)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent-fill)',
+          hover:   'var(--accent-fill-hover)',
+          wash:    'var(--accent-wash)',
+        },
+
         // ── Theme-aware scales ───────────────────────────────────────────────
         // Backed by CSS variables defined in src/app/globals.css, which
         // redefines both ramps under :root[data-theme="light"]. The

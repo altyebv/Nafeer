@@ -27,6 +27,7 @@ export default function HomePage() {
       <JsonLd data={homeGraph()} />
       <VisitTracker />
       <Navbar />
+      <main id="main">
       <Hero />
       <Problemsection />
       <Visionsection />
@@ -40,6 +41,7 @@ export default function HomePage() {
       <ContributorSection />
       <Futuresection />
       <FinalCTA />
+      </main>
       <Footer />
     </div>
   );

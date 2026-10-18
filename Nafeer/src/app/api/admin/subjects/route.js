@@ -177,6 +177,7 @@ export async function POST(request) {
 
 import { getManifest, removeSubjectEntry } from '@/lib/FirebaseAdmin';
 import { listFiles, deleteFiles }          from '@/lib/supabase';
+import { reconcileAuthoredStatsLater } from '@/lib/authoredStats';
 
 const EXPORTS_BUCKET = process.env.SUPABASE_EXPORTS_BUCKET || 'content-exports';
 
@@ -218,6 +219,7 @@ export async function DELETE(request) {
       (await import('@/lib/models/FeedItem')).FeedItem.deleteMany({ subjectId }),
     ]);
     await Subject.deleteOne({ subjectId });
+    reconcileAuthoredStatsLater();
 
     // ── 2. Remove Firestore manifest entry ────────────────────────────────────
     // This was the missing step — without it the subject reappeared in the

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { SectionHeader } from './ui/shared';
+import { formatDate } from '@/lib/format';
 
 // ─── Design tokens (mirrors SeedSection exactly) ──────────────────────────────
 
@@ -185,7 +186,7 @@ function SubjectRow({ s, onPublish }) {
               {s.publishedAt && (
                 <div className="flex justify-between text-ink-500">
                   <span>آخر نشر</span>
-                  <span dir="ltr" className="text-ink-400">{new Date(s.publishedAt).toLocaleString('ar-SA')}</span>
+                  <span dir="ltr" className="text-ink-400">{formatDate(s.publishedAt, 'dateTime')}</span>
                 </div>
               )}
               {s.downloadUrl && (
@@ -445,7 +446,7 @@ function RemoteManifestPanel({ subjects, manifestEntries, onSaveEntry, savingEnt
               </div>
 
               <div className="mt-3 text-2xs font-mono text-ink-600 flex items-center gap-3 flex-wrap">
-                <span>remote updated: {draft.updatedAt ? new Date(draft.updatedAt).toLocaleString('ar-SA') : '—'}</span>
+                <span>remote updated: {formatDate(draft.updatedAt, 'dateTime')}</span>
                 {subject && <span>cms approved lessons: {subject.lessons.approved}</span>}
               </div>
             </div>
@@ -684,7 +685,7 @@ export function PublishSection() {
               {manifest?.updatedAt && (
                 <div className="mr-auto flex items-center gap-1.5 text-2xs font-mono text-ink-600">
                   <span className="w-1.5 h-1.5 rounded-full bg-sand-600/60 inline-block" />
-                  manifest {new Date(manifest.updatedAt).toLocaleDateString('ar-SA')}
+                  manifest {formatDate(manifest.updatedAt)}
                 </div>
               )}
             </div>

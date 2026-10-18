@@ -5,6 +5,13 @@ import { Contributor } from '@/lib/models/Contributor';
 // is kept out of the sitemap and its profile page is noindex.
 export const SYSTEM_SEED_USERNAME = 'system_seed';
 
+// Accounts that are not people: the seed actor above and the development
+// autologin account (dev@nafeer.local). Both use the reserved .local domain,
+// which no real signup can have. Spread into any query that lists, counts or
+// messages people — local development writes to the live database, so the
+// dev account would otherwise show on the public site.
+export const REAL_PEOPLE = { email: { $not: /@nafeer.local$/i } };
+
 const SYSTEM_CONTRIBUTOR = {
   email: 'system.seed@nafeer.local',
   username: SYSTEM_SEED_USERNAME,
