@@ -17,6 +17,7 @@ import { dayKey, shiftKey } from '@/lib/activity';
 import { pipelineStage }   from '@/lib/adminPipeline';
 
 const DAY_MS = 86_400_000;
+const QUIET_DAYS = 14;
 
 // ─── GET /api/admin/overview ──────────────────────────────────────────────────
 // Everything the overview screen shows, in one request (free tier: one round
@@ -45,7 +46,7 @@ export async function GET() {
       Subject.find({}, 'subjectId').lean(),
       Contributor.find(
         { ...REAL_PEOPLE },
-        'status subject onboarded interviewToken interviewAnswers.submittedAt dynamicAnswersSubmittedAt stats.lastActiveAt',
+        'name status subject onboarded interviewToken interviewAnswers.submittedAt dynamicAnswersSubmittedAt stats.lastActiveAt createdAt',
       ).select('+interviewToken').lean(),
       Promise.all([Lesson, Concept, FeedItem, Question].map((M) => M.countDocuments({ status: 'review' }))),
       ContributorActivity.find({ createdAt: { $gte: weekStart } }, 'contributorId createdAt').lean(),
@@ -125,6 +126,12 @@ export async function GET() {
           activePeople: [...activeIds].filter((id) => realIds.has(id)).length,
         },
         people: { pipeline, approved: approved.length },
+        // Working contributors who have gone quiet for QUIET_DAYS — the
+        // overview's nudge list (UX queue 5). Never-started first.
+        quiet: approved
+          .filter((c) => c.onboarded && (!c.stats?.lastActiveAt || Date.now() - new Date(c.stats.lastActiveAt) > QUIET_DAYS * DAY_MS))
+          .map((c) => ({ id: String(c._id), name: c.name, subject: c.subject || null, lastActiveAt: c.stats?.lastActiveAt || null, joinedAt: c.createdAt }))
+          .sort((a, b) => (a.lastActiveAt ? new Date(a.lastActiveAt) : 0) - (b.lastActiveAt ? new Date(b.lastActiveAt) : 0)),
         site: { visits: site?.visitCount ?? 0, support: site?.supportCount ?? 0 },
         mail: { sent: mailSent, failed: mailFailed },
       },

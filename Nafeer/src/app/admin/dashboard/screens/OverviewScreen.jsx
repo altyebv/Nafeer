@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, EmptyState, PageHeader, Segmented, Stat } from '@/components/ui';
+import { Button, Card, ConfirmButton, EmptyState, PageHeader, Segmented, Stat } from '@/components/ui';
 import { formatNumber, formatRelative } from '@/lib/format';
 import { SUBJECTS_BY_ID } from '@/shared/curriculum';
 import { ScreenBody } from './AdminFrame';
@@ -141,6 +141,8 @@ export function OverviewScreen({ onOpen }) {
             </div>
           </Card>
 
+          {data.quiet?.length > 0 && <QuietCard people={data.quiet} />}
+
           <Card title="الموقع والبريد">
             <dl className="flex flex-col gap-2 t-label">
               <Row k="زيارات الصفحة الرئيسية" v={formatNumber(data.site.visits)} />
@@ -151,6 +153,52 @@ export function OverviewScreen({ onOpen }) {
         </aside>
       </div>
     </ScreenBody>
+  );
+}
+
+// ─── Gone quiet (UX queue 5) ──────────────────────────────────────────────────
+// Working contributors with nothing in 14 days, oldest silence first, each
+// with a one-click reminder: an email and an announcement on their dashboard
+// (POST /api/admin/comms/send, scope "person"). The wording is fixed and kind.
+const NUDGE_TITLE = 'نفتقدك في نفير';
+const nudgeBody = (name, subject) =>
+  `مرحباً ${name.split(' ')[0]}، لم نرك منذ مدة${subject ? ` في ${subject}` : ''}. إن كان وقتك ضيقاً فلا بأس — حتى درس واحد في الشهر يصنع فرقاً لطالب. وإن كان شيء يعيقك في المحرر، ردّ على هذه الرسالة وسنساعدك.`;
+
+function QuietCard({ people }) {
+  const [sent, setSent] = useState({});
+  const nudge = async (p) => {
+    setSent((s) => ({ ...s, [p.id]: 'sending' }));
+    const subject = SUBJECTS_BY_ID[p.subject]?.nameAr;
+    const res = await fetch('/api/admin/comms/send', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: NUDGE_TITLE, body: nudgeBody(p.name, subject), scope: { kind: 'person', value: p.id }, channels: { board: true, mail: true } }),
+    }).catch(() => null);
+    setSent((s) => ({ ...s, [p.id]: res?.ok ? 'sent' : 'failed' }));
+  };
+  return (
+    <Card title="هدأوا مؤخراً" actions={<span className="t-caption text-fg-subtle">بلا نشاط منذ 14 يوماً</span>}>
+      <ul className="flex flex-col gap-3">
+        {people.map((p) => (
+          <li key={p.id} className="flex items-center justify-between gap-3">
+            <span className="flex flex-col min-w-0">
+              <span className="t-label text-fg-strong truncate">{p.name}</span>
+              <span className="t-caption text-fg-subtle">
+                {SUBJECTS_BY_ID[p.subject]?.nameAr || 'بلا مادة'} · {p.lastActiveAt ? `آخر نشاط ${formatRelative(p.lastActiveAt)}` : `لم يبدأ منذ انضمامه ${formatRelative(p.joinedAt)}`}
+              </span>
+            </span>
+            {sent[p.id] === 'sent' ? <span className="t-caption text-success shrink-0">أُرسل التذكير</span>
+              : sent[p.id] === 'failed' ? <span className="t-caption text-danger shrink-0">تعذّر الإرسال</span>
+              : (
+                <ConfirmButton variant="secondary" tone="accent" size="sm" align="end" confirmLabel="أرسل"
+                  title={`تذكير ${p.name.split(' ')[0]}؟`} description={nudgeBody(p.name, SUBJECTS_BY_ID[p.subject]?.nameAr)}
+                  disabled={sent[p.id] === 'sending'} onConfirm={() => nudge(p)}>
+                  ذكّره
+                </ConfirmButton>
+              )}
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 

@@ -15,11 +15,13 @@ const IDLE_DAYS = 14;
 //   subject  one subject's contributors        (value: subjectId)
 //   role     one role's contributors           (value: roleId)
 //   idle     nobody active in the last 14 days
+//   person   one contributor                   (value: contributor _id)
 function audienceFilter(scope = {}) {
   const base = { status: 'approved', onboarded: true, ...REAL_PEOPLE };
   switch (scope.kind) {
     case 'subject': return { ...base, subject: scope.value };
     case 'role':    return { ...base, roleId: scope.value };
+    case 'person':  return { ...base, _id: scope.value };   // one contributor (the overview nudge)
     case 'idle':    return {
       ...base,
       $or: [{ 'stats.lastActiveAt': null }, { 'stats.lastActiveAt': { $lt: new Date(Date.now() - IDLE_DAYS * DAY_MS) } }],

@@ -45,15 +45,15 @@ item when it is finished; put the commit next to it in the commit message.
 
 ## UX queue (agreed 2026-10-18, in this order)
 
-- [ ] **Editor offline state.** When the connection drops, say so plainly and
+- [x] **Editor offline state.** When the connection drops, say so plainly and
   that work is kept on this device and goes up when it returns.
-- [ ] **Undo after delete.** A short "تراجع" after deleting a block or a
+- [x] **Undo after delete.** A short "تراجع" after deleting a block or a
   section, instead of a final confirm-only delete.
-- [ ] **Writing help under the readiness checks.** One line per missing check
+- [x] **Writing help under the readiness checks.** One line per missing check
   saying what good looks like (a summary, a hook question).
-- [ ] **Tell contributors when a lesson is returned or approved** — one email
+- [x] **Tell contributors when a lesson is returned or approved** — one email
   per event.
-- [ ] **Stale-contributor nudge.** On the admin overview: who has gone quiet,
+- [x] **Stale-contributor nudge.** On the admin overview: who has gone quiet,
   with a one-click message.
 - [ ] **A finished sample lesson** to show applicants — content work: finish
   Chemistry unit 1 lesson 1 and link it from the join flow.
