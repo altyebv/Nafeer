@@ -5,13 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Field, Input, Textarea, cx } from '@/components/ui';
 import { SUBJECTS_BY_ID } from '@/shared/curriculum';
 import { SITE_URL } from '@/lib/seo';
+import { AvatarPicker } from '@/components/profile/AvatarPicker';
 
 // ─── /onboard?token=… ─────────────────────────────────────────────────────────
 // Account creation after approval (canvas board «حسابك ودرسك الأول"): one
 // screen — a password, the public profile URL shown and editable before it
-// exists, an optional bio — and it ends inside the first lesson nobody has
-// started in the contributor's subject. The photo is added later from the
-// profile.
+// exists, an optional photo (cropped in the browser) and bio — and it ends
+// inside the first lesson nobody has started in the contributor's subject.
 
 const USERNAME_RE = /^[\w؀-ۿ._-]{3,20}$/;
 const HOST = SITE_URL.replace(/^https?:\/\//, '').replace(/\/+$/, '');
@@ -28,6 +28,7 @@ function Onboard() {
   const [form, setForm] = useState({ password: '', password2: '', username: '', bio: '', subject: '' });
   const [fieldErr, setFieldErr] = useState({});
   const [busy, setBusy] = useState(false);
+  const [avatar, setAvatar] = useState({ blob: null, url: null });
 
   useEffect(() => {
     if (!token) { setError('لا يوجد رابط صالح في هذا العنوان.'); return; }
@@ -64,6 +65,13 @@ function Onboard() {
         setBusy(false);
         return;
       }
+      // The account exists and the session cookie is set: send the photo now.
+      // A failed upload never blocks the way into the lesson.
+      if (avatar.blob) {
+        const fd = new FormData();
+        fd.append('file', avatar.blob, avatar.blob.type === 'image/webp' ? 'avatar.webp' : 'avatar.jpg');
+        await fetch('/api/contributors/me/avatar', { method: 'POST', body: fd }).catch(() => null);
+      }
       router.push(j.firstLessonId ? `/editor/lessons/${j.firstLessonId}?welcome=1` : '/editor');
     } catch {
       setFieldErr({ form: 'تعذّر الاتصال — حاول مرة أخرى' });
@@ -98,6 +106,8 @@ function Onboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start">
               <form className="flex flex-col gap-5" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+                <AvatarPicker name={info.name} value={avatar.url} onChange={(blob, url) => setAvatar({ blob, url })} />
+
                 {info.needsSubjectChoice && (
                   <fieldset className="flex flex-col gap-2">
                     <legend className="t-label text-fg mb-1">مادتك {fieldErr.subject && <span className="text-danger ms-2">{fieldErr.subject}</span>}</legend>
@@ -130,7 +140,7 @@ function Onboard() {
                   </div>
                 </Field>
 
-                <Field label="نبذة قصيرة" hint="اختياري — تظهر في ملفك العام. الصورة الشخصية تضيفها لاحقاً من ملفك.">
+                <Field label="نبذة قصيرة" hint="اختياري — تظهر في ملفك العام.">
                   <Textarea rows={2} maxLength={280} value={form.bio} onChange={(e) => set({ bio: e.target.value })} placeholder="مثلاً: طالبة فيزياء في جامعة البحر الأحمر" />
                 </Field>
 

@@ -7,6 +7,7 @@ import {
   ConfirmButton, Eyebrow, SectionTitle,
 } from '@/components/ui';
 import { useThemeStore } from '@/store/themeStore';
+import { AvatarPicker } from '@/components/profile/AvatarPicker';
 import { formatDate, formatNumber } from '@/lib/format';
 
 // Every swatch is drawn with the real role class, so this page shows exactly
@@ -291,6 +292,10 @@ export default function Gallery() {
           <SectionTitle eyebrow="لماذا بشير" title="الإمكانية موجودة دائماً" description="نحتاج فقط الأداة المناسبة لإطلاقها — بلا تباعد حروف يكسر الكلمات العربية." />
           <div className="mt-4"><Eyebrow>داخل التطبيق</Eyebrow></div>
         </Section>
+
+        <Section id="s-avatar" title="الصورة الشخصية" code="profile/AvatarPicker">
+          <AvatarDemo />
+        </Section>
       </div>
 
       <Dialog
@@ -316,4 +321,9 @@ export default function Gallery() {
       )}
     </div>
   );
+}
+
+function AvatarDemo() {
+  const [url, setUrl] = useState(null);
+  return <AvatarPicker name="نجوان مكي" value={url} onChange={(_, u) => setUrl(u)} />;
 }
