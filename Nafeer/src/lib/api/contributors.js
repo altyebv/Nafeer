@@ -89,3 +89,38 @@ export async function listPublicContributors() {
 
   return docs.map(serialize);
 }
+
+// ─── The lessons on a public profile (docs/team-leads.md L4) ──────────────────
+// «ألّف» — published lessons they wrote: created, or claimed from the
+// curriculum scaffold (an `author` credit).
+// «شارك في» — published lessons of others they edited or reviewed
+// (Lesson.credits). Published only: the profile is public.
+export async function getProfileLessons(contributorId, limit = 30) {
+  if (!contributorId) return { wrote: [], contributed: [] };
+  await connectDB();
+  const { Lesson } = await import('@/lib/models/Lesson');
+  const fields = 'contentId title subjectId createdBy credits';
+  const [wrote, touched] = await Promise.all([
+    Lesson.find({
+      status: 'approved',
+      $or: [{ createdBy: contributorId }, { credits: { $elemMatch: { contributorId, kind: 'author' } } }],
+    }).select(fields).sort({ updatedAt: -1 }).limit(limit).lean(),
+    Lesson.find({
+      status: 'approved',
+      credits: { $elemMatch: { contributorId, kind: { $in: ['editor', 'reviewer'] } } },
+    }).select(fields).sort({ updatedAt: -1 }).limit(limit).lean(),
+  ]);
+  const id = String(contributorId);
+  const wroteIds = new Set(wrote.map((l) => l.contentId));
+  const row = (l) => ({
+    contentId: l.contentId,
+    title:     l.title,
+    subjectId: l.subjectId,
+    kinds:     [...new Set((l.credits || []).filter((c) => String(c.contributorId) === id).map((c) => c.kind))],
+  });
+  return {
+    wrote:       wrote.map(row),
+    // Their own lessons are under «ألّف» already.
+    contributed: touched.filter((l) => !wroteIds.has(l.contentId)).map(row),
+  };
+}
