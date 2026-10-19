@@ -161,6 +161,12 @@ plain member.
   2-per-subject cap and audit entries.
 - Tests: the permission matrix — every capability × {member, lead here, lead
   elsewhere, lead without the permission, admin}.
+- Owner screen (added after L3): «قادة الفرق» in the admin dashboard
+  (`#leads`). Each subject shows its seats (n/2) and its leads, with a toggle
+  per permission that saves on its own. Remove asks for a reason. Appoint
+  picks from the subject's approved members, taken from the contributor list
+  the dashboard already loads. Intervening and publishing are marked «لاحقاً»
+  until L4 and L5.
 
 ### L1 — Review in the editor
 - Move the review components out of `ReviewScreen` into
@@ -287,6 +293,39 @@ plain member.
 - Profiles show «ألّف» and «شارك في».
 - The owner sees the intervention count per lead.
 
+**As built (2026-10-19). Decision: owner-only, chosen by the user.**
+- The rule is `lib/lessonAccess.js` `lessonAccess`. A lesson can be changed
+  by its owner (`ownerId`, else `createdBy`), by the platform owner (admin),
+  or by a lead while their own intervention on it is open.
+  `assertCanEditLessons` enforces it on every lesson-content write: the
+  lesson's own routes, sections, blocks, and questions and feed cards tied to
+  a lesson. `tests/writeGuard.test.js` fails if a handler skips it. Comments
+  and creating a new lesson stay open to every member, as do concepts, tags
+  and exams.
+- **Unclaimed scaffold:** a lesson whose owner is not a real person (the seed
+  actor) is open to every member of its subject. The first member to save it
+  claims it: `ownerId` is set with a conditional write, and they get an
+  `author` credit. The editor says so before they save.
+- The lesson GET returns `access`
+  (`canEdit · via · canIntervene · owner · intervention`). Without edit
+  rights, the editor shows `ReadOnlyLesson`: the student preview, comments
+  and history, plus «تدخّل» and «تولَّ الدرس» for a lead who has
+  canIntervene. Autosave is off in that view.
+- Intervention (`lib/intervention.js`, `POST /api/lead/lessons`): a category
+  and a reason (`Lesson.intervention`) open it for 24 h; one per lesson at a
+  time. Opening writes a `LessonHistory` `'intervened'` entry and notifies the
+  owner. Closing happens when the lead ends it, or on the first open after it
+  expires. If the version moved in between, the lead gets an `editor` credit,
+  and the history notes how many versions they made.
+- Takeover: `ownerId` moves to the lead with a reason, and the author keeps
+  `createdBy`.
+- Profiles: «ألّف» (created, or claimed) and «شارك في» (edited or reviewed),
+  published lessons only.
+- Also fixed: `feed-items/[id]` PUT, PATCH and DELETE never checked the
+  caller's subject.
+- Known edge: linking a variation writes the *target* lesson. That is now
+  refused when the target isn't yours.
+
 ### L5 — Publishing and oversight
 - Release preview: the per-subject delta (lessons added, changed, removed).
 - Cooldown: one release per subject per 24 h.
@@ -313,8 +352,6 @@ plain member.
 
 1. **Name.** «المشرفون» already names admins in the dashboard. The working name
    is «قائد الفريق». Alternatively, rename the admin section to «الإدارة».
-2. **Members editing each other's lessons (L4).** Today any approved member can
-   edit any lesson in their subject. L4 limits them to lessons they own or are
-   assigned. Is that wanted, or should peers keep editing freely, with only the
-   lead's interventions needing a reason?
+2. ~~Members editing each other's lessons~~: decided 2026-10-19, owner only
+   (see L4).
 3. **Undo window** for applicant decisions: 30 minutes is the proposal.
