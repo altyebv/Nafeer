@@ -34,7 +34,8 @@ const LessonHistorySchema = new mongoose.Schema(
 
     action: {
       type: String,
-      enum: ['created', 'edited', 'reviewed', 'approved', 'archived'],
+      // 'intervened' — a lead opened or closed an intervention (note = reason).
+      enum: ['created', 'edited', 'reviewed', 'approved', 'archived', 'intervened'],
       required: true,
     },
 
