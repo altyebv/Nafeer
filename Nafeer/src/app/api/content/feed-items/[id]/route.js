@@ -1,4 +1,7 @@
-import { requireSubjectAccess, requireContributor, ok, err } from '@/lib/api/guard';
+import { requireSubjectAccess, requireContentAccess, assertInSubject, ok, err } from '@/lib/api/guard';
+import { FeedItem } from '@/lib/models/FeedItem';
+import { Lesson } from '@/lib/models/Lesson';
+import { assertCanEditLessons, lessonsForLinked } from '@/lib/lessonAccess';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { getFeedItemsForSubject, createFeedItem, updateFeedItem,
   updateFeedItemStatus, deleteFeedItem, getFeedItemById } from '@/lib/api/feedItems';
@@ -44,6 +47,7 @@ export async function POST(request) {
     }
 
     const user = await requireSubjectAccess(subjectId, { write: true });
+    await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [body.contentId], [body.lessonContentId]));
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const item = await createFeedItem(
       { ...body,
@@ -69,7 +73,9 @@ export async function POST(request) {
 export async function PUT(request, { params }) {
   try {
     await connectDB();
-    const user = await requireContributor({ write: true });
+    // The card must be in the caller's subject — this used to check only that
+    // they were signed in, so any contributor could change any subject's cards.
+    const { user } = await requireContentAccess(FeedItem, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
@@ -83,6 +89,10 @@ export async function PUT(request, { params }) {
     const safeUpdates = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
+    // It stays in its subject, and only the lessons' owners move it.
+    if (user.role !== 'admin') delete safeUpdates.subjectId;
+    await assertInSubject(user, Lesson, [safeUpdates.lessonContentId]);
+    await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id], [safeUpdates.lessonContentId]));
 
     const item = await updateFeedItem(      // ← was createFeedItem
       (await params).id,
@@ -104,7 +114,8 @@ export async function PUT(request, { params }) {
 // PATCH /api/content/feed-items/[id]
 export async function PATCH(request, { params }) {
   try {
-    const user = await requireContributor({ write: true });
+    const { user } = await requireContentAccess(FeedItem, (await params).id, { write: true });
+    await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id]));
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
 
@@ -134,7 +145,8 @@ export async function PATCH(request, { params }) {
 // DELETE /api/content/feed-items/[id]
 export async function DELETE(request, { params }) {
   try {
-    await requireContributor({ write: true });
+    const { user } = await requireContentAccess(FeedItem, (await params).id, { write: true });
+    await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id]));
     await deleteFeedItem((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {
