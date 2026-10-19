@@ -1,5 +1,5 @@
 import { notFound }              from 'next/navigation';
-import { getPublicContributor, isIndexableContributor } from '@/lib/api/contributors';
+import { getProfileLessons, getPublicContributor, isIndexableContributor } from '@/lib/api/contributors';
 import { pageMetadata }          from '@/lib/seo';
 import { SUBJECTS_CATALOG }      from '@/shared/curriculum';
 import ProfileView               from './ProfileView';
@@ -86,7 +86,7 @@ export default async function ContributorProfilePage({ params }) {
       {/* Same predicate as the noindex above: a profile Google is told not to
           index has no business emitting Person structured data either. */}
       {isIndexableContributor(contributor) && <JsonLd data={jsonLd} />}
-      <ProfileView profile={contributor} />
+      <ProfileView profile={contributor} lessons={await getProfileLessons(contributor._id)} />
     </>
   );
 }
