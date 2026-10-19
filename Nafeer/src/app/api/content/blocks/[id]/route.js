@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/db';
 import { Block } from '@/lib/models/Block';
 import { Section } from '@/lib/models/Section';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
+import { assertCanEditLessons, lessonsForBlocks } from '@/lib/lessonAccess';
 
 // Returns null if the URL doesn't match the Supabase media bucket.
 function deriveMediaPath(url) {
@@ -29,6 +30,8 @@ export async function PATCH(request, { params }) {
 
     const { id } = await params;
     const update  = await request.json();
+    // The lesson it is in now, and the one it may be moving to.
+    await assertCanEditLessons(user, await lessonsForBlocks([id], [update?.sectionContentId, update?.sectionId]));
 
     const block = await Block.findOne({ contentId: id });
     if (!block) return err('البلوك غير موجود', 404);
@@ -72,7 +75,8 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    await requireContentAccess(Block, (await params).id, { write: true });
+    const { user } = await requireContentAccess(Block, (await params).id, { write: true });
+    await assertCanEditLessons(user, await lessonsForBlocks([(await params).id]));
     await deleteBlock((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {
