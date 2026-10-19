@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BookOpen, ClipboardCheck, Image as ImageIcon,
-  Users, Megaphone, Mail, Smartphone, ShieldCheck, Settings, MessageSquareQuote,
+  Users, UserCog, Megaphone, Mail, Smartphone, ShieldCheck, Settings, MessageSquareQuote,
 } from 'lucide-react';
 import { SUBJECTS_CATALOG, TRACK_CONFIG } from '@/shared/curriculum';
 
@@ -47,6 +47,8 @@ export const NAV_GROUPS = [
     label: 'المجتمع',
     items: [
       { id: 'contributors', icon: Users,          label: 'المساهمون', badgeKey: 'pending' },
+      // Who leads each subject, and what they may do (docs/team-leads.md).
+      { id: 'leads',        icon: UserCog,        label: 'قادة الفرق' },
       // Announcements, surveys, and future app-level settings (feature flags, tours).
       { id: 'comms',        icon: Megaphone,      label: 'التواصل' },
       { id: 'email',        icon: Mail,           label: 'البريد الإلكتروني' },
