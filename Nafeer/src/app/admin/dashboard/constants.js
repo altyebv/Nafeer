@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BookOpen, ClipboardCheck, Image as ImageIcon,
-  Users, Megaphone, Mail, Smartphone, ShieldCheck, Settings,
+  Users, Megaphone, Mail, Smartphone, ShieldCheck, Settings, MessageSquareQuote,
 } from 'lucide-react';
 import { SUBJECTS_CATALOG, TRACK_CONFIG } from '@/shared/curriculum';
 
@@ -39,6 +39,8 @@ export const NAV_GROUPS = [
       { id: 'subjects',     icon: BookOpen,       label: 'المواد' },
       { id: 'review',       icon: ClipboardCheck, label: 'طابور المراجعة', badgeKey: 'reviewTotal' },
       { id: 'media',        icon: ImageIcon,      label: 'الوسائط' },
+      // The app's remote copy (greetings, encouragement) — Firestore app_config/string_pools.
+      { id: 'strings',      icon: MessageSquareQuote, label: 'نصوص التطبيق' },
     ],
   },
   {

@@ -15,13 +15,14 @@ import { SubjectsIndex }          from './screens/SubjectsIndex';
 import { ContributorsScreen }     from './screens/ContributorsScreen';
 import { CommsScreen }            from './screens/CommsScreen';
 import { ReviewScreen }           from './screens/ReviewScreen';
+import { StringPoolsScreen }      from './screens/StringPoolsScreen';
 import { AndroidInsightsSection } from './components/android/AndroidInsightsSection';
 
 
 // Every section the dashboard can render — a hash outside this list is ignored.
 const SECTION_IDS = [
   'overview', 'subjects', 'contributors', 'review', 'publish',
-  'media', 'admins', 'settings', 'seed', 'email', 'comms', 'android',
+  'media', 'strings', 'admins', 'settings', 'seed', 'email', 'comms', 'android',
 ];
 
 // Sections folded into the subject pages (DS5); old links land on the list.
@@ -107,6 +108,7 @@ export default function AdminDashboard() {
         {section === 'review'     && <ReviewScreen onTotalChange={setReviewTotal} />}
         {section === 'publish'    && <PublishSection />}
         {section === 'media'      && <MediaSection />}
+        {section === 'strings'    && <StringPoolsScreen />}
         {section === 'admins'     && <AdminsSection />}
         {section === 'settings'   && <SiteSettingsSection />}
         {section === 'seed'       && <SeedSection />}

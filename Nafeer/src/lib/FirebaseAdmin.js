@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { STRING_POOLS_COLLECTION, STRING_POOLS_DOC } from '@/shared/stringPools';
 
 // ─── Firebase Admin singleton ─────────────────────────────────────────────────
 // Safe to call multiple times — getApps() guards against double-init in
@@ -173,4 +174,38 @@ export async function updateFeatureFlags(flags) {
     { featureFlags: flags, updatedAt: new Date().toISOString() },
     { merge: true }
   );
+}
+
+// ─── String pools (app_config/string_pools) ───────────────────────────────────
+// The app's remote copy. Shape and catalog: src/shared/stringPools.js.
+
+/** Fetch the string pools doc. Returns null if it doesn't exist yet. */
+export async function getStringPools() {
+  const db   = getAdminFirestore();
+  const snap = await db.collection(STRING_POOLS_COLLECTION).doc(STRING_POOLS_DOC).get();
+  if (!snap.exists) return null;
+  return snap.data();
+}
+
+/**
+ * Replace the whole string pools doc — a full write, not a merge, so a pool
+ * or entry removed in the editor is removed from the app.
+ *
+ * `baseUpdatedAt` is the updatedAt the editor loaded (null when the doc did
+ * not exist). If the doc changed since, nothing is written and the current
+ * updatedAt is returned as `{ conflict }`, so two admins cannot overwrite
+ * each other's work unseen.
+ */
+export async function setStringPools({ pools, baseUpdatedAt, updatedBy }) {
+  const db  = getAdminFirestore();
+  const ref = db.collection(STRING_POOLS_COLLECTION).doc(STRING_POOLS_DOC);
+  return db.runTransaction(async (tx) => {
+    const snap    = await tx.get(ref);
+    const current = snap.exists ? (snap.data().updatedAt ?? null) : null;
+    if (current !== (baseUpdatedAt ?? null)) return { conflict: current };
+
+    const updatedAt = new Date().toISOString();
+    tx.set(ref, { pools, updatedAt, updatedBy: updatedBy || null });
+    return { updatedAt };
+  });
 }
