@@ -1,4 +1,5 @@
 import { requireContentAccess, ok, err } from '@/lib/api/guard';
+import { assertCanEditLessons, lessonsForSections } from '@/lib/lessonAccess';
 import { Section } from '@/lib/models/Section';
 import { deleteCheckpointQuestionsForSections, deleteSection } from '@/lib/api/content';
 import { Block } from '@/lib/models/Block';
@@ -8,8 +9,9 @@ import { authorsOf, recountAuthoredLater } from '@/lib/authoredStats';
 // DELETE /api/content/sections/[id]
 export async function DELETE(request, { params }) {
   try {
-    await requireContentAccess(Section, (await params).id, { write: true });
+    const { user } = await requireContentAccess(Section, (await params).id, { write: true });
     await connectDB();
+    await assertCanEditLessons(user, await lessonsForSections([(await params).id]));
 
     const { id } = await params;
 
