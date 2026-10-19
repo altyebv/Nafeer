@@ -115,6 +115,25 @@ function Section({ title, count, children }) {
   );
 }
 
+// ── Lessons ───────────────────────────────────────────────────────────────────
+const CREDIT_AR = { editor: 'حرّر', reviewer: 'راجع', author: 'ألّف' };
+
+function LessonList({ rows }) {
+  return (
+    <Card padding="none">
+      <ul>
+        {rows.map((l, i) => (
+          <li key={l.contentId} className={`flex items-center gap-3 px-4 py-3 ${i ? 'border-t border-line' : ''}`}>
+            <span className="read t-ui text-fg-strong flex-1 min-w-0 truncate">{l.title}</span>
+            {l.kinds.filter((k) => k !== 'author').map((k) => <Badge key={k} size="sm">{CREDIT_AR[k]}</Badge>)}
+            <span className="t-caption text-fg-subtle">{SUBJECT_MAP[l.subjectId]?.nameAr || ''}</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 // ── Badge card ────────────────────────────────────────────────────────────────
 function BadgeCard({ badge, step }) {
   const Icon = ICONS[badge.icon] || Award;
@@ -173,7 +192,7 @@ function ShareBtn() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function ProfileView({ profile }) {
+export default function ProfileView({ profile, lessons = { wrote: [], contributed: [] } }) {
   const [activity, setActivity] = useState(null); // rich payload from /activity?username=
   const [teams,    setTeams]    = useState([]);
 
@@ -320,6 +339,18 @@ export default function ProfileView({ profile }) {
             </>
           ) : (
             <EmptyState icon={Sparkles} title="رحلة المساهمة على وشك أن تبدأ — أول مساهمة ستظهر هنا." />
+          )}
+
+          {/* ── Lessons: written, and contributed to (docs/team-leads.md L4) ── */}
+          {lessons.wrote.length > 0 && (
+            <Section title="ألّف" count={lessons.wrote.length}>
+              <LessonList rows={lessons.wrote} />
+            </Section>
+          )}
+          {lessons.contributed.length > 0 && (
+            <Section title="شارك في" count={lessons.contributed.length}>
+              <LessonList rows={lessons.contributed} />
+            </Section>
           )}
 
           {/* ── Teams ── */}
