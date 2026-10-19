@@ -176,6 +176,22 @@ plain member.
 - Approving an approved lesson after an edit: an edit to an approved lesson
   already redrafts it (`applyVersionBump`). Keep it so, and show it in the inbox.
 
+**As built (2026-10-19):**
+- Routes: `GET /api/lead/inbox`, `GET /api/lead/review/[contentId]`,
+  `PATCH /api/lead/review`. Approvals from these routes use
+  `approveOrReject(..., { onlyFromReview: true })`, a write conditional on
+  status and version. The owner's dashboard behaves as before.
+- Review comments from a lead carry `authorRole: 'lead'` and their Contributor
+  id (`Lesson.notes`).
+- `components/review/LessonReview.jsx` is shared; `ReviewScreen` and
+  `/editor/lead` pass their own endpoints. A reviewer's own lesson opens
+  read-only.
+- The editor layout reads `lead` from the database once per load to decide
+  whether to show «الإشراف». The sidebar shows no count badge, to avoid a
+  request on every page.
+- The owner can open `/editor/lead` too. It shows the inbox of the editor's
+  subject (`?subjectId=`).
+
 ### L2 — Team
 - Member activity per subject (existing `ContributorActivity`), stale drafts,
   review turnaround.

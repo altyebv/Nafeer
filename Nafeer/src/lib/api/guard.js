@@ -56,10 +56,23 @@ export async function requireLead(subjectId, perm) {
   return user;
 }
 
+// requireLead for the lead's own pages (the inbox): the subject is the
+// caller's own. The owner has no subject of their own, so they name one with
+// `subjectId`; a lead's `subjectId` is ignored.
+export async function requireLeadOfOwnSubject(perm, subjectId = null) {
+  const user = await requireContributor();
+  const subject = user.role === 'admin' ? subjectId : user.subject;
+  if (!subject) {
+    throw Response.json({ ok: false, error: 'subjectId مطلوب' }, { status: 400 });
+  }
+  if (!leadCan(user, perm, subject)) throw leadForbidden();
+  return { user, subjectId: subject };
+}
+
 // requireLead for routes addressed by a document's contentId: the subject is
 // the document's, never one the caller names. Returns { user, doc } where doc
-// carries contentId, subjectId and the authorship fields the four-eyes rule
-// reads (createdBy, ownerId).
+// carries contentId, subjectId, status and the authorship fields the
+// four-eyes rule reads (createdBy, ownerId).
 export async function requireLeadOfContent(Model, contentId, perm) {
   const user = await requireContributor();
 
@@ -67,7 +80,7 @@ export async function requireLeadOfContent(Model, contentId, perm) {
 
   await connectDB();
   const doc = await Model.findOne({ contentId })
-    .select('contentId subjectId createdBy ownerId').lean();
+    .select('contentId subjectId status createdBy ownerId').lean();
   if (!doc) throw notFound();
 
   if (!leadCan(user, perm, doc.subjectId)) throw leadForbidden();

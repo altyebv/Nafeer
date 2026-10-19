@@ -5,8 +5,11 @@ import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Section }  from '@/lib/models/Section';
 import { Block }    from '@/lib/models/Block';
+import { Contributor } from '@/lib/models/Contributor';
 import { trackStat } from '@/lib/trackStat';
 import { ReviewError, validateReturnComments } from '@/lib/review';
+import { getLessonWithContent } from '@/lib/api/lessons';
+import { REAL_PEOPLE } from '@/lib/SeedActor';
 
 // ─── getReviewQueue ───────────────────────────────────────────────────────────
 // Returns all content items with status='review', optionally filtered by subjectId.
@@ -20,16 +23,16 @@ export async function getReviewQueue(subjectId = null) {
 
   const [lessons, concepts, feedItems, questions] = await Promise.all([
     Lesson.find(filter)
-      .select('contentId subjectId title unitContentId status version createdAt reviewState')
+      .select('contentId subjectId title unitContentId status version createdAt reviewState createdBy ownerId')
       .sort({ createdAt: -1 }).lean(),
     Concept.find(filter)
-      .select('contentId subjectId titleAr type status version createdAt')
+      .select('contentId subjectId titleAr type status version createdAt createdBy')
       .sort({ createdAt: -1 }).lean(),
     FeedItem.find(filter)
-      .select('contentId subjectId type contentAr status version createdAt')
+      .select('contentId subjectId type contentAr status version createdAt createdBy')
       .sort({ createdAt: -1 }).lean(),
     Question.find(filter)
-      .select('contentId subjectId textAr type difficulty status version createdAt')
+      .select('contentId subjectId textAr type difficulty status version createdAt createdBy')
       .sort({ createdAt: -1 }).lean(),
   ]);
 
@@ -60,6 +63,9 @@ function mapItem(doc, type) {
     round:     doc.reviewState ? (doc.reviewState.round || 0) + 1 : null,
     // When it entered review — the queue reads oldest first.
     submittedAt: doc.reviewState?.submittedAt || doc.createdAt,
+    // Authorship, for the four-eyes rule on the lead's queue (lib/credits.js).
+    createdBy: doc.createdBy ? String(doc.createdBy) : null,
+    ownerId:   doc.ownerId ? String(doc.ownerId) : null,
   };
 }
 
@@ -71,7 +77,8 @@ function mapItem(doc, type) {
 // The update is conditional on the lesson still being in review at the version
 // read, so two reviewers cannot both return it.
 //
-// @param reviewer { id, name } — the admin session
+// @param reviewer { id, name, role? } — the admin session, or a team lead with
+//                 role 'lead' and id their Contributor _id (docs/team-leads.md)
 //
 export async function returnLesson(contentId, { comments = [], summary = '' } = {}, reviewer) {
   await connectDB();
@@ -105,9 +112,10 @@ export async function returnLesson(contentId, { comments = [], summary = '' } = 
   const reviewerName = reviewer?.name || 'المراجِع';
   const notes = clean.map((c) => ({
     text:       c.text,
-    authorId:   null,              // admins have no Contributor _id
+    // Admins have no Contributor _id; a lead does.
+    authorId:   reviewer?.role === 'lead' ? reviewer.id : null,
     authorName: reviewerName,
-    authorRole: 'admin',
+    authorRole: reviewer?.role === 'lead' ? 'lead' : 'admin',
     noteType:   'review_feedback',
     resolved:   false,
     createdAt:  now,
@@ -159,8 +167,11 @@ export async function returnLesson(contentId, { comments = [], summary = '' } = 
 // @param newStatus  - 'approved' | 'draft'
 // @param adminObjId - MongoDB ObjectId string for the admin (for changelog)
 // @param note       - optional note
+// @param opts.onlyFromReview - refuse unless the item is in review right now.
+//                    The lead routes pass it; the owner's dashboard may move
+//                    anything, as before.
 //
-export async function approveOrReject(contentId, type, newStatus, adminObjId, note = '') {
+export async function approveOrReject(contentId, type, newStatus, adminObjId, note = '', { onlyFromReview = false } = {}) {
   await connectDB();
 
   const MODEL_MAP = { lesson: Lesson, concept: Concept, feedItem: FeedItem, question: Question };
@@ -169,6 +180,9 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
 
   const doc = await Model.findOne({ contentId });
   if (!doc) throw new Error('المحتوى غير موجود');
+  if (onlyFromReview && doc.status !== 'review') {
+    throw new ReviewError('العنصر ليس بانتظار المراجعة', 'NOT_IN_REVIEW');
+  }
 
   const newVersion = (doc.version || 1) + 1;
   const action = newStatus === 'approved' ? 'approved' : 'edited';
@@ -181,7 +195,9 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
   };
 
   const existing = doc.changelog || [];
-  await Model.updateOne({ contentId }, {
+  // Conditional on the version read, so two reviewers cannot both act.
+  const filter = onlyFromReview ? { contentId, status: 'review', version: doc.version } : { contentId };
+  const res = await Model.updateOne(filter, {
     $set: {
       status:     newStatus,
       version:    newVersion,
@@ -191,6 +207,9 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
       ...(type === 'lesson' && newStatus === 'approved' && { 'reviewState.returned': false }),
     },
   });
+  if (onlyFromReview && !res.matchedCount) {
+    throw new ReviewError('تغيّر العنصر أثناء المراجعة — حدّث الصفحة وحاول مجدداً', 'CONFLICT');
+  }
 
   // Credit the original author, not the reviewing admin — a lesson shipping is
   // the author's effort paying off, and the only stat contributors see on their
@@ -200,4 +219,55 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
   }
 
   return { contentId, status: newStatus };
+}
+// ─── getLessonForReview ───────────────────────────────────────────────────────
+// Everything the reviewer reads in one request (DS2 step 3): the lesson and
+// its details, sections with their blocks, its questions and feed cards — the
+// parts a review comment can be anchored to (lib/review.js ANCHOR_KINDS) —
+// plus every review comment from earlier rounds and who wrote the lesson.
+// Shared by the owner's dashboard and the lead's inbox. Returns null when the
+// lesson does not exist.
+//
+export async function getLessonForReview(contentId) {
+  await connectDB();
+  const lesson = await getLessonWithContent(contentId);
+  if (!lesson) return null;
+
+  const [questions, feedItems, author] = await Promise.all([
+    Question.find({ lessonContentId: contentId, isCheckpoint: { $ne: true } }, 'contentId textAr type difficulty correctAnswer options').sort({ createdAt: 1 }).lean(),
+    FeedItem.find({ lessonContentId: contentId }, 'contentId type contentAr back correctAnswer').sort({ order: 1 }).lean(),
+    // Seeded lessons are created by the seed actor; the author is whoever
+    // wrote in it, so take the first real person of creator and last editor.
+    Contributor.findOne({ _id: { $in: [lesson.createdBy, lesson.updatedBy].filter(Boolean) }, ...REAL_PEOPLE }, 'name username').lean(),
+  ]);
+
+  const review = (lesson.notes || [])
+    .filter((n) => n.noteType === 'review_feedback')
+    .map((n) => ({
+      id: String(n._id), text: n.text, anchor: n.anchor || { kind: 'lesson' }, round: n.round ?? 0,
+      resolved: !!n.resolved, resolvedAt: n.resolvedAt || null, resolvedByName: n.resolvedByName || null,
+      createdAt: n.createdAt, authorName: n.authorName,
+    }));
+
+  return {
+    id: lesson.contentId,
+    subjectId: lesson.subjectId,
+    unitContentId: lesson.unitContentId,
+    title: lesson.title,
+    summary: lesson.summary,
+    status: lesson.status,
+    version: lesson.version,
+    estimatedMinutes: lesson.estimatedMinutes,
+    hook: lesson.metadata?.hook || null,
+    hookAnswer: lesson.metadata?.hookAnswer || null,
+    reviewState: lesson.reviewState || null,
+    author: author ? { name: author.name, username: author.username } : null,
+    sections: lesson.sections.map((s) => ({
+      id: s.contentId, title: s.title, kind: s.kind || 'GENERAL',
+      blocks: s.blocks.map((b) => ({ id: b.contentId, type: b.type, content: b.content, caption: b.caption })),
+    })),
+    questions: questions.map((q) => ({ id: q.contentId, text: q.textAr, type: q.type, difficulty: q.difficulty, answer: q.correctAnswer })),
+    feed: feedItems.map((f) => ({ id: f.contentId, type: f.type, text: f.contentAr, back: f.back })),
+    review,
+  };
 }

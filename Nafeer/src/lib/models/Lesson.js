@@ -44,7 +44,7 @@ const LessonSchema = new mongoose.Schema(
         // author fields are denormalized so display never needs a lookup
         authorId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Contributor', default: null },
         authorName: { type: String, default: '' },
-        authorRole: { type: String, enum: ['contributor', 'admin'], default: 'contributor' },
+        authorRole: { type: String, enum: ['contributor', 'lead', 'admin'], default: 'contributor' },
         // 'comment'        — general note from any contributor
         // 'review_feedback'— written by admin when approving/rejecting
         // 'flag'           — marks something that needs attention

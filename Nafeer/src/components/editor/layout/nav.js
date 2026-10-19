@@ -1,4 +1,4 @@
-import { BookOpen, CircleHelp, Image, LayoutDashboard, Sparkles, Smartphone, UserRound } from 'lucide-react';
+import { BookOpen, CircleHelp, ClipboardCheck, Image, LayoutDashboard, Sparkles, Smartphone, UserRound } from 'lucide-react';
 
 /**
  * EDITOR NAVIGATION
@@ -20,10 +20,22 @@ export const NAV = [
   { id: 'profile',   href: '/editor/profile',  icon: UserRound,       label: 'ملفي',     sub: 'Profile'   },
 ];
 
+/**
+ * «الإشراف» — shown only to a team lead of their subject (docs/team-leads.md).
+ * `group` gives the sidebar a heading above them. Later phases add the team
+ * and recruiting pages here.
+ */
+export const LEAD_NAV = [
+  { id: 'lead', href: '/editor/lead', icon: ClipboardCheck, label: 'المراجعة', sub: 'Lead inbox', group: 'الإشراف' },
+];
+
+/** The nav a contributor sees: everyone's items, then the lead's. */
+export const navFor = (contributor) => (contributor?.lead?.active ? [...NAV, ...LEAD_NAV] : NAV);
+
 /** Items that get their own slot in the mobile bottom bar; the rest go in "المزيد". */
 export const MOBILE_PRIMARY = ['dashboard', 'lessons', 'quizbank', 'concepts', 'feeds'];
 
-export const NAV_BY_ID = Object.fromEntries(NAV.map((n) => [n.id, n]));
+export const NAV_BY_ID = Object.fromEntries([...NAV, ...LEAD_NAV].map((n) => [n.id, n]));
 
 /**
  * Which nav item owns a pathname. Nested routes count as their section, so

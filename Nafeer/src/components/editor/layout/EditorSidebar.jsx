@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import Link                 from 'next/link';
 import { useDataStore }    from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -9,7 +9,7 @@ import { useAnnouncementStore } from '@/store/announcementStore';
 import { useRouter }       from 'next/navigation';
 import { Menu }            from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
-import { NAV, MOBILE_PRIMARY } from '@/components/editor/layout/nav';
+import { MOBILE_PRIMARY, navFor } from '@/components/editor/layout/nav';
 import { SyncDot, SyncPill }   from '@/components/editor/layout/SyncBanner';
 import { useLayout }           from '@/hooks/useBreakpoint';
 
@@ -325,14 +325,23 @@ export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
 
       {/* ── Nav ─────────────────────────────────────────────────────── */}
       <nav className="flex-1 flex flex-col py-2 w-full overflow-hidden">
-        {NAV.map((item) => {
+        {navFor(contributor).map((item, i, items) => {
           const active = currentPage === item.id;
           const count  = counts[item.id];
           const Icon = item.icon;
+          // A heading where a group starts (the lead's «الإشراف»); a rule on the rail.
+          const groupStart = item.group && item.group !== items[i - 1]?.group;
 
           return (
+            <Fragment key={item.id}>
+            {groupStart && (expanded ? (
+              <span className="block px-3.5 pt-3 pb-1 t-caption font-semibold text-fg-subtle">
+                {item.group}
+              </span>
+            ) : (
+              <span aria-hidden className="block mx-auto my-2 h-px w-6 bg-line" />
+            ))}
             <Link
-              key={item.id}
               href={item.href}
               aria-label={item.label}
               aria-current={active ? 'page' : undefined}
@@ -395,6 +404,7 @@ export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
                 </span>
               )}
             </Link>
+            </Fragment>
           );
         })}
       </nav>
@@ -482,7 +492,8 @@ export function MobileBottomNav({ currentPage, contributor, moreOpen, onToggleMo
   const textActive = 'var(--chrome-text-active)';
   const accent     = 'rgb(var(--sand-500))';
 
-  const primaryNav = NAV.filter((n) => MOBILE_PRIMARY.includes(n.id));
+  const nav = navFor(contributor);
+  const primaryNav = nav.filter((n) => MOBILE_PRIMARY.includes(n.id));
 
   return (
     <>
@@ -566,7 +577,7 @@ export function MobileBottomNav({ currentPage, contributor, moreOpen, onToggleMo
 
             <div className="px-4 pb-5 space-y-1.5">
               {/* Non-primary nav items (export excluded since it's gone from NAV) */}
-              {NAV.filter((n) => !MOBILE_PRIMARY.includes(n.id)).map((item) => {
+              {nav.filter((n) => !MOBILE_PRIMARY.includes(n.id)).map((item) => {
                 const active = currentPage === item.id;
                 const Icon = item.icon;
                 return (
