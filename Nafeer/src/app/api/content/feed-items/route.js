@@ -5,6 +5,8 @@ import {
   updateFeedItemStatus, deleteFeedItem,
 } from '@/lib/api/feedItems';
 import { trackStat } from '@/lib/trackStat';
+import { FeedItem } from '@/lib/models/FeedItem';
+import { assertCanEditLessons, lessonsForLinked } from '@/lib/lessonAccess';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -44,6 +46,8 @@ export async function POST(request) {
     }
 
     const user = await requireSubjectAccess(subjectId, { write: true });
+    // A card in a lesson is that lesson's owner's to add (lib/lessonAccess.js).
+    await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [body.contentId], [body.lessonContentId]));
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const item = await createFeedItem(
       { ...body,
