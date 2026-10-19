@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { getAdminAsUser } from '@/lib/adminAuth';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
-import { leadCan, normaliseLead } from '@/lib/leads';
+import { isPaused, leadCan, normaliseLead } from '@/lib/leads';
 
 const unauthorized = () =>
   Response.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
@@ -19,6 +19,17 @@ const leadForbidden = () =>
     { status: 403 }
   );
 
+const pausedRefusal = (paused) =>
+  Response.json(
+    {
+      ok: false,
+      code: 'PAUSED',
+      error: `أوقف قائد الفريق صلاحية التعديل لديك مؤقتاً${paused.reason ? `: ${paused.reason}` : ''}`,
+      until: paused.until || null,
+    },
+    { status: 403 }
+  );
+
 const notFound = () =>
   Response.json({ ok: false, error: 'غير موجود' }, { status: 404 });
 
@@ -29,7 +40,12 @@ const notFound = () =>
 // it outlives a rejection and keeps a subject the admin has since changed. The
 // record is read back on every call: anyone no longer approved is signed out,
 // and `subject` is always the one on file.
-export async function requireContributor() {
+//
+// Pass `{ write: true }` from every handler that changes content: a member a
+// lead has paused (docs/team-leads.md L2) can still read, but not write.
+// tests/writeGuard.test.js fails if a write handler under /api/content
+// forgets it.
+export async function requireContributor({ write = false } = {}) {
   const admin = await getAdminAsUser();
   if (admin) return admin;
 
@@ -37,8 +53,9 @@ export async function requireContributor() {
   if (!user?.id) throw unauthorized();
 
   await connectDB();
-  const contributor = await Contributor.findById(user.id).select('status subject lead').lean();
+  const contributor = await Contributor.findById(user.id).select('status subject lead paused').lean();
   if (!contributor || contributor.status !== 'approved') throw unauthorized();
+  if (write && isPaused(contributor.paused)) throw pausedRefusal(contributor.paused);
 
   // `lead` comes from the same read, so lead checks cost no extra query and a
   // lead removed by the owner loses the powers on their next request.
@@ -47,11 +64,11 @@ export async function requireContributor() {
 
 // For lead-only routes on a subject (docs/team-leads.md). Passes the owner,
 // and a lead of exactly this subject who holds `perm` (lib/leads.js).
-export async function requireLead(subjectId, perm) {
+export async function requireLead(subjectId, perm, opts = {}) {
   if (!subjectId) {
     throw Response.json({ ok: false, error: 'subjectId مطلوب' }, { status: 400 });
   }
-  const user = await requireContributor();
+  const user = await requireContributor(opts);
   if (!leadCan(user, perm, subjectId)) throw leadForbidden();
   return user;
 }
@@ -80,7 +97,7 @@ export async function requireLeadOfContent(Model, contentId, perm) {
 
   await connectDB();
   const doc = await Model.findOne({ contentId })
-    .select('contentId subjectId status createdBy ownerId').lean();
+    .select('contentId subjectId status createdBy ownerId reviewState.submittedAt').lean();
   if (!doc) throw notFound();
 
   if (!leadCan(user, perm, doc.subjectId)) throw leadForbidden();
@@ -94,7 +111,7 @@ export async function requireLeadOfContent(Model, contentId, perm) {
 // Admins always pass — they are not bound to a single subject and must
 // be able to access all subjects, including test/remote subjects created
 // outside the main curriculum catalog.
-export async function requireSubjectAccess(subjectId) {
+export async function requireSubjectAccess(subjectId, opts = {}) {
   if (!subjectId) {
     throw Response.json(
       { ok: false, error: 'subjectId مطلوب' },
@@ -102,7 +119,7 @@ export async function requireSubjectAccess(subjectId) {
     );
   }
 
-  const user = await requireContributor();
+  const user = await requireContributor(opts);
 
   // Admins bypass the subject assignment check entirely.
   if (user.role === 'admin') return user;
@@ -117,8 +134,8 @@ export async function requireSubjectAccess(subjectId) {
 // document's subject and applies the same rule as requireSubjectAccess, so a
 // contributor can't reach another subject's content just by knowing its id.
 // Returns { user, doc } where doc carries only contentId and subjectId.
-export async function requireContentAccess(Model, contentId) {
-  const user = await requireContributor();
+export async function requireContentAccess(Model, contentId, opts = {}) {
+  const user = await requireContributor(opts);
 
   if (typeof contentId !== 'string' || !contentId) throw notFound();
 

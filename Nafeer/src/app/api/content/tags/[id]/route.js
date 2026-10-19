@@ -6,7 +6,7 @@ import { updateTag, deleteTag } from '@/lib/api/concepts';
 // PUT /api/content/tags/[id]
 export async function PUT(request, { params }) {
   try {
-    const { user } = await requireContentAccess(Tag, (await params).id);
+    const { user } = await requireContentAccess(Tag, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
@@ -30,7 +30,7 @@ export async function PUT(request, { params }) {
 // DELETE /api/content/tags/[id]
 export async function DELETE(request, { params }) {
   try {
-    await requireContentAccess(Tag, (await params).id);
+    await requireContentAccess(Tag, (await params).id, { write: true });
     await deleteTag((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {

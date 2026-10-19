@@ -50,6 +50,9 @@ export function LessonReview({ item, onDone, endpoints = ADMIN_REVIEW_ENDPOINTS 
   const [comments, setComments] = useState([]);
   const [busy, setBusy] = useState(null);
   const [result, setResult] = useState(null);
+  // The subject's review checklist (docs/team-leads.md L2): approving waits
+  // until every item is ticked. Returning does not.
+  const [ticked, setTicked] = useState(() => new Set());
 
   useEffect(() => {
     let live = true;
@@ -90,6 +93,13 @@ export function LessonReview({ item, onDone, endpoints = ADMIN_REVIEW_ENDPOINTS 
   const mine = !!(lesson.mine || item.mine);
   const rounds = [...new Set(lesson.review.map((r) => r.round))].sort((a, b) => b - a);
   const round = (lesson.reviewState?.round || 0) + 1;
+  const checklist = lesson.checklist || [];
+  const checklistDone = ticked.size === checklist.length;
+  const toggleTick = (i) => setTicked((s) => {
+    const next = new Set(s);
+    if (next.has(i)) next.delete(i); else next.add(i);
+    return next;
+  });
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px] items-start">
@@ -213,11 +223,27 @@ export function LessonReview({ item, onDone, endpoints = ADMIN_REVIEW_ENDPOINTS 
           ))}
         </Card>
 
+        {!mine && checklist.length > 0 && (
+          <Card title={`قائمة المراجعة · ${ticked.size}/${checklist.length}`}>
+            <ul className="flex flex-col gap-2">
+              {checklist.map((text, i) => (
+                <li key={i}>
+                  <label className="flex items-start gap-2 t-label text-fg cursor-pointer">
+                    <input type="checkbox" className="mt-1 accent-accent" checked={ticked.has(i)} onChange={() => toggleTick(i)} />
+                    <span className="read">{text}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
         {!mine && (
           <div className="flex flex-col gap-2">
             {result && <p role="alert" className="t-label text-danger">{result}</p>}
+            {!checklistDone && <p className="t-caption text-fg-subtle">أكمل قائمة المراجعة قبل الاعتماد.</p>}
             <div className="flex gap-2">
-              <ConfirmButton variant="primary" size="md" tone="accent" confirmLabel="اعتمد" align="start" disabled={!!busy}
+              <ConfirmButton variant="primary" size="md" tone="accent" confirmLabel="اعتمد" align="start" disabled={!!busy || !checklistDone}
                 title="اعتماد الدرس؟" onConfirm={() => decide('approved')}
                 description={comments.length ? `لديك ${comments.length} تعليق لم يُرسل — الاعتماد يتجاهلها.` : 'يصبح جاهزاً للنشر في صفحة المادة.'}>
                 {busy === 'approved' ? 'جارٍ…' : 'اعتماد'}

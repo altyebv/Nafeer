@@ -86,6 +86,28 @@ const ContributorSchema = new mongoose.Schema(
     // ── Interview ─────────────────────────────────────────────────────────────
     interviewToken:     { type: String, select: false, default: null },
     interviewExpiresAt: { type: Date,   default: null },
+    // The questions as they were when the invite went out (lib/interview.js),
+    // so a lead editing their subject's questions never changes an interview
+    // already in someone's hands.
+    interviewSnapshot:  { type: mongoose.Schema.Types.Mixed, default: null },
+
+    // ── A lead's decision, waiting out its undo window (L3) ──────────────────
+    // Applied by lib/applicants.js applyDueDecisions once `decideAt` passes.
+    pendingDecision: {
+      type: new mongoose.Schema(
+        {
+          action:   { type: String, enum: ['approve', 'reject'], required: true },
+          reason:   { type: String, default: '' },
+          subject:  { type: String, default: '' },   // approve: the subject they join
+          byId:     { type: String, default: '' },
+          byName:   { type: String, default: '' },
+          at:       { type: Date,   default: Date.now },
+          decideAt: { type: Date,   required: true },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
 
     // Legacy fixed answers
     interviewAnswers: {
@@ -140,6 +162,21 @@ const ContributorSchema = new mongoose.Schema(
       canPublish:          { type: Boolean, default: false },
       since:               { type: Date,    default: null },
       appointedBy:         { type: String,  default: '' },
+      // Away mode, set by the lead themself: their reviews fall to the
+      // co-lead and the owner until this date (lib/leads.js isLeadAvailable).
+      awayUntil:           { type: Date,    default: null },
+    },
+
+    // ── Paused by a lead (docs/team-leads.md L2) ─────────────────────────────
+    // While paused the contributor can read but not write (guard.js `write`).
+    // `until` null with `active` set means until a lead lifts it.
+    paused: {
+      active: { type: Boolean, default: false },
+      until:  { type: Date,    default: null },
+      reason: { type: String,  default: '', trim: true, maxlength: 500 },
+      byId:   { type: String,  default: '' },
+      byName: { type: String,  default: '' },
+      at:     { type: Date,    default: null },
     },
 
     lastSignedInAt: { type: Date, default: null },
@@ -147,6 +184,10 @@ const ContributorSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Only applicants with a decision waiting carry the field; the sweep reads
+// just those (lib/applicants.js applyDueDecisions).
+ContributorSchema.index({ 'pendingDecision.decideAt': 1 }, { sparse: true });
 
 ContributorSchema.methods.comparePassword = async function (plain) {
   return bcrypt.compare(plain, this.passwordHash);

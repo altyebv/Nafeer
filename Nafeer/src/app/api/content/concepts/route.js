@@ -40,7 +40,7 @@ export async function POST(request) {
     const { subjectId, type, titleAr } = body;
     if (!subjectId || !type || !titleAr) return err('الحقول المطلوبة: subjectId, type, titleAr');
 
-    const user = await requireSubjectAccess(subjectId);
+    const user = await requireSubjectAccess(subjectId, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
 
     const concept = await createConcept(

@@ -64,7 +64,11 @@ export async function PATCH(request) {
         action:    status === 'approved' ? 'lesson.approve' : 'lesson.return',
         subjectId: doc.subjectId,
         target:    { kind: type, id: contentId, label: contentId },
-        meta:      status === 'draft' && type === 'lesson' ? { comments: result.comments, round: result.round } : null,
+        meta: {
+          // How long it waited for this decision — the team page's turnaround.
+          waitedMs: doc.reviewState?.submittedAt ? Date.now() - new Date(doc.reviewState.submittedAt).getTime() : null,
+          ...(status === 'draft' && type === 'lesson' ? { comments: result.comments, round: result.round } : {}),
+        },
       }),
     ]));
 

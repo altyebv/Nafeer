@@ -6,6 +6,9 @@ import { REAL_PEOPLE } from '@/lib/SeedActor';
 import { pipelineStage } from '@/lib/adminPipeline';
 import { appUrl } from '@/lib/appUrl';
 import { sendEmail } from '@/lib/email/emailService';
+import { ContributorRole } from '@/lib/models/ContributorRole';
+import { interviewSnapshot } from '@/lib/interview';
+import { applyDueDecisions } from '@/lib/applicants';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 
@@ -50,6 +53,9 @@ export async function GET(request) {
   if (!admin) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   await connectDB();
+  // Leads' decisions whose undo window has passed take effect before the list
+  // is read (lib/applicants.js) — on a request the dashboard makes anyway.
+  await applyDueDecisions();
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
@@ -148,6 +154,12 @@ export async function PATCH(request) {
   let onboardingLink  = null;
   let interviewLink   = null;
 
+  // The owner's decision replaces any lead decision still in its undo window
+  // (lib/applicants.js), so the sweep never applies a stale one on top.
+  if (['approve', 'reject', 'reset_to_pending', 'set_password'].includes(action)) {
+    contributor.pendingDecision = null;
+  }
+
   if (action === 'send_interview') {
     // Generate a fresh interview token for pending applicants
     if (contributor.status !== 'pending') {
@@ -159,6 +171,9 @@ export async function PATCH(request) {
     const token = generateOnboardingToken();
     contributor.interviewToken     = token;
     contributor.interviewExpiresAt = new Date(Date.now() + LINK_KINDS.interview.days * DAY_MS);
+    // A fresh invite gets a fresh snapshot of the questions (lib/interview.js).
+    const role = contributor.roleId ? await ContributorRole.findById(contributor.roleId).lean() : null;
+    contributor.interviewSnapshot  = interviewSnapshot(role, contributor.subjectsOfInterest);
     interviewLink = getInterviewLink(token);
   } else if (action === 'approve') {
     contributor.status = 'approved';

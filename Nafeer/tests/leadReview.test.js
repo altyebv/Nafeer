@@ -142,7 +142,7 @@ describe('PATCH /api/lead/review — what a decision leaves behind', () => {
       'by_member', { comments, summary: '' }, { id: 'lead', name: 'سارة', role: 'lead' },
     );
     expect(recordAudit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      action: 'lesson.return', meta: { comments: 2, round: 1 },
+      action: 'lesson.return', meta: { waitedMs: null, comments: 2, round: 1 },
     }));
   });
 

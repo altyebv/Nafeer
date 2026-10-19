@@ -1,4 +1,4 @@
-import { BookOpen, CircleHelp, ClipboardCheck, Image, LayoutDashboard, Sparkles, Smartphone, UserRound } from 'lucide-react';
+import { BookMarked, BookOpen, CircleHelp, ClipboardCheck, Image, LayoutDashboard, Sparkles, Smartphone, UserPlus, UserRound, Users } from 'lucide-react';
 
 /**
  * EDITOR NAVIGATION
@@ -17,20 +17,27 @@ export const NAV = [
   { id: 'quizbank',  href: '/editor/quizbank', icon: CircleHelp,      label: 'الأسئلة',  sub: 'Quiz Bank' },
   { id: 'concepts',  href: '/editor/concepts', icon: Sparkles,        label: 'المفاهيم', sub: 'Concepts'  },
   { id: 'media',     href: '/editor/media',    icon: Image,           label: 'الوسائط',  sub: 'Media'     },
+  { id: 'guide',     href: '/editor/guide',    icon: BookMarked,      label: 'دليل المادة', sub: 'Handbook' },
   { id: 'profile',   href: '/editor/profile',  icon: UserRound,       label: 'ملفي',     sub: 'Profile'   },
 ];
 
 /**
  * «الإشراف» — shown only to a team lead of their subject (docs/team-leads.md).
- * `group` gives the sidebar a heading above them. Later phases add the team
- * and recruiting pages here.
+ * `group` gives the sidebar a heading above them; `perms` hides an item from a
+ * lead who holds none of those permissions (lib/leads.js).
  */
 export const LEAD_NAV = [
-  { id: 'lead', href: '/editor/lead', icon: ClipboardCheck, label: 'المراجعة', sub: 'Lead inbox', group: 'الإشراف' },
+  { id: 'lead',       href: '/editor/lead',            icon: ClipboardCheck, label: 'المراجعة',  sub: 'Lead inbox', group: 'الإشراف', perms: ['canReview'] },
+  { id: 'team',       href: '/editor/lead/team',       icon: Users,          label: 'الفريق',    sub: 'Team',       group: 'الإشراف', perms: ['canManageTeam'] },
+  { id: 'recruiting', href: '/editor/lead/recruiting', icon: UserPlus,       label: 'المتقدمون', sub: 'Applicants', group: 'الإشراف', perms: ['canDecideApplicants', 'canEditInterview'] },
 ];
 
-/** The nav a contributor sees: everyone's items, then the lead's. */
-export const navFor = (contributor) => (contributor?.lead?.active ? [...NAV, ...LEAD_NAV] : NAV);
+/** The nav a contributor sees: everyone's items, then the lead's they may use. */
+export const navFor = (contributor) => {
+  const lead = contributor?.lead;
+  if (!lead?.active) return NAV;
+  return [...NAV, ...LEAD_NAV.filter((n) => n.perms.some((p) => lead[p]))];
+};
 
 /** Items that get their own slot in the mobile bottom bar; the rest go in "المزيد". */
 export const MOBILE_PRIMARY = ['dashboard', 'lessons', 'quizbank', 'concepts', 'feeds'];
@@ -43,7 +50,9 @@ export const NAV_BY_ID = Object.fromEntries([...NAV, ...LEAD_NAV].map((n) => [n.
  */
 export function activeNavId(pathname) {
   if (!pathname || pathname === '/editor') return 'dashboard';
-  const section = pathname.split('/')[2];
+  const [, , section, sub] = pathname.split('/');
+  // The lead's pages live under /editor/lead; team and recruiting are their own items.
+  if (section === 'lead' && (sub === 'team' || sub === 'recruiting')) return sub;
   return NAV_BY_ID[section] ? section : 'dashboard';
 }
 

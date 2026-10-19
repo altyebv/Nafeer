@@ -36,7 +36,7 @@ export async function POST(request) {
     const { subjectId, nameAr } = body;
     if (!subjectId || !nameAr) return err('الحقول المطلوبة: subjectId, nameAr');
 
-    const user = await requireSubjectAccess(subjectId);
+    const user = await requireSubjectAccess(subjectId, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
 
     const tag = await createTag(

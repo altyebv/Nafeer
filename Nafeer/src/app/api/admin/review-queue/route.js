@@ -3,8 +3,32 @@ import { getReviewQueue, approveOrReject, returnLesson } from '@/lib/api/reviewQ
 import { ReviewError } from '@/lib/review';
 import { after } from 'next/server';
 import { notifyLessonReviewed } from '@/lib/reviewNotify';
+import { connectDB } from '@/lib/db';
+import { Contributor } from '@/lib/models/Contributor';
+import { isLeadAvailable } from '@/lib/leads';
 
 const REVIEW_ERROR_STATUS = { NOT_FOUND: 404, NOT_IN_REVIEW: 409, CONFLICT: 409 };
+
+// The owner's fallback (docs/team-leads.md L2): for each subject in the queue,
+// whether a lead is around to review it — 'available', 'away' (leads exist but
+// all are away or inactive) or 'none'. Lessons in an 'away' or 'none' subject
+// are the owner's to review. One read, only of the subjects in the queue.
+async function leadCoverFor(queue) {
+  const subjects = [...new Set(
+    [...queue.lessons, ...queue.concepts, ...queue.feedItems, ...queue.questions].map((i) => i.subjectId),
+  )];
+  if (!subjects.length) return {};
+  await connectDB();
+  const leads = await Contributor.find({ 'lead.active': true, subject: { $in: subjects } })
+    .select('subject lead stats.lastActiveAt').lean();
+  const cover = Object.fromEntries(subjects.map((s) => [s, 'none']));
+  for (const c of leads) {
+    if (c.lead?.subject !== c.subject) continue;   // moved since appointed
+    if (isLeadAvailable(c)) cover[c.subject] = 'available';
+    else if (cover[c.subject] === 'none') cover[c.subject] = 'away';
+  }
+  return cover;
+}
 
 const ok  = (data, extra = {}) => Response.json({ ok: true,  ...extra, data });
 const err = (msg, status = 400) => Response.json({ ok: false, error: msg }, { status });
@@ -19,7 +43,7 @@ export async function GET(request) {
     const subjectId = new URL(request.url).searchParams.get('subjectId') || null;
     const queue = await getReviewQueue(subjectId);
 
-    return ok(queue, { total: queue.total });
+    return ok({ ...queue, leadCover: await leadCoverFor(queue) }, { total: queue.total });
   } catch (e) {
     console.error('[GET /api/admin/review-queue]', e);
     return err('خطأ في الخادم', 500);

@@ -39,7 +39,7 @@ export async function POST(request) {
       return err('الحقول المطلوبة: subjectId, type, textAr, correctAnswer');
     }
 
-    const user = await requireSubjectAccess(subjectId);
+    const user = await requireSubjectAccess(subjectId, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
 
     const question = await createQuestion(

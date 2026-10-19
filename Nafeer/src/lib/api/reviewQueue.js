@@ -10,6 +10,7 @@ import { trackStat } from '@/lib/trackStat';
 import { ReviewError, validateReturnComments } from '@/lib/review';
 import { getLessonWithContent } from '@/lib/api/lessons';
 import { REAL_PEOPLE } from '@/lib/SeedActor';
+import { SubjectGuide } from '@/lib/models/SubjectGuide';
 
 // ─── getReviewQueue ───────────────────────────────────────────────────────────
 // Returns all content items with status='review', optionally filtered by subjectId.
@@ -224,7 +225,8 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
 // Everything the reviewer reads in one request (DS2 step 3): the lesson and
 // its details, sections with their blocks, its questions and feed cards — the
 // parts a review comment can be anchored to (lib/review.js ANCHOR_KINDS) —
-// plus every review comment from earlier rounds and who wrote the lesson.
+// plus every review comment from earlier rounds, who wrote the lesson, and
+// the subject's review checklist (models/SubjectGuide.js).
 // Shared by the owner's dashboard and the lead's inbox. Returns null when the
 // lesson does not exist.
 //
@@ -233,12 +235,13 @@ export async function getLessonForReview(contentId) {
   const lesson = await getLessonWithContent(contentId);
   if (!lesson) return null;
 
-  const [questions, feedItems, author] = await Promise.all([
+  const [questions, feedItems, author, guide] = await Promise.all([
     Question.find({ lessonContentId: contentId, isCheckpoint: { $ne: true } }, 'contentId textAr type difficulty correctAnswer options').sort({ createdAt: 1 }).lean(),
     FeedItem.find({ lessonContentId: contentId }, 'contentId type contentAr back correctAnswer').sort({ order: 1 }).lean(),
     // Seeded lessons are created by the seed actor; the author is whoever
     // wrote in it, so take the first real person of creator and last editor.
     Contributor.findOne({ _id: { $in: [lesson.createdBy, lesson.updatedBy].filter(Boolean) }, ...REAL_PEOPLE }, 'name username').lean(),
+    SubjectGuide.findOne({ subjectId: lesson.subjectId }, 'checklist').lean(),
   ]);
 
   const review = (lesson.notes || [])
@@ -269,5 +272,6 @@ export async function getLessonForReview(contentId) {
     questions: questions.map((q) => ({ id: q.contentId, text: q.textAr, type: q.type, difficulty: q.difficulty, answer: q.correctAnswer })),
     feed: feedItems.map((f) => ({ id: f.contentId, type: f.type, text: f.contentAr, back: f.back })),
     review,
+    checklist: guide?.checklist || [],
   };
 }

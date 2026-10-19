@@ -77,7 +77,7 @@ export async function POST(request) {
     });
     const statusToken = newToken();
     contributor.statusToken = statusToken;
-    const interviewToken = issueInterview(contributor);
+    const interviewToken = issueInterview(contributor, role);
     await contributor.save();
 
     // After the response: a slow or failed send never breaks the application.

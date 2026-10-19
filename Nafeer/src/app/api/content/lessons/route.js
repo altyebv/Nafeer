@@ -36,7 +36,7 @@ export async function POST(request) {
       return err('الحقول المطلوبة: contentId, subjectId, unitContentId, title, order');
     }
 
-    const user = await requireSubjectAccess(subjectId);
+    const user = await requireSubjectAccess(subjectId, { write: true });
     // Admins don't have a Contributor _id — substitute the system seed actor
     // so that createdBy / changelog ObjectId fields pass Mongoose validation.
     const actorId = user.role === 'admin'

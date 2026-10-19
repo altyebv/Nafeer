@@ -15,6 +15,7 @@ const { AuditEvent }  = await import('@/lib/models/AuditEvent');
 const { fakeModel }   = await import('./helpers/fakeModel.js');
 const {
   LEAD_PERMISSIONS, DEFAULT_LEAD_PERMISSIONS, leadCan, normaliseLead, pickLeadPermissions,
+  isPaused, buildPause, isLeadAvailable,
 } = await import('@/lib/leads');
 const { requireContributor, requireLead, requireLeadOfContent } = await import('@/lib/api/guard');
 const { validateAudit, recordAudit, AuditError } = await import('@/lib/audit');
@@ -47,7 +48,7 @@ describe('normaliseLead', () => {
 
   it('fills permissions missing from older documents with the defaults', () => {
     const lead = normaliseLead({ active: true, subject: 'PHYSICS', canPublish: true }, 'PHYSICS');
-    expect(lead).toEqual({ active: true, subject: 'PHYSICS', ...DEFAULT_LEAD_PERMISSIONS, canPublish: true });
+    expect(lead).toEqual({ active: true, subject: 'PHYSICS', ...DEFAULT_LEAD_PERMISSIONS, canPublish: true, awayUntil: null });
   });
 
   it('starts the risky permissions off', () => {
@@ -273,5 +274,82 @@ describe('withCredit', () => {
 
   it('refuses an unknown kind', () => {
     expect(() => withCredit([], { contributorId: 'x', kind: 'owner' })).toThrow();
+  });
+});
+
+// ─── L2: pausing and availability ─────────────────────────────────────────────
+
+describe('isPaused / buildPause', () => {
+  const now = new Date('2026-10-19T12:00:00Z');
+  const by = { id: 'lead', name: 'سارة' };
+
+  it('a pause with an end date lifts itself', () => {
+    const p = buildPause({ days: 3, reason: 'مراجعة الأسلوب أولاً', by }, now);
+    expect(isPaused(p, now)).toBe(true);
+    expect(isPaused(p, new Date('2026-10-22T12:00:01Z'))).toBe(false);
+  });
+
+  it('no days means until a lead lifts it', () => {
+    const p = buildPause({ days: null, reason: 'x'.repeat(10), by }, now);
+    expect(p.until).toBeNull();
+    expect(isPaused(p, new Date('2030-01-01'))).toBe(true);
+    expect(isPaused({ ...p, active: false }, now)).toBe(false);
+  });
+
+  it('refuses a length outside 1..30 days', () => {
+    for (const days of [-1, 31, 2.5, '7']) {
+      expect(() => buildPause({ days, reason: 'x', by }, now)).toThrow();
+    }
+  });
+});
+
+describe('isLeadAvailable', () => {
+  const now = new Date('2026-10-19T12:00:00Z');
+  const lead = (extra = {}, lastActiveAt = '2026-10-18') => ({
+    lead: { active: true, subject: 'PHYSICS', ...extra }, stats: { lastActiveAt },
+  });
+
+  it('a recently active lead is available', () => {
+    expect(isLeadAvailable(lead(), now)).toBe(true);
+  });
+
+  it('away mode, or two weeks of silence, makes them unavailable', () => {
+    expect(isLeadAvailable(lead({ awayUntil: '2026-10-25' }), now)).toBe(false);
+    expect(isLeadAvailable(lead({ awayUntil: '2026-10-01' }), now)).toBe(true);
+    expect(isLeadAvailable(lead({}, '2026-10-01'), now)).toBe(false);
+  });
+
+  it('a new lead with no recorded activity counts as available', () => {
+    expect(isLeadAvailable(lead({}, null), now)).toBe(true);
+  });
+});
+
+describe('the guard and a paused member', () => {
+  beforeEach(() => {
+    Contributor.seed([
+      { _id: 'c_paused',  status: 'approved', subject: 'PHYSICS',
+        paused: { active: true, until: null, reason: 'راجع ملاحظات الجولة السابقة' } },
+      { _id: 'c_expired', status: 'approved', subject: 'PHYSICS',
+        paused: { active: true, until: new Date('2020-01-01'), reason: 'قديم' } },
+    ]);
+  });
+
+  it('reads still work', async () => {
+    signInAs({ id: 'c_paused', role: 'contributor' });
+    await expect(requireContributor()).resolves.toMatchObject({ id: 'c_paused' });
+  });
+
+  it('writes are refused with the reason', async () => {
+    signInAs({ id: 'c_paused', role: 'contributor' });
+    const res = await refusal(() => requireContributor({ write: true }));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.code).toBe('PAUSED');
+    expect(body.error).toContain('راجع ملاحظات الجولة السابقة');
+  });
+
+  it('an expired pause no longer blocks', async () => {
+    signInAs({ id: 'c_expired', role: 'contributor' });
+    await expect(requireContributor({ write: true })).resolves.toMatchObject({ id: 'c_expired' });
   });
 });

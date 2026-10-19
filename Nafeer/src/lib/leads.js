@@ -48,6 +48,7 @@ export function normaliseLead(lead, subject) {
   for (const perm of LEAD_PERMISSIONS) {
     out[perm] = typeof lead[perm] === 'boolean' ? lead[perm] : DEFAULT_LEAD_PERMISSIONS[perm];
   }
+  out.awayUntil = lead.awayUntil || null;
   return out;
 }
 
@@ -73,4 +74,52 @@ export function pickLeadPermissions(body) {
     if (typeof body?.[perm] === 'boolean') out[perm] = body[perm];
   }
   return out;
+}
+
+// ─── Pausing a member (L2) ────────────────────────────────────────────────────
+
+export const MAX_PAUSE_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Whether a contributor's `paused` record blocks writes at `now`. */
+export function isPaused(paused, now = new Date()) {
+  if (!paused?.active) return false;
+  return !paused.until || new Date(paused.until) > now;
+}
+
+/**
+ * The `paused` record a lead writes. `days` null or 0 means until lifted;
+ * otherwise 1..MAX_PAUSE_DAYS. Throws on anything else.
+ */
+export function buildPause({ days = null, reason, by }, now = new Date()) {
+  if (days != null && days !== 0 && !(Number.isInteger(days) && days >= 1 && days <= MAX_PAUSE_DAYS)) {
+    throw new Error(`مدة الإيقاف من 1 إلى ${MAX_PAUSE_DAYS} يوماً، أو حتى الرفع`);
+  }
+  return {
+    active: true,
+    until:  days ? new Date(now.getTime() + days * DAY_MS) : null,
+    reason,
+    byId:   String(by.id),
+    byName: by.name || '',
+    at:     now,
+  };
+}
+
+// ─── Away mode and the owner's fallback (L2) ─────────────────────────────────
+
+// A lead with no activity for this long is treated as away.
+export const LEAD_INACTIVE_DAYS = 14;
+export const MAX_AWAY_DAYS = 60;
+
+/**
+ * Whether a lead is around to review: not in away mode, and active within
+ * LEAD_INACTIVE_DAYS. `contributor` carries `lead` and `stats.lastActiveAt`.
+ */
+export function isLeadAvailable(contributor, now = new Date()) {
+  const lead = contributor?.lead;
+  if (!lead?.active) return false;
+  if (lead.awayUntil && new Date(lead.awayUntil) > now) return false;
+  const last = contributor.stats?.lastActiveAt;
+  if (!last) return true;   // newly appointed, nothing recorded yet
+  return now - new Date(last) < LEAD_INACTIVE_DAYS * DAY_MS;
 }

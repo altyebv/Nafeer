@@ -8,6 +8,7 @@ import { useLayout }       from '@/hooks/useBreakpoint';
 import EditorSidebar       from '@/components/editor/layout/EditorSidebar';
 import SyncBanner          from '@/components/editor/layout/SyncBanner';
 import { activeNavId }     from '@/components/editor/layout/nav';
+import { formatDate }      from '@/lib/format';
 
 // Must match the constants in EditorSidebar.
 const RAIL_W     = 60;
@@ -68,8 +69,25 @@ export default function EditorChrome({ contributor, children }) {
       >
         {/* The lesson editor shows sync state inside its own header instead. */}
         {!isLessonEditor && <SyncBanner />}
+        {contributor?.paused && <PausedBanner paused={contributor.paused} />}
         {children}
       </main>
+    </div>
+  );
+}
+
+// A lead has paused this member's edit access (docs/team-leads.md L2): every
+// save is refused by the server, so say so once, up front, with the reason.
+function PausedBanner({ paused }) {
+  return (
+    <div role="status" className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2.5 border-b border-line bg-sunken t-label text-fg">
+      <strong className="text-warn">التعديل موقوف مؤقتاً</strong>
+      <span className="text-fg-muted">
+        {paused.byName ? `أوقفه ${paused.byName}` : 'أوقفه قائد الفريق'}
+        {paused.until ? ` حتى ${formatDate(paused.until, 'medium')}` : ''}
+        {paused.reason ? ` — ${paused.reason}` : ''}
+      </span>
+      <span className="text-fg-subtle">يمكنك القراءة كالمعتاد.</span>
     </div>
   );
 }

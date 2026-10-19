@@ -2,48 +2,23 @@ import { NextResponse }    from 'next/server';
 import { connectDB }        from '@/lib/db';
 import { Contributor }      from '@/lib/models/Contributor';
 import { ContributorRole }  from '@/lib/models/ContributorRole';
+import { MIN_ANSWER_LENGTH as MIN_LENGTH, questionsFor } from '@/lib/interview';
 
-const MIN_LENGTH = 80;
+// The questions come from the snapshot taken when the invite went out
+// (lib/interview.js), so the page and the submit check always agree, whatever
+// a lead edits in the meantime. Invites sent before snapshots existed resolve
+// from the role, as before.
 
-// ─── GET /api/interview?token=xxx ─────────────────────────────────────────────
-// Validates the token and returns contributor info + role questions. 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Resolves which questions + microTask to use for a given role + contributor.
- *
- * For roles that carry a subjectQuestionMap, we pick the entry matching the
- * contributor's first subject of interest. Falls back to the role's generic
- * interviewQuestions / microTask if no subject-specific entry is found.
- */
-function resolveQuestions(role, subjectsOfInterest = []) {
-  const primarySubject = subjectsOfInterest[0] || null;
-
-  if (primarySubject && Array.isArray(role.subjectQuestionMap) && role.subjectQuestionMap.length > 0) {
-    const entry = role.subjectQuestionMap.find((e) => e.subjectId === primarySubject);
-    if (entry && entry.questions?.length > 0) {
-      return {
-        questions:         (entry.questions || []).sort((a, b) => a.order - b.order),
-        microTask:         entry.microTask?.prompt
-          ? { prompt: entry.microTask.prompt, minChars: entry.microTask.minChars ?? MIN_LENGTH }
-          : null,
-        isSubjectSpecific: true,
-        resolvedSubjectId: primarySubject,
-      };
-    }
-  }
-
-  return {
-    questions:         (role.interviewQuestions || []).sort((a, b) => a.order - b.order),
-    microTask:         role.microTask?.prompt
-      ? { prompt: role.microTask.prompt, minChars: role.microTask.minChars ?? MIN_LENGTH }
-      : null,
-    isSubjectSpecific: false,
-    resolvedSubjectId: null,
-  };
+// Reads the role only when there is no snapshot to read instead.
+async function questionsOf(contributor) {
+  const role = !contributor.interviewSnapshot?.takenAt && contributor.roleId
+    ? await ContributorRole.findById(contributor.roleId)
+    : null;
+  return questionsFor(contributor, role);
 }
 
 // ─── GET /api/interview?token=xxx ─────────────────────────────────────────────
+// Validates the token and returns contributor info + role questions.
 
 export async function GET(request) {
   const token = new URL(request.url).searchParams.get('token');
@@ -82,21 +57,7 @@ export async function GET(request) {
     );
   }
 
-  let questions         = [];
-  let microTask         = null;
-  let roleName          = null;
-  let isSubjectSpecific = false;
-
-  if (contributor.roleId) {
-    const role = await ContributorRole.findById(contributor.roleId);
-    if (role) {
-      roleName = role.name;
-      const resolved = resolveQuestions(role, contributor.subjectsOfInterest);
-      questions         = resolved.questions;
-      microTask         = resolved.microTask;
-      isSubjectSpecific = resolved.isSubjectSpecific;
-    }
-  }
+  const { questions, microTask, roleName, isSubjectSpecific } = await questionsOf(contributor);
 
   return NextResponse.json({
     ok: true,
@@ -161,18 +122,8 @@ export async function POST(request) {
       );
     }
 
-    // Resolve the same questions used at GET time to validate against
-    let resolvedQuestions = [];
-    let resolvedMicroTask = null;
-
-    if (contributor.roleId) {
-      const role = await ContributorRole.findById(contributor.roleId);
-      if (role) {
-        const resolved = resolveQuestions(role, contributor.subjectsOfInterest);
-        resolvedQuestions = resolved.questions;
-        resolvedMicroTask = resolved.microTask;
-      }
-    }
+    // The same questions the page showed.
+    const { questions: resolvedQuestions, microTask: resolvedMicroTask } = await questionsOf(contributor);
 
     // Validate each answer meets its minChars requirement
     for (const q of resolvedQuestions) {

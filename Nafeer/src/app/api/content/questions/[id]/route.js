@@ -14,7 +14,7 @@ import { connectDB } from '@/lib/db'
 export async function PUT(request, { params }) {
   try {
     await connectDB();
-    const { user } = await requireContentAccess(Question, (await params).id);
+    const { user } = await requireContentAccess(Question, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
@@ -55,7 +55,7 @@ export async function PUT(request, { params }) {
 export async function PATCH(request, { params }) {
   await connectDB();
   try {
-    const { user } = await requireContentAccess(Question, (await params).id);
+    const { user } = await requireContentAccess(Question, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
@@ -75,7 +75,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    await requireContentAccess(Question, (await params).id);
+    await requireContentAccess(Question, (await params).id, { write: true });
     await deleteQuestion((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {

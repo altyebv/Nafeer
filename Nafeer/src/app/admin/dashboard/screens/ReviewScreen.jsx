@@ -72,6 +72,7 @@ export function ReviewScreen({ onTotalChange }) {
                   </span>
                   <strong className="t-ui text-fg-strong">{l.label}</strong>
                   {l.round > 1 && <span className="t-caption text-warn">الجولة {l.round} — أُعيد من قبل</span>}
+                  <LeadCover state={queue.leadCover?.[l.subjectId]} />
                 </button>
               );
             })}
@@ -83,4 +84,12 @@ export function ReviewScreen({ onTotalChange }) {
       {others.length > 0 && <OtherItems items={others} onDone={load} />}
     </ScreenBody>
   );
+}
+
+// Whether the subject's lead will take this (docs/team-leads.md L2). With no
+// lead around — none appointed, or all away or inactive — it is the owner's.
+function LeadCover({ state }) {
+  if (state === 'available') return <span className="t-caption text-fg-subtle">يراجعه قائد الفريق</span>;
+  if (state === 'away') return <span className="t-caption text-warn">القائد غائب — بانتظارك</span>;
+  return null;
 }

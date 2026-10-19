@@ -22,7 +22,7 @@ const IMAGE_BLOCK_TYPES = new Set(['IMAGE', 'GIF']);
 export async function PATCH(request, { params }) {
   try {
     await connectDB();
-    const { user } = await requireContentAccess(Block, (await params).id);
+    const { user } = await requireContentAccess(Block, (await params).id, { write: true });
     const actorId = user.role === 'admin'
       ? await ensureSystemSeedContributor()
       : user.id;
@@ -72,7 +72,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    await requireContentAccess(Block, (await params).id);
+    await requireContentAccess(Block, (await params).id, { write: true });
     await deleteBlock((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {

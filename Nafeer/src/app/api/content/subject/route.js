@@ -31,7 +31,7 @@ export async function POST(request) {
     const { subjectId } = await request.json();
     if (!subjectId) return err('subjectId مطلوب');
 
-    const user = await requireSubjectAccess(subjectId);
+    const user = await requireSubjectAccess(subjectId, { write: true });
 
     const result = await bootstrapSubject(subjectId, user.id);
 

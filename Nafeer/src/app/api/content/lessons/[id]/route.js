@@ -58,7 +58,7 @@ export async function GET(request, { params }) {
 // Bumps version, resets to draft if was approved.
 export async function PUT(request, { params }) {
   try {
-    const { user } = await requireContentAccess(Lesson, (await params).id);
+    const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, versionLabel, baseVersion, ...updates } = body;
@@ -100,7 +100,7 @@ export async function PUT(request, { params }) {
 // Body: { status: 'draft'|'review'|'approved'|'archived', note?, versionLabel? }
 export async function PATCH(request, { params }) {
   try {
-    const { user } = await requireContentAccess(Lesson, (await params).id);
+    const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note, versionLabel } = await request.json();
 
@@ -134,7 +134,7 @@ export async function PATCH(request, { params }) {
 // Only drafts can be hard-deleted. Approved lessons must be archived.
 export async function DELETE(request, { params }) {
   try {
-    const { user } = await requireContentAccess(Lesson, (await params).id);
+    const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
 
     await connectDB();
     const lesson = await Lesson.findOne({ contentId: (await params).id });

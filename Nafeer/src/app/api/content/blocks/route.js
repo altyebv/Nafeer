@@ -11,7 +11,7 @@ import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 // stale or deleted ones come back in `conflicts` instead of being written.
 export async function POST(request) {
   try {
-    const user = await requireContributor();
+    const user = await requireContributor({ write: true });
     // Admins don't have a Contributor _id — substitute the system seed actor
     // so that createdBy / changelog ObjectId fields pass Mongoose validation.
     const actorId = user.role === 'admin'

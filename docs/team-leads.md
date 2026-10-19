@@ -204,6 +204,27 @@ plain member.
 - Away mode: `lead.awayUntil`. While a lead is away, or after 14 days with no
   activity, their reviews fall to the co-lead, then the owner.
 
+**As built (2026-10-19):**
+- `/editor/lead/team` («الفريق») — one request (`GET /api/lead/team`, five
+  reads). It shows members with last activity, events in 30 days, lessons
+  owned by status and pause state; the subject's leads and whether each is
+  available; the median wait for a lead's decision; and the team's
+  announcements. `POST /api/lead/team` takes `pause`, `unpause`, `assign`,
+  `announce`, `unannounce` and `away`.
+- Pause: `Contributor.paused`. Every content write handler passes
+  `{ write: true }` to the guard, and `tests/writeGuard.test.js` fails on any
+  that doesn't. A paused member sees a banner with the reason. A lead can't
+  pause a co-lead or themself; pauses run 1–30 days or until lifted.
+- Assign: sets `Lesson.ownerId`. The new owner is told through a targeted
+  announcement on their dashboard, which their dashboard already loads.
+- `/editor/guide` («دليل المادة», for everyone): `SubjectGuide` stores a
+  handbook and a checklist of up to 15 items. The checklist appears in the
+  review panel, and approving waits until every item is ticked.
+- Away mode: a lead sets it on the team page. The owner's review queue marks
+  each lesson whose subject has no lead available ("القائد غائب — بانتظارك").
+- Turnaround counts only leads' decisions, measured from
+  `reviewState.submittedAt`. The owner's own decisions aren't recorded in it.
+
 ### L3 — Recruiting
 - Applicants whose **first** `subjectsOfInterest` is the lead's subject. Leads of
   the other subjects they picked see them read-only, as "also interested".
@@ -218,6 +239,38 @@ plain member.
   **30 minutes** (`pendingDecision` + `decideAt`), so it can be undone. A cron
   route sends what is due. Approval puts the applicant in the lead's subject only.
 - The owner gets a daily digest of decisions.
+
+**As built (2026-10-19):**
+- `/editor/lead/recruiting` («المتقدمون») has three tabs: the subject's
+  applicants, those also interested, and the interview questions. Each tab is
+  shown only with its permission, and the nav item hides when the lead has
+  neither.
+- What a lead sees is shaped by `lib/applicants.js` `shapeForLead`. Email,
+  age, town and tokens are never read for a lead, and a test checks this.
+- Decisions: `Contributor.pendingDecision` with `decideAt` 30 minutes ahead.
+  A lead can decide only on someone who has answered the interview and whose
+  first subject is theirs. Vercel's free plan runs cron at most once a day, so
+  due decisions are applied by requests that happen anyway: the lead's
+  applicant list, the owner's contributors list, and the applicant's own
+  status page. `/api/cron/daily` is the backstop. Each decision is claimed with
+  a conditional write before anything is sent, so it is applied and emailed
+  exactly once. Approval sends the onboarding link; rejection sends nothing,
+  the same as the owner's. Any decision the owner takes clears a lead's
+  pending one.
+- Snapshot: `issueInterview(contributor, role)` and the owner's
+  `send_interview` store `interviewSnapshot`, and `/api/interview` reads it.
+  Invites sent earlier still resolve from the role.
+- Interview editing (`/api/lead/interview`) writes only the subject's
+  `subjectQuestionMap` entry, using a positional `$set`, or a conditional
+  `$push` when the entry is new. Existing question ids are kept. At most
+  8 questions.
+- Digest: `/api/cron/daily` at 05:00 UTC (`vercel.json`) emails every active
+  admin a summary of the last 24 hours of lead actions, using
+  `custom_message`. It only sends when leads did something. **Requires the
+  `CRON_SECRET` environment variable on Vercel**; without it the route
+  refuses to run.
+- Not done here: a lead can't send or re-send an interview invite. Joining
+  issues one automatically, and re-sending stays with the owner.
 
 ### L4 — Intervention
 - Members edit lessons they own (`lessonOwnerId`) or are assigned to. Other

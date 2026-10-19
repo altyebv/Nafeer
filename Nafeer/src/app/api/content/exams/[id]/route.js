@@ -7,7 +7,7 @@ import { updateExam, deleteExam } from '@/lib/api/questions';
 // PUT /api/content/exams/[id]
 export async function PUT(request, { params }) {
   try {
-    const { user } = await requireContentAccess(Exam, (await params).id);
+    const { user } = await requireContentAccess(Exam, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
@@ -39,7 +39,7 @@ export async function PUT(request, { params }) {
 // DELETE /api/content/exams/[id]
 export async function DELETE(request, { params }) {
   try {
-    await requireContentAccess(Exam, (await params).id);
+    await requireContentAccess(Exam, (await params).id, { write: true });
     await deleteExam((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {

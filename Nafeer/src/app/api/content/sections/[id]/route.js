@@ -8,7 +8,7 @@ import { authorsOf, recountAuthoredLater } from '@/lib/authoredStats';
 // DELETE /api/content/sections/[id]
 export async function DELETE(request, { params }) {
   try {
-    await requireContentAccess(Section, (await params).id);
+    await requireContentAccess(Section, (await params).id, { write: true });
     await connectDB();
 
     const { id } = await params;

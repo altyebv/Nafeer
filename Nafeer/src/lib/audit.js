@@ -12,6 +12,7 @@ import { AuditEvent } from '@/lib/models/AuditEvent';
 export const AUDIT_ACTIONS = [
   'lesson.approve', 'lesson.return', 'lesson.intervene', 'lesson.takeover', 'lesson.assign',
   'member.pause', 'member.unpause',
+  'team.announce', 'team.unannounce', 'guide.edit', 'lead.away',
   'applicant.approve', 'applicant.reject', 'applicant.undo',
   'interview.edit',
   'release.publish', 'release.rollback',

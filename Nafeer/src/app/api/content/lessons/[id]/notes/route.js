@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
 // Body: { text, noteType? }   noteType: 'comment' | 'flag'
 export async function POST(request, { params }) {
   try {
-    const { user } = await requireContentAccess(Lesson, (await params).id);
+    const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
     const { text, noteType } = await request.json();
 
     if (!text?.trim()) return err('نص الملاحظة مطلوب');

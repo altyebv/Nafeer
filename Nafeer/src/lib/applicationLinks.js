@@ -9,6 +9,7 @@
 
 import { randomBytes } from 'crypto';
 import { appUrl } from '@/lib/appUrl';
+import { interviewSnapshot } from '@/lib/interview';
 
 const DAY_MS = 86_400_000;
 export const INTERVIEW_DAYS = 14;
@@ -19,10 +20,15 @@ export const statusLink     = (token) => appUrl(`/join/status?token=${token}`);
 export const interviewLink  = (token) => appUrl(`/interview?token=${token}`);
 export const onboardingLink = (token) => appUrl(`/onboard?token=${token}`);
 
-/** Give a contributor a fresh interview token; returns it. Caller saves. */
-export function issueInterview(contributor) {
+/**
+ * Give a contributor a fresh interview token; returns it. Caller saves.
+ * With the role, the questions are snapshotted now (lib/interview.js), so
+ * later edits to the role never change this interview.
+ */
+export function issueInterview(contributor, role = null) {
   const token = newToken();
   contributor.interviewToken = token;
   contributor.interviewExpiresAt = new Date(Date.now() + INTERVIEW_DAYS * DAY_MS);
+  if (role) contributor.interviewSnapshot = interviewSnapshot(role, contributor.subjectsOfInterest);
   return token;
 }

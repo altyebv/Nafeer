@@ -43,7 +43,7 @@ export async function POST(request) {
       return err('الحقول المطلوبة: subjectId, conceptContentId, type');
     }
 
-    const user = await requireSubjectAccess(subjectId);
+    const user = await requireSubjectAccess(subjectId, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const item = await createFeedItem(
       { ...body,
@@ -69,7 +69,7 @@ export async function POST(request) {
 export async function PUT(request, { params }) {
   try {
     await connectDB();
-    const user = await requireContributor();
+    const user = await requireContributor({ write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, ...updates } = body;
@@ -104,7 +104,7 @@ export async function PUT(request, { params }) {
 // PATCH /api/content/feed-items/[id]
 export async function PATCH(request, { params }) {
   try {
-    const user = await requireContributor();
+    const user = await requireContributor({ write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
 
@@ -134,7 +134,7 @@ export async function PATCH(request, { params }) {
 // DELETE /api/content/feed-items/[id]
 export async function DELETE(request, { params }) {
   try {
-    await requireContributor();
+    await requireContributor({ write: true });
     await deleteFeedItem((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {

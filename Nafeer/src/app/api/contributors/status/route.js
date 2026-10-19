@@ -5,6 +5,7 @@ import { Contributor } from '@/lib/models/Contributor';
 import { ContributorRole } from '@/lib/models/ContributorRole';
 import { sendEmail }   from '@/lib/email/emailService';
 import { pipelineStage } from '@/lib/adminPipeline';
+import { applyDueDecisions } from '@/lib/applicants';
 import { statusLink, interviewLink, INTERVIEW_DAYS } from '@/lib/applicationLinks';
 
 // ─── GET /api/contributors/status?token=… ─────────────────────────────────────
@@ -18,10 +19,18 @@ export async function GET(request) {
   }
 
   await connectDB();
-  const c = await Contributor.findOne({ statusToken: token })
+  const read = () => Contributor.findOne({ statusToken: token })
     .select('+statusToken +interviewToken +onboardingToken')
     .lean();
+  let c = await read();
   if (!c) return NextResponse.json({ ok: false, error: 'لم نجد طلباً بهذا الرابط' }, { status: 404 });
+
+  // A lead's decision on this application whose undo window has passed takes
+  // effect now, so the applicant sees it (lib/applicants.js).
+  if (c.pendingDecision?.decideAt && new Date(c.pendingDecision.decideAt) <= new Date()) {
+    await applyDueDecisions();
+    c = await read();
+  }
 
   const role = c.roleId ? await ContributorRole.findById(c.roleId, 'name').lean() : null;
   const stage = pipelineStage(c);

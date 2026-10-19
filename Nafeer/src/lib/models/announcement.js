@@ -42,6 +42,10 @@ const AnnouncementSchema = new mongoose.Schema(
     // message meant for one person went to everyone.
     targetTeamIds:        { type: [mongoose.Schema.Types.ObjectId], default: [] },
     targetContributorIds: { type: [mongoose.Schema.Types.ObjectId], default: [] },
+
+    // Set when a team lead wrote it (docs/team-leads.md L2): the Contributor
+    // _id. A lead may remove only announcements they wrote, for their subject.
+    leadAuthorId: { type: String, default: null, index: true },
   },
   { timestamps: true }
 );
