@@ -16,12 +16,13 @@ import { ContributorsScreen }     from './screens/ContributorsScreen';
 import { CommsScreen }            from './screens/CommsScreen';
 import { ReviewScreen }           from './screens/ReviewScreen';
 import { StringPoolsScreen }      from './screens/StringPoolsScreen';
+import { LeadsScreen }            from './screens/LeadsScreen';
 import { AndroidInsightsSection } from './components/android/AndroidInsightsSection';
 
 
 // Every section the dashboard can render — a hash outside this list is ignored.
 const SECTION_IDS = [
-  'overview', 'subjects', 'contributors', 'review', 'publish',
+  'overview', 'subjects', 'contributors', 'leads', 'review', 'publish',
   'media', 'strings', 'admins', 'settings', 'seed', 'email', 'comms', 'android',
 ];
 
@@ -105,6 +106,7 @@ export default function AdminDashboard() {
         {section === 'contributors' && (
           <ContributorsScreen allContributors={allContributors} isLoading={isInitialLoad} onRefresh={loadAll} />
         )}
+        {section === 'leads'      && <LeadsScreen allContributors={allContributors} onChange={loadAll} />}
         {section === 'review'     && <ReviewScreen onTotalChange={setReviewTotal} />}
         {section === 'publish'    && <PublishSection />}
         {section === 'media'      && <MediaSection />}
