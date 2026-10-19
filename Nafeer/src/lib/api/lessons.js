@@ -11,7 +11,7 @@ import { assertCanSubmit } from '@/lib/review';
 
 // ─── writeHistory ─────────────────────────────────────────────────────────────
 // Fire-and-forget helper. Never throws — history failure must not block the edit.
-async function writeHistory(lessonContentId, {
+export async function writeHistory(lessonContentId, {
   version, action, versionLabel = '', byId, byName, note = '', diff = null,
 }) {
   try {
@@ -58,7 +58,7 @@ export async function getLessonWithContent(contentId) {
   if (!lesson) return null;
 
   // Populate contributor names (denormalized at read time, no ref overhead)
-  const rawIds = [lesson.createdBy, lesson.updatedBy, lesson.reviewedBy].filter(Boolean);
+  const rawIds = [lesson.createdBy, lesson.updatedBy, lesson.reviewedBy, lesson.ownerId].filter(Boolean);
   let nameMap = {};
   if (rawIds.length) {
     const contributors = await Contributor.find({ _id: { $in: rawIds } })
@@ -96,6 +96,8 @@ export async function getLessonWithContent(contentId) {
       createdBy:  resolve(lesson.createdBy),
       updatedBy:  resolve(lesson.updatedBy),
       reviewedBy: resolve(lesson.reviewedBy),
+      // Who it belongs to now: the assignee or taker-over, else the author.
+      owner:      resolve(lesson.ownerId || lesson.createdBy),
     },
     sections: sections.map((s) => ({
       ...s,
