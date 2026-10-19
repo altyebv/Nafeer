@@ -10,6 +10,9 @@ import { deleteCheckpointQuestionsForSections } from '@/lib/api/content';
 import { authorsOf, recountAuthoredLater } from '@/lib/authoredStats';
 import { VersionConflict, withEditorNames } from '@/lib/api/versionCheck';
 import { ReviewError } from '@/lib/review';
+import { assertCanEditLessons, interventionOpen, lessonAccess, unclaimedOwners } from '@/lib/lessonAccess';
+import { lessonOwnerId } from '@/lib/credits';
+import { closeIntervention } from '@/lib/intervention';
 
 // GET /api/content/lessons/[id]
 // Returns lesson + sections + blocks (full content for editor), plus
@@ -44,8 +47,34 @@ export async function GET(request, { params }) {
       );
     }
 
-    const { openedBy, openedAt, ...rest } = lesson;
-    return ok({ ...rest, recentlyOpenedBy });
+    // An intervention past its time is closed on the next open (lib/intervention.js).
+    if (lesson.intervention && !interventionOpen(lesson.intervention)) {
+      after(() => closeIntervention(id, { expiredOnly: true }).catch((e) => console.warn('[close intervention]', e.message)));
+      lesson.intervention = null;
+    }
+
+    // What this viewer may do with it (docs/team-leads.md L4): the editor
+    // opens read-only for anyone but the owner, and offers a lead «تدخّل».
+    // Not theirs: maybe still unclaimed scaffold, open to any member (one read, only then).
+    let a = lessonAccess(lesson, user);
+    if (!a.canEdit) {
+      const unclaimed = (await unclaimedOwners([lessonOwnerId(lesson)])).size > 0;
+      if (unclaimed) a = lessonAccess(lesson, user, new Date(), { unclaimed });
+    }
+    const access = {
+      canEdit:      a.canEdit,
+      via:          a.via,
+      canIntervene: a.canIntervene,
+      owner:        lesson.attribution?.owner || null,
+      intervention: a.intervention && {
+        byName: a.intervention.byName, category: a.intervention.category,
+        reason: a.intervention.reason, until: a.intervention.until,
+        mine:   String(a.intervention.byId) === me,
+      },
+    };
+
+    const { openedBy, openedAt, intervention, ...rest } = lesson;
+    return ok({ ...rest, recentlyOpenedBy, access });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[GET /api/content/lessons/[id]]', e);
@@ -59,6 +88,7 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
+    await assertCanEditLessons(user, [(await params).id]);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const body = await request.json();
     const { note, versionLabel, baseVersion, ...updates } = body;
@@ -101,6 +131,7 @@ export async function PUT(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
+    await assertCanEditLessons(user, [(await params).id]);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note, versionLabel } = await request.json();
 
@@ -135,6 +166,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
+    await assertCanEditLessons(user, [(await params).id]);
 
     await connectDB();
     const lesson = await Lesson.findOne({ contentId: (await params).id });
