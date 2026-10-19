@@ -49,3 +49,29 @@ describe('content write handlers', () => {
     });
   }
 });
+
+// ─── Lesson-content writes check ownership (docs/team-leads.md L4) ────────────
+// A lesson belongs to its owner; only they (or a lead with an open
+// intervention, or the platform owner) change it. Every write to a lesson or
+// to what lives inside it must go through assertCanEditLessons. Creating a
+// lesson is exempt (the creator is its author); so are comments (notes).
+const LESSON_CONTENT = [
+  'lessons/[id]/route.js', 'sections/route.js', 'sections/[id]/route.js',
+  'blocks/route.js', 'blocks/[id]/route.js',
+  'questions/route.js', 'questions/[id]/route.js',
+  'feed-items/route.js', 'feed-items/[id]/route.js',
+];
+
+describe('lesson-content write handlers', () => {
+  const inScope = writeHandlers.filter((h) => LESSON_CONTENT.includes(h.file));
+
+  it('finds them', () => {
+    expect(new Set(inScope.map((h) => h.file)).size).toBe(LESSON_CONTENT.length);
+  });
+
+  for (const h of inScope) {
+    it(`${h.file} ${h.name} checks the lesson's owner`, () => {
+      expect(h.body).toMatch(/assertCanEditLessons\(/);
+    });
+  }
+});
