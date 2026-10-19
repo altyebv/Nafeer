@@ -8,6 +8,7 @@ import { Question } from '@/lib/models/Question';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateQuestion, updateQuestionStatus, deleteQuestion } from '@/lib/api/questions';
 import { connectDB } from '@/lib/db'
+import { assertCanEditLessons, lessonsForLinked } from '@/lib/lessonAccess';
 
 
 // PUT /api/content/questions/[id]
@@ -39,6 +40,8 @@ export async function PUT(request, { params }) {
       assertInSubject(user, Exam,    [safeUpdates.sourceExamContentId]),
       assertInSubject(user, Concept, Array.isArray(safeUpdates.conceptIds) ? safeUpdates.conceptIds : []),
     ]);
+    // The lesson it is in, and the one it may move to (lib/lessonAccess.js).
+    await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id], [safeUpdates.lessonContentId]));
 
     const question = await updateQuestion((await params).id, safeUpdates, actorId, note || '');
     if (!question) return err('السؤال غير موجود', 404);
@@ -56,6 +59,7 @@ export async function PATCH(request, { params }) {
   await connectDB();
   try {
     const { user } = await requireContentAccess(Question, (await params).id, { write: true });
+    await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id]));
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await request.json();
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
@@ -75,7 +79,8 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    await requireContentAccess(Question, (await params).id, { write: true });
+    const { user } = await requireContentAccess(Question, (await params).id, { write: true });
+    await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id]));
     await deleteQuestion((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {
