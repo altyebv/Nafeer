@@ -5,6 +5,7 @@ import { batchUpsertBlocks, deleteBlock } from '@/lib/api/content';
 import { withEditorNames } from '@/lib/api/versionCheck';
 import { trackStat } from '@/lib/trackStat';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
+import { assertCanEditLessons, lessonsForBlocks } from '@/lib/lessonAccess';
 
 // POST /api/content/blocks
 // Body: { blocks: [...] }  — batch upsert. A block may carry `baseVersion`;
@@ -32,6 +33,11 @@ export async function POST(request) {
       assertInSubject(user, Block,   blocks.map((b) => b?.contentId)),
       assertInSubject(user, Section, blocks.map((b) => b?.sectionContentId || b?.sectionId)),
     ]);
+
+    // Only the owner of each lesson these blocks are in, or are moving to.
+    await assertCanEditLessons(user, await lessonsForBlocks(
+      blocks.map((b) => b?.contentId), blocks.map((b) => b?.sectionContentId || b?.sectionId),
+    ));
 
     const { saved, conflicts } = await batchUpsertBlocks(blocks, actorId);
 
