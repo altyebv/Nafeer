@@ -34,6 +34,7 @@ import { useEditorStore } from '@/store/editorStore';
 import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import LessonConflicts from '@/components/editor/lesson/LessonConflicts';
+import ReadOnlyLesson, { InterventionBanner } from '@/components/editor/lesson/ReadOnlyLesson';
 import { minutesAgo } from '@/components/editor/lesson/SyncMarks';
 import { useAutosave } from '@/hooks/useAutosave';
 import { useOnline } from '@/hooks/useOnline';
@@ -108,6 +109,9 @@ export default function LessonEditorPage({
   const [reviewComments,   setReviewComments]   = useState([]);
   const [resolvingId,      setResolvingId]      = useState(null);
   const [showReadiness,    setShowReadiness]    = useState(false);
+  // What this viewer may do (lesson GET, docs/team-leads.md L4): anyone but
+  // the owner reads; a lead may open an intervention to edit.
+  const [access,           setAccess]           = useState(null);
   const online = useOnline();
   // The phone beside the content tab (xl and up). Remembered in the browser;
   // below xl the same button opens the preview modal instead.
@@ -151,6 +155,7 @@ export default function LessonEditorPage({
           setNotesCount(res.data.notesCount ?? 0);
           setVariations(res.data.variations  || []);
           setOpenedBy(res.data.recentlyOpenedBy || null);
+          setAccess(res.data.access || null);
           const round = res.data.reviewState?.round || 0;
           setReviewComments(round
             ? (res.data.notes || []).filter((n) => n.noteType === 'review_feedback' && (n.round ?? 0) === round)
@@ -163,7 +168,8 @@ export default function LessonEditorPage({
     return () => setOpenedBy(null);
   }, [lessonId]);
 
-  useAutosave(lessonId, subjectId, syncAll);
+  // Read-only viewers have nothing to save — and every save would be refused.
+  useAutosave(access?.canEdit === false ? null : lessonId, subjectId, syncAll);
 
   const lessonSections = sections.filter((s) => s.lessonId === lessonId).sort((a, b) => a.order - b.order);
   const sectionIds     = lessonSections.map((s) => s.id);
@@ -357,6 +363,19 @@ export default function LessonEditorPage({
     />
   );
 
+  // Not the owner, and no intervention open: read it as the student will.
+  if (access && !access.canEdit) {
+    return (
+      <MathNotationContext.Provider value={getMathNotation(subjectId)}>
+        <ReadOnlyLesson
+          lesson={lesson} unit={unit} access={access}
+          sections={lessonSections} blocks={lessonBlocks} questions={lessonQuestions}
+          lessonId={lessonId} currentUser={currentUser} onBack={goBack}
+        />
+      </MathNotationContext.Provider>
+    );
+  }
+
   const readinessPanel = (
     <LessonReadiness
       lesson={lesson} reviewState={lesson.reviewState} comments={reviewComments}
@@ -409,6 +428,19 @@ export default function LessonEditorPage({
               آخر من فتح هذا الدرس: {openedBy.name || 'زميل'}، {minutesAgo(openedBy.at)}. قد يكون العمل عليه جارياً الآن — تُحفظ تعديلاتك تلقائياً، وستُنبَّه إن تعارضت مع تعديلات أخرى.
             </span>
             <IconButton icon={X} label="إخفاء التنبيه" size="sm" onClick={() => setOpenedBy(null)} className="-my-1.5" />
+          </div>
+        )}
+
+        {/* A lead editing someone else's lesson: say whose, why, until when. */}
+        {access?.via === 'intervention' && (
+          <InterventionBanner lessonId={lessonId} access={access} />
+        )}
+
+        {/* Scaffold nobody has taken yet: the first save makes it theirs. */}
+        {access?.via === 'unclaimed' && (
+          <div role="note" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-info-surface border border-info-border text-info t-label font-normal">
+            <NotebookPen size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <p className="leading-relaxed">لم يتولَّ أحد هذا الدرس بعد. أول حفظ يجعله في عهدتك، ويصير تعديله لك وحدك.</p>
           </div>
         )}
 
