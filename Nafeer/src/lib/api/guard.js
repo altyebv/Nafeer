@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { getAdminAsUser } from '@/lib/adminAuth';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
+import { leadCan, normaliseLead } from '@/lib/leads';
 
 const unauthorized = () =>
   Response.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
@@ -9,6 +10,12 @@ const unauthorized = () =>
 const forbidden = () =>
   Response.json(
     { ok: false, error: 'ليس لديك صلاحية الوصول إلى هذه المادة' },
+    { status: 403 }
+  );
+
+const leadForbidden = () =>
+  Response.json(
+    { ok: false, error: 'هذا الإجراء لقائد فريق المادة فقط' },
     { status: 403 }
   );
 
@@ -30,10 +37,42 @@ export async function requireContributor() {
   if (!user?.id) throw unauthorized();
 
   await connectDB();
-  const contributor = await Contributor.findById(user.id).select('status subject').lean();
+  const contributor = await Contributor.findById(user.id).select('status subject lead').lean();
   if (!contributor || contributor.status !== 'approved') throw unauthorized();
 
-  return { ...user, subject: contributor.subject || null };
+  // `lead` comes from the same read, so lead checks cost no extra query and a
+  // lead removed by the owner loses the powers on their next request.
+  return { ...user, subject: contributor.subject || null, lead: normaliseLead(contributor.lead, contributor.subject) };
+}
+
+// For lead-only routes on a subject (docs/team-leads.md). Passes the owner,
+// and a lead of exactly this subject who holds `perm` (lib/leads.js).
+export async function requireLead(subjectId, perm) {
+  if (!subjectId) {
+    throw Response.json({ ok: false, error: 'subjectId مطلوب' }, { status: 400 });
+  }
+  const user = await requireContributor();
+  if (!leadCan(user, perm, subjectId)) throw leadForbidden();
+  return user;
+}
+
+// requireLead for routes addressed by a document's contentId: the subject is
+// the document's, never one the caller names. Returns { user, doc } where doc
+// carries contentId, subjectId and the authorship fields the four-eyes rule
+// reads (createdBy, ownerId).
+export async function requireLeadOfContent(Model, contentId, perm) {
+  const user = await requireContributor();
+
+  if (typeof contentId !== 'string' || !contentId) throw notFound();
+
+  await connectDB();
+  const doc = await Model.findOne({ contentId })
+    .select('contentId subjectId createdBy ownerId').lean();
+  if (!doc) throw notFound();
+
+  if (!leadCan(user, perm, doc.subjectId)) throw leadForbidden();
+
+  return { user, doc };
 }
 
 // Like requireContributor, but also checks the user is assigned

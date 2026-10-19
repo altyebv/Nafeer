@@ -122,6 +122,26 @@ const ContributorSchema = new mongoose.Schema(
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     role:   { type: String, enum: ['contributor', 'admin'], default: 'contributor' },
 
+    // ── Team lead (docs/team-leads.md) ────────────────────────────────────────
+    // A lead of `subject`. Lives here, not on Team, so the guard's existing
+    // read of this document is the whole permission check. The risky
+    // permissions start off; the owner turns them on per lead (lib/leads.js).
+    lead: {
+      active:              { type: Boolean, default: false },
+      // The subject they were appointed to. Moving the contributor to
+      // another subject does not carry the lead over: the guard only honours
+      // the lead while this still equals `subject`.
+      subject:             { type: String,  default: '' },
+      canReview:          { type: Boolean, default: true },
+      canManageTeam:       { type: Boolean, default: true },
+      canDecideApplicants: { type: Boolean, default: false },
+      canEditInterview:    { type: Boolean, default: false },
+      canIntervene:        { type: Boolean, default: false },
+      canPublish:          { type: Boolean, default: false },
+      since:               { type: Date,    default: null },
+      appointedBy:         { type: String,  default: '' },
+    },
+
     lastSignedInAt: { type: Date, default: null },
     stats: { type: StatsSchema, default: () => ({}) },
   },

@@ -134,6 +134,22 @@ const LessonSchema = new mongoose.Schema(
     },
     openedAt: { type: Date, default: null },
 
+    // ── Ownership and credit (docs/team-leads.md, lib/credits.js) ─────────
+    // `createdBy` stays the author forever. `ownerId` is who is responsible
+    // for the lesson now — null means the author; it changes only on an
+    // assignment or a lead's takeover. `credits` keeps everyone else who
+    // worked on it, one entry per (contributor, kind).
+    ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Contributor', default: null, index: true },
+    credits: [
+      {
+        contributorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Contributor', required: true },
+        name:          { type: String, default: '' },
+        kind:          { type: String, enum: ['author', 'editor', 'reviewer'], required: true },
+        at:            { type: Date, default: Date.now },
+        _id: false,
+      },
+    ],
+
     ...versioningFields,
   },
   { timestamps: true }
