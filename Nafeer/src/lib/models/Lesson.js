@@ -140,6 +140,25 @@ const LessonSchema = new mongoose.Schema(
     // assignment or a lead's takeover. `credits` keeps everyone else who
     // worked on it, one entry per (contributor, kind).
     ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Contributor', default: null, index: true },
+
+    // A lead's intervention (docs/team-leads.md L4, lib/lessonAccess.js):
+    // while open, that lead may change this lesson as if it were theirs.
+    // `startVersion` lets the close tell whether they changed anything.
+    intervention: {
+      type: new mongoose.Schema(
+        {
+          byId:         { type: String, required: true },
+          byName:       { type: String, default: '' },
+          category:     { type: String, enum: ['urgent', 'factual', 'inactive', 'other'], required: true },
+          reason:       { type: String, required: true, maxlength: 500 },
+          startedAt:    { type: Date, default: Date.now },
+          until:        { type: Date, required: true },
+          startVersion: { type: Number, default: 1 },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
     credits: [
       {
         contributorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Contributor', required: true },
@@ -157,6 +176,8 @@ const LessonSchema = new mongoose.Schema(
 
 LessonSchema.index({ subjectId: 1, unitContentId: 1, order: 1 });
 LessonSchema.index({ subjectId: 1, status: 1 });
+// «شارك في» on public profiles (lib/api/contributors.js getProfileLessons).
+LessonSchema.index({ 'credits.contributorId': 1 });
 
 export const Lesson =
   mongoose.models.Lesson || mongoose.model('Lesson', LessonSchema);
