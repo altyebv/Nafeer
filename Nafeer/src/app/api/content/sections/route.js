@@ -4,6 +4,7 @@ import { Lesson } from '@/lib/models/Lesson';
 import { batchUpsertSections, deleteSection } from '@/lib/api/content';
 import { withEditorNames } from '@/lib/api/versionCheck';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
+import { assertCanEditLessons, lessonsForSections } from '@/lib/lessonAccess';
 
 // POST /api/content/sections
 // Body: { sections: [...] }  — batch upsert (create or update)
@@ -33,6 +34,11 @@ export async function POST(request) {
       assertInSubject(user, Section, sections.map((s) => s?.contentId)),
       assertInSubject(user, Lesson,  sections.map((s) => s?.lessonContentId)),
     ]);
+
+    // Only the owner of each lesson these sections are in, or are moving to.
+    await assertCanEditLessons(user, await lessonsForSections(
+      sections.map((s) => s?.contentId), sections.map((s) => s?.lessonContentId),
+    ));
 
     const { saved, conflicts } = await batchUpsertSections(sections, actorId);
     return ok(saved, { total: saved.length, conflicts: await withEditorNames(conflicts) });
