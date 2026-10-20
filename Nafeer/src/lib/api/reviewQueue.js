@@ -240,7 +240,8 @@ export async function getLessonForReview(contentId) {
     FeedItem.find({ lessonContentId: contentId }, 'contentId type contentAr back correctAnswer').sort({ order: 1 }).lean(),
     // Seeded lessons are created by the seed actor; the author is whoever
     // wrote in it, so take the first real person of creator and last editor.
-    Contributor.findOne({ _id: { $in: [lesson.createdBy, lesson.updatedBy].filter(Boolean) }, ...REAL_PEOPLE }, 'name username').lean(),
+    // Used only when the lesson has no owner (assigned or claimed) to name.
+    lesson.ownerId ? null : Contributor.findOne({ _id: { $in: [lesson.createdBy, lesson.updatedBy].filter(Boolean) }, ...REAL_PEOPLE }, 'name username').lean(),
     SubjectGuide.findOne({ subjectId: lesson.subjectId }, 'checklist').lean(),
   ]);
 
@@ -264,7 +265,10 @@ export async function getLessonForReview(contentId) {
     hook: lesson.metadata?.hook || null,
     hookAnswer: lesson.metadata?.hookAnswer || null,
     reviewState: lesson.reviewState || null,
-    author: author ? { name: author.name, username: author.username } : null,
+    // Whose lesson it is: its owner (docs/team-leads.md L4), else the author.
+    author: lesson.ownerId && lesson.attribution?.owner
+      ? { name: lesson.attribution.owner.name, username: null }
+      : author ? { name: author.name, username: author.username } : null,
     sections: lesson.sections.map((s) => ({
       id: s.contentId, title: s.title, kind: s.kind || 'GENERAL',
       blocks: s.blocks.map((b) => ({ id: b.contentId, type: b.type, content: b.content, caption: b.caption })),
