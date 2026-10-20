@@ -47,7 +47,7 @@ export default function ReadOnlyLesson({ lesson, unit, access, sections, blocks,
           <ArrowRight size={16} aria-hidden="true" /> الدروس
         </Button>
         <div className="flex flex-col gap-1 flex-1 min-w-0">
-          <span className="t-caption text-fg-subtle">{unit?.title ? `${unit.title} · ` : ''}درس {owner}</span>
+          <span className="t-caption text-fg-subtle">{unit?.title ? `${unit.title} · ` : ''}{access.canClaim ? 'لم يتولّه أحد بعد' : `درس ${owner}`}</span>
           <h1 className="t-h2 text-fg-strong">{lesson.title}</h1>
         </div>
         <Badge tone="neutral" icon={Eye}>للقراءة</Badge>
@@ -55,9 +55,18 @@ export default function ReadOnlyLesson({ lesson, unit, access, sections, blocks,
 
       <Card tone="sunken">
         <div className="flex flex-col gap-3">
-          <p className="t-label text-fg">
-            هذا الدرس في عهدة <strong>{owner}</strong>، وهو وحده من يعدّله. يمكنك قراءته، والتعليق عليه، ومراجعة سجله.
-          </p>
+          {access.canClaim ? (
+            <div className="flex flex-col gap-2">
+              <p className="t-label text-fg">
+                لم يتولَّ أحدٌ هذا الدرس بعد. إن تولّيته صار في عهدتك: تكتبه وحدك، ويُنسب إليك مؤلفاً.
+              </p>
+              <ClaimButton lessonId={lessonId} />
+            </div>
+          ) : (
+            <p className="t-label text-fg">
+              هذا الدرس في عهدة <strong>{owner}</strong>، وهو وحده من يعدّله. يمكنك قراءته، والتعليق عليه، ومراجعة سجله.
+            </p>
+          )}
           {iv && (
             <p className="t-label text-warn">
               يتدخّل {iv.byName || 'قائد الفريق'} فيه الآن حتى {formatDate(iv.until, 'shortDateTime')} — {CATEGORY_LABEL[iv.category]}: {iv.reason}
@@ -159,6 +168,28 @@ export function InterventionBanner({ lessonId, access }) {
       </span>
       <Button size="sm" variant="secondary" onClick={end} loading={busy}>أنهِ التدخّل</Button>
       {error && <span role="alert" className="t-caption text-danger w-full">{error}</span>}
+    </div>
+  );
+}
+
+// «تولَّ هذا الدرس»: a member takes an unclaimed scaffold lesson. The editor
+// reopens with it as theirs.
+function ClaimButton({ lessonId }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const claim = async () => {
+    setBusy(true); setError(null);
+    try {
+      const res = await fetch(`/api/content/lessons/${encodeURIComponent(lessonId)}/claim`, { method: 'POST' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || 'تعذّر تولّي الدرس');
+      window.location.reload();
+    } catch (e) { setError(e.message); setBusy(false); }
+  };
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      <Button variant="primary" size="sm" onClick={claim} loading={busy}>تولَّ هذا الدرس</Button>
+      {error && <span role="alert" className="t-caption text-danger">{error}</span>}
     </div>
   );
 }
