@@ -7,18 +7,22 @@ import {
   normaliseLead, pickLeadPermissions,
 } from '@/lib/leads';
 import { AuditError, recordAudit, validateAudit } from '@/lib/audit';
+import { AuditEvent } from '@/lib/models/AuditEvent';
+import { Appeal } from '@/lib/models/Appeal';
 
 // ─── /api/admin/leads ─────────────────────────────────────────────────────────
 // The owner appoints, adjusts and removes team leads (docs/team-leads.md).
 // A lead leads the subject on their own record; at most MAX_LEADS_PER_SUBJECT
 // active leads per subject. Every change goes to the audit log.
 //
-//   GET                                   → every active lead
+//   GET                                   → every active lead, with what each did
+//                                           in the last 30 days (audit log) and
+//                                           open appeals per subject
 //   POST   { contributorId, ...perms }    → appoint (perms default per lib/leads.js)
 //   PATCH  { contributorId, ...perms }    → change permissions
 //   DELETE { contributorId, reason }      → remove; credits and history stay
 
-const LEAD_FIELDS = 'name username avatarUrl subject status lead';
+const LEAD_FIELDS = 'name username avatarUrl subject status lead stats.lastActiveAt';
 
 const fail = (error, status = 400) => NextResponse.json({ ok: false, error }, { status });
 
@@ -62,13 +66,34 @@ export async function GET() {
   if (!admin) return fail('Unauthorized', 401);
 
   await connectDB();
-  const leads = await Contributor.find({ 'lead.active': true })
-    .select(LEAD_FIELDS).sort({ subject: 1, 'lead.since': 1 }).lean();
+  const leads = (await Contributor.find({ 'lead.active': true })
+    .select(LEAD_FIELDS).sort({ subject: 1, 'lead.since': 1 }).lean()).filter(isCurrentLead);
+
+  // The overview (docs/team-leads.md L5): two aggregates over the audit log
+  // and one over appeals, whatever the number of leads.
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const ids = leads.map((l) => String(l._id));
+  const [counts, waits, appeals] = await Promise.all([
+    ids.length ? AuditEvent.aggregate([
+      { $match: { actorId: { $in: ids }, at: { $gte: since } } },
+      { $group: { _id: { actor: '$actorId', action: '$action' }, n: { $sum: 1 } } },
+    ]) : [],
+    ids.length ? AuditEvent.aggregate([
+      { $match: { actorId: { $in: ids }, at: { $gte: since }, action: { $in: ['lesson.approve', 'lesson.return'] }, 'meta.waitedMs': { $type: 'number' } } },
+      { $group: { _id: '$actorId', avg: { $avg: '$meta.waitedMs' } } },
+    ]) : [],
+    Appeal.aggregate([{ $match: { status: 'open' } }, { $group: { _id: '$subjectId', n: { $sum: 1 } } }]),
+  ]);
+
+  const stats = Object.fromEntries(ids.map((id) => [id, { counts: {}, avgWaitHours: null }]));
+  for (const c of counts) stats[c._id.actor].counts[c._id.action] = c.n;
+  for (const w of waits) stats[w._id].avgWaitHours = Math.round(w.avg / 36e5 * 10) / 10;
 
   return NextResponse.json({
     ok: true,
     maxPerSubject: MAX_LEADS_PER_SUBJECT,
-    leads: leads.filter(isCurrentLead).map(shape),
+    leads: leads.map((l) => ({ ...shape(l), stats: stats[String(l._id)], lastActiveAt: l.stats?.lastActiveAt || null, awayUntil: l.lead?.awayUntil || null })),
+    openAppeals: Object.fromEntries(appeals.map((a) => [a._id, a.n])),
   });
 }
 
