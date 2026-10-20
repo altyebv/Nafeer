@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { lessonReadiness, recentLessons } from '@/lib/lessonReadiness';
+import { pickNextStep } from '@/lib/nextStep';
 import { lessonHref, NAV_BY_ID } from '@/components/editor/layout/nav';
 import { Card } from '@/components/ui';
 
@@ -33,36 +34,21 @@ function useSubjectProgress() {
   }, [subject, units, lessons, sections, blocks, questions, feedItems]);
 }
 
-// Which lesson to open, in order of what helps most: one the reviewer
-// returned, the one being worked on, one ready to send, the first unstarted.
-function pickNextStep(all, recent) {
-  const returned = all.find((x) => x.lesson.reviewState?.returned);
-  if (returned) return { x: returned, kicker: 'أُعيد إليك', title: `عالج ملاحظات المراجِع في «${returned.lesson.title}»`, body: 'كل ملاحظة مثبّتة في مكانها داخل الدرس. بعد معالجتها كلها يمكنك إعادة الإرسال.', cta: 'افتح الملاحظات' };
-
-  const byId = Object.fromEntries(all.map((x) => [x.lesson.id, x]));
-  const current = recent.map((r) => byId[r.id]).find((x) => x && x.r.done < 6 && x.lesson.atlasStatus === 'draft');
-  if (current) return { x: current, kicker: 'تابع من حيث توقفت', title: `أكمل «${current.lesson.title}»`, body: `ينقصه: ${current.r.missing.join('، ')}.`, cta: 'تابع الدرس' };
-
-  const ready = all.find((x) => x.r.done === 6 && x.lesson.atlasStatus === 'draft');
-  if (ready) return { x: ready, kicker: 'جاهز', title: `أرسل «${ready.lesson.title}» للمراجعة`, body: 'الشروط الست مكتملة. المراجِع يقرأه ويعتمده أو يعيده بملاحظات.', cta: 'افتح وأرسل' };
-
-  const fresh = all.find((x) => x.r.counts.sections === 0 && x.lesson.atlasStatus === 'draft');
-  if (fresh) return { x: fresh, kicker: 'ابدأ', title: `ابدأ الدرس ${fresh.n} من الوحدة ${fresh.unitN}`, body: `${fresh.lesson.estimatedMinutes || 15} دقيقة تقريباً للطالب. اكتب عنواناً حقيقياً وملخصاً، ثم أضف قسمك الأول.`, cta: 'افتح الدرس' };
-
-  return null;
-}
-
-export function NextStepCard() {
+export function NextStepCard({ me = null }) {
   const progress = useSubjectProgress();
   const [recent, setRecent] = useState([]);
   useEffect(() => { setRecent(recentLessons()); }, []);
   if (!progress) return null;
 
-  const step = pickNextStep(progress.all, recent);
+  const step = pickNextStep(progress.all, recent, me);
   if (!step) {
     return (
       <Card tone="accent" className="mb-8">
-        <p className="t-body text-fg">كل دروس {progress.subject.nameAr} أُرسلت أو اعتُمدت. شكراً لك.</p>
+        <p className="t-body text-fg">
+          {me
+            ? `لا شيء ينتظرك الآن: دروسك أُرسلت أو اعتُمدت، ولا درس بلا صاحب في ${progress.subject.nameAr}. شكراً لك.`
+            : `كل دروس ${progress.subject.nameAr} أُرسلت أو اعتُمدت. شكراً لك.`}
+        </p>
       </Card>
     );
   }
