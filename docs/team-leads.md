@@ -303,11 +303,20 @@ plain member.
   and creating a new lesson stay open to every member, as do concepts, tags
   and exams.
 - **Unclaimed scaffold:** a lesson whose owner is not a real person (the seed
-  actor) is open to every member of its subject. The first member to save it
-  claims it: `ownerId` is set with a conditional write, and they get an
-  `author` credit. The editor says so before they save.
+  actor) opens read-only, with «تولَّ هذا الدرس», for any member of its
+  subject. `POST /api/content/lessons/[id]/claim` (`claimLesson`) sets
+  `ownerId` with a conditional write and gives an `author` credit. Saving
+  never claims. (It did at first; changed 2026-10-20 because one keystroke
+  plus autosave was enough to take a lesson.)
+- The subject GET marks each lesson's `owner` and whether it is `unclaimed`
+  (one read). The editor's store keeps both as server-owned fields.
+  «خطوتك التالية» suggests only the member's own lessons, then an unclaimed
+  one to take (`lib/nextStep.js`).
+- The lesson editor shows «جارٍ فتح الدرس…» until the lesson GET answers.
+  Before, it flashed «الدرس غير موجود», and a non-owner briefly saw the
+  editable view.
 - The lesson GET returns `access`
-  (`canEdit · via · canIntervene · owner · intervention`). Without edit
+  (`canEdit · via · canIntervene · canClaim · owner · intervention`). Without edit
   rights, the editor shows `ReadOnlyLesson`: the student preview, comments
   and history, plus «تدخّل» and «تولَّ الدرس» for a lead who has
   canIntervene. Autosave is off in that view.
@@ -335,6 +344,45 @@ plain member.
 - Appeals («اعتراض»): a member escalates a return, an intervention or a pause;
   the owner resolves it.
 - Notifications: an in-app inbox, plus at most one digest email a day per lead.
+
+**As built (2026-10-19). Decision: hold + kill switch, chosen by the user.**
+A one-click version rollback was ruled out. Content isn't versioned per
+release, and how the app's sync treats a version going backwards is unknown.
+- The publish core moved from the route into `lib/publishSubject.js`. The
+  owner's `/api/content/publish` is now a thin wrapper and behaves the same.
+  `dryRun: true` returns what a delta publish would change, via the new
+  `previewDelta` in `lib/deltaEngine.js`, and writes nothing.
+- Releases (`lib/releases.js`, model `Release`, `/editor/lead/release`
+  «النشر»): a lead with canPublish sees the dry-run preview and requests a
+  release. The rules:
+  - nothing new means no request;
+  - one waiting release per subject;
+  - one release per subject per 24 h;
+  - it is held for 3 h, and every admin is emailed at once.
+  It then runs the same pipeline, and the lead is told when it's live or if it
+  failed. Going live is swept after responses that happen anyway (the lead's
+  inbox and release page, the owner's releases list) and by the daily cron.
+  Each release is claimed held→publishing before running, so it never
+  publishes twice. A release still publishing 15 min after it started
+  (`publishingStartedAt`) was cut off by the function's time limit. The next
+  sweep marks it failed — not retried, since a half-done publish may already
+  have moved the manifest — and tells the lead and the owner.
+- Owner: the «قادة الفرق» screen shows the releases (cancel / publish now)
+  with a note that, once live, the undo is the subject's app switch in the
+  publish section, then fix forward.
+- Appeals (`lib/appeals.js`, model `Appeal`, `POST /api/appeals`): a member
+  contests a return of their lesson, an open intervention on it, or their
+  pause, checked against what actually happened. Only one open appeal per
+  thing, and a paused member can still appeal. Admins are emailed. The owner
+  upholds or dismisses with a reply; upholding a pause lifts it. The member
+  is told on their dashboard. The «اعتراض» buttons are in the paused banner
+  and the lesson editor's notices.
+- Overview: `GET /api/admin/leads` adds each lead's last 30 days from the
+  audit log (two aggregates), their average wait before deciding, last
+  activity, away mode, and open appeals per subject.
+- Lead digest (`lib/leadDigest.js`, daily cron): one email per lead, only
+  when lessons wait for review, answered applicants wait for a decision, or a
+  release is on hold. None while the lead is away.
 
 ---
 
