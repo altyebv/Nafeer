@@ -1,7 +1,8 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, Dialog, EmptyState, Field, PageHeader, Select, Textarea } from '@/components/ui';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatRelative } from '@/lib/format';
+import { ReleasesPanel, AppealsPanel } from './LeadsOversight';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
 import { ScreenBody } from './AdminFrame';
 
@@ -20,8 +21,8 @@ const PERMISSIONS = [
   { id: 'canManageTeam',       label: 'إدارة الفريق',      hint: 'الإسناد والإيقاف والإعلانات ودليل المادة' },
   { id: 'canDecideApplicants', label: 'قرار المتقدمين',    hint: 'قبول ورفض، بعد مهلة تراجع 30 دقيقة' },
   { id: 'canEditInterview',    label: 'أسئلة المقابلة',    hint: 'أسئلة المادة لكل دور' },
-  { id: 'canIntervene',        label: 'التدخل في الدروس',  hint: 'تعديل درس عضو بسبب مكتوب', soon: true },
-  { id: 'canPublish',          label: 'النشر',             hint: 'إصدار المادة للتطبيق', soon: true },
+  { id: 'canIntervene',        label: 'التدخل في الدروس',  hint: 'تعديل درس عضو 24 ساعة بسبب مكتوب، أو تولّيه' },
+  { id: 'canPublish',          label: 'النشر',             hint: 'طلب إصدار يُحجز 3 ساعات قبل نشره' },
 ];
 const MIN_REASON = 10;
 
@@ -80,6 +81,8 @@ export function LeadsScreen({ allContributors = [], onChange }) {
 
       {data && (
         <div className="flex flex-col gap-5">
+          <ReleasesPanel />
+          <AppealsPanel />
           {shown.length === 0 && (
             <EmptyState title="لا أعضاء معتمدون بعد" description="يُعيَّن القائد من أعضاء المادة المعتمدين. حين يُعتمد أعضاء تظهر موادهم هنا." />
           )}
@@ -169,10 +172,14 @@ function LeadRow({ lead, onRemove }) {
           <strong className="t-ui text-fg-strong">{lead.name}</strong>
           <span className="t-caption text-fg-subtle">
             {lead.username ? `@${lead.username} · ` : ''}قائد منذ {lead.since ? formatDate(lead.since, 'medium') : '—'}
+            {' · '}{lead.lastActiveAt ? `آخر نشاط ${formatRelative(lead.lastActiveAt)}` : 'لا نشاط مسجّل'}
+            {lead.awayUntil && new Date(lead.awayUntil) > new Date() ? ` · غائب حتى ${formatDate(lead.awayUntil, 'short')}` : ''}
           </span>
         </div>
         <Button size="sm" variant="ghost" onClick={onRemove}>إزالة…</Button>
       </div>
+
+      <LeadStats stats={lead.stats} />
 
       <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <legend className="sr-only">صلاحيات {lead.name}</legend>
@@ -181,16 +188,33 @@ function LeadRow({ lead, onRemove }) {
             <input type="checkbox" className="mt-1 accent-accent" checked={!!perms[p.id]}
               disabled={saving === p.id} onChange={() => toggle(p.id)} />
             <span className="flex flex-col">
-              <span className="t-label text-fg">
-                {p.label}
-                {p.soon && <span className="t-caption text-fg-subtle"> · لاحقاً</span>}
-              </span>
+              <span className="t-label text-fg">{p.label}</span>
               <span className="t-caption text-fg-subtle">{p.hint}</span>
             </span>
           </label>
         ))}
       </fieldset>
       {error && <p role="alert" className="t-label text-danger">{error}</p>}
+    </div>
+  );
+}
+
+// What the lead did in the last 30 days, from the audit log.
+const STAT_ITEMS = [
+  ['lesson.approve', 'اعتماد'], ['lesson.return', 'إعادة'], ['lesson.intervene', 'تدخّل'],
+  ['lesson.takeover', 'تولٍّ'], ['member.pause', 'إيقاف'], ['applicant.approve', 'قبول متقدم'],
+  ['applicant.reject', 'رفض متقدم'], ['release.request', 'طلب نشر'],
+];
+
+function LeadStats({ stats }) {
+  const counts = stats?.counts || {};
+  const shown = STAT_ITEMS.filter(([k]) => counts[k]);
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 t-caption text-fg-muted">
+      <span className="text-fg-subtle">آخر 30 يوماً:</span>
+      {shown.length === 0 && <span>لا إجراءات</span>}
+      {shown.map(([k, label]) => <Badge key={k} size="sm">{label} {counts[k]}</Badge>)}
+      {stats?.avgWaitHours != null && <Badge size="sm" tone="info">متوسط الانتظار {stats.avgWaitHours} س</Badge>}
     </div>
   );
 }
