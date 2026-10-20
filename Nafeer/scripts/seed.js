@@ -79,13 +79,9 @@ const Admin           = mongoose.models.Admin           || mongoose.model('Admin
 
 const DEFAULT_ROLES = [
 
-<<<<<<< Updated upstream
   // ══════════════════════════════════════════════════════════════════════════
   // ── CONTENT ──────────────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
-=======
-  // ── Learning Experience ────────────────────────────────────────────────
->>>>>>> Stashed changes
   {
     name:        'مساهم في المحتوى',
     slug:        'content-contributor',
@@ -102,24 +98,14 @@ const DEFAULT_ROLES = [
         order: 0,
       },
       {
-<<<<<<< Updated upstream
         text:        'ما أصعب مفهوم في مادتك برأيك، وكيف تشرحه لمن يسمعه لأول مرة؟',
         placeholder: 'اشرح المفهوم كأنك تشرحه لطالب في الصف الأول ثانوي.',
-=======
-        text:        'كيف تشرح مفهوماً صعباً لطالب يراه لأول مرة؟',
-        placeholder: 'صف طريقتك في التبسيط خطوة بخطوة.',
->>>>>>> Stashed changes
         minChars:    100,
         order: 1,
       },
       {
-<<<<<<< Updated upstream
         text:        'ما أكبر خطأ شائع يقع فيه الطلاب في هذه المادة؟ وما جذره الحقيقي؟',
         placeholder: 'فكّر في أنماط الأخطاء — لا الأخطاء السطحية.',
-=======
-        text:        'ما أكثر شيء كنت تتمنى أن يكون مختلفاً في طريقة التعليم؟',
-        placeholder: 'فكّر في تجربتك الشخصية كطالب.',
->>>>>>> Stashed changes
         minChars:    80,
         order: 2,
       },
@@ -479,18 +465,12 @@ const DEFAULT_ROLES = [
     order: 2,
     interviewQuestions: [
       {
-<<<<<<< Updated upstream
         text:        'ما الذي دفعك للتقديم لنافير تحديداً، وليس لمشروع آخر؟',
         placeholder: 'بصدق — اللحظة أو السبب الحقيقي، لا العبارات الرنانة.',
-=======
-        text:        'كيف يمكنك المساهمة في تطوير بشير؟',
-        placeholder: 'تقنياً، فكرياً، أو من ناحية تجربة المستخدم.',
->>>>>>> Stashed changes
         minChars:    80,
         order: 0,
       },
       {
-<<<<<<< Updated upstream
         text:        'كيف تبني شرحاً لفكرة صعبة؟ صِف خطواتك من اللحظة التي تقرأ فيها الموضوع حتى الجملة الأخيرة.',
         placeholder: 'نريد العملية الداخلية — لا القائمة المثالية.',
         minChars:    100,
@@ -535,26 +515,12 @@ const DEFAULT_ROLES = [
       {
         text:        'لماذا يجذبك هذا المشروع تحديداً؟ ما الذي يميّزه عن مشروع مفتوح المصدر آخر؟',
         placeholder: 'إجابة صادقة أفيد من إجابة مدروسة.',
-=======
-        text:        'صف مشكلة في تطبيق تعليمي واكتشفت طريقة لتحسينها.',
-        placeholder: 'نبحث عن طريقة تفكيرك أكثر من الإجابة نفسها.',
-        minChars:    80,
-        order: 1,
-      },
-      {
-        text:        'ما الذي يجذبك للمساهمة في هذا المشروع تحديداً؟',
-        placeholder: 'كن صريحاً — هذا مهم لنا.',
->>>>>>> Stashed changes
         minChars:    60,
         order: 2,
       },
     ],
     microTask: {
-<<<<<<< Updated upstream
       prompt:   'صمّم endpoint بسيط بـ Next.js App Router يقبل `POST /api/items` ويحفظ عنصراً في MongoDB. اكتب الكود مع تعليق على القرارات التي اتخذتها — خاصة ما يتعلق بالتحقق من البيانات ومعالجة الأخطاء.',
-=======
-      prompt:   'اقترح تحسيناً واحداً على تجربة استخدام تطبيق تعليمي (يمكن أن يكون بشير أو غيره) واشرح كيف سينعكس على المستخدم.',
->>>>>>> Stashed changes
       minChars: 150,
     },
   },
@@ -569,18 +535,12 @@ const DEFAULT_ROLES = [
     order: 3,
     interviewQuestions: [
       {
-<<<<<<< Updated upstream
         text:        'ما خبرتك مع تطوير تطبيقات أندرويد؟ Kotlin, Compose, أو غيرها؟ صِف مشروعاً وما أكثر شيء تعلمته منه.',
         placeholder: 'المشاريع الحقيقية — حتى لو كانت صغيرة — أفصح من الشهادات.',
-=======
-        text:        'كيف يمكن أن توصل فكرة بشير للطلاب؟',
-        placeholder: 'فكّر في طرق عملية — محتوى، فيديو، مبادرات.',
->>>>>>> Stashed changes
         minChars:    80,
         order: 0,
       },
       {
-<<<<<<< Updated upstream
         text:        'كيف تتعامل مع offline-first في تطبيقات الموبايل؟ ما أدواتك للتخزين المحلي والمزامنة؟',
         placeholder: 'Room, DataStore, WorkManager — ما الذي تفضله ولماذا؟',
         minChars:    80,
@@ -646,10 +606,6 @@ const DEFAULT_ROLES = [
       {
         text:        'ما أسلوبك في الرسم وما الأدوات التي تتقنها؟ وهل لديك أعمال سابقة يمكنك الإشارة إليها؟',
         placeholder: 'رقمي أم تقليدي؟ ما الأسلوب البصري الذي تسكن فيه؟',
-=======
-        text:        'هل لديك تجربة في صناعة محتوى أو إدارة مجتمع؟',
-        placeholder: 'حتى لو كانت بسيطة، نود أن نعرف.',
->>>>>>> Stashed changes
         minChars:    60,
         order: 1,
       },
@@ -682,28 +638,18 @@ const DEFAULT_ROLES = [
         order: 0,
       },
       {
-<<<<<<< Updated upstream
         text:        'كيف تحوّل مفهوماً علمياً مجرداً إلى رسم واضح؟ صِف خطواتك من فهم المفهوم إلى الخط الأول.',
         placeholder: 'الترجمة من النص إلى البصر ليست تلقائية — كيف يعمل ذهنك؟',
-=======
-        text:        'كيف تتأكد أن العمل يتم بشكل مستمر ومنظّم؟',
-        placeholder: 'ما الأدوات أو الأساليب التي تستخدمها؟',
->>>>>>> Stashed changes
         minChars:    80,
         order: 1,
       },
     ],
     microTask: {
-<<<<<<< Updated upstream
       prompt:   'اختر مفهوماً علمياً بسيطاً (الدورة الدموية، قانون نيوتن، أو التركيب الضوئي) وصِف بالتفصيل كيف ستوضّحه في رسمة واحدة — ما العناصر، الألوان، التسميات، والقرارات البصرية التي ستتخذها؟',
-=======
-      prompt:   'تخيّل أن لديك فريق من 5 مساهمين. كيف ستنظّم عملهم خلال أسبوع؟',
->>>>>>> Stashed changes
       minChars: 120,
     },
   },
 
-<<<<<<< Updated upstream
   // ══════════════════════════════════════════════════════════════════════════
   // ── OPERATIONS ───────────────────────────────────────────────────────────
   // (Add 'operations' to ContributorRole category enum in lib/models/ContributorRole.js)
@@ -810,8 +756,6 @@ const DEFAULT_ROLES = [
       minChars: 180,
     },
   },
-=======
->>>>>>> Stashed changes
 ];
 
 // ─── Connect ──────────────────────────────────────────────────────────────────
@@ -822,13 +766,14 @@ async function connect() {
     console.error('❌  MONGODB_URI not set in environment');
     process.exit(1);
   }
-  await mongoose.connect(uri);
-  console.log('✅  Connected to MongoDB');
+  // MONGODB_DB picks the database on the cluster (docs/dev-database.md).
+  const dbName = process.env.MONGODB_DB || undefined;
+  await mongoose.connect(uri, dbName ? { dbName } : {});
+  console.log(`✅  Connected to MongoDB${dbName ? ` (${dbName})` : ''}`);
 }
 
 // ─── Seed roles ───────────────────────────────────────────────────────────────
 
-<<<<<<< Updated upstream
 async function seedRoles(force = false) {
   console.log(`\n📋  Seeding contributor roles${force ? ' (--force: wiping existing roles)' : ''}...`);
 
@@ -837,37 +782,23 @@ async function seedRoles(force = false) {
     console.log(`   🗑  Deleted ${deleted.deletedCount} existing roles`);
   }
 
-=======
-async function seedRoles() {
-  console.log('\n🧹  Clearing existing roles...');
-  await ContributorRole.deleteMany({});
-  console.log('   ✓  All existing roles deleted');
-
-  console.log('\n📋  Seeding contributor roles...');
->>>>>>> Stashed changes
   let created = 0;
+  let skipped = 0;
 
   for (const role of DEFAULT_ROLES) {
-<<<<<<< Updated upstream
     const exists = await ContributorRole.findOne({ slug: role.slug });
     if (exists && !force) {
       console.log(`   ⟳  skipped (exists): ${role.name}`);
       skipped++;
       continue;
     }
-=======
->>>>>>> Stashed changes
     await ContributorRole.create(role);
     console.log(`   ✓  created: ${role.name} [${role.category}]`);
     created++;
   }
 
-<<<<<<< Updated upstream
   console.log(`\n   Roles: ${created} created, ${skipped} skipped`);
   console.log(`   Total: ${DEFAULT_ROLES.length} roles defined`);
-=======
-  console.log(`\n   Roles: ${created} created`);
->>>>>>> Stashed changes
 }
 
 // ─── Seed first admin ─────────────────────────────────────────────────────────
