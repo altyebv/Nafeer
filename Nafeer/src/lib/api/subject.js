@@ -5,6 +5,8 @@ import { Unit } from '@/lib/models/Unit';
 import { Lesson } from '@/lib/models/Lesson';
 import { initialChangelog } from '@/lib/models/versioning';
 import { buildSubjectScaffold, SUBJECTS_BY_ID } from '@/shared/curriculum';
+import { lessonOwnerId } from '@/lib/credits';
+import { unclaimedOwners } from '@/lib/lessonAccess';
 
 // ─── Seed actor ───────────────────────────────────────────────────────────────
 // A stable, valid ObjectId used whenever bootstrapSubject is called from the
@@ -183,6 +185,15 @@ export async function getUnitsWithLessons(subjectId) {
     Unit.find({ subjectId }).sort({ order: 1 }).lean(),
     Lesson.find({ subjectId }).sort({ order: 1 }).lean(),
   ]);
+
+  // Whose each lesson is, and whether it is still unclaimed scaffold — the
+  // editor shows a member their own lessons and offers unclaimed ones
+  // (docs/team-leads.md L4). One read over the distinct owners.
+  const unclaimed = await unclaimedOwners(lessons.map(lessonOwnerId));
+  for (const l of lessons) {
+    l.owner = lessonOwnerId(l);
+    l.unclaimed = unclaimed.has(l.owner);
+  }
 
   const lessonsByUnit = lessons.reduce((acc, l) => {
     if (!acc[l.unitContentId]) acc[l.unitContentId] = [];
