@@ -118,6 +118,10 @@ export function useAtlasSync() {
               groupTitle:       l.groupTitle         || null,
               groupMetadata:    l.groupMetadata      || null,
               atlasStatus:      l.status             || 'draft',
+              reviewState:      l.reviewState        ?? null,
+              // Whose it is, and whether it is unclaimed scaffold (lib/api/subject.js).
+              owner:            l.owner              ?? null,
+              unclaimed:        !!l.unclaimed,
               _v:               l.version            ?? 1,
             }))
           );
