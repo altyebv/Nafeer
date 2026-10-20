@@ -86,6 +86,14 @@ export async function sendEmail({ to, template, data = {}, subject, replyTo, fro
   const finalFrom    = from    || DEFAULT_FROM;
   const finalReplyTo = replyTo || DEFAULT_REPLY_TO;
 
+  // On the dev database (docs/dev-database.md) nothing is sent: the people
+  // there are test personas. The email is rendered — so template errors still
+  // show — and printed instead.
+  if (process.env.MONGODB_DB?.endsWith('_dev')) {
+    console.info(`\n✉️  [dev, not sent] to ${to} — ${finalSubject}\n${rendered.text}\n`);
+    return { ok: true, id: 'dev-not-sent' };
+  }
+
   // ── 3. Send ────────────────────────────────────────────────────────────────
   let result;
   try {
