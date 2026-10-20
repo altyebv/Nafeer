@@ -9,6 +9,7 @@ import EditorSidebar       from '@/components/editor/layout/EditorSidebar';
 import SyncBanner          from '@/components/editor/layout/SyncBanner';
 import { activeNavId }     from '@/components/editor/layout/nav';
 import { formatDate }      from '@/lib/format';
+import { AppealButton }    from '@/components/appeals/AppealButton';
 
 // Must match the constants in EditorSidebar.
 const RAIL_W     = 60;
@@ -88,6 +89,7 @@ function PausedBanner({ paused }) {
         {paused.reason ? ` — ${paused.reason}` : ''}
       </span>
       <span className="text-fg-subtle">يمكنك القراءة كالمعتاد.</span>
+      <AppealButton kind="pause" className="ms-auto" />
     </div>
   );
 }
