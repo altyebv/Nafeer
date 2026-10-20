@@ -36,8 +36,19 @@ export const fromServerLesson = (l) => ({
   // Server-owned like the status: returned / round / when. Never edited
   // locally, so mergeLesson takes the server's copy even over a dirty draft.
   reviewState:      l.reviewState      ?? null,
+  // Whose it is (docs/team-leads.md L4) — server-owned too. `owner` comes
+  // from the subject list; a lesson GET carries ownerId / createdBy.
+  ...ownership(l),
   _v:               l.version          ?? 1,
 });
+
+function ownership(l) {
+  const owner = l.owner ?? (l.ownerId || l.createdBy ? String(l.ownerId || l.createdBy) : undefined);
+  return {
+    ...(owner !== undefined && { owner }),
+    ...(l.unclaimed !== undefined && { unclaimed: !!l.unclaimed }),
+  };
+}
 
 export const fromServerSection = (s) => ({
   id:           s.contentId,
@@ -180,9 +191,14 @@ export function mergeLesson(local, incoming) {
   if (!local) return incoming;
   const status = incoming.atlasStatus ?? local.atlasStatus;
   const reviewState = incoming.reviewState !== undefined ? incoming.reviewState : local.reviewState;
-  if (local._dirty) return { ...local, atlasStatus: status, reviewState };
+  // Ownership is the server's, like the status: never kept from a stale copy.
+  const owned = {
+    owner:     incoming.owner     !== undefined ? incoming.owner     : local.owner,
+    unclaimed: incoming.unclaimed !== undefined ? incoming.unclaimed : local.unclaimed,
+  };
+  if (local._dirty) return { ...local, atlasStatus: status, reviewState, ...owned };
   if (!hasVersion(local) && hasVersion(incoming) && !sameFields(local, incoming, LESSON_FIELDS)) {
-    return { ...local, atlasStatus: status, reviewState, _v: incoming._v, _dirty: true };
+    return { ...local, atlasStatus: status, reviewState, ...owned, _v: incoming._v, _dirty: true };
   }
   return { ...local, ...incoming, _dirty: false };
 }
