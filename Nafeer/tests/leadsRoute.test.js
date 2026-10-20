@@ -12,7 +12,8 @@ vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal()),
   after: (fn) => fn(),
 }));
-vi.mock('@/lib/models/AuditEvent', () => ({ AuditEvent: { create: vi.fn(async (d) => d) } }));
+vi.mock('@/lib/models/AuditEvent', () => ({ AuditEvent: { create: vi.fn(async (d) => d), aggregate: vi.fn(async () => []) } }));
+vi.mock('@/lib/models/Appeal', () => ({ Appeal: { aggregate: vi.fn(async () => []) } }));
 
 // A small in-memory Contributor with the calls the route makes.
 const people = [];
