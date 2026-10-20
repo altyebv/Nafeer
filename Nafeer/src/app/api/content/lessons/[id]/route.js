@@ -55,7 +55,7 @@ export async function GET(request, { params }) {
 
     // What this viewer may do with it (docs/team-leads.md L4): the editor
     // opens read-only for anyone but the owner, and offers a lead «تدخّل».
-    // Not theirs: maybe still unclaimed scaffold, open to any member (one read, only then).
+    // Not theirs: maybe unclaimed scaffold any member may claim (one read, only then).
     let a = lessonAccess(lesson, user);
     if (!a.canEdit) {
       const unclaimed = (await unclaimedOwners([lessonOwnerId(lesson)])).size > 0;
@@ -65,6 +65,7 @@ export async function GET(request, { params }) {
       canEdit:      a.canEdit,
       via:          a.via,
       canIntervene: a.canIntervene,
+      canClaim:     a.canClaim,
       owner:        lesson.attribution?.owner || null,
       intervention: a.intervention && {
         byName: a.intervention.byName, category: a.intervention.category,
