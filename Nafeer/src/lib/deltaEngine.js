@@ -476,3 +476,27 @@ function buildEntityVersionsMap(patch, _bundleSha256, entityIndex) {
  * @property {object} deletedByType - entityType → deleted id arrays (for logging)
  * @property {object} stats         - Summary counts
  */
+// ── Preview ────────────────────────────────────────────────────────────────────
+
+/**
+ * What a delta publish of this snapshot would change, without uploading or
+ * writing anything — the preview a team lead sees before requesting a release
+ * (lib/publishSubject.js dryRun, docs/team-leads.md L5). Same diff as
+ * buildAndUploadDelta, before the ancestor cascade (which only adds parents
+ * the device lacks, not content changes).
+ */
+export function previewDelta({ subjectId, snapshot, prevEntry }) {
+  const current = snapshotToEntityMaps(snapshot, subjectId);
+  const prevPublishedAt = prevEntry?.updatedAt ? new Date(prevEntry.updatedAt) : null;
+  const { changedByType, deletedByType } = computeDelta(current, prevEntry?.entityIndex ?? null, prevPublishedAt);
+  const counts = (m) => Object.fromEntries(Object.entries(m).map(([type, ids]) => [type, ids.length]));
+  const total = (m) => Object.values(m).reduce((n, ids) => n + ids.length, 0);
+  return {
+    firstPublish: !prevEntry?.entityIndex,
+    changedByType,
+    deletedByType,
+    changed: counts(changedByType),
+    deleted: counts(deletedByType),
+    nothingToPublish: total(changedByType) === 0 && total(deletedByType) === 0,
+  };
+}
