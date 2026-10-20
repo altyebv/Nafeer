@@ -24,7 +24,9 @@ const LABEL = {
   'team.unannounce':   'حذف إعلاناً',
   'guide.edit':        'عدّل دليل المادة',
   'lead.away':         'غيّر وضع الغياب',
-  'release.publish':   'نشر إصداراً',
+  'release.request':   'طلب نشر إصدار',
+  'release.cancel':    'ألغى إصداراً',
+  'release.publish':   'نُشر إصداره',
 };
 
 // The ones worth reading in full, with their reason.
