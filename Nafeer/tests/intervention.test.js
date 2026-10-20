@@ -46,7 +46,7 @@ const { Announcement } = await import('@/lib/models/announcement');
 const { writeHistory } = await import('@/lib/api/lessons');
 const { creditLesson } = await import('@/lib/credits');
 const { recordAudit }  = await import('@/lib/audit');
-const { lessonAccess, assertCanEditLessons, INTERVENTION_HOURS } = await import('@/lib/lessonAccess');
+const { lessonAccess, assertCanEditLessons, claimLesson, INTERVENTION_HOURS } = await import('@/lib/lessonAccess');
 const { startIntervention, closeIntervention, takeOver } = await import('@/lib/intervention');
 const route = await import('@/app/api/lead/lessons/route');
 
@@ -219,24 +219,32 @@ describe('unclaimed scaffold lessons', () => {
     lessons.push(lesson({ contentId: 'S1', title: 'الدرس 1', createdBy: 'seed' }), lesson({ contentId: 'S2', subjectId: 'MATH', createdBy: 'seed' }));
   });
 
-  it('any member of the subject may write one, and their first save claims it', async () => {
-    await expect(assertCanEditLessons({ ...member, name: 'منى' }, ['S1'], NOW)).resolves.toBeUndefined();
+  it('saving never claims: an unclaimed lesson is refused like any other', async () => {
+    expect((await refusal(() => assertCanEditLessons(member, ['S1'], NOW))).status).toBe(403);
+    expect(lessons[0].ownerId).toBeNull();
+  });
+
+  it('a member of the subject may claim it, and becomes its author', async () => {
+    await expect(claimLesson({ ...member, name: 'منى' }, 'S1', NOW)).resolves.toMatchObject({ contentId: 'S1' });
     expect(lessons[0].ownerId).toBe('member');
     expect(creditLesson).toHaveBeenCalledWith('S1', { contributorId: 'member', name: 'منى', kind: 'author' });
+    await expect(assertCanEditLessons(member, ['S1'], NOW)).resolves.toBeUndefined();
   });
 
-  it('after the claim it is theirs: the next member reads only', async () => {
-    await assertCanEditLessons(member, ['S1'], NOW);
+  it('once claimed it is theirs: nobody else can claim it', async () => {
+    await claimLesson(member, 'S1', NOW);
     const other = { id: 'other', role: 'contributor', subject: 'PHYSICS', lead: null };
-    expect((await refusal(() => assertCanEditLessons(other, ['S1'], NOW))).status).toBe(403);
+    await expect(claimLesson(other, 'S1', NOW)).rejects.toMatchObject({ status: 403 });
   });
 
-  it('not across subjects', async () => {
-    expect((await refusal(() => assertCanEditLessons(member, ['S2'], NOW))).status).toBe(403);
-  });
-
-  it('a lesson a real person owns is never unclaimed', async () => {
+  it('not across subjects, and never a lesson a real person owns', async () => {
+    await expect(claimLesson(member, 'S2', NOW)).rejects.toMatchObject({ status: 403 });
     lessons.push(lesson({ contentId: 'R1' }));   // createdBy 'author'
-    expect((await refusal(() => assertCanEditLessons(member, ['R1'], NOW))).status).toBe(403);
+    await expect(claimLesson(member, 'R1', NOW)).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('the access says what to offer: claim, not intervene', () => {
+    expect(lessonAccess(lessons[0], member, NOW, { unclaimed: true })).toMatchObject({ canEdit: false, canClaim: true, canIntervene: false });
+    expect(lessonAccess(lessons[0], lead, NOW, { unclaimed: true })).toMatchObject({ canClaim: true, canIntervene: false });
   });
 });
