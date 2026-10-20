@@ -1,4 +1,4 @@
-import { BookMarked, BookOpen, CircleHelp, ClipboardCheck, Image, LayoutDashboard, Sparkles, Smartphone, UserPlus, UserRound, Users } from 'lucide-react';
+import { BookMarked, BookOpen, CircleHelp, ClipboardCheck, Image, LayoutDashboard, Rocket, Sparkles, Smartphone, UserPlus, UserRound, Users } from 'lucide-react';
 
 /**
  * EDITOR NAVIGATION
@@ -30,6 +30,7 @@ export const LEAD_NAV = [
   { id: 'lead',       href: '/editor/lead',            icon: ClipboardCheck, label: 'المراجعة',  sub: 'Lead inbox', group: 'الإشراف', perms: ['canReview'] },
   { id: 'team',       href: '/editor/lead/team',       icon: Users,          label: 'الفريق',    sub: 'Team',       group: 'الإشراف', perms: ['canManageTeam'] },
   { id: 'recruiting', href: '/editor/lead/recruiting', icon: UserPlus,       label: 'المتقدمون', sub: 'Applicants', group: 'الإشراف', perms: ['canDecideApplicants', 'canEditInterview'] },
+  { id: 'release',    href: '/editor/lead/release',    icon: Rocket,         label: 'النشر',     sub: 'Release',    group: 'الإشراف', perms: ['canPublish'] },
 ];
 
 /** The nav a contributor sees: everyone's items, then the lead's they may use. */
@@ -51,8 +52,8 @@ export const NAV_BY_ID = Object.fromEntries([...NAV, ...LEAD_NAV].map((n) => [n.
 export function activeNavId(pathname) {
   if (!pathname || pathname === '/editor') return 'dashboard';
   const [, , section, sub] = pathname.split('/');
-  // The lead's pages live under /editor/lead; team and recruiting are their own items.
-  if (section === 'lead' && (sub === 'team' || sub === 'recruiting')) return sub;
+  // The lead's pages live under /editor/lead; each sub-page is its own item.
+  if (section === 'lead' && ['team', 'recruiting', 'release'].includes(sub)) return sub;
   return NAV_BY_ID[section] ? section : 'dashboard';
 }
 
