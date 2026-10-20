@@ -15,7 +15,7 @@ export const AUDIT_ACTIONS = [
   'team.announce', 'team.unannounce', 'guide.edit', 'lead.away',
   'applicant.approve', 'applicant.reject', 'applicant.undo',
   'interview.edit',
-  'release.publish', 'release.rollback',
+  'release.request', 'release.cancel', 'release.publish', 'release.rollback',
   'lead.appoint', 'lead.update', 'lead.remove',
   'appeal.open', 'appeal.resolve',
 ];
@@ -55,7 +55,7 @@ export function validateAudit({ action, reason = '' }) {
 }
 
 /**
- * Writes one entry. `actor` is { id, name, kind: 'lead' | 'admin' }.
+ * Writes one entry. `actor` is { id, name, kind: 'lead' | 'admin' | 'member' }.
  * Returns the created document, or null if the write failed.
  */
 export async function recordAudit(actor, { action, subjectId = '', target = {}, reason = '', meta = null }) {
@@ -64,7 +64,7 @@ export async function recordAudit(actor, { action, subjectId = '', target = {}, 
     return await AuditEvent.create({
       actorId:   String(actor?.id ?? ''),
       actorName: actor?.name || '',
-      actorKind: actor?.kind === 'admin' ? 'admin' : 'lead',
+      actorKind: ['admin', 'member'].includes(actor?.kind) ? actor.kind : 'lead',
       action,
       subjectId: subjectId || '',
       target: {
