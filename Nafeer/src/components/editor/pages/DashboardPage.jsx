@@ -443,7 +443,7 @@ export default function DashboardPage({ contributor }) {
       <WelcomeHero contributor={contributor} isFirstVisit={isFirstVisit} />
 
       {/* ── What to do next, and where the subject stands (DS2 step 8) ── */}
-      <NextStepCard />
+      <NextStepCard me={contributor?.role === 'admin' ? null : (contributor?.id ? String(contributor.id) : null)} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8 items-start">
         <UnitProgressCard />
