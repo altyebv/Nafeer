@@ -35,6 +35,7 @@ import { useSubjectStore } from '@/store/subjectStore';
 import { useContentStore } from '@/store/contentStore';
 import LessonConflicts from '@/components/editor/lesson/LessonConflicts';
 import ReadOnlyLesson, { InterventionBanner } from '@/components/editor/lesson/ReadOnlyLesson';
+import { AppealButton } from '@/components/appeals/AppealButton';
 import { minutesAgo } from '@/components/editor/lesson/SyncMarks';
 import { useAutosave } from '@/hooks/useAutosave';
 import { useOnline } from '@/hooks/useOnline';
@@ -112,6 +113,9 @@ export default function LessonEditorPage({
   // What this viewer may do (lesson GET, docs/team-leads.md L4): anyone but
   // the owner reads; a lead may open an intervention to edit.
   const [access,           setAccess]           = useState(null);
+  // The lesson GET: 'loading' until it answers, then 'found', 'missing' (404)
+  // or 'failed' (offline — the local copy is edited as before).
+  const [lessonLoad,       setLessonLoad]       = useState('loading');
   const online = useOnline();
   // The phone beside the content tab (xl and up). Remembered in the browser;
   // below xl the same button opens the preview modal instead.
@@ -147,8 +151,13 @@ export default function LessonEditorPage({
   // Unsaved local edits are kept (lib/editorSync.js).
   useEffect(() => {
     if (!lessonId) return;
+    setLessonLoad('loading');
     fetch(`/api/content/lessons/${lessonId}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const res = await r.json().catch(() => ({}));
+        setLessonLoad(res.ok ? 'found' : r.status === 404 ? 'missing' : 'failed');
+        return res;
+      })
       .then((res) => {
         if (res.ok) {
           setAttribution(res.data.attribution || null);
@@ -164,7 +173,7 @@ export default function LessonEditorPage({
           useContentStore.getState().mergeServerLesson(lessonId, res.data.sections || []);
         }
       })
-      .catch(() => {/* non-blocking */});
+      .catch(() => setLessonLoad('failed'));
     return () => setOpenedBy(null);
   }, [lessonId]);
 
@@ -353,6 +362,19 @@ export default function LessonEditorPage({
     addSection({ lessonId, title: 'قسم جديد', order: maxOrder + 1, conceptIds: [], learningType: 'UNDERSTANDING', partIndex: maxPart + 1 });
   };
 
+  // Until the lesson GET answers we know neither whether it exists nor whether
+  // this viewer may edit it: show that it is opening, not «not found», and
+  // never the editable view to someone who will only be allowed to read.
+  if (lessonLoad === 'loading' || (!lesson && lessonLoad === 'found')) {
+    return (
+      <div role="status" aria-live="polite" className="m-6 flex flex-col gap-3">
+        <span className="t-label text-fg-subtle">جارٍ فتح الدرس…</span>
+        <span aria-hidden="true" className="h-8 w-2/3 rounded-control bg-sunken animate-pulse" />
+        <span aria-hidden="true" className="h-40 w-full rounded-card bg-sunken animate-pulse" />
+      </div>
+    );
+  }
+
   if (!lesson) return (
     <EmptyState
       icon={NotebookPen}
@@ -436,11 +458,22 @@ export default function LessonEditorPage({
           <InterventionBanner lessonId={lessonId} access={access} />
         )}
 
-        {/* Scaffold nobody has taken yet: the first save makes it theirs. */}
-        {access?.via === 'unclaimed' && (
-          <div role="note" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-info-surface border border-info-border text-info t-label font-normal">
-            <NotebookPen size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
-            <p className="leading-relaxed">لم يتولَّ أحد هذا الدرس بعد. أول حفظ يجعله في عهدتك، ويصير تعديله لك وحدك.</p>
+        {/* A lead is editing this owner's lesson: say who and why, and offer an appeal. */}
+        {access?.via === 'owner' && access.intervention && (
+          <div role="status" className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-card bg-warn-surface border border-warn-border t-label">
+            <span className="flex-1 min-w-0 text-fg leading-relaxed">
+              <strong className="text-warn">يتدخّل {access.intervention.byName || 'قائد الفريق'} في درسك</strong>
+              {` — ${access.intervention.reason}. تعديلاته تظهر في سجل الدرس باسمه.`}
+            </span>
+            <AppealButton kind="intervention" lessonId={lessonId} />
+          </div>
+        )}
+
+        {/* Returned with comments: the author may contest the return itself. */}
+        {access?.via === 'owner' && lesson.reviewState?.returned && (
+          <div className="flex flex-wrap items-center gap-2 t-caption text-fg-subtle">
+            <span>أُعيد الدرس بملاحظات. إن رأيت الإعادة غير منصفة:</span>
+            <AppealButton kind="return" lessonId={lessonId} />
           </div>
         )}
 
