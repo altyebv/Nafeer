@@ -36,6 +36,8 @@ vi.mock('@/lib/models/ContributorRole', () => ({
   },
 }));
 vi.mock('@/lib/models/AuditEvent', () => ({ AuditEvent: { find: vi.fn(() => q([])) } }));
+vi.mock('@/lib/releases',   () => ({ applyDueReleases: vi.fn(async () => []) }));
+vi.mock('@/lib/leadDigest', () => ({ sendLeadDigests: vi.fn(async () => 0) }));
 vi.mock('@/lib/models/Admin', () => ({ Admin: { find: vi.fn(() => q([{ email: 'owner@example.com', username: 'owner' }])) } }));
 
 const { Contributor }     = await import('@/lib/models/Contributor');
