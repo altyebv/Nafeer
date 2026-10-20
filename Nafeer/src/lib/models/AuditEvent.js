@@ -13,7 +13,8 @@ const AuditEventSchema = new mongoose.Schema(
     // Contributor _id for a lead; the admin's id for the owner.
     actorId:   { type: String, required: true },
     actorName: { type: String, default: '' },
-    actorKind: { type: String, enum: ['lead', 'admin'], required: true },
+    // 'member' — an appeal (lib/appeals.js), the one thing members put here.
+    actorKind: { type: String, enum: ['lead', 'admin', 'member'], required: true },
 
     action:    { type: String, required: true },
     subjectId: { type: String, default: '' },
