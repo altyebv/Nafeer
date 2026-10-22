@@ -175,7 +175,9 @@ function PersonPage({ c, roleName, roles, onRefresh }) {
     const data = await res.json().catch(() => ({}));
     setBusy(null);
     if (data.email && !data.email.ok) {
-      alert(`تم تنفيذ الإجراء، لكن تعذّر إرسال البريد إلى ${data.email.to}. أنشئ الرابط من البطاقة وأرسله يدوياً.`);
+      alert(action === 'reject'
+        ? `رُفض الطلب، لكن تعذّر إرسال رسالة الاعتذار إلى ${data.email.to}. يمكنك إرسالها من شاشة البريد.`
+        : `تم تنفيذ الإجراء، لكن تعذّر إرسال البريد إلى ${data.email.to}. أنشئ الرابط من البطاقة وأرسله يدوياً.`);
     }
     onRefresh();
   };
