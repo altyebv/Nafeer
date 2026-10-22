@@ -9,7 +9,7 @@ import { versioningFields } from './versioning';
 const QUESTION_TYPES = [
   'TRUE_FALSE', 'MCQ', 'FILL_BLANK', 'MATCH',
   'SHORT_ANSWER', 'EXPLAIN', 'LIST', 'TABLE',
-  'FIGURE', 'COMPARE', 'ORDER',
+  'FIGURE', 'COMPARE', 'ORDER', 'IMAGE_MARKER',
 ];
 
 const QUESTION_SOURCES = [
@@ -92,9 +92,23 @@ const QuestionSchema = new mongoose.Schema(
     sectionContentId: { type: String, default: null, index: true },
     isCheckpoint:     { type: Boolean, default: false },
 
-    // ── Interactive media markers ──────────────────────────────────────────
-    // Populated only on FIGURE questions that have an imageUrl.
-    // Coordinates are normalised 0–1 from the top-left of the image.
+    // ── Interactive media markers (docs/question-markers.md) ───────────────
+    // IMAGE_MARKER questions: markerMode says how they are answered —
+    //   label   each pin's `answer` is picked from a bank (answers + options)
+    //   locate  one pin, the target; a tap within `radius` is right
+    // FIGURE questions may carry pins too, as labels only (no answer).
+    // x, y: fractions of the image from its top-left, at the dot's centre.
+    // radius: a fraction of the image's width. `image` keeps the picture's
+    // size so that distance means the same across and down.
+    markerMode: { type: String, enum: ['label', 'locate', null], default: null },
+    image: {
+      type: new mongoose.Schema({
+        mediaId: { type: String, default: null },
+        width:   { type: Number, default: null },
+        height:  { type: Number, default: null },
+      }, { _id: false }),
+      default: null,
+    },
     markers: {
       type: [
         {
@@ -103,6 +117,8 @@ const QuestionSchema = new mongoose.Schema(
           y:           { type: Number, required: true, min: 0, max: 1 },
           label:       { type: String, default: '' },
           description: { type: String, default: '' },
+          answer:      { type: String, default: '' },
+          radius:      { type: Number, default: null, min: 0, max: 1 },
         },
       ],
       default: [],
