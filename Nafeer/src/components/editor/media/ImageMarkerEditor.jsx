@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
 import { randomId, clampNorm } from '@/lib/markerUtils';
+import { LOCATE_RADIUS } from '@/lib/markerQuestion';
 import { MarkerPin } from '@/components/media/MarkerPin';
 import { Plus, Sparkles, X } from 'lucide-react';
 
@@ -10,6 +11,12 @@ import { Plus, Sparkles, X } from 'lucide-react';
 //   markers   — array of marker objects (see shape below)
 //   onChange  — called with the new markers array on every mutation
 //   readOnly  — if true, shows pins but disables editing (future preview use)
+//   mode      — what a pin is for, which decides its fields:
+//                 explain    lesson images: label + explanation (default)
+//                 reference  pins a question refers to: label only
+//                 label      a question pin: its right answer (shown as a number)
+//                 locate     the one target of a find-it question: name + radius
+//   onImageSize({ width, height }) — the picture's natural size, once loaded
 //
 // Marker shape:
 //   { id, x, y, label, description, ...anything else, kept as it is }
@@ -23,7 +30,10 @@ import { Plus, Sparkles, X } from 'lucide-react';
 
 const DRAG_SLOP = 4; // px a press may wander and still count as a tap
 
-export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, readOnly = false }) {
+const MAX_PINS = { explain: Infinity, reference: Infinity, label: Infinity, locate: 1 };
+
+export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, readOnly = false, mode = 'explain', onImageSize }) {
+  const atMax = markers.length >= (MAX_PINS[mode] ?? Infinity);
   const imgRef       = useRef(null);
   const gestureRef   = useRef(null);   // { id, startX, startY, moved }
   const markersRef   = useRef(markers);
@@ -57,7 +67,11 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
     if (!placingMode || readOnly) return;
     const pos = toNorm(e.clientX, e.clientY);
     if (!pos) return;
-    const newMarker = { id: randomId('mk'), x: pos.x, y: pos.y, label: '', description: '' };
+    const newMarker = {
+      id: randomId('mk'), x: pos.x, y: pos.y, label: '', description: '',
+      ...(mode === 'label' ? { answer: '' } : {}),
+      ...(mode === 'locate' ? { radius: LOCATE_RADIUS.default } : {}),
+    };
     onChange([...markers, newMarker]);
     setActiveId(newMarker.id);
     setPlacingMode(false);
@@ -121,8 +135,11 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
       {!readOnly && (
         <div className="flex items-center gap-2 flex-wrap">
           <button
+            type="button"
+            disabled={atMax && !placingMode}
+            title={atMax ? 'لهذا النوع علامة واحدة — اسحبها لتغيير موضعها' : undefined}
             onClick={() => setPlacingMode((p) => !p)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+            className={`disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
               placingMode
                 ? 'bg-sand-800/60 text-sand-300 border-sand-600 ring-1 ring-sand-600/40'
                 : 'bg-ink-900 text-ink-400 border-ink-700 hover:border-ink-500 hover:text-ink-200'
@@ -164,7 +181,11 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
           alt=""
           className="w-full h-auto block"
           draggable={false}
-          onLoad={() => setImgLoaded(true)}
+          onLoad={(e) => {
+            setImgLoaded(true);
+            const { naturalWidth: width, naturalHeight: height } = e.currentTarget;
+            if (width && height) onImageSize?.({ width, height });
+          }}
           onError={() => setImgError(true)}
         />
 
@@ -189,11 +210,20 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
           </div>
         )}
 
+        {/* ── The right area of a find-it target ──────────────────────────────
+            A circle: its radius is a fraction of the WIDTH, so its height in
+            % of the box comes from the same px — hence aspect-square. */}
+        {imgLoaded && mode === 'locate' && markers.map((m) => (
+          <span key={`ring-${m.id}`} aria-hidden="true"
+            className="absolute rounded-full aspect-square border-2 border-dashed border-line-accent bg-accent-wash pointer-events-none -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%`, width: `${(m.radius ?? LOCATE_RADIUS.default) * 200}%` }} />
+        ))}
+
         {/* ── Pins ─────────────────────────────────────────────────────────── */}
         {imgLoaded && markers.map((marker, index) => (
           <MarkerPin
             key={marker.id}
-            marker={marker}
+            marker={mode === 'label' ? { ...marker, label: '' } : marker}
             index={index}
             active={marker.id === activeId}
             dragging={marker.id === draggingId}
@@ -216,6 +246,7 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
       {activeMarker && !readOnly && (
         <MarkerEditPanel
           marker={activeMarker}
+          mode={mode}
           index={markers.findIndex((m) => m.id === activeId)}
           total={markers.length}
           onChange={(patch) => update(activeMarker.id, patch)}
@@ -245,7 +276,7 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
                 {i + 1}
               </span>
               <span className="flex-1 truncate">
-                {m.label || <span className="text-ink-500 italic">بدون عنوان</span>}
+                {(mode === 'label' ? m.answer : m.label) || <span className="text-fg-subtle italic">{mode === 'label' ? 'بلا إجابة بعد' : 'بدون عنوان'}</span>}
               </span>
               {m.description && (
                 <span className="text-ink-500 text-[10px] truncate max-w-[120px]">{m.description}</span>
@@ -263,7 +294,9 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
 
 // ─── MarkerEditPanel ──────────────────────────────────────────────────────────
 // Inline panel that appears below the canvas when a marker is selected.
-function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) {
+const FIELD = 'w-full px-3 py-2 bg-sunken border border-line rounded-control text-fg t-ui focus:border-line-accent focus:outline-none placeholder:text-fg-subtle hover:border-line-strong transition-colors';
+
+function MarkerEditPanel({ marker, mode, index, total, onChange, onDelete, onClose }) {
   return (
     <div className="rounded-xl border border-sand-800/50 bg-sand-950/20 overflow-hidden">
       {/* Header */}
@@ -287,28 +320,44 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
 
       {/* Fields */}
       <div className="p-3 space-y-2.5">
-        <div>
-          <label className="block text-[11px] text-ink-500 mb-1">التسمية — تظهر على الدبوس</label>
-          <input
-            autoFocus
-            type="text"
-            value={marker.label}
-            onChange={(e) => onChange({ label: e.target.value })}
-            className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-600 hover:border-ink-700 transition-colors"
-            placeholder="مثال: النواة، الغشاء الخلوي…"
-          />
-        </div>
+        {mode === 'label' ? (
+          <div>
+            <label className="block t-caption text-fg-subtle mb-1">الإجابة الصحيحة — يختارها الطالب من بنك الكلمات</label>
+            <input autoFocus type="text" value={marker.answer || ''} onChange={(e) => onChange({ answer: e.target.value })}
+              className={FIELD} placeholder="مثال: النواة" />
+          </div>
+        ) : (
+          <div>
+            <label className="block t-caption text-fg-subtle mb-1">
+              {mode === 'locate' ? 'ما يبحث عنه الطالب — يظهر في السؤال' : 'التسمية — تظهر على الدبوس'}
+            </label>
+            <input autoFocus type="text" value={marker.label} onChange={(e) => onChange({ label: e.target.value })}
+              className={FIELD} placeholder={mode === 'locate' ? 'مثال: نهر النيل' : 'مثال: النواة، الغشاء الخلوي…'} />
+          </div>
+        )}
 
-        <div>
-          <label className="block text-[11px] text-ink-500 mb-1">الشرح — يظهر عند النقر على الدبوس</label>
+        {mode === 'locate' && (
+          <div>
+            <label className="block t-caption text-fg-subtle mb-1">
+              المنطقة المقبولة — {Math.round((marker.radius ?? LOCATE_RADIUS.default) * 100)}% من عرض الصورة
+            </label>
+            <input type="range" dir="ltr" min={LOCATE_RADIUS.min} max={LOCATE_RADIUS.max} step="0.005"
+              value={marker.radius ?? LOCATE_RADIUS.default}
+              onChange={(e) => onChange({ radius: Number(e.target.value) })}
+              className="w-full accent-accent" aria-label="نصف قطر المنطقة المقبولة" />
+          </div>
+        )}
+
+        {(mode === 'explain' || mode === 'label') && <div>
+          <label className="block t-caption text-fg-subtle mb-1">{mode === 'label' ? 'ملاحظة بعد الإجابة (اختيارية)' : 'الشرح — يظهر عند النقر على الدبوس'}</label>
           <textarea
             value={marker.description}
             onChange={(e) => onChange({ description: e.target.value })}
             rows={2}
             className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-600 resize-none hover:border-ink-700 transition-colors"
-            placeholder="وصف مختصر يوضح أهمية هذا الجزء…"
+            placeholder={mode === 'label' ? 'تظهر للطالب بعد أن يجيب' : 'وصف مختصر يوضح أهمية هذا الجزء…'}
           />
-        </div>
+        </div>}
 
         {/* Nudge controls for fine-tuning position */}
         <div>
