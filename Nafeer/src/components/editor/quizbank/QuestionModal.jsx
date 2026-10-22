@@ -2,6 +2,9 @@
 import Modal from '@/components/editor/shared/Modal';
 import QuestionForm from './QuestionForm';
 import { QUESTION_TYPES, QUESTION_TYPE_CONFIG } from '@/shared/constants';
+import { MARKER_SENTINEL, markerIssues } from '@/lib/markerQuestion';
+import { sanitiseMarkers } from '@/lib/markerUtils';
+import MarkerTryout from './MarkerTryout';
 
 const labelClass = 'block text-xs text-ink-500 mb-1.5 font-arabic';
 
@@ -16,8 +19,10 @@ export default function QuestionModal({
   units,
   lessons,
   isTestSubject = false,
+  subjectId,
 }) {
   const hasAnswer = (() => {
+    if (form.type === 'IMAGE_MARKER') return markerIssues({ ...form, markers: sanitiseMarkers(form.markers) }).length === 0;
     if (form.type === 'MATCH') {
       return Array.isArray(form.options) && form.options.some((pair) => pair.right?.trim() && pair.left?.trim());
     }
@@ -29,17 +34,22 @@ export default function QuestionModal({
 
   const canSave = form.textAr?.trim().length > 0 && hasAnswer && (form.lessonId || isTestSubject);
 
+  // Switching type keeps the text and the picture; pins only survive between
+  // the two picture types when they mean the same thing (reference pins on a
+  // FIGURE are not answers).
   const resetPayloadForType = (key, cfg) => ({
     ...form,
     type: key,
-    correctAnswer: '',
+    correctAnswer: key === 'IMAGE_MARKER' ? MARKER_SENTINEL.label : '',
     options: key === 'MCQ'
       ? ['', '', '', '']
       : key === 'MATCH'
         ? [{ right: '', left: '' }, { right: '', left: '' }]
         : key === 'ORDER'
           ? ['', '', '']
-          : null,
+          : key === 'IMAGE_MARKER' ? [] : null,
+    markerMode: key === 'IMAGE_MARKER' ? 'label' : null,
+    markers: key === form.type ? form.markers : [],
     feedEligible: cfg.feedEligible,
   });
 
@@ -84,7 +94,10 @@ export default function QuestionModal({
           concepts={concepts}
           units={units}
           lessons={lessons}
+          subjectId={subjectId}
         />
+
+        {form.type === 'IMAGE_MARKER' && hasAnswer && <MarkerTryout question={form} />}
 
         <div className="mt-5 flex gap-3 border-t border-ink-800 pt-3">
           <button
