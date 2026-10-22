@@ -9,6 +9,7 @@ import {
 import MatchPairs from './MatchPairs';
 import MCQOptions from './McqOptions';
 import OrderItems from './OrderItems';
+import MarkerFields from './MarkerFields';
 
 const inputClass =
   'w-full px-3 py-2.5 bg-ink-950 border border-ink-700 rounded-lg text-sand-200 text-sm ' +
@@ -34,7 +35,7 @@ const mcqOptionsFrom = (form) => asArray(form.options, ['', '', '', '']);
 const matchPairsFrom = (form) => asArray(form.options, [{ right: '', left: '' }, { right: '', left: '' }]);
 const orderItemsFrom = (form) => asArray(form.options, ['', '', '']);
 
-export default function QuestionForm({ form, setForm, concepts, units, lessons }) {
+export default function QuestionForm({ form, setForm, concepts, units, lessons, subjectId }) {
   const typeConfig = QUESTION_TYPE_CONFIG[form.type];
   const unitLessons = form.unitId
     ? lessons.filter((lesson) => lesson.unitId === form.unitId)
@@ -54,6 +55,10 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons }
   };
 
   const renderAnswerEditor = () => {
+    if (form.type === 'IMAGE_MARKER') {
+      return <MarkerFields form={form} setForm={setForm} subjectId={subjectId} />;
+    }
+
     if (form.type === 'TRUE_FALSE') {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -177,20 +182,13 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons }
       </section>
 
       <section className="rounded-xl border border-ink-800 bg-ink-900/50 p-4">
-        <label className={labelClass}>الإجابة الصحيحة أو نموذج التصحيح *</label>
+        <label className={labelClass}>{form.type === 'IMAGE_MARKER' ? 'الصورة والعلامات *' : 'الإجابة الصحيحة أو نموذج التصحيح *'}</label>
         {renderAnswerEditor()}
       </section>
 
       {form.type === 'FIGURE' && (
         <section className="rounded-xl border border-ink-800 bg-ink-900/50 p-4">
-          <label className={labelClass}>رابط الصورة</label>
-          <input
-            type="url"
-            value={form.imageUrl || ''}
-            onChange={(e) => setField('imageUrl', e.target.value || null)}
-            className={inputClass}
-            placeholder="https://..."
-          />
+          <MarkerFields form={form} setForm={setForm} subjectId={subjectId} />
         </section>
       )}
 
