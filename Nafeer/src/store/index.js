@@ -321,7 +321,7 @@ function assembleExportData(s) {
       sourceYear: q.sourceYear || null, feedEligible: q.feedEligible || false,
       unitId: q.unitId || null, lessonId: q.lessonId || null, sectionId: q.sectionId || null,
       isCheckpoint: q.isCheckpoint || false, conceptIds: q.conceptIds || [],
-      markers: q.markers || [],
+      markers: q.markers || [], markerMode: q.markerMode || null, image: q.image || null,
     })),
     exams: s.exams.map((e) => ({
       id: e.id, titleAr: e.titleAr, titleEn: e.titleEn || null, source: e.source,
