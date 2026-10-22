@@ -2,9 +2,8 @@ import { connectDB }    from '@/lib/db';
 import { Appeal }       from '@/lib/models/Appeal';
 import { Lesson }       from '@/lib/models/Lesson';
 import { Contributor }  from '@/lib/models/Contributor';
-import { Admin }        from '@/lib/models/Admin';
 import { Announcement } from '@/lib/models/announcement';
-import { sendEmail }    from '@/lib/email/emailService';
+import { emailOwners }  from '@/lib/email/notify';
 import { appUrl }       from '@/lib/appUrl';
 import { lessonOwnerId } from '@/lib/credits';
 import { interventionOpen } from '@/lib/lessonAccess';
@@ -71,19 +70,10 @@ export async function fileAppeal(user, { kind, lessonId = null, text }, now = ne
   });
 
   // The owner hears at once — appeals are rare and time matters to the member.
-  try {
-    const owners = await Admin.find({ isActive: true, email: { $not: /@nafeer\.local$/i } }).select('email username').lean();
-    await Promise.all(owners.map((o) => sendEmail({
-      to: o.email, template: 'custom_message',
-      data: {
-        name: o.username,
-        subject: `اعتراض من ${appeal.byName || 'عضو'}`,
-        message: `${appeal.byName} يعترض على ${LABEL[kind]}${target.againstName ? ` (${target.againstName})` : ''} — «${target.targetLabel}»:\n${body}\n\nللرد: ${appUrl('/admin/dashboard#leads')}`,
-      },
-    })));
-  } catch (e) {
-    console.warn('[appeal email failed]', e.message);
-  }
+  await emailOwners(
+    `اعتراض من ${appeal.byName || 'عضو'}`,
+    `${appeal.byName} يعترض على ${LABEL[kind]}${target.againstName ? ` (${target.againstName})` : ''} — «${target.targetLabel}»:\n${body}\n\nللرد: ${appUrl('/admin/dashboard#leads')}`,
+  );
   return appeal.toObject ? appeal.toObject() : appeal;
 }
 
