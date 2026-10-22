@@ -9,6 +9,7 @@ import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateQuestion, updateQuestionStatus, deleteQuestion } from '@/lib/api/questions';
 import { connectDB } from '@/lib/db'
 import { assertCanEditLessons, lessonsForLinked } from '@/lib/lessonAccess';
+import { markerIssues } from '@/lib/markerQuestion';
 
 
 // PUT /api/content/questions/[id]
@@ -27,7 +28,7 @@ export async function PUT(request, { params }) {
       'cognitiveLevel', 'source', 'sourceExamContentId', 'sourceDetails',
       'sourceYear', 'feedEligible', 'unitContentId', 'lessonContentId',
       'sectionContentId', 'isCheckpoint', 'conceptIds',
-      'markers',
+      'markers', 'markerMode', 'image',
     ];
     const safeUpdates = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
@@ -42,6 +43,9 @@ export async function PUT(request, { params }) {
     ]);
     // The lesson it is in, and the one it may move to (lib/lessonAccess.js).
     await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id], [safeUpdates.lessonContentId]));
+
+    const issues = markerIssues(safeUpdates);
+    if (issues.length) return err(issues[0], 422);
 
     const question = await updateQuestion((await params).id, safeUpdates, actorId, note || '');
     if (!question) return err('السؤال غير موجود', 404);
