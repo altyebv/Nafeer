@@ -134,11 +134,12 @@ describe('applyDueDecisions', () => {
     expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'muna@example.com', template: 'onboarding_invite' }));
   });
 
-  it('a rejection sends nothing', async () => {
-    Contributor.find.mockReturnValueOnce(q([due('reject')]));
+  it('a rejection sends the standard apology once, without the reason', async () => {
+    Contributor.find.mockReturnValueOnce(q([due('reject', { pendingDecision: { ...due('reject').pendingDecision, reason: 'internal' } })]));
     await applyDueDecisions(NOW);
     expect(Contributor.updateOne.mock.calls[0][1].$set.status).toBe('rejected');
-    expect(sendEmail).not.toHaveBeenCalled();
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(sendEmail).toHaveBeenCalledWith({ to: 'muna@example.com', template: 'application_rejected', data: { name: 'منى' } });
   });
 
   it('a decision another sweep already claimed is skipped — no second email', async () => {
@@ -226,6 +227,6 @@ describe('/api/cron/daily', () => {
 
     AuditEvent.find.mockReturnValueOnce(q([{ subjectId: 'PHYSICS', actorName: 'سارة', action: 'lesson.approve' }]));
     expect(await (await cron.GET(req('/api/cron/daily', 'GET', null, auth))).json()).toMatchObject({ digestsSent: 1 });
-    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'owner@example.com', template: 'custom_message' }));
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'owner@example.com', template: 'notice' }));
   });
 });
