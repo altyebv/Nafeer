@@ -5,6 +5,7 @@ import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { sanitiseMarkers } from '@/lib/markerUtils';
+import { MARKER_SENTINEL, distractorsOf } from '@/lib/markerQuestion';
 
 import QuestionsTab from '@/components/editor/quizbank/QuestionsTab';
 import ExamsTab from '@/components/editor/quizbank/ExamTab';
@@ -38,7 +39,8 @@ const emptyQuestion = () => ({
   isCheckpoint: false,
   conceptIds: [],
   markers: [],
-  _markersOpen: false,
+  markerMode: null,
+  image: null,
 });
 
 const emptyExam = () => ({
@@ -77,6 +79,22 @@ const normaliseQuestion = (draft) => {
     points: Number(draft.points) || 1,
     estimatedSeconds: Number(draft.estimatedSeconds) || 60,
   };
+
+  // Pins belong to the two picture types; the answer of a marker question is
+  // in its pins, so correctAnswer is the mode's sentinel (like MATCH_PAIRS).
+  if (normalised.type === 'IMAGE_MARKER') {
+    const mode = draft.markerMode === 'locate' ? 'locate' : 'label';
+    normalised.markerMode = mode;
+    normalised.correctAnswer = MARKER_SENTINEL[mode];
+    normalised.options = mode === 'label' ? distractorsOf(draft) : null;
+    normalised.markers = sanitiseMarkers(draft.markers).map((m) => ({
+      ...m, label: m.label.trim(), answer: (m.answer || '').trim(),
+    }));
+  } else {
+    normalised.markerMode = null;
+    normalised.markers = normalised.type === 'FIGURE' ? sanitiseMarkers(draft.markers) : [];
+  }
+  if (!['IMAGE_MARKER', 'FIGURE'].includes(normalised.type)) normalised.image = null;
 
   if (normalised.type === 'MCQ' && Array.isArray(normalised.options)) {
     // A choice and its note travel together, so dropping a blank choice drops its note too.
@@ -192,7 +210,8 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
       isCheckpoint: q.isCheckpoint || false,
       conceptIds: q.conceptIds || [],
       markers: sanitiseMarkers(q.markers),
-      _markersOpen: false,
+      markerMode: q.markerMode || null,
+      image: q.image || null,
     });
     setEditingQId(q.id);
     setShowQModal(true);
@@ -201,7 +220,7 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
   const handleSaveQuestion = () => {
     const cleanQuestion = normaliseQuestion(qForm);
     if (!cleanQuestion.textAr || !cleanQuestion.correctAnswer || (!cleanQuestion.lessonId && !isTestSubject)) return;
-    const { _markersOpen, ...saveForm } = cleanQuestion;
+    const saveForm = cleanQuestion;
 
     if (editingQId) {
       updateQuestion(editingQId, saveForm);
@@ -348,6 +367,7 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
         units={units}
         lessons={lessons}
         isTestSubject={isTestSubject}
+        subjectId={subjectId}
       />
 
       <ExamModal
