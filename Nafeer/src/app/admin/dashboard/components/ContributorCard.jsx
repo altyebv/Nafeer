@@ -7,6 +7,7 @@ import {
 import { Btn } from './ui/Btn';
 import { emailStatus } from './ui/emailStatus';
 import { formatDate } from '@/lib/format';
+import { RejectDialog } from '../mail/RejectDialog';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -717,8 +718,9 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [activeLink,    setActiveLink]    = useState(null);
   const [localLoading,  setLocalLoading]  = useState(null);
+  const [rejecting,     setRejecting]     = useState(false);
 
-  const stage         = getPipelineStage(c);
+  const stage        = getPipelineStage(c);
   const hasAnswers    = !!c.interviewAnswers?.submittedAt;
   const hasDynAnswers = !!c.dynamicAnswersSubmittedAt;
   const hasAnyAnswers = hasAnswers || hasDynAnswers;
@@ -924,8 +926,18 @@ export function RequestCard({ c, actionLoading, onAct, onDelete, onSetPassword }
               </>
             )}
             <Btn small variant="red" loading={actionLoading === c._id + 'reject'}
-              onClick={() => onAct(c._id, 'reject')}>رفض</Btn>
+              onClick={() => setRejecting(true)}>رفض…</Btn>
           </>
+        )}
+        {rejecting && (
+          <RejectDialog
+            person={{ name: c.name, email: c.email }}
+            onClose={() => setRejecting(false)}
+            onConfirm={async (rejectionEmail) => {
+              await onAct(c._id, 'reject', { rejectionEmail });
+              setRejecting(false);
+            }}
+          />
         )}
         {c.status === 'rejected' && (
           <Btn small variant="ghost" loading={actionLoading === c._id + 'reset_to_pending'}
