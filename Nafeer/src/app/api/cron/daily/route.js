@@ -1,11 +1,10 @@
 import { connectDB }      from '@/lib/db';
 import { AuditEvent }     from '@/lib/models/AuditEvent';
-import { Admin }          from '@/lib/models/Admin';
 import { applyDueDecisions } from '@/lib/applicants';
 import { applyDueReleases } from '@/lib/releases';
 import { sendLeadDigests } from '@/lib/leadDigest';
 import { buildDigest }    from '@/lib/digest';
-import { sendEmail }      from '@/lib/email/emailService';
+import { emailOwners }    from '@/lib/email/notify';
 
 // ─── GET /api/cron/daily (vercel.json crons) ──────────────────────────────────
 // Once a day — the most Vercel's free plan allows:
@@ -37,18 +36,7 @@ export async function GET(request) {
     .sort({ at: 1 }).limit(500).lean();
   const digest = buildDigest(events, now);
 
-  let sent = 0;
-  if (digest) {
-    const owners = await Admin.find({ isActive: true, email: { $not: /@nafeer\.local$/i } }).select('email username').lean();
-    for (const o of owners) {
-      const r = await sendEmail({
-        to: o.email,
-        template: 'custom_message',
-        data: { name: o.username, subject: digest.subject, message: digest.message },
-      });
-      if (r.ok) sent++;
-    }
-  }
+  const sent = digest ? await emailOwners(digest.subject, digest.message) : 0;
 
   const leadDigests = await sendLeadDigests(now).catch((e) => { console.warn('[lead digest]', e.message); return 0; });
 
