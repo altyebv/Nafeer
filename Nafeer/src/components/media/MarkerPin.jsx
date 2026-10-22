@@ -12,6 +12,8 @@ import { cx } from '@/components/ui';
 // hangs off the dot and never moves it; near an edge it turns inward so it
 // isn't cut off. x and y are physical, so this ignores the page's direction.
 //
+// tone  'success' | 'danger' — a graded pin, right or wrong.
+//
 // The image must fill its box exactly (w-full h-auto, no object-fit, no
 // max-height): the pins are placed in % of that box.
 
@@ -29,7 +31,7 @@ function bubblePlacement(x, y) {
  * otherwise. Extra props go to that element (drag handlers, aria).
  */
 export const MarkerPin = forwardRef(function MarkerPin(
-  { marker, index, active = false, dragging = false, showLabel = true, className, ...rest },
+  { marker, index, active = false, dragging = false, showLabel = true, tone, className, ...rest },
   ref,
 ) {
   const label = marker.label?.trim() || String(index + 1);
@@ -61,7 +63,9 @@ export const MarkerPin = forwardRef(function MarkerPin(
           aria-hidden="true"
           className={cx(
             'absolute w-3.5 h-3.5 -left-[7px] -top-[7px] rounded-full border-2 shadow-lift transition-colors',
-            active ? 'bg-accent-hover border-fg-strong' : 'bg-accent border-page',
+            tone === 'success' ? 'bg-success border-page'
+              : tone === 'danger' ? 'bg-danger border-page'
+              : active ? 'bg-accent-hover border-fg-strong' : 'bg-accent border-page',
             interactive && 'group-focus-visible:ring-2 group-focus-visible:ring-accent-hover',
           )}
         />
@@ -70,7 +74,9 @@ export const MarkerPin = forwardRef(function MarkerPin(
             className={cx(
               'absolute max-w-[11rem] truncate px-2 py-0.5 rounded-chip border t-caption font-semibold whitespace-nowrap shadow-lift pointer-events-none',
               bubblePlacement(marker.x, marker.y),
-              active ? 'bg-accent text-fg-on-accent border-line-accent' : 'bg-overlay text-fg-accent border-line-accent',
+              tone === 'success' ? 'bg-success-surface text-success border-success-border'
+                : tone === 'danger' ? 'bg-danger-surface text-danger border-danger-border'
+                : active ? 'bg-accent text-fg-on-accent border-line-accent' : 'bg-overlay text-fg-accent border-line-accent',
             )}
           >
             {label}
