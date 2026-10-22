@@ -222,9 +222,12 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
       }));
 
     // ── Questions
+    // Marker questions stay out until the app can grade them: a build that
+    // doesn't know the type may fail on it (docs/question-markers.md §M4).
+    const markersOn = manifest?.featureFlags?.hotspotEnabled === true;
     const scopedQuestions = questions.filter((q) => (
-      q.status === 'approved' ||
-      (q.isCheckpoint && approvedSectionIds.has(q.sectionContentId))
+      (q.status === 'approved' || (q.isCheckpoint && approvedSectionIds.has(q.sectionContentId)))
+      && (markersOn || q.type !== 'IMAGE_MARKER')
     ));
 
     const questionsExport = scopedQuestions.map((q) => ({
@@ -255,6 +258,8 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
       isCheckpoint:     q.isCheckpoint     || false,
       conceptIds:       q.conceptIds       || [],
       markers:          q.markers          || [],
+      markerMode:       q.markerMode       || null,
+      image:            q.image            || null,
     }));
 
     // ── Exams
