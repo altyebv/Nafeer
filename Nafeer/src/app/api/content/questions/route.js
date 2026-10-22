@@ -6,6 +6,7 @@ import {
   getQuestionsForSubject, createQuestion,
 } from '@/lib/api/questions';
 import { trackStat } from '@/lib/trackStat';
+import { markerIssues } from '@/lib/markerQuestion';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -40,6 +41,9 @@ export async function POST(request) {
     if (!subjectId || !type || !textAr || !correctAnswer) {
       return err('الحقول المطلوبة: subjectId, type, textAr, correctAnswer');
     }
+
+    const issues = markerIssues(body);
+    if (issues.length) return err(issues[0], 422);
 
     const user = await requireSubjectAccess(subjectId, { write: true });
     // A question in a lesson is that lesson's owner's to add (lib/lessonAccess.js).
