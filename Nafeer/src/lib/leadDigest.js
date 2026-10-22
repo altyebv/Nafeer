@@ -3,7 +3,7 @@ import { Contributor } from '@/lib/models/Contributor';
 import { Lesson }      from '@/lib/models/Lesson';
 import { Release }     from '@/lib/models/Release';
 import { REAL_PEOPLE } from '@/lib/SeedActor';
-import { sendEmail }   from '@/lib/email/emailService';
+import { sendNotice }  from '@/lib/email/notify';
 import { appUrl }      from '@/lib/appUrl';
 import { arCount }     from '@/lib/format';
 import { normaliseLead } from '@/lib/leads';
@@ -66,7 +66,7 @@ export async function sendLeadDigests(now = new Date()) {
       heldRelease: l.lead.canPublish && p.held,
     });
     if (!digest) continue;
-    const r = await sendEmail({ to: l.email, template: 'custom_message', data: { name: l.name, ...digest } });
+    const r = await sendNotice({ to: l.email, name: l.name, ...digest });
     if (r.ok) sent++;
   }
   return sent;
