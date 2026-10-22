@@ -29,16 +29,23 @@ export function normToPercent(x, y) {
 
 /**
  * Validate that a markers array is well-formed.
- * Strips any item missing id/x/y.
+ * Drops any item missing id/x/y; clamps x/y and defaults label/description.
+ * Any other field on a marker is kept as it is — the editor runs this on every
+ * edit, so a field it doesn't know (a question's answer, say) must survive.
+ *
+ * Anchor: (x, y) is where the pin's dot is centred, as a fraction of the
+ * image's width and height from its top-left. Every renderer draws it so
+ * (components/media/MarkerPin.jsx).
+ *
  * @param {any[]} raw
- * @returns {Array<{ id: string, x: number, y: number, label: string, description: string }>}
+ * @returns {Array<{ id: string, x: number, y: number, label: string, description: string, [k: string]: any }>}
  */
 export function sanitiseMarkers(raw) {
   if (!Array.isArray(raw)) return [];
   return raw
-    .filter((m) => m && typeof m.id === 'string' && typeof m.x === 'number' && typeof m.y === 'number')
+    .filter((m) => m && typeof m.id === 'string' && Number.isFinite(m.x) && Number.isFinite(m.y))
     .map((m) => ({
-      id:          m.id,
+      ...m,
       x:           clampNorm(m.x),
       y:           clampNorm(m.y),
       label:       typeof m.label       === 'string' ? m.label       : '',
