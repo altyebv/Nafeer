@@ -1,9 +1,8 @@
 import { connectDB }      from '@/lib/db';
 import { Release }        from '@/lib/models/Release';
-import { Admin }          from '@/lib/models/Admin';
 import { Announcement }   from '@/lib/models/announcement';
 import { publishSubject } from '@/lib/publishSubject';
-import { sendEmail }      from '@/lib/email/emailService';
+import { emailOwners }    from '@/lib/email/notify';
 import { recordAudit }    from '@/lib/audit';
 import { appUrl }         from '@/lib/appUrl';
 import { SUBJECTS_BY_ID } from '@/shared/curriculum';
@@ -66,16 +65,6 @@ export async function cooldownUntil(subjectId, now = new Date()) {
   return last ? new Date(new Date(last.createdAt).getTime() + RELEASE_COOLDOWN_HOURS * HOUR_MS) : null;
 }
 
-async function emailOwners(subject, message) {
-  try {
-    const owners = await Admin.find({ isActive: true, email: { $not: /@nafeer\.local$/i } }).select('email username').lean();
-    await Promise.all(owners.map((o) => sendEmail({
-      to: o.email, template: 'custom_message', data: { name: o.username, subject, message },
-    })));
-  } catch (e) {
-    console.warn('[release email failed]', e.message);
-  }
-}
 
 /** A lead requests a release. `lead` is { id, name }. */
 export async function requestRelease(subjectId, { lead, note = '' }, now = new Date()) {
