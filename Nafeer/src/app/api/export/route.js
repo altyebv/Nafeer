@@ -217,6 +217,8 @@ export async function GET(request) {
         isCheckpoint: question.isCheckpoint || false,
         conceptIds: question.conceptIds || [],
         markers: question.markers || [],
+        markerMode: question.markerMode || null,
+        image: question.image || null,
         status: question.status || 'draft',
       })),
       exams: exams.map((exam) => ({
