@@ -166,6 +166,7 @@ export const QUESTION_TYPES = {
   FIGURE:        'FIGURE',
   COMPARE:       'COMPARE',
   ORDER:         'ORDER',
+  IMAGE_MARKER:  'IMAGE_MARKER',  // docs/question-markers.md — not in the app yet
 };
 
 export const QUESTION_TYPE_CONFIG = {
@@ -180,6 +181,7 @@ export const QUESTION_TYPE_CONFIG = {
   FIGURE:       { label: 'من الشكل',             icon: '🖼️',  feedEligible: false },
   COMPARE:      { label: 'قارن',                 icon: '⚖️',  feedEligible: false },
   ORDER:        { label: 'رتب',                  icon: '🔢',  feedEligible: false },
+  IMAGE_MARKER: { label: 'علامات على صورة',      icon: '📍',  feedEligible: false },
 };
 
 // Question source (matches Android QuestionSource enum)
