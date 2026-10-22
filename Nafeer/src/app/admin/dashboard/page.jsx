@@ -9,7 +9,7 @@ import { CreateContributorModal } from './components/modals/CreateContributorMod
 import { SiteSettingsSection }    from './components/SiteSettingSection';
 import { SeedSection }            from './components/SeedSection';
 import { PublishSection }         from './components/PublishSection';
-import { EmailSection }           from './components/EmailSection';
+import { MailScreen }             from './screens/MailScreen';
 import { OverviewScreen }         from './screens/OverviewScreen';
 import { SubjectsIndex }          from './screens/SubjectsIndex';
 import { ContributorsScreen }     from './screens/ContributorsScreen';
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
         {section === 'admins'     && <AdminsSection />}
         {section === 'settings'   && <SiteSettingsSection />}
         {section === 'seed'       && <SeedSection />}
-        {section === 'email'      && <EmailSection />}
+        {section === 'email'      && <MailScreen />}
         {section === 'comms'      && <CommsScreen allContributors={allContributors} />}
         {section === 'android'    && <AndroidInsightsSection />}
       </main>
