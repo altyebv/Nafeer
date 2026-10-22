@@ -78,7 +78,7 @@ describe('requestRelease', () => {
     expect(r.goLiveAt.getTime() - NOW.getTime()).toBe(RELEASE_HOLD_HOURS * 3600_000);
     expect(r.preview).toMatchObject({ changed: { LESSON: 2 }, fromVersion: '1.4' });
     expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-      to: 'owner@example.com', template: 'custom_message',
+      to: 'owner@example.com', template: 'notice',
       data: expect.objectContaining({ message: expect.stringContaining('الوحدة الثانية كاملة') }),
     }));
   });
