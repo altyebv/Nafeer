@@ -31,7 +31,7 @@ const FLAG_GROUPS = [
   { title: 'المحتوى في التطبيق', flags: [
     { key: 'feedEnabled', label: 'بطاقات التغذية', desc: 'المراجعة بالتكرار المتباعد' },
     { key: 'examModeEnabled', label: 'وضع الاختبار', desc: 'محاكاة الامتحان كاملاً' },
-    { key: 'hotspotEnabled', label: 'أسئلة النقاط على الصورة', desc: 'تجريبي — غير مكتمل', warn: true },
+    { key: 'hotspotEnabled', label: 'أسئلة الصور التفاعلية', desc: 'تُنشر مع المادة فقط وهو مفعّل — يحتاج دعم التطبيق', warn: true },
   ] },
   { title: 'التواصل مع الطلاب', flags: [
     { key: 'commCenterEnabled', label: 'مركز التواصل', desc: 'الإعلانات والاستطلاعات في التطبيق' },
