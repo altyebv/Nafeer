@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { HIGHLIGHT_STYLES, SECTION_KIND_CONFIG } from '@/shared/constants';
 import FormulaPreview from '@/components/editor/shared/FormulaPreview';
 import MathText from '@/components/editor/shared/MathText';
+import { MarkedImage } from '@/components/media/MarkerPin';
+import { sanitiseMarkers } from '@/lib/markerUtils';
 import {
   AlertTriangle,
   BookOpen,
@@ -13,7 +15,6 @@ import {
   PartyPopper,
   Pencil,
   Save,
-  Sparkles,
   Target,
   Zap,
   X,
@@ -250,9 +251,16 @@ function BlockPreview({ block }) {
       );
     }
 
+    case 'INTERACTIVE_IMAGE':
+      if (block.content) {
+        return (
+          <MarkedImage src={block.content} alt={block.metadata?.alt || ''}
+            markers={sanitiseMarkers(block.metadata?.markers)} caption={block.caption} />
+        );
+      }
+    // falls through — no image yet: the plain placeholder
     case 'IMAGE':
     case 'GIF': {
-      const markers = Array.isArray(block.metadata?.markers) ? block.metadata.markers : [];
       return (
         <div className="rounded-xl overflow-hidden" style={{ background: '#0e0c09' }}>
           {block.content ? (
@@ -264,32 +272,6 @@ function BlockPreview({ block }) {
                 className="w-full h-auto block"
                 draggable={false}
               />
-              {/* Marker pin overlay — read-only */}
-              {markers.map((marker, idx) => {
-                const hasLabel = Boolean(marker.label?.trim());
-                return (
-                  <div
-                    key={marker.id}
-                    className="absolute pointer-events-none"
-                    style={{
-                      left: `${marker.x * 100}%`,
-                      top:  `${marker.y * 100}%`,
-                      transform: 'translate(-50%, -100%)',
-                      zIndex: 10,
-                    }}
-                  >
-                    <div className="flex flex-col items-center">
-                      <div className="px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-lg mb-0.5 bg-sand-500/90 text-ink-950 border border-sand-400 backdrop-blur-sm">
-                        {hasLabel ? marker.label : (idx + 1)}
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <div className="w-0.5 h-3 bg-sand-400" />
-                        <div className="w-2.5 h-2.5 rounded-full border-2 bg-sand-400 border-sand-300 shadow" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
@@ -297,14 +279,6 @@ function BlockPreview({ block }) {
                 ? <Zap size={26} strokeWidth={1.6} className="text-white/20" />
                 : <FileText size={26} strokeWidth={1.6} className="text-white/20" />}
               <span className="text-white/30 text-xs font-mono">لم يتم اختيار صورة</span>
-            </div>
-          )}
-          {/* Marker count hint */}
-          {markers.length > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-              <span className="text-[10px] inline-flex items-center gap-1" style={{ color: '#d4891e' }}>
-                <Sparkles size={11} strokeWidth={1.8} /> {markers.length} علامة تفاعلية
-              </span>
             </div>
           )}
           {block.caption && (
