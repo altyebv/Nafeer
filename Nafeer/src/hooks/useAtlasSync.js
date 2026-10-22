@@ -194,6 +194,8 @@ export function useAtlasSync() {
               isCheckpoint:     q.isCheckpoint     || false,
               conceptIds:       q.conceptIds       || [],
               markers:          q.markers          || [],
+              markerMode:       q.markerMode       || null,
+              image:            q.image            || null,
               atlasStatus:      q.status           || 'draft',
             }))
           );
@@ -540,6 +542,7 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
         unitContentId: question.unitId || null, lessonContentId: question.lessonId || null,
         sectionContentId: question.sectionId || null, isCheckpoint: question.isCheckpoint || false,
         conceptIds: question.conceptIds || [],
+        markers: question.markers || [], markerMode: question.markerMode || null, image: question.image || null,
       };
       const res = await fetch(`/api/content/questions/${questionId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
