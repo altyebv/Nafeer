@@ -120,7 +120,7 @@ export async function PATCH(request) {
   const admin = await verifyAdminToken();
   if (!admin) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-  const { id, action, password, subject, role, roleId, username, kind } = await request.json();
+  const { id, action, password, subject, role, roleId, username, kind, rejectionEmail } = await request.json();
   if (!id || !action) return NextResponse.json({ message: 'Missing id or action' }, { status: 400 });
 
   // Client-side refresh trigger — no server action needed
@@ -223,6 +223,16 @@ export async function PATCH(request) {
   let email = null;
   if (interviewLink)       email = await sendLinkEmail(contributor, 'interview',  interviewLink);
   else if (onboardingLink) email = await sendLinkEmail(contributor, 'onboarding', onboardingLink);
+  else if (action === 'reject' && rejectionEmail?.send && contributor.email) {
+    // The reject dialog's apology, as the owner left it: { send, subject?, body? }.
+    const result = await sendEmail({
+      to:       contributor.email,
+      template: 'application_rejected',
+      subject:  rejectionEmail.subject?.trim() || undefined,
+      data:     { name: contributor.name, body: rejectionEmail.body },
+    });
+    email = { ok: result.ok, to: contributor.email, error: result.error || null };
+  }
 
   return NextResponse.json({ success: true, contributor, onboardingLink, interviewLink, email });
 }
