@@ -108,6 +108,29 @@ export function emailParagraph(content, { muted = false } = {}) {
 }
 
 /**
+ * A paragraph's content as plain text — the form an admin edits it in.
+ * @param {string | Array<string | { strong: string }>} content
+ */
+export function plainText(content) {
+  const runs = Array.isArray(content) ? content : [content];
+  return runs.map((run) => (run && typeof run === 'object' ? run.strong : String(run ?? ''))).join('');
+}
+
+/**
+ * The editable middle of a template: its default paragraphs, or the admin's
+ * rewrite of them (one paragraph per line) when there is one. Greeting,
+ * buttons and sign-off stay with the template, so an edit can't break a link.
+ *
+ * @param {string | undefined} override
+ * @param {Array<string | Array<string | { strong: string }>>} defaults
+ */
+export function bodyBlocks(override, defaults) {
+  const edited = String(override ?? '').trim();
+  const paragraphs = edited ? edited.split(/\n+/).map((l) => l.trim()).filter(Boolean) : defaults;
+  return paragraphs.map((p) => emailParagraph(p));
+}
+
+/**
  * A styled CTA button.
  * @param {{ href: string; label: string }} opts
  */
