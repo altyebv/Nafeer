@@ -192,14 +192,17 @@ export async function applyDueDecisions(now = new Date(), limit = 20) {
     );
     if (!claimed.matchedCount) continue;   // another sweep took it
 
-    // Rejections send nothing, as with the owner's (rejection emails are
-    // manual). An approval sends the onboarding link, after it is saved.
+    // Only after the write is claimed, so it goes once: an approval sends the
+    // onboarding link, a rejection the standard apology (never the reason).
     if (token) {
       await sendEmail({
         to: c.email,
         template: 'onboarding_invite',
         data: { name: c.name, link: onboardingLink(token), expiresIn: '7 أيام' },
       }).catch((e) => console.warn('[onboarding email failed]', e.message));
+    } else if (d.action === 'reject' && c.email) {
+      await sendEmail({ to: c.email, template: 'application_rejected', data: { name: c.name } })
+        .catch((e) => console.warn('[rejection email failed]', e.message));
     }
     applied.push({ id: String(c._id), action: d.action });
   }
