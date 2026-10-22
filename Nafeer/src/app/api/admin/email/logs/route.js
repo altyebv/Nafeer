@@ -46,15 +46,17 @@ export async function GET(request) {
 
   if (to) return NextResponse.json({ ok: true, logs });
 
-  // Collapse the per-template archive rows into one line per month.
+  // One line per month, with the per-template rows it was folded from.
   const months = new Map();
   for (const row of await EmailArchive.find().lean()) {
-    const m = months.get(row.month) || { month: row.month, total: 0, delivered: 0, problems: 0 };
+    const m = months.get(row.month) || { month: row.month, total: 0, delivered: 0, problems: 0, templates: [] };
     m.total     += row.total;
     m.delivered += row.delivered;
     m.problems  += row.problems;
+    m.templates.push({ template: row.template, total: row.total, delivered: row.delivered, problems: row.problems });
     months.set(row.month, m);
   }
+  for (const m of months.values()) m.templates.sort((a, b) => b.total - a.total);
   const archive = [...months.values()].sort((a, b) => b.month.localeCompare(a.month));
 
   return NextResponse.json({ ok: true, logs, archive });
