@@ -232,7 +232,7 @@ function DecideDialog({ a, subjectId, decision, undoMinutes, onClose, onDone }) 
   return (
     <Dialog open onClose={onClose} title={reject ? `رفض طلب ${a.name}؟` : `قبول ${a.name}؟`}
       description={reject
-        ? `يُنفّذ الرفض بعد ${windowText}، ويمكنك التراجع قبلها. لا تُرسل رسالة رفض تلقائياً.`
+        ? `يُنفّذ الرفض بعد ${windowText}، ويمكنك التراجع قبلها. عندها تصل المتقدم رسالة شكر واعتذار مهذبة، بلا ذكر للسبب.`
         : `بعد ${windowText} يصبح عضواً في فريق المادة ويصله رابط إكمال التسجيل. يمكنك التراجع قبلها.`}
       footer={<>
         <Button variant="ghost" onClick={onClose} disabled={busy}>إلغاء</Button>
