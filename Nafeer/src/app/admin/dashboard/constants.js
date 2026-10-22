@@ -51,7 +51,7 @@ export const NAV_GROUPS = [
       { id: 'leads',        icon: UserCog,        label: 'قادة الفرق' },
       // Announcements, surveys, and future app-level settings (feature flags, tours).
       { id: 'comms',        icon: Megaphone,      label: 'التواصل' },
-      { id: 'email',        icon: Mail,           label: 'البريد الإلكتروني' },
+      { id: 'email',        icon: Mail,           label: 'البريد' },
       { id: 'android',      icon: Smartphone,     label: 'تحليلات الأندرويد' },
     ],
   },
