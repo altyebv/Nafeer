@@ -9,6 +9,7 @@ import { useUndoStore } from '@/store/undoStore';
 import MediaPicker from '@/components/editor/media/MediaPicker';
 import ImageMarkerEditor from '@/components/editor/media/ImageMarkerEditor';
 import { sanitiseMarkers } from '@/lib/markerUtils';
+import { MarkedImage } from '@/components/media/MarkerPin';
 import FormulaEditor from '@/components/editor/blocks/FormulaEditor';
 import MathTextarea from '@/components/editor/shared/MathTextarea';
 
@@ -101,8 +102,18 @@ function BlockPreview({ block }) {
       return <ExampleBlock block={{ ...b, interactive, steps, caption: block.metadata?.caption || 'مثال' }} />;
     }
 
-    case 'IMAGE':
     case 'INTERACTIVE_IMAGE':
+      if (block.content?.trim()) {
+        // Full width, no max-height: the pins are placed on the image's own box.
+        return (
+          <div className="mx-4 my-2">
+            <MarkedImage src={block.content} alt={block.metadata?.alt || block.caption || ''}
+              markers={sanitiseMarkers(block.metadata?.markers)} caption={block.caption} />
+          </div>
+        );
+      }
+    // falls through — no image yet: same placeholder as a plain image
+    case 'IMAGE':
       if (!block.content?.trim()) {
         return <ImagePlaceholderBlock block={{ caption: block.caption || '', description: block.metadata?.alt || '', color: '#4A90D9', icon: 'diagram' }} />;
       }
@@ -540,9 +551,16 @@ function MediaBlockEditor({ block, update, subjectId }) {
     type: on ? 'INTERACTIVE_IMAGE' : 'IMAGE',
     metadata: { ...(block.metadata || {}), markers: on ? (block.metadata?.markers || []) : [] },
   });
+  // Markers are positions on one picture; on another they point at nothing.
+  // A new image therefore starts without them — after asking, when there are some.
+  const replaceImage = (url, meta) => {
+    if (url === block.content) return true;
+    if (markers.length && !window.confirm(`تغيير الصورة يحذف علاماتها (${markers.length}). متابعة؟`)) return false;
+    update({ content: url, metadata: { ...(block.metadata || {}), ...meta, markers: [] } });
+    return true;
+  };
   const handleSelect = (item) => {
-    update({ content: item.url, metadata: { ...(block.metadata || {}), mediaId: item.contentId, alt: item.alt || '' } });
-    setPickerOpen(false);
+    if (replaceImage(item.url, { mediaId: item.contentId, alt: item.alt || '' })) setPickerOpen(false);
   };
   const handleClear = () => update({
     type: isInteractive ? 'IMAGE' : block.type, content: '',
@@ -596,7 +614,10 @@ function MediaBlockEditor({ block, update, subjectId }) {
             أو أدخل رابطاً / مساراً يدوياً
           </summary>
           <div className="mt-1.5">
-            <input type="text" value={block.content} onChange={(e) => update({ content: e.target.value })}
+            {/* Applied on blur / Enter, not per keystroke: a new address is a new image. */}
+            <input key={block.content} type="text" defaultValue={block.content}
+              onBlur={(e) => { if (!replaceImage(e.target.value.trim(), { mediaId: null })) e.target.value = block.content; }}
+              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-100 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-mono placeholder-ink-600 hover:border-ink-700 transition-colors"
               placeholder="https://… أو images/diagram.png" dir="ltr" />
             <p className="text-[10px] text-ink-800 mt-1 font-arabic">رابط Supabase أو مسار نسبي من مجلد assets في التطبيق</p>
