@@ -1,6 +1,7 @@
 'use client';
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { randomId } from '@/lib/markerUtils';
+import { useState, useRef, useCallback } from 'react';
+import { randomId, clampNorm } from '@/lib/markerUtils';
+import { MarkerPin } from '@/components/media/MarkerPin';
 import { Plus, Sparkles, X } from 'lucide-react';
 
 // ─── ImageMarkerEditor ────────────────────────────────────────────────────────
@@ -11,85 +12,95 @@ import { Plus, Sparkles, X } from 'lucide-react';
 //   readOnly  — if true, shows pins but disables editing (future preview use)
 //
 // Marker shape:
-//   { id, x, y, label, description }
-//   x, y are normalised 0–1 from the top-left of the image
+//   { id, x, y, label, description, ...anything else, kept as it is }
+//   x, y are normalised 0–1 from the top-left of the image, and mark the
+//   centre of the pin's dot (components/media/MarkerPin.jsx).
+//
+// A pin is one pointer gesture: a press that doesn't travel selects it (or
+// deselects it), a press that travels drags it. Pointer capture keeps the drag
+// on the pin even when the finger leaves it, and `touch-none` stops the page
+// from scrolling under it.
+
+const DRAG_SLOP = 4; // px a press may wander and still count as a tap
 
 export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, readOnly = false }) {
-  const containerRef = useRef(null);
   const imgRef       = useRef(null);
+  const gestureRef   = useRef(null);   // { id, startX, startY, moved }
+  const markersRef   = useRef(markers);
+  markersRef.current = markers;
   const [imgLoaded,     setImgLoaded]     = useState(false);
   const [imgError,      setImgError]      = useState(false);
   const [activeId,      setActiveId]      = useState(null);   // marker being edited in panel
   const [placingMode,   setPlacingMode]   = useState(false);  // click-to-place mode toggle
   const [draggingId,    setDraggingId]    = useState(null);
-  const [dragStart,     setDragStart]     = useState(null);
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
-  // Convert a pointer event position to normalised (x, y) relative to the image
+  // Convert a pointer position to normalised (x, y) relative to the image
   const toNorm = useCallback((clientX, clientY) => {
     const rect = imgRef.current?.getBoundingClientRect();
-    if (!rect) return null;
+    if (!rect?.width || !rect?.height) return null;
     return {
-      x: Math.min(1, Math.max(0, (clientX - rect.left)  / rect.width)),
-      y: Math.min(1, Math.max(0, (clientY - rect.top)   / rect.height)),
+      x: clampNorm((clientX - rect.left) / rect.width),
+      y: clampNorm((clientY - rect.top)  / rect.height),
     };
   }, []);
 
-  const update  = (id, patch) => onChange(markers.map((m) => m.id === id ? { ...m, ...patch } : m));
+  // Always against the latest markers: a drag fires many updates in a row.
+  const update  = (id, patch) => onChange(markersRef.current.map((m) => m.id === id ? { ...m, ...patch } : m));
   const remove  = (id)        => { onChange(markers.filter((m) => m.id !== id)); if (activeId === id) setActiveId(null); };
 
-  // ── click / tap to place ────────────────────────────────────────────────────
+  // ── click to place ─────────────────────────────────────────────────────────
+  // Click only: a tap already ends in a click, so listening to touchend too
+  // could place two markers.
   const handleImageClick = (e) => {
     if (!placingMode || readOnly) return;
-    const clientX = e.touches ? e.changedTouches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.changedTouches[0].clientY : e.clientY;
-    const pos = toNorm(clientX, clientY);
+    const pos = toNorm(e.clientX, e.clientY);
     if (!pos) return;
     const newMarker = { id: randomId('mk'), x: pos.x, y: pos.y, label: '', description: '' };
-    const next = [...markers, newMarker];
-    onChange(next);
+    onChange([...markers, newMarker]);
     setActiveId(newMarker.id);
     setPlacingMode(false);
   };
 
-  // ── drag to reposition ─────────────────────────────────────────────────────
-  const handlePinPointerDown = (e, id) => {
-    if (readOnly) return;
+  // ── tap to select, drag to reposition ──────────────────────────────────────
+  const onPinPointerDown = (e, id) => {
+    if (readOnly || e.button > 0) return;
     e.stopPropagation();
-    e.preventDefault();
-    // Support both mouse and touch
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    setDraggingId(id);
-    setDragStart({ x: clientX, y: clientY });
-    setActiveId(id);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    gestureRef.current = { id, startX: e.clientX, startY: e.clientY, moved: false };
   };
 
-  useEffect(() => {
-    if (!draggingId) return;
+  const onPinPointerMove = (e) => {
+    const g = gestureRef.current;
+    if (!g) return;
+    if (!g.moved && Math.hypot(e.clientX - g.startX, e.clientY - g.startY) < DRAG_SLOP) return;
+    if (!g.moved) { g.moved = true; setDraggingId(g.id); setActiveId(g.id); }
+    const pos = toNorm(e.clientX, e.clientY);
+    if (pos) update(g.id, pos);
+  };
 
-    const onMove = (e) => {
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const pos = toNorm(clientX, clientY);
-      if (!pos) return;
-      update(draggingId, { x: pos.x, y: pos.y });
-    };
+  const onPinPointerUp = (e) => {
+    const g = gestureRef.current;
+    gestureRef.current = null;
+    if (!g) return;
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    setDraggingId(null);
+    if (!g.moved) setActiveId((cur) => (cur === g.id ? null : g.id));
+  };
 
-    const onUp = () => { setDraggingId(null); setDragStart(null); };
-
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup',   onUp);
-    window.addEventListener('touchmove', onMove, { passive: true });
-    window.addEventListener('touchend',  onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup',   onUp);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend',  onUp);
-    };
-  }, [draggingId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const onPinKeyDown = (e, marker) => {
+    if (readOnly) return;
+    const step = e.shiftKey ? 0.05 : 0.005;
+    const move = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+    if (move) {
+      e.preventDefault();
+      update(marker.id, { x: clampNorm(marker.x + move[0]), y: clampNorm(marker.y + move[1]) });
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setActiveId((cur) => (cur === marker.id ? null : marker.id));
+    }
+  };
 
   // ── active marker form ────────────────────────────────────────────────────
   const activeMarker = markers.find((m) => m.id === activeId);
@@ -140,12 +151,10 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
 
       {/* ── Canvas ──────────────────────────────────────────────────────────── */}
       <div
-        ref={containerRef}
         className={`relative rounded-xl overflow-hidden border border-ink-800 bg-ink-950 select-none ${
           placingMode ? 'cursor-crosshair' : ''
         } ${draggingId ? 'cursor-grabbing' : ''}`}
         onClick={handleImageClick}
-        onTouchEnd={handleImageClick}
       >
         {/* The image itself */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -181,58 +190,26 @@ export default function ImageMarkerEditor({ imageUrl, markers = [], onChange, re
         )}
 
         {/* ── Pins ─────────────────────────────────────────────────────────── */}
-        {imgLoaded && markers.map((marker, index) => {
-          const isActive  = marker.id === activeId;
-          const isDragging = marker.id === draggingId;
-          const hasLabel  = Boolean(marker.label?.trim());
-
-          return (
-            <div
-              key={marker.id}
-              className="absolute"
-              style={{
-                left: `${marker.x * 100}%`,
-                top:  `${marker.y * 100}%`,
-                transform: 'translate(-50%, -100%)',
-                zIndex: isActive ? 20 : 10,
-              }}
-            >
-              {/* Pin body */}
-              <div
-                onPointerDown={(e) => handlePinPointerDown(e, marker.id)}
-                onClick={(e) => { e.stopPropagation(); setActiveId(marker.id === activeId ? null : marker.id); }}
-                className={`
-                  flex flex-col items-center cursor-grab
-                  ${isDragging ? 'cursor-grabbing' : ''}
-                `}
-                title={hasLabel ? marker.label : `علامة ${index + 1}`}
-              >
-                {/* Label bubble */}
-                <div className={`
-                  px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-lg mb-0.5
-                  transition-all border
-                  ${isActive
-                    ? 'bg-sand-500 text-ink-950 border-sand-400'
-                    : 'bg-ink-900/90 text-sand-300 border-sand-700/60 backdrop-blur-sm'}
-                  ${!hasLabel ? 'opacity-80' : ''}
-                `}>
-                  {hasLabel ? marker.label : (index + 1)}
-                </div>
-
-                {/* Stem + dot */}
-                <div className="flex flex-col items-center">
-                  <div className={`w-0.5 h-3 ${isActive ? 'bg-sand-400' : 'bg-sand-600/70'}`} />
-                  <div className={`w-2.5 h-2.5 rounded-full border-2 shadow
-                    ${isActive
-                      ? 'bg-sand-400 border-sand-300'
-                      : 'bg-sand-700 border-sand-500 hover:bg-sand-500 hover:border-sand-400'}
-                    transition-colors`}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {imgLoaded && markers.map((marker, index) => (
+          <MarkerPin
+            key={marker.id}
+            marker={marker}
+            index={index}
+            active={marker.id === activeId}
+            dragging={marker.id === draggingId}
+            title={marker.label?.trim() || `علامة ${index + 1}`}
+            {...(readOnly ? {} : {
+              onPointerDown:   (e) => onPinPointerDown(e, marker.id),
+              onPointerMove:   onPinPointerMove,
+              onPointerUp:     onPinPointerUp,
+              onPointerCancel: onPinPointerUp,
+              onKeyDown:       (e) => onPinKeyDown(e, marker),
+              // The tap is handled on pointerup; this only keeps the click
+              // from reaching the canvas and placing a marker.
+              onClick:         (e) => e.stopPropagation(),
+            })}
+          />
+        ))}
       </div>
 
       {/* ── Active marker edit panel ─────────────────────────────────────────── */}
@@ -344,7 +321,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
                   type="number"
                   min="0" max="100" step="0.1"
                   value={parseFloat((marker.x * 100).toFixed(1))}
-                  onChange={(e) => onChange({ x: Math.min(1, Math.max(0, parseFloat(e.target.value) / 100)) })}
+                  onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) onChange({ x: clampNorm(v / 100) }); }}
                   className="w-full px-2 py-1.5 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-xs font-mono focus:ring-1 focus:ring-sand-600 focus:outline-none hover:border-ink-700 transition-colors"
                 />
               </div>
@@ -356,7 +333,7 @@ function MarkerEditPanel({ marker, index, total, onChange, onDelete, onClose }) 
                   type="number"
                   min="0" max="100" step="0.1"
                   value={parseFloat((marker.y * 100).toFixed(1))}
-                  onChange={(e) => onChange({ y: Math.min(1, Math.max(0, parseFloat(e.target.value) / 100)) })}
+                  onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) onChange({ y: clampNorm(v / 100) }); }}
                   className="w-full px-2 py-1.5 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-xs font-mono focus:ring-1 focus:ring-sand-600 focus:outline-none hover:border-ink-700 transition-colors"
                 />
               </div>
