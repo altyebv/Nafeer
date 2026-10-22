@@ -8,7 +8,7 @@ import { getManifest, updateFeatureFlags } from '@/lib/FirebaseAdmin';
 const ALLOWED_KEYS = [
   'feedEnabled',
   'examModeEnabled',
-  'hotspotEnabled',        // HOTSPOT question type — off by default until QA'd
+  'hotspotEnabled',        // IMAGE_MARKER questions are published only while on (docs/question-markers.md)
   'announcementBanner',    // Arabic string or null
   'visibleSubjectIds',     // [] = all visible; ['PHYSICS', 'CHEMISTRY'] = soft-launch
   // Student comms switches — also written by /api/admin/comms/feature-flags.
