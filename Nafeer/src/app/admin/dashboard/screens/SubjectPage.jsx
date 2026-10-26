@@ -1,13 +1,14 @@
 'use client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronLeft, Plus, Pencil, ArrowUpRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Plus, Pencil, ArrowUpRight, BookOpen } from 'lucide-react';
 import {
-  Badge, Button, Card, ConfirmButton, EmptyState, Input, PageHeader, Segmented, Select, Stat,
+  Badge, Button, Card, Dialog, EmptyState, Input, PageHeader, Segmented, Select, Stat,
 } from '@/components/ui';
 import { formatDate, formatRelative } from '@/lib/format';
 import { SUBJECTS_CATALOG, TRACK_CONFIG } from '@/shared/curriculum';
+import { parseTarget, MAX_TARGET } from '@/lib/unitTarget';
 import { ScreenBody } from './AdminFrame';
 
 // ─── Subject page ─────────────────────────────────────────────────────────────
@@ -83,7 +84,7 @@ export function SubjectPage({ subjectId }) {
       )}
       {!data && !error && <p className="mt-6 t-body text-fg-subtle">جارٍ التحميل…</p>}
 
-      {data && !data.seeded && <Unseeded subject={data} onDone={load} />}
+      {data && !data.seeded && <Unopened subject={data} onDone={load} />}
       {data?.seeded && (
         <div className="flex flex-col gap-5 mt-2">
           <Headline data={data} />
@@ -161,6 +162,32 @@ function Tree({ data, setData }) {
     setData((d) => ({ ...d, units: d.units.map((u) => (u.id === unit.id ? { ...u, title } : u)) }));
   };
 
+  const setTarget = async (unit, text) => {
+    const targetLessons = parseTarget(text);
+    if (targetLessons == null) throw new Error(`اكتب عدداً صحيحاً من 0 إلى ${MAX_TARGET}`);
+    await api(`/api/admin/curriculum/units/${unit.mongoId}`, { method: 'PATCH', body: { targetLessons } });
+    setData((d) => ({ ...d, units: d.units.map((u) => (u.id === unit.id ? { ...u, targetLessons } : u)) }));
+  };
+
+  // A unit joins a book ({ id }), starts one ({ title }) or leaves it (null).
+  // The server renumbers the book; the same numbering is redone here.
+  const setBook = async (unit, book) => {
+    const json = await api(`/api/admin/curriculum/units/${unit.mongoId}`, { method: 'PATCH', body: { book } });
+    const { bookId, bookTitle } = json.unit;
+    setData((d) => ({ ...d, units: withBookOrder(d.units.map((u) => (u.id === unit.id ? { ...u, bookId, bookTitle } : u))) }));
+  };
+
+  const renameBook = async (bookId, title) => {
+    await api('/api/admin/curriculum/books', { method: 'PATCH', body: { subjectId: data.id, bookId, title } });
+    setData((d) => ({ ...d, units: d.units.map((u) => (u.bookId === bookId ? { ...u, bookTitle: title } : u)) }));
+  };
+
+  const books = useMemo(() => {
+    const seen = new Map();
+    for (const u of data.units) if (u.bookId && !seen.has(u.bookId)) seen.set(u.bookId, u.bookTitle || u.bookId);
+    return [...seen].map(([id, title]) => ({ id, title }));
+  }, [data.units]);
+
   const addLesson = async (unit, title) => {
     const order = Math.max(0, ...data.units.flatMap((u) => u.lessons.map((l) => Number(l.id.match(/_L(\d+)$/)?.[1]) || 0))) + 1;
     const suffix = unit.id.split('_').pop();
@@ -176,7 +203,7 @@ function Tree({ data, setData }) {
   const addUnit = async (title) => {
     const json = await api('/api/admin/curriculum/units', { method: 'POST', body: { subjectId: data.id, title } });
     const u = json.unit;
-    setData((d) => ({ ...d, units: [...d.units, { id: u.contentId, mongoId: String(u._id), title: u.title, lessons: [] }] }));
+    setData((d) => ({ ...d, units: [...d.units, { id: u.contentId, mongoId: String(u._id), title: u.title, targetLessons: null, bookId: null, bookTitle: null, bookOrder: null, lessons: [] }] }));
     setAddingUnit(false);
   };
 
@@ -197,13 +224,18 @@ function Tree({ data, setData }) {
           <span role="columnheader">الحالة</span><span role="columnheader"><span className="sr-only">فتح</span></span>
         </div>
 
-        {data.units.map((unit) => {
+        {data.units.map((unit, i) => {
           const lessons = unit.lessons.filter(keep);
           if (filtering && !lessons.length) return null;
           const isOpen = filtering || open.has(unit.id);
+          const startsBook = unit.bookId && unit.bookId !== data.units[i - 1]?.bookId;
           return (
-            <UnitRows key={unit.id} subjectId={data.id} unit={unit} lessons={lessons} open={isOpen} canAdd={!filtering}
-              onToggle={() => toggle(unit.id)} onRename={(t) => renameUnit(unit, t)} onAddLesson={(t) => addLesson(unit, t)} />
+            <Fragment key={unit.id}>
+              {startsBook && <BookDivider title={unit.bookTitle || unit.bookId} onRename={(t) => renameBook(unit.bookId, t)} />}
+              <UnitRows subjectId={data.id} unit={unit} lessons={lessons} open={isOpen} canAdd={!filtering} books={books}
+                onToggle={() => toggle(unit.id)} onRename={(t) => renameUnit(unit, t)} onSetTarget={(t) => setTarget(unit, t)}
+                onSetBook={(b) => setBook(unit, b)} onAddLesson={(t) => addLesson(unit, t)} />
+            </Fragment>
           );
         })}
 
@@ -223,12 +255,70 @@ function Tree({ data, setData }) {
 
 const sum = (lessons, k) => lessons.reduce((n, l) => n + l[k], 0);
 
+// Each unit's position in its book, by unit order — as lib/api/subject.js
+// renumberBooks stores it.
+function withBookOrder(units) {
+  const next = {};
+  return units.map((u) => ({ ...u, bookOrder: u.bookId ? (next[u.bookId] = (next[u.bookId] || 0) + 1) : null }));
+}
+
+// A divider where a new textbook starts, as the app and the editor draw it.
+function BookDivider({ title, onRename }) {
+  const [editing, setEditing] = useState(false);
+  return (
+    <div role="row" className="flex items-center gap-2 px-4 py-2 border-b border-line bg-raised">
+      <span role="cell" className="flex items-center gap-2 min-w-0">
+        <BookOpen size={15} className="shrink-0 text-fg-accent" aria-hidden="true" />
+        {editing ? (
+          <InlineText initial={title} placeholder="اسم الكتاب"
+            onSave={async (t) => { await onRename(t); setEditing(false); }} onCancel={() => setEditing(false)} />
+        ) : (
+          <button type="button" onClick={() => setEditing(true)} title="انقر لتغيير اسم الكتاب"
+            className="group inline-flex items-center gap-1.5 t-label font-semibold text-fg-accent">
+            <span>كتاب: {title}</span>
+            <Pencil size={12} className="shrink-0 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" />
+          </button>
+        )}
+      </span>
+    </div>
+  );
+}
+
+// Which book a unit belongs to: none, an existing one, or a new one by name.
+function BookPicker({ unit, books, onSetBook }) {
+  const [naming, setNaming] = useState(false);
+  const [error, setError] = useState(null);
+  if (naming) {
+    return (
+      <InlineText placeholder="اسم الكتاب الجديد"
+        onSave={async (t) => { await onSetBook({ title: t }); setNaming(false); }} onCancel={() => setNaming(false)} />
+    );
+  }
+  const choose = async (value) => {
+    setError(null);
+    if (value === '__new') { setNaming(true); return; }
+    try { await onSetBook(value ? { id: value } : null); } catch (e) { setError(e.message); }
+  };
+  return (
+    <span className="inline-flex items-center gap-2">
+      <Select aria-label={`كتاب ${unit.title}`} value={unit.bookId || ''} onChange={(e) => choose(e.target.value)}
+        className="h-8 w-40 t-caption">
+        <option value="">بلا كتاب</option>
+        {books.map((b) => <option key={b.id} value={b.id}>{b.title}</option>)}
+        <option value="__new">كتاب جديد…</option>
+      </Select>
+      {error && <span className="t-caption text-danger">{error}</span>}
+    </span>
+  );
+}
+
 // Below md the four count columns fold into one line under the title.
 const ROW = 'grid grid-cols-[minmax(0,1fr)_84px_52px] md:grid-cols-[minmax(0,1fr)_repeat(4,56px)_96px_64px]';
 const counts = (x) => `${x.sections} أقسام · ${x.blocks} عناصر · ${x.questions} أسئلة · ${x.feed} بطاقات`;
 
-function UnitRows({ subjectId, unit, lessons, open, canAdd, onToggle, onRename, onAddLesson }) {
+function UnitRows({ subjectId, unit, lessons, open, canAdd, books, onToggle, onRename, onSetTarget, onSetBook, onAddLesson }) {
   const [editing, setEditing] = useState(false);
+  const [editingTarget, setEditingTarget] = useState(false);
   const [adding, setAdding] = useState(false);
   const placeholder = PLACEHOLDER_UNIT.test(unit.title);
   const started = unit.lessons.filter((l) => l.sections > 0).length;
@@ -253,9 +343,21 @@ function UnitRows({ subjectId, unit, lessons, open, canAdd, onToggle, onRename, 
                 <Pencil size={13} className="shrink-0 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 text-fg-subtle" />
               </button>
               {placeholder && <Badge tone="warn" size="sm">بلا اسم من الكتاب</Badge>}
-              <span className="t-caption text-fg-subtle whitespace-nowrap">{unit.lessons.length} دروس</span>
+              {!editingTarget && (
+                <button type="button" onClick={() => setEditingTarget(true)} title="انقر لتحديد عدد دروس الوحدة في الكتاب"
+                  className="t-caption text-fg-subtle hover:text-fg-accent whitespace-nowrap">
+                  {unit.targetLessons == null
+                    ? `${unit.lessons.length} دروس · حدّد عدد دروس الكتاب`
+                    : `${unit.lessons.length} من ${unit.targetLessons} دروس`}
+                </button>
+              )}
             </>
           )}
+          {editingTarget && (
+            <InlineText initial={unit.targetLessons == null ? '' : String(unit.targetLessons)} placeholder="عدد دروس الوحدة في الكتاب"
+              onSave={async (t) => { await onSetTarget(t); setEditingTarget(false); }} onCancel={() => setEditingTarget(false)} />
+          )}
+          {!editing && !editingTarget && <BookPicker unit={unit} books={books} onSetBook={onSetBook} />}
         </span>
         <Num n={sum(unit.lessons, 'sections')} muted /><Num n={sum(unit.lessons, 'blocks')} muted />
         <Num n={sum(unit.lessons, 'questions')} muted /><Num n={sum(unit.lessons, 'feed')} muted />
@@ -439,61 +541,112 @@ export function Switch({ on, onChange, disabled, labelledBy }) {
 // ─── Maintenance ──────────────────────────────────────────────────────────────
 function Maintenance({ data, onDone }) {
   const [msg, setMsg] = useState(null);
-
-  const complete = async () => {
-    setMsg(null);
-    try {
-      await api('/api/admin/seed', { method: 'POST', body: { action: 'bootstrap', subjectId: data.id } });
-      setMsg({ ok: true, text: 'اكتمل. أُضيف ما كان ناقصاً من المنهج.' });
-      onDone();
-    } catch (e) { setMsg({ ok: false, text: e.message }); }
-  };
-  const restore = async () => {
-    setMsg(null);
-    try {
-      await api('/api/admin/remote-subjects/import', { method: 'POST', body: { subjectId: data.id, force: true } });
-      setMsg({ ok: true, text: 'استُرجع المحتوى من آخر نسخة منشورة.' });
-      onDone();
-    } catch (e) { setMsg({ ok: false, text: e.message }); }
-  };
+  const [restoring, setRestoring] = useState(false);
 
   const canRestore = !!data.publish?.version;
   return (
     <section aria-label="صيانة" className="flex flex-col gap-3 p-4 rounded-card border border-dashed border-line-strong">
       <span className="t-caption font-semibold text-fg-subtle">صيانة · نادراً ما تحتاجها</span>
       <div className="flex items-center justify-between gap-3">
-        <span className="t-label text-fg-muted">أكمل الوحدات والدروس الناقصة من المنهج، دون لمس ما كُتب</span>
-        <ConfirmButton variant="secondary" tone="accent" confirmLabel="أكمل" title="أكمل المادة من المنهج؟"
-          description="يضيف الوحدات والدروس الناقصة فقط. لا يُحذف ولا يُعدَّل شيء موجود." onConfirm={complete}>
-          أكمل
-        </ConfirmButton>
-      </div>
-      <div className="flex items-center justify-between gap-3">
         <span className="t-label text-fg-muted">استبدل محتوى المادة بآخر نسخة منشورة في بشير</span>
-        {canRestore ? (
-          <ConfirmButton variant="secondary" confirmLabel="استرجع" title="استرجاع من النسخة المنشورة؟"
-            description="يحذف محتوى المادة هنا ويستبدله بما في آخر نسخة منشورة. ما لم يُنشر سيضيع." onConfirm={restore}>
-            استرجع
-          </ConfirmButton>
-        ) : <span className="t-caption text-fg-subtle whitespace-nowrap">لا نسخة منشورة</span>}
+        {canRestore
+          ? <Button size="sm" variant="secondary" onClick={() => { setMsg(null); setRestoring(true); }}>استرجع</Button>
+          : <span className="t-caption text-fg-subtle whitespace-nowrap">لا نسخة منشورة</span>}
       </div>
       {msg && <p role="status" className={`t-caption ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</p>}
+      {restoring && (
+        <RestoreDialog subjectId={data.id} onClose={() => setRestoring(false)}
+          onRestored={() => { setRestoring(false); setMsg({ ok: true, text: 'استُرجع المحتوى من آخر نسخة منشورة.' }); onDone(); }} />
+      )}
     </section>
   );
 }
 
-// ─── Not in the database yet ──────────────────────────────────────────────────
-function Unseeded({ subject, onDone }) {
+// Shows what a restore would throw away before it runs (lib/restoreSubject.js
+// unpublishedWork). With anything to lose, the owner ticks a box first.
+const OTHER_LABELS = { Unit: 'وحدة', Concept: 'مفهوم', Tag: 'وسم', FeedItem: 'بطاقة', Question: 'سؤال', Exam: 'امتحان' };
+
+function RestoreDialog({ subjectId, onClose, onRestored }) {
+  const [loss, setLoss] = useState(null);
+  const [error, setError] = useState(null);
+  const [accepted, setAccepted] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api(`/api/admin/remote-subjects/import?subjectId=${encodeURIComponent(subjectId)}`)
+      .then((json) => json && setLoss(json.data))
+      .catch((e) => setError(e.message));
+  }, [subjectId]);
+
+  const restore = async () => {
+    setBusy(true); setError(null);
+    try {
+      await api('/api/admin/remote-subjects/import', { method: 'POST', body: { subjectId, acceptLoss: accepted } });
+      onRestored();
+    } catch (e) { setError(e.message); setBusy(false); }
+  };
+
+  const others = loss ? Object.entries(loss.other) : [];
+  return (
+    <Dialog open onClose={busy ? () => {} : onClose} title="استرجاع من النسخة المنشورة؟"
+      description="يستبدل محتوى المادة هنا بآخر نسخة منشورة في بشير، دفعة واحدة: إن فشل شيء لا يتغيّر شيء. يبقى لكل درس كاتبه ومالكه."
+      footer={<>
+        <Button variant="ghost" onClick={onClose} disabled={busy}>إلغاء</Button>
+        <Button variant="danger" loading={busy} onClick={restore}
+          disabled={!loss || (loss.total > 0 && !accepted)}>استرجع</Button>
+      </>}>
+      {!loss && !error && <p className="t-body text-fg-subtle">جارٍ مقارنة المادة بالنسخة المنشورة…</p>}
+      {loss && (
+        <div className="flex flex-col gap-3">
+          <p className="t-caption text-fg-subtle">
+            {loss.publishedAt ? `آخر نشر ${formatDate(loss.publishedAt, 'short')}.` : 'وقت آخر نشر غير معروف — تُقارن الدروس بوجودها في الملف فقط.'}
+            {loss.emptyLessons ? ` ستُحذف ${loss.emptyLessons} دروس فارغة غير منشورة.` : ''}
+          </p>
+          {loss.total === 0 ? (
+            <p className="t-body text-fg">لا شيء غير منشور سيضيع.</p>
+          ) : (
+            <>
+              <p className="t-body text-fg-strong">سيضيع ما لم يُنشر:</p>
+              {loss.lessons.length > 0 && (
+                <ul className="flex flex-col gap-1 max-h-56 overflow-y-auto">
+                  {loss.lessons.map((l) => (
+                    <li key={l.id} className="flex items-center justify-between gap-3 t-label">
+                      <span className="text-fg truncate">{l.title}</span>
+                      <Badge tone="warn" size="sm">{l.why === 'edited' ? 'عُدّل بعد النشر' : 'لم يُنشر'}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {others.length > 0 && (
+                <p className="t-label text-fg-muted">{others.map(([k, n]) => `${n} ${OTHER_LABELS[k] || k}`).join(' · ')}</p>
+              )}
+              <label className="flex items-center gap-2 t-label text-fg">
+                <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
+                أعلم أن هذه التعديلات ستضيع
+              </label>
+            </>
+          )}
+        </div>
+      )}
+      {error && <p role="alert" className="mt-3 t-caption text-danger">{error}</p>}
+    </Dialog>
+  );
+}
+
+// ─── Not opened yet ───────────────────────────────────────────────────────────
+// Opening creates the subject with no units; the owner adds them from the
+// textbook. Units used to be built from a template in the code catalog.
+function Unopened({ subject, onDone }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const seed = async () => {
+  const openIt = async () => {
     setBusy(true); setError(null);
-    try { await api('/api/admin/seed', { method: 'POST', body: { action: 'bootstrap', subjectId: subject.id } }); onDone(); }
+    try { await api(`/api/admin/subjects/${encodeURIComponent(subject.id)}`, { method: 'POST' }); onDone(); }
     catch (e) { setError(e.message); setBusy(false); }
   };
   return (
-    <EmptyState className="mt-6" title={`${subject.nameAr} في المنهج وليست في قاعدة البيانات`}
-      description={error || 'ابذرها لتُنشأ وحداتها ودروسها من المنهج، ثم يمكن إسنادها لمساهم.'}
-      action={<Button variant="primary" loading={busy} onClick={seed}>ابذرها من المنهج</Button>} />
+    <EmptyState className="mt-6" title={`${subject.nameAr} لم تُفتح بعد`}
+      description={error || 'افتحها لتبدأ فارغة، ثم أضف وحداتها ودروسها من الكتاب هنا. حتى ذلك يرى أعضاؤها رسالة بأنها لم تُفتح.'}
+      action={<Button variant="primary" loading={busy} onClick={openIt}>افتح المادة</Button>} />
   );
 }
