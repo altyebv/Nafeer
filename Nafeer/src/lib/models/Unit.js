@@ -7,7 +7,7 @@ import { versioningFields } from './versioning';
 const UnitSchema = new mongoose.Schema(
   {
     // Stable ID — e.g. 'MATH_SCIENCE_U6' — NEVER changes, referenced by Android.
-    // Derived from: `${subjectId}_U${unit.order}` in buildSubjectScaffold.
+    // Derived from: `${subjectId}_U${unit.order}` (lib/api/subject.js unitContentId).
     contentId: {
       type:     String,
       required: true,
@@ -27,6 +27,12 @@ const UnitSchema = new mongoose.Schema(
     order:       { type: Number, required: true },
 
     description: { type: String, default: null },
+
+    // How many lessons the unit should end up with, from the textbook. Drives
+    // the progress numbers on the landing page and the subject page. null
+    // means "as many as it has now" (lib/api/subject.js unitTarget). Used to
+    // live in the code catalog as lessonCount.
+    targetLessons: { type: Number, default: null, min: 0 },
 
     // ── Multi-book support ─────────────────────────────────────────────────
     // When set, units sharing the same bookId are grouped under a named
