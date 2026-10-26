@@ -102,7 +102,9 @@ function SubjectRow({ subject, isMajor = false }) {
 
       <div className="flex-1 min-w-0">
         <span className="t-label font-semibold block leading-snug text-fg-strong">{subject.nameAr}</span>
-        <span className="t-caption text-fg-subtle">{subject.units.length} وحدات · {subject.totalLessons} درس</span>
+        <span className="t-caption text-fg-subtle">
+          {subject.unitCount == null ? '…' : subject.unitCount ? `${subject.unitCount} وحدات · ${subject.totalLessons} درس` : 'لم تُفتح بعد'}
+        </span>
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
