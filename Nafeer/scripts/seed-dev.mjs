@@ -31,7 +31,10 @@ const { connectDB } = await import('@/lib/db');
 const { Contributor } = await import('@/lib/models/Contributor');
 const { ContributorRole } = await import('@/lib/models/ContributorRole');
 const { Lesson } = await import('@/lib/models/Lesson');
-const { bootstrapSubject } = await import('@/lib/api/subject');
+const { Unit } = await import('@/lib/models/Unit');
+const { openSubject, createUnit } = await import('@/lib/api/subject');
+const { ensureSystemSeedContributor } = await import('@/lib/SeedActor');
+const { initialChangelog } = await import('@/lib/models/versioning');
 const { interviewSnapshot } = await import('@/lib/interview');
 const { DEV_PERSONAS, DEV_APPLICANTS, DEV_SUBJECT, DEV_OTHER_SUBJECT, devEmail } = await import('@/lib/devPersonas');
 const { DEFAULT_LEAD_PERMISSIONS } = await import('@/lib/leads');
@@ -39,10 +42,29 @@ const { DEFAULT_LEAD_PERMISSIONS } = await import('@/lib/leads');
 await connectDB();
 console.log(`\n🧪  Seeding personas into ${mongoose.connection.name}…`);
 
-// 2. Subject scaffolds (units + lessons), owned by the seed actor.
-for (const s of [DEV_SUBJECT, DEV_OTHER_SUBJECT]) {
-  const r = await bootstrapSubject(s, 'dev-seed');
-  console.log(`   ✓  ${s} scaffold${r?.bootstrapped === false ? ' (already there)' : ''}`);
+// 2. The two subjects, opened, with a few units of empty lessons owned by the
+//    seed actor — what the owner would add from the textbook. Lesson counts
+//    per unit; a subject that already has units is left as it is.
+const FIXTURE = {
+  [DEV_SUBJECT]:       [4, 4, 3],
+  [DEV_OTHER_SUBJECT]: [3, 3],
+};
+const seedActor = await ensureSystemSeedContributor();
+for (const [s, counts] of Object.entries(FIXTURE)) {
+  await openSubject(s);
+  if (await Unit.exists({ subjectId: s })) {
+    console.log(`   ✓  ${s} units (already there)`);
+    continue;
+  }
+  for (const [i, n] of counts.entries()) {
+    const unit = await createUnit(s, { title: `الوحدة ${i + 1}`, targetLessons: n });
+    await Lesson.insertMany(Array.from({ length: n }, (_, k) => ({
+      contentId: `${unit.contentId}_L${k + 1}`, subjectId: s, unitContentId: unit.contentId,
+      title: `الدرس ${k + 1}`, order: k + 1, estimatedMinutes: 15, summary: null,
+      createdBy: seedActor, changelog: initialChangelog(seedActor),
+    })));
+  }
+  console.log(`   ✓  ${s}: ${counts.length} units, ${counts.reduce((a, b) => a + b, 0)} lessons`);
 }
 
 const DAY = 86_400_000;
