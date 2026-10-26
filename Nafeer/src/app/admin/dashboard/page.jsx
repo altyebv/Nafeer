@@ -7,7 +7,6 @@ import { MediaSection }           from './components/MediaSection';
 import { AdminsSection }          from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
 import { SiteSettingsSection }    from './components/SiteSettingSection';
-import { SeedSection }            from './components/SeedSection';
 import { PublishSection }         from './components/PublishSection';
 import { MailScreen }             from './screens/MailScreen';
 import { OverviewScreen }         from './screens/OverviewScreen';
@@ -23,11 +22,12 @@ import { AndroidInsightsSection } from './components/android/AndroidInsightsSect
 // Every section the dashboard can render — a hash outside this list is ignored.
 const SECTION_IDS = [
   'overview', 'subjects', 'contributors', 'leads', 'review', 'publish',
-  'media', 'strings', 'admins', 'settings', 'seed', 'email', 'comms', 'android',
+  'media', 'strings', 'admins', 'settings', 'email', 'comms', 'android',
 ];
 
 // Sections folded into the subject pages (DS5); old links land on the list.
-const MOVED = { editor: 'subjects', curriculum: 'subjects', coverage: 'subjects' };
+// `seed` built subjects from the code catalog, which no longer has units.
+const MOVED = { editor: 'subjects', curriculum: 'subjects', coverage: 'subjects', seed: 'subjects' };
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -113,7 +113,6 @@ export default function AdminDashboard() {
         {section === 'strings'    && <StringPoolsScreen />}
         {section === 'admins'     && <AdminsSection />}
         {section === 'settings'   && <SiteSettingsSection />}
-        {section === 'seed'       && <SeedSection />}
         {section === 'email'      && <MailScreen />}
         {section === 'comms'      && <CommsScreen allContributors={allContributors} />}
         {section === 'android'    && <AndroidInsightsSection />}
