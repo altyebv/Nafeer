@@ -1,15 +1,9 @@
 import { verifyAdminToken } from '@/lib/adminAuth';
 import { connectDB } from '@/lib/db';
 import { Subject } from '@/lib/models/Subject';
-import { Unit } from '@/lib/models/Unit';
 import { Lesson } from '@/lib/models/Lesson';
-import { Section } from '@/lib/models/Section';
-import { Block } from '@/lib/models/Block';
-import { Concept } from '@/lib/models/Concept';
-import { FeedItem } from '@/lib/models/FeedItem';
-import { Question } from '@/lib/models/Question';
 import { applyVersionBump } from '@/lib/models/versioning';
-import { reconcileAuthoredStatsLater } from '@/lib/authoredStats';
+import { deleteSubjectContent } from '@/lib/subjectContent';
 
 const ok  = (data)          => Response.json({ ok: true, data });
 const err = (msg, status=400) => Response.json({ ok: false, error: msg }, { status });
@@ -81,21 +75,7 @@ export async function DELETE(request, { params }) {
     }
   }
 
-  // Cascade delete — order matters: blocks first, then sections, then up the tree
-  const sections = await Section.find({ subjectId: id }).select('contentId').lean();
-  const sectionIds = sections.map((s) => s.contentId);
-
-  await Promise.all([
-    sectionIds.length ? Block.deleteMany({ sectionContentId: { $in: sectionIds } }) : null,
-    Section.deleteMany({ subjectId: id }),
-    Lesson.deleteMany({ subjectId: id }),
-    Unit.deleteMany({ subjectId: id }),
-    Concept.deleteMany({ subjectId: id }),
-    FeedItem.deleteMany({ subjectId: id }),
-    Question.deleteMany({ subjectId: id }),
-    Subject.deleteOne({ subjectId: id }),
-  ]);
-  reconcileAuthoredStatsLater();
+  await deleteSubjectContent(id);
 
   return ok({ deleted: id });
 }
