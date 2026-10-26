@@ -14,6 +14,7 @@ import { Contributor }     from '@/lib/models/Contributor';
 import { getManifest, updateFeatureFlags } from '@/lib/FirebaseAdmin';
 import { SUBJECTS_BY_ID, getMathNotation, MATH_NOTATION } from '@/shared/curriculum';
 import { REAL_PEOPLE } from '@/lib/SeedActor';
+import { openSubject } from '@/lib/api/subject';
 
 const countBy = (rows) => Object.fromEntries(rows.map((r) => [r._id, r.n]));
 
@@ -41,7 +42,7 @@ export async function GET(_request, { params }) {
       concepts, media, people, { manifest, appData },
     ] = await Promise.all([
       Subject.findOne({ subjectId }, 'subjectId nameAr path mathNotation').lean(),
-      Unit.find({ subjectId }, 'contentId title order').sort({ order: 1 }).lean(),
+      Unit.find({ subjectId }, 'contentId title order targetLessons bookId bookTitle bookOrder').sort({ order: 1 }).lean(),
       Lesson.find({ subjectId }, 'contentId unitContentId title status order summary reviewState.returned').sort({ order: 1 }).lean(),
       Section.find({ subjectId }, 'contentId lessonContentId').lean(),
       Block.aggregate([match, { $group: { _id: '$sectionContentId', n: { $sum: 1 } } }]),
@@ -98,7 +99,11 @@ export async function GET(_request, { params }) {
         nameAr: catalog?.nameAr || subject?.nameAr || subjectId,
         track: catalog?.track || subject?.path || null,
         seeded: !!subject,
-        units: units.map((u) => ({ id: u.contentId, mongoId: String(u._id), title: u.title, lessons: byUnit[u.contentId] || [] })),
+        units: units.map((u) => ({
+          id: u.contentId, mongoId: String(u._id), title: u.title, targetLessons: u.targetLessons ?? null,
+          bookId: u.bookId || null, bookTitle: u.bookTitle || null, bookOrder: u.bookOrder ?? null,
+          lessons: byUnit[u.contentId] || [],
+        })),
         counts: { units: units.length, lessons: lessons.length, concepts, media, status },
         people: people.map((p) => ({ id: String(p._id), name: p.name, username: p.username, lastActiveAt: p.stats?.lastActiveAt || null })),
         publish: appData ? {
@@ -116,6 +121,25 @@ export async function GET(_request, { params }) {
     });
   } catch (e) {
     console.error('[GET /api/admin/subjects/[subjectId]]', e);
+    return NextResponse.json({ ok: false, error: 'خطأ في الخادم' }, { status: 500 });
+  }
+}
+
+// ─── POST /api/admin/subjects/[subjectId] ─────────────────────────────────────
+// Opens a subject from the list: creates its Subject document, with no units
+// or lessons. The owner then adds them on the subject page.
+export async function POST(_request, { params }) {
+  const authErr = await verifyAdminAuth();
+  if (authErr) return authErr;
+  const { subjectId } = await params;
+
+  if (!SUBJECTS_BY_ID[subjectId]) {
+    return NextResponse.json({ ok: false, error: 'مادة غير معروفة' }, { status: 404 });
+  }
+  try {
+    return NextResponse.json({ ok: true, data: await openSubject(subjectId) });
+  } catch (e) {
+    console.error('[POST /api/admin/subjects/[subjectId]]', e);
     return NextResponse.json({ ok: false, error: 'خطأ في الخادم' }, { status: 500 });
   }
 }
@@ -143,7 +167,7 @@ export async function PATCH(request, { params }) {
       }
       await connectDB();
       const updated = await Subject.findOneAndUpdate({ subjectId }, { $set: { mathNotation: body.mathNotation } }, { new: true }).lean();
-      if (!updated) return NextResponse.json({ ok: false, error: 'المادة غير مبذورة بعد' }, { status: 404 });
+      if (!updated) return NextResponse.json({ ok: false, error: 'المادة لم تُفتح بعد' }, { status: 404 });
       result.mathNotation = updated.mathNotation;
     }
 
