@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { useSubjectStore } from '@/store/subjectStore';
 import { useEditorStore }  from '@/store/editorStore';
 import { useAtlasSync }    from '@/hooks/useAtlasSync';
 import { useLayout }       from '@/hooks/useBreakpoint';
@@ -30,10 +29,10 @@ const EXPANDED_W = 260;
  */
 export default function EditorChrome({ contributor, children }) {
   const pathname = usePathname();
-  const bootstrapFromSubject = useSubjectStore((s) => s.bootstrapFromSubject);
   const { bootstrapSubject } = useAtlasSync();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notOpened, setNotOpened] = useState(false);
   const { isMobile, isDesktop } = useLayout();
 
   const currentPage = activeNavId(pathname);
@@ -41,10 +40,12 @@ export default function EditorChrome({ contributor, children }) {
   // The lesson editor paints its own sticky header and wants the full canvas.
   const isLessonEditor = /^\/editor\/lessons\/[^/]+$/.test(pathname || '');
 
+  // The store used to be filled from the curriculum catalog before the server
+  // answered. Saving a lesson from that placeholder created it, as whoever
+  // saved — so the editor now shows only what the server has.
   useEffect(() => {
     if (!contributor?.subject) return;
-    bootstrapFromSubject(contributor.subject);
-    bootstrapSubject(contributor.subject);
+    bootstrapSubject(contributor.subject).then((r) => setNotOpened(r === 'missing'));
   }, [contributor?.subject]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Only the desktop tier has room to expand the sidebar; tablet stays a rail.
@@ -71,8 +72,20 @@ export default function EditorChrome({ contributor, children }) {
         {/* The lesson editor shows sync state inside its own header instead. */}
         {!isLessonEditor && <SyncBanner />}
         {contributor?.paused && <PausedBanner paused={contributor.paused} />}
+        {notOpened && <NotOpenedBanner />}
         {children}
       </main>
+    </div>
+  );
+}
+
+// The member's subject has no units or lessons yet: only the owner opens a
+// subject (docs/subject-lifecycle.md), so say so instead of an empty editor.
+function NotOpenedBanner() {
+  return (
+    <div role="status" className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2.5 border-b border-line bg-sunken t-label text-fg">
+      <strong className="text-warn">لم تُفتح هذه المادة بعد</strong>
+      <span className="text-fg-muted">ستظهر وحداتها ودروسها هنا حين يفتحها المشرف.</span>
     </div>
   );
 }
