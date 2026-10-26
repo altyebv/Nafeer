@@ -177,7 +177,7 @@ export async function POST(request) {
 
 import { getManifest, removeSubjectEntry } from '@/lib/FirebaseAdmin';
 import { listFiles, deleteFiles }          from '@/lib/supabase';
-import { reconcileAuthoredStatsLater } from '@/lib/authoredStats';
+import { deleteSubjectContent } from '@/lib/subjectContent';
 
 const EXPORTS_BUCKET = process.env.SUPABASE_EXPORTS_BUCKET || 'content-exports';
 
@@ -201,25 +201,7 @@ export async function DELETE(request) {
     }
 
     // ── 1. Wipe MongoDB (all content collections) ─────────────────────────────
-    const [
-      { deletedCount: units },
-      { deletedCount: lessons },
-      { deletedCount: sections },
-      { deletedCount: blocks },
-      { deletedCount: concepts },
-      { deletedCount: questions },
-      { deletedCount: feedItems },
-    ] = await Promise.all([
-      (await import('@/lib/models/Unit')).Unit.deleteMany({ subjectId }),
-      (await import('@/lib/models/Lesson')).Lesson.deleteMany({ subjectId }),
-      (await import('@/lib/models/Section')).Section.deleteMany({ subjectId }),
-      (await import('@/lib/models/Block')).Block.deleteMany({ subjectId }),
-      (await import('@/lib/models/Concept')).Concept.deleteMany({ subjectId }),
-      (await import('@/lib/models/Question')).Question.deleteMany({ subjectId }),
-      (await import('@/lib/models/FeedItem')).FeedItem.deleteMany({ subjectId }),
-    ]);
-    await Subject.deleteOne({ subjectId });
-    reconcileAuthoredStatsLater();
+    const deleted = await deleteSubjectContent(subjectId);
 
     // ── 2. Remove Firestore manifest entry ────────────────────────────────────
     // This was the missing step — without it the subject reappeared in the
@@ -270,7 +252,7 @@ export async function DELETE(request) {
     return NextResponse.json({
       ok: true,
       subjectId,
-      deleted: { subjects: 1, units, lessons, sections, blocks, concepts, questions, feedItems },
+      deleted,
       manifestRemoved,
       storageRemoved,
       message: `تم حذف المادة "${subjectId}" وجميع محتواها`,
