@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { persistConfig } from './persistConfig';
-import { buildSubjectScaffold } from '@/shared/curriculum';
 import { LESSON_FIELDS, mergeLesson, fromServerLesson } from '@/lib/editorSync';
 
 const generateId = (prefix) =>
@@ -152,28 +151,6 @@ export const useSubjectStore = create(
         set((state) => ({
           lessons: state.lessons.filter((l) => l.id !== id),
         })),
-
-      // ── Bootstrap ─────────────────────────────────────────────────────────
-      // Phase 1: works from localStorage cache only.
-      // Phase 2: will call /api/content/subject to sync from Atlas.
-      bootstrapFromSubject: (subjectId) => {
-        const scaffold = buildSubjectScaffold(subjectId);
-        if (!scaffold) return false;
-
-        const state = get();
-        if (state.subject?.id === subjectId && state.units.length > 0) return false;
-
-        if (state.units.length > 0 && state.subject?.id !== subjectId) {
-          get().resetSubject();
-        }
-
-        set({
-          subject: scaffold.subject,
-          units:   scaffold.units,
-          lessons: scaffold.lessons,
-        });
-        return true;
-      },
 
       // ── Load from Atlas data (Phase 2 will call this after API fetch) ─────
       // Lessons with unsaved local edits survive the reload.
