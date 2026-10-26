@@ -12,6 +12,8 @@
     "test": "vitest run",
     "lint:design": "node scripts/lint-design.mjs",
     "stats:reconcile": "vite-node --config vitest.config.mjs scripts/reconcile-stats.mjs",
+    "units:targets": "vite-node --config vitest.config.mjs scripts/set-unit-targets.mjs",
+    "units:targets:prod": "vite-node --mode production --config vitest.config.mjs scripts/set-unit-targets.mjs",
     "seed:dev": "vite-node --config vitest.config.mjs scripts/seed-dev.mjs"
   },
   "dependencies": {
