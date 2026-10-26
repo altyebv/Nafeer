@@ -83,24 +83,30 @@ export function useAtlasSync() {
   }, [apiFetch]);
 
   // ── Bootstrap + load from Atlas ─────────────────────────────────────────────
+  // Returns true when loaded, 'missing' when the owner has not opened the
+  // subject yet, false when Atlas could not be reached.
   const bootstrapSubject = useCallback(async (subjectId) => {
     try {
       setLoading();
       try {
-        // Read first; create only when the subject is not in Atlas yet. The
-        // create (POST) used to run on every editor load — idempotent, but a
-        // request and a dozen queries per visit on the free tier. Completing
-        // a partly seeded subject is now the admin subject page's «أكمل».
-        let atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`).catch(() => null);
+        // Only reads. Loading the editor used to create a missing subject, as
+        // whoever opened it — and a failed GET was read as "missing" too.
+        // Opening a subject is the owner's, from the admin dashboard.
+        const atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`);
         if (!atlasData?.subject) {
-          await apiFetch('/api/content/subject', { method: 'POST', body: JSON.stringify({ subjectId }) });
-          atlasData = await apiFetch(`/api/content/subject?subjectId=${subjectId}`);
+          useSubjectStore.getState().resetSubject();
+          setDone();
+          return 'missing';
         }
         if (atlasData?.units) {
           const units = atlasData.units.map((u) => ({
             id: u.contentId,
             title: u.title,
             order: u.order,
+            // The lessons page draws a divider where the textbook changes.
+            bookId:    u.bookId    || null,
+            bookTitle: u.bookTitle || null,
+            bookOrder: u.bookOrder ?? null,
           }));
           const loadedLessons = atlasData.units.flatMap((u) =>
             (u.lessons || []).map((l) => ({
