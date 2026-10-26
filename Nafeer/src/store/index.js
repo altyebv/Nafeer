@@ -139,7 +139,6 @@ function buildMerged() {
       subject.deleteLesson(id);
       content.deleteLessonContent(id, sectionIds);
     },
-    bootstrapFromSubject: subject.bootstrapFromSubject,
     loadFromAtlas:        subject.loadFromAtlas,
 
     // ── Content ──────────────────────────────────────────────────────────────
