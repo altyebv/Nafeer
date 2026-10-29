@@ -49,12 +49,16 @@ export async function requireContributor({ write = false } = {}) {
   const admin = await getAdminAsUser();
   if (admin) return admin;
 
-  const user = await getCurrentUser();
+  const user = await getCurrentUser({ skipSessionVersionCheck: true });
   if (!user?.id) throw unauthorized();
 
   await connectDB();
-  const contributor = await Contributor.findById(user.id).select('status subject lead paused').lean();
-  if (!contributor || contributor.status !== 'approved') throw unauthorized();
+  const contributor = await Contributor.findById(user.id).select('status subject lead paused sessionVersion').lean();
+  if (
+    !contributor
+    || contributor.status !== 'approved'
+    || (user.sessionVersion ?? 0) !== (contributor.sessionVersion ?? 0)
+  ) throw unauthorized();
   if (write && isPaused(contributor.paused)) throw pausedRefusal(contributor.paused);
 
   // `lead` comes from the same read, so lead checks cost no extra query and a
