@@ -34,6 +34,7 @@ beforeEach(() => {
     { _id: 'c_geo',      status: 'approved', subject: 'GEOGRAPHY' },
     { _id: 'c_rejected', status: 'rejected', subject: 'GEOGRAPHY' },
     { _id: 'c_moved',    status: 'approved', subject: 'PHYSICS' },
+    { _id: 'c_reset',    status: 'approved', subject: 'GEOGRAPHY', sessionVersion: 1 },
   ]);
   signOut();
 });
@@ -50,6 +51,11 @@ describe('requireContributor', () => {
 
   it('refuses a token for a contributor that no longer exists', async () => {
     signInAs({ id: 'c_deleted', role: 'contributor', subject: 'GEOGRAPHY' });
+    expect((await refusal(requireContributor)).status).toBe(401);
+  });
+
+  it('refuses a session created before the contributor reset their password', async () => {
+    signInAs({ id: 'c_reset', role: 'contributor', subject: 'GEOGRAPHY', sessionVersion: 0 });
     expect((await refusal(requireContributor)).status).toBe(401);
   });
 
