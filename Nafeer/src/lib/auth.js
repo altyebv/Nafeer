@@ -1,6 +1,8 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { getJwtSecret } from '@/lib/jwtSecret';
+import { connectDB } from '@/lib/db';
+import { Contributor } from '@/lib/models/Contributor';
 
 const COOKIE_NAME = 'nafeer_token';
 const EXPIRES_IN  = '7d';
@@ -43,10 +45,16 @@ export async function clearAuthCookie() {
   cookieStore.delete(COOKIE_NAME);
 }
 
-export async function getCurrentUser() {
+export async function getCurrentUser({ skipSessionVersionCheck = false } = {}) {
   const token = await getAuthCookie();
   if (!token) return null;
-  return verifyToken(token);
+  const user = await verifyToken(token);
+  if (!user || skipSessionVersionCheck) return user;
+
+  await connectDB();
+  const contributor = await Contributor.findById(user.id).select('sessionVersion').lean();
+  if (!contributor || (user.sessionVersion ?? 0) !== (contributor.sessionVersion ?? 0)) return null;
+  return user;
 }
 
 // ─── buildTokenPayload ────────────────────────────────────────────────────────
@@ -55,6 +63,7 @@ export async function getCurrentUser() {
 export function buildTokenPayload(contributor) {
   return {
     id:             contributor._id.toString(),
+    sessionVersion: contributor.sessionVersion ?? 0,
     email:          contributor.email,
     username:       contributor.username || null,
     name:           contributor.name,
