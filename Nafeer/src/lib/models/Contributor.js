@@ -72,6 +72,9 @@ const ContributorSchema = new mongoose.Schema(
 
     // ── Auth ──────────────────────────────────────────────────────────────────
     passwordHash: { type: String, select: false },
+    sessionVersion: { type: Number, default: 0 },
+    passwordResetTokenHash: { type: String, select: false },
+    passwordResetExpiresAt: { type: Date, select: false },
     avatarUrl:    { type: String, default: null },
     avatarPath:   { type: String, select: false, default: null },
     bio:          { type: String, default: '', trim: true, maxlength: 280 },
@@ -188,6 +191,7 @@ const ContributorSchema = new mongoose.Schema(
 // Only applicants with a decision waiting carry the field; the sweep reads
 // just those (lib/applicants.js applyDueDecisions).
 ContributorSchema.index({ 'pendingDecision.decideAt': 1 }, { sparse: true });
+ContributorSchema.index({ passwordResetTokenHash: 1 }, { sparse: true });
 
 ContributorSchema.methods.comparePassword = async function (plain) {
   return bcrypt.compare(plain, this.passwordHash);
