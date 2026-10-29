@@ -1,4 +1,5 @@
 import { getCurrentUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { isPaused, normaliseLead } from '@/lib/leads';
@@ -39,6 +40,7 @@ async function standingOf(user) {
 
 export default async function EditorLayout({ children }) {
   const user = await getCurrentUser();
-  const contributor = user ? { ...user, ...(await standingOf(user)) } : user;
+  if (!user) redirect('/signin?sessionExpired=1');
+  const contributor = { ...user, ...(await standingOf(user)) };
   return <EditorChrome contributor={contributor}>{children}</EditorChrome>;
 }
