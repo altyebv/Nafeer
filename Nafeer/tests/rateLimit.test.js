@@ -96,7 +96,7 @@ describe('rateLimit', () => {
   });
 
   it('has a rule for every bucket the routes use', () => {
-    for (const bucket of ['signin', 'adminLogin', 'contributorRequest', 'support', 'visit']) {
+    for (const bucket of ['signin', 'adminLogin', 'contributorRequest', 'passwordResetRequest', 'passwordResetConfirm', 'support', 'visit']) {
       expect(LIMITS[bucket]).toMatchObject({ limit: expect.any(Number), windowSec: expect.any(Number) });
     }
   });
