@@ -37,7 +37,7 @@ const DEFAULT_REPLY_TO = process.env.EMAIL_REPLY_TO || 'zool@nafeer4sudan.site';
 // ─── Types (JSDoc) ────────────────────────────────────────────────────────────
 
 /**
- * @typedef {'magic_link' | 'onboarding_invite' | 'beta_invite' | 'custom_message' | 'interview_invite' | 'application_received' | 'application_rejected'} EmailTemplateType
+ * @typedef {'magic_link' | 'onboarding_invite' | 'beta_invite' | 'custom_message' | 'interview_invite' | 'application_received' | 'application_rejected' | 'password_reset'} EmailTemplateType
  */
 
 /**
