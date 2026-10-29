@@ -16,6 +16,7 @@ import { interviewInviteTemplate, interviewInviteDefaults }         from './inte
 import { applicationReceivedTemplate }                              from './application_received';
 import { applicationRejectedTemplate, applicationRejectedDefaults } from './application_rejected';
 import { lessonReviewedTemplate }                                   from './lesson_reviewed';
+import { passwordResetTemplate }                                    from './password_reset';
 
 /** @type {Record<string, (data: Record<string, any>) => { subject: string; html: string; text: string }>} */
 export const TEMPLATES = {
@@ -28,6 +29,7 @@ export const TEMPLATES = {
   application_received: applicationReceivedTemplate,
   application_rejected: applicationRejectedTemplate,
   lesson_reviewed:      lessonReviewedTemplate,
+  password_reset:       passwordResetTemplate,
 };
 
 const DEFAULTS = {
