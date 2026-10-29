@@ -25,7 +25,11 @@ export async function middleware(request) {
     return NextResponse.redirect(url);
   }
 
-  if ((pathname === '/signin' || pathname === '/join' || pathname === '/prejoin') && contributorUser) {
+  if (
+    (pathname === '/signin' || pathname === '/join' || pathname === '/prejoin')
+    && contributorUser
+    && request.nextUrl.searchParams.get('sessionExpired') !== '1'
+  ) {
     return NextResponse.redirect(new URL('/editor', request.url));
   }
 
