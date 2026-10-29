@@ -15,7 +15,9 @@ export default function SignInPage() {
 
 function SignIn() {
   const router = useRouter();
-  const from = useSearchParams().get('from');
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from');
+  const sessionExpired = searchParams.get('sessionExpired') === '1';
   const [form, setForm] = useState({ identifier: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -53,6 +55,11 @@ function SignIn() {
         <Card padding="lg">
           <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
             <h1 className="t-h2 text-fg-strong text-center">تسجيل الدخول</h1>
+            {sessionExpired && (
+              <p role="status" className="p-3 rounded-control bg-hover border border-line-strong t-label text-fg-muted text-center">
+                تغيّرت كلمة المرور. سجّل الدخول مجدداً للمتابعة.
+              </p>
+            )}
             {error && (
               <p role="alert" className="p-3 rounded-control bg-danger-surface border border-danger-border t-label text-danger text-center">{error}</p>
             )}
@@ -65,6 +72,9 @@ function SignIn() {
               <Input type="password" autoComplete="current-password" value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })} className="h-11" />
             </Field>
+            <Link href="/forgot-password" className="t-label text-fg-accent hover:underline -mt-3 self-start">
+              نسيت كلمة المرور؟
+            </Link>
             <Button type="submit" variant="primary" size="lg" block loading={loading}
               disabled={!form.identifier.trim() || !form.password}>
               {loading ? 'جارٍ الدخول…' : 'دخول'}
