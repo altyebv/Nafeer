@@ -59,7 +59,8 @@ export async function PATCH(request, { params }) {
         order: update.order ?? block.order,
         type: resolvedType,
       },
-      actorId
+      actorId,
+      user.name || ''
     );
 
     return ok({ id: saved.contentId, mediaPath: saved.mediaPath ?? null });
@@ -76,8 +77,11 @@ export async function DELETE(request, { params }) {
   try {
     await connectDB();
     const { user } = await requireContentAccess(Block, (await params).id, { write: true });
+    const actorId = user.role === 'admin'
+      ? await ensureSystemSeedContributor()
+      : user.id;
     await assertCanEditLessons(user, await lessonsForBlocks([(await params).id]));
-    await deleteBlock((await params).id);
+    await deleteBlock((await params).id, { byId: actorId, byName: user.name || '' });
     return ok({ deleted: (await params).id });
   } catch (e) {
     if (e instanceof Response) return e;
