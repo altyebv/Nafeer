@@ -5,7 +5,7 @@ item when it is finished; put the commit next to it in the commit message.
 
 ## Before production
 
-- [ ] **Freeze the unit lesson targets on production.** The catalog's
+- [x] **Freeze the unit lesson targets on production.** The catalog's
   `lessonCount` moved onto `Unit.targetLessons` (2026-10-22). Run
   `npm run units:targets:prod`, check the numbers, then again with
   `-- --apply`. Until then each unit's target follows its lesson count.
@@ -21,7 +21,8 @@ item when it is finished; put the commit next to it in the commit message.
 - [ ] **Rejection is still silent.** The status page shows it, but no email
   is sent; decide whether to send `application_rejected`.
 - [ ] **Sign in by email link.** The welcome board offers it; the
-  `magic_link` template exists but no route uses it. No "forgot password" yet.
+  `magic_link` template exists but no route uses it. Contributor password
+  recovery is now available from the sign-in page.
 - [ ] **The three-step tour** promised on the onboarding page (`?welcome=1`
   on the first lesson) is not built.
 - [ ] **Fix the role name «صانِع مٌتحتوى تعليمي»** and «نافير» in the role
