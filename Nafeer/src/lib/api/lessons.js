@@ -2,6 +2,7 @@ import { connectDB } from '@/lib/db';
 import { Lesson } from '@/lib/models/Lesson';
 import { Contributor } from '@/lib/models/Contributor';
 import { LessonHistory } from '@/lib/models/LessonHistory';
+import { writeHistory } from '@/lib/api/contentHistory';
 import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
@@ -9,27 +10,7 @@ import { VersionConflict, updateAtVersion } from '@/lib/api/versionCheck';
 import { trackStat } from '@/lib/trackStat';
 import { assertCanSubmit } from '@/lib/review';
 
-// ─── writeHistory ─────────────────────────────────────────────────────────────
-// Fire-and-forget helper. Never throws — history failure must not block the edit.
-export async function writeHistory(lessonContentId, {
-  version, action, versionLabel = '', byId, byName, note = '', diff = null,
-}) {
-  try {
-    await LessonHistory.create({
-      lessonContentId,
-      version,
-      action,
-      versionLabel,
-      byId:   byId   || null,
-      byName: byName || '',
-      note,
-      diff,
-      timestamp: new Date(),
-    });
-  } catch (e) {
-    console.warn('[LessonHistory write failed]', e.message);
-  }
-}
+export { writeHistory };
 
 // ─── getLessonsForSubject ─────────────────────────────────────────────────────
 export async function getLessonsForSubject(subjectId, options = {}) {
@@ -138,8 +119,7 @@ export async function updateLesson(
     Lesson, contentId, baseVersion, current, { $set: bumpedUpdates }, { runValidators: true }
   );
 
-  // Write history async — don't await
-  writeHistory(contentId, {
+  await writeHistory(contentId, {
     version:      bumpedUpdates.version,
     action:       'edited',
     versionLabel,
@@ -207,7 +187,7 @@ export async function updateLessonStatus(
     { new: true }
   ).lean();
 
-  writeHistory(contentId, {
+  await writeHistory(contentId, {
     version:      newVersion,
     action,
     versionLabel,
@@ -231,7 +211,7 @@ export async function updateLessonStatus(
 export async function getLessonHistory(contentId, limit = 50) {
   await connectDB();
   return LessonHistory.find({ lessonContentId: contentId })
-    .sort({ version: -1 })
+    .sort({ timestamp: -1 })
     .limit(limit)
     .lean();
 }
