@@ -67,10 +67,24 @@ const DIFF_FIELDS = [
   'summary',
   'estimatedMinutes',
   'status',
-  'metadata.hook',
-  'metadata.forwardPull',
-  'metadata.orientation',
+  'metadata',
+  'parentLesson',
+  'variationType',
+  'variationNote',
+  'groupId',
+  'groupTitle',
+  'groupMetadata',
 ];
+
+const comparable = (value) => {
+  if (Array.isArray(value)) return value.map(comparable);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.keys(value).sort().map((key) => [key, comparable(value[key])])
+    );
+  }
+  return value ?? null;
+};
 
 // ─── computeDiff ──────────────────────────────────────────────────────────────
 // Compares currentDoc against updates ($set payload).
@@ -104,8 +118,8 @@ export function computeDiff(currentDoc, updates) {
       updatedVal = updates[field] ?? null;
     }
 
-    const cur = Array.isArray(currentVal) ? JSON.stringify(currentVal) : currentVal;
-    const upd = Array.isArray(updatedVal) ? JSON.stringify(updatedVal) : updatedVal;
+    const cur = JSON.stringify(comparable(currentVal));
+    const upd = JSON.stringify(comparable(updatedVal));
 
     if (cur !== upd) {
       diff[field] = {
