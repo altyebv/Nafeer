@@ -2,14 +2,14 @@ import mongoose from 'mongoose';
 
 // ─── LessonHistory ────────────────────────────────────────────────────────────
 // Separate collection for the full audit trail of a lesson.
-// One document per version bump. Lean by design — no full snapshots.
+// One document per lesson/section/block change. Lean by design — no full snapshots.
 //
 // Why separate:
 //   - History never loads with the lesson in normal editor flow
 //   - Uncapped (no 10-entry limit)
 //   - Diff is sparse — only fields that actually changed are stored
 //
-// Indexed only on lessonContentId — all queries are "get all for this lesson".
+// History is loaded only for a lesson and ordered newest-first.
 
 const DiffFieldSchema = new mongoose.Schema(
   {
@@ -24,7 +24,6 @@ const LessonHistorySchema = new mongoose.Schema(
     lessonContentId: {
       type:     String,
       required: true,
-      index:    true,
     },
 
     version: {
@@ -35,9 +34,18 @@ const LessonHistorySchema = new mongoose.Schema(
     action: {
       type: String,
       // 'intervened' — a lead opened or closed an intervention (note = reason).
-      enum: ['created', 'edited', 'reviewed', 'approved', 'archived', 'intervened'],
+      enum: ['created', 'edited', 'deleted', 'reviewed', 'approved', 'archived', 'intervened'],
       required: true,
     },
+
+    entityType: {
+      type: String,
+      enum: ['lesson', 'section', 'block'],
+      default: 'lesson',
+    },
+
+    entityContentId: { type: String, default: null },
+    entityLabel:     { type: String, default: '' },
 
     // Optional human label attached at save time by the contributor
     // e.g. "مراجعة بعد الفيدباك" — the 2c versionLabel feature
@@ -54,16 +62,13 @@ const LessonHistorySchema = new mongoose.Schema(
 
     note: { type: String, default: '' },
 
-    // Sparse diff — only present on 'edited' events, only changed fields included.
-    // Tracked fields: title, summary, estimatedMinutes, status,
-    //                 metadata.hook, metadata.forwardPull, metadata.orientation
-    // Absent on 'created', 'reviewed', 'approved', 'archived'.
+    // Sparse before/after fields for the changed lesson, section, or block.
     diff: {
       type:    mongoose.Schema.Types.Mixed,
       default: null,
     },
 
-    timestamp: { type: Date, default: Date.now, index: true },
+    timestamp: { type: Date, default: Date.now },
   },
   {
     // No timestamps: true — we use our own timestamp field
@@ -72,8 +77,8 @@ const LessonHistorySchema = new mongoose.Schema(
   }
 );
 
-// Compound index so "latest N for a lesson" is fast
-LessonHistorySchema.index({ lessonContentId: 1, version: -1 });
+// Existing databases should drop the superseded single-field and version indexes.
+LessonHistorySchema.index({ lessonContentId: 1, timestamp: -1 });
 
 export const LessonHistory =
   mongoose.models.LessonHistory ||
