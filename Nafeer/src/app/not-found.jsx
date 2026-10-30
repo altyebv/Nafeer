@@ -24,14 +24,13 @@ const LINKS = [
 export default function NotFound() {
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center px-6 py-20 font-arabic"
-      style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-20 font-arabic bg-[var(--bg-primary)] text-[var(--text-primary)]"
     >
-      <span className="text-5xl mb-6" style={{ color: 'var(--accent)', opacity: 0.35 }}>
+      <span className="text-5xl mb-6 text-[color:var(--accent)] opacity-[0.35]">
         ◈
       </span>
 
-      <p className="font-mono text-sm tracking-widest mb-3" style={{ color: 'var(--accent)' }}>
+      <p className="font-mono text-sm tracking-widest mb-3 text-[color:var(--accent)]">
         404
       </p>
 
@@ -40,8 +39,7 @@ export default function NotFound() {
       </h1>
 
       <p
-        className="text-base leading-loose mb-10 max-w-md text-center"
-        style={{ color: 'var(--text-muted)' }}
+        className="text-base leading-loose mb-10 max-w-md text-center text-[color:var(--text-muted)]"
       >
         الرابط الذي فتحته لم يعد موجوداً، أو ربما كتب بشكل غير صحيح.
       </p>
@@ -51,16 +49,12 @@ export default function NotFound() {
           <Link
             key={href}
             href={href}
-            className="flex flex-col gap-1 rounded-xl px-5 py-4 transition-colors"
-            style={{
-              border:     '1px solid var(--border-mid)',
-              background: 'var(--bg-card)',
-            }}
+            className="flex flex-col gap-1 rounded-xl border border-[var(--border-mid)] bg-[var(--bg-card)] px-5 py-4 transition-colors"
           >
-            <span className="font-bold" style={{ color: 'var(--text-primary)' }}>
+            <span className="font-bold text-[color:var(--text-primary)]">
               {label}
             </span>
-            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            <span className="text-sm text-[color:var(--text-muted)]">
               {hint}
             </span>
           </Link>
