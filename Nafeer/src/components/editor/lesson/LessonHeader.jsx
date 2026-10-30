@@ -150,7 +150,7 @@ export default function LessonHeader({
             size="sm"
             label="المزيد: السجل والملاحظات"
             items={[
-              { id: 'history', label: 'سجل الإصدارات', icon: Clock3, onSelect: onHistory },
+              { id: 'history', label: 'سجل التغييرات', icon: Clock3, onSelect: onHistory },
               { id: 'notes', label: 'الملاحظات', icon: NotebookPen, count: notesCount, onSelect: onNotes },
             ]}
           />
