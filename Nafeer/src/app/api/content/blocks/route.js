@@ -35,11 +35,12 @@ export async function POST(request) {
     ]);
 
     // Only the owner of each lesson these blocks are in, or are moving to.
-    await assertCanEditLessons(user, await lessonsForBlocks(
+    const affectedLessons = await lessonsForBlocks(
       blocks.map((b) => b?.contentId), blocks.map((b) => b?.sectionContentId || b?.sectionId),
-    ));
+    );
+    await assertCanEditLessons(user, affectedLessons);
 
-    const { saved, conflicts } = await batchUpsertBlocks(blocks, actorId);
+    const { saved, conflicts } = await batchUpsertBlocks(blocks, actorId, user.name || '');
 
     // Track stat — every block written is credited, not just one per save.
     if (saved.length > 0) {
