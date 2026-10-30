@@ -21,9 +21,11 @@ vi.mock('@/lib/models/Contributor',   () => ({ Contributor: {} }));
 const { Block }   = await import('@/lib/models/Block');
 const { Section } = await import('@/lib/models/Section');
 const { Lesson }  = await import('@/lib/models/Lesson');
+const { LessonHistory } = await import('@/lib/models/LessonHistory');
 const { batchUpsertBlocks, batchUpsertSections, upsertBlock } = await import('@/lib/api/content');
 const { updateLesson } = await import('@/lib/api/lessons');
 const { VersionConflict } = await import('@/lib/api/versionCheck');
+const { computeDiff } = await import('@/lib/models/versioning');
 
 const ACTOR = '65f000000000000000000001';
 const block = (over = {}) => ({
@@ -43,6 +45,13 @@ describe('block saves', () => {
     const { saved, conflicts } = await batchUpsertBlocks([block({ content: 'جديد', baseVersion: 3 })], ACTOR);
     expect(conflicts).toEqual([]);
     expect(saved[0]).toMatchObject({ content: 'جديد', version: 4 });
+    expect(LessonHistory.create).toHaveBeenCalledWith(expect.objectContaining({
+      lessonContentId: 'les_1',
+      entityType: 'block',
+      entityContentId: 'blk_1',
+      action: 'edited',
+      diff: { content: { from: 'نص', to: 'جديد' } },
+    }));
   });
 
   it('refuse a stale base and return the stored copy instead', async () => {
@@ -65,6 +74,11 @@ describe('block saves', () => {
   it('create new blocks, which carry no base version', async () => {
     const { saved } = await batchUpsertBlocks([block({ contentId: 'blk_new' })], ACTOR);
     expect(saved[0]).toMatchObject({ contentId: 'blk_new', version: 1 });
+    expect(LessonHistory.create).toHaveBeenCalledWith(expect.objectContaining({
+      entityContentId: 'blk_new',
+      action: 'created',
+      diff: expect.objectContaining({ content: { from: null, to: 'نص' } }),
+    }));
   });
 
   it('write the rest of a batch when one item conflicts', async () => {
@@ -108,6 +122,12 @@ describe('section saves', () => {
       { contentId: 'sec_2', subjectId: 'GEOGRAPHY', lessonContentId: 'les_1', title: 'ثانٍ', order: 2, partIndex: 1 },
     ], ACTOR);
     expect(saved.map((s) => s.partIndex)).toEqual([2, 1]);
+    expect(LessonHistory.create).toHaveBeenCalledWith(expect.objectContaining({
+      entityType: 'section',
+      entityContentId: 'sec_1',
+      action: 'edited',
+      diff: expect.objectContaining({ partIndex: { from: null, to: 2 } }),
+    }));
   });
 });
 
@@ -115,6 +135,27 @@ describe('lesson meta saves', () => {
   it('refuse a stale base', async () => {
     await expect(updateLesson('les_1', { title: 'قديم' }, ACTOR, '', '', '', false, 4))
       .rejects.toMatchObject({ reason: 'changed', current: expect.objectContaining({ version: 5 }) });
+  });
+
+  describe('version diffs', () => {
+    it('compares nested metadata structurally rather than by object identity', () => {
+      expect(computeDiff(
+        { metadata: { hook: 'سؤال', orientation: ['أولاً', 'ثانياً'] } },
+        { metadata: { hook: 'سؤال', orientation: ['أولاً', 'ثانياً'] } },
+      )).toBeNull();
+    });
+
+    it('captures nested metadata edits in the before/after diff', () => {
+      expect(computeDiff(
+        { metadata: { hook: 'سؤال قديم', orientation: ['أولاً'] } },
+        { metadata: { hook: 'سؤال جديد', orientation: ['أولاً'] } },
+      )).toEqual({
+        metadata: {
+          from: { hook: 'سؤال قديم', orientation: ['أولاً'] },
+          to: { hook: 'سؤال جديد', orientation: ['أولاً'] },
+        },
+      });
+    });
   });
 
   it('write at the current base', async () => {
