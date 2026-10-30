@@ -1,11 +1,5 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error('MONGODB_URI environment variable is not set. Add it to .env.local');
-}
-
 // ─── Which database ───────────────────────────────────────────────────────────
 // MONGODB_DB names the database on the cluster, overriding the one in the URI.
 // Local development sets it to `nafeer_dev` in .env.development.local — a file
@@ -31,7 +25,12 @@ export async function connectDB() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
+    const mongodbUri = process.env.MONGODB_URI;
+    if (!mongodbUri) {
+      throw new Error('MONGODB_URI environment variable is not set. Add it to .env.local');
+    }
+
+    cached.promise = mongoose.connect(mongodbUri, {
       bufferCommands: false,
       ...(DB_NAME && { dbName: DB_NAME }),
     });
