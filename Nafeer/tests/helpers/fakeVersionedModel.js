@@ -27,10 +27,22 @@ const query = (result) => {
 
 export function fakeVersionedModel() {
   const docs = new Map();
+  const listQuery = (result) => {
+    const q = {
+      select: () => q,
+      lean:   () => Promise.resolve(result.map((doc) => ({ ...doc }))),
+      then:   (res, rej) => Promise.resolve(result.map(withToObject)).then(res, rej),
+    };
+    return q;
+  };
   const model = {
     docs,
     beforeUpdate: null,
     findOne: vi.fn((filter) => query(docs.get(filter.contentId) ?? null)),
+    find: vi.fn((filter) => {
+      const ids = filter.contentId?.$in || [];
+      return listQuery([...docs.values()].filter((doc) => ids.includes(doc.contentId)));
+    }),
     findOneAndUpdate: vi.fn((filter, update) => ({
       lean: async () => {
         if (model.beforeUpdate) { const f = model.beforeUpdate; model.beforeUpdate = null; f(); }
