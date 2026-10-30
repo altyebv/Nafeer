@@ -5,19 +5,30 @@ import { Question } from '@/lib/models/Question';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
 import { recountAuthoredLater } from '@/lib/authoredStats';
 import { VersionConflict, hasBaseVersion, updateAtVersion, settleBatch } from '@/lib/api/versionCheck';
+import { writeItemHistory } from '@/lib/api/contentHistory';
+
+const SECTION_HISTORY_FIELDS = [
+  'title', 'order', 'learningType', 'kind', 'conceptIds', 'partIndex',
+];
+const BLOCK_HISTORY_FIELDS = [
+  'sectionContentId', 'type', 'content', 'order', 'conceptRef', 'caption', 'mediaPath', 'metadata',
+];
+
+const plain = (doc) => (doc?.toObject ? doc.toObject() : doc);
 
 // ─── Sections ─────────────────────────────────────────────────────────────────
 // `data.baseVersion` — the version the editor loaded. When present, the write
 // is refused with a VersionConflict if the section changed or was deleted
 // since. See lib/api/versionCheck.js.
 
-export async function upsertSection(data, contributorId) {
+export async function upsertSection(data, contributorId, byName = '') {
   await connectDB();
 
   const existing = await Section.findOne({ contentId: data.contentId });
 
   if (existing || hasBaseVersion(data.baseVersion)) {
     if (!existing) throw new VersionConflict(data.contentId, null);
+    const before = plain(existing);
     const { updates } = applyVersionBump(
       {
         title:        data.title,
@@ -31,10 +42,24 @@ export async function upsertSection(data, contributorId) {
       contributorId,
       'edited'
     );
-    return updateAtVersion(Section, data.contentId, data.baseVersion, existing, { $set: updates });
+    const saved = await updateAtVersion(Section, data.contentId, data.baseVersion, existing, { $set: updates });
+    await writeItemHistory({
+      lessonContentId: existing.lessonContentId,
+      entityType: 'section',
+      entityContentId: data.contentId,
+      entityLabel: saved.title,
+      version: saved.version,
+      action: 'edited',
+      byId: contributorId,
+      byName,
+      before,
+      after: plain(saved),
+      fields: SECTION_HISTORY_FIELDS,
+    });
+    return saved;
   }
 
-  return Section.create({
+  const created = await Section.create({
     contentId:       data.contentId,
     subjectId:       data.subjectId,
     lessonContentId: data.lessonContentId,
@@ -46,27 +71,90 @@ export async function upsertSection(data, contributorId) {
     createdBy:       contributorId,
     changelog:       initialChangelog(contributorId),
   });
+  await writeItemHistory({
+    lessonContentId: data.lessonContentId,
+    entityType: 'section',
+    entityContentId: data.contentId,
+    entityLabel: data.title,
+    version: created.version || 1,
+    action: 'created',
+    byId: contributorId,
+    byName,
+    after: plain(created),
+    fields: SECTION_HISTORY_FIELDS,
+  });
+  return created;
 }
 
 // Batch upsert — called when contributor saves a lesson.
 // Returns { saved, conflicts }; one stale section never blocks the rest.
-export async function batchUpsertSections(sections, contributorId) {
+export async function batchUpsertSections(sections, contributorId, byName = '') {
   await connectDB();
-  return settleBatch(sections, (s) => upsertSection(s, contributorId));
+  return settleBatch(sections, (s) => upsertSection(s, contributorId, byName));
 }
 
-export async function deleteSection(contentId) {
+export async function deleteSection(contentId, { byId = null, byName = '' } = {}) {
   await connectDB();
-  return Section.deleteOne({ contentId });
+  const section = await Section.findOne({ contentId }).lean();
+  if (!section) return Section.deleteOne({ contentId });
+
+  const blocks = await Block.find({ sectionContentId: contentId }).lean();
+  const deletedBlocks = await Block.deleteMany({ sectionContentId: contentId });
+  const deletedSection = await Section.deleteOne({ contentId });
+  if (deletedSection.deletedCount) {
+    if (deletedBlocks.deletedCount === blocks.length) {
+      for (const block of blocks) {
+        await writeItemHistory({
+          lessonContentId: section.lessonContentId,
+          entityType: 'block',
+          entityContentId: block.contentId,
+          entityLabel: block.type,
+          version: (block.version || 1) + 1,
+          action: 'deleted',
+          byId,
+          byName,
+          before: plain(block),
+          fields: BLOCK_HISTORY_FIELDS,
+        });
+      }
+    } else {
+      console.warn(
+        `[LessonHistory] skipped section block snapshots for ${contentId}: ` +
+        `expected ${blocks.length}, deleted ${deletedBlocks.deletedCount}`
+      );
+    }
+    await writeItemHistory({
+      lessonContentId: section.lessonContentId,
+      entityType: 'section',
+      entityContentId: section.contentId,
+      entityLabel: section.title,
+      version: (section.version || 1) + 1,
+      action: 'deleted',
+      byId,
+      byName,
+      before: plain(section),
+      fields: SECTION_HISTORY_FIELDS,
+    });
+  }
+  return deletedSection;
 }
 
 // ─── Blocks ───────────────────────────────────────────────────────────────────
 
-export async function upsertBlock(data, contributorId) {
+export async function upsertBlock(data, contributorId, byName = '', context = {}) {
   await connectDB();
 
   const normalized = normalizeBlockInput(data);
-  const existing = await Block.findOne({ contentId: normalized.contentId });
+  const existing = Object.hasOwn(context, 'existing')
+    ? context.existing
+    : await Block.findOne({ contentId: normalized.contentId });
+  const resolveHistoryContext = async (sectionContentId) => {
+    const section = context.sections?.get(sectionContentId)
+      || await Section.findOne({ contentId: sectionContentId }).select('lessonContentId title').lean();
+    return {
+      lessonContentId: section?.lessonContentId || context.lessonContentId,
+    };
+  };
 
   if (existing || hasBaseVersion(normalized.baseVersion)) {
     // A block the editor had loaded is gone: someone deleted it. Recreating
@@ -97,6 +185,20 @@ export async function upsertBlock(data, contributorId) {
       await deleteCheckpointQuestionForBlock(existing);
     }
     await syncCheckpointQuestionForBlock(block, contributorId);
+    const historyContext = await resolveHistoryContext(block.sectionContentId);
+    await writeItemHistory({
+      lessonContentId: historyContext.lessonContentId,
+      entityType: 'block',
+      entityContentId: block.contentId,
+      entityLabel: block.type,
+      version: block.version,
+      action: 'edited',
+      byId: contributorId,
+      byName,
+      before: plain(existing),
+      after: plain(block),
+      fields: BLOCK_HISTORY_FIELDS,
+    });
     return block;
   }
 
@@ -115,24 +217,71 @@ export async function upsertBlock(data, contributorId) {
     changelog:        initialChangelog(contributorId),
   });
   await syncCheckpointQuestionForBlock(block.toObject(), contributorId);
+  const historyContext = await resolveHistoryContext(block.sectionContentId);
+  await writeItemHistory({
+    lessonContentId: historyContext.lessonContentId,
+    entityType: 'block',
+    entityContentId: block.contentId,
+    entityLabel: block.type,
+    version: block.version || 1,
+    action: 'created',
+    byId: contributorId,
+    byName,
+    after: plain(block),
+    fields: BLOCK_HISTORY_FIELDS,
+  });
   return block;
 }
 
 // Batch upsert — all changed blocks for a lesson in one call.
 // Returns { saved, conflicts }.
-export async function batchUpsertBlocks(blocks, contributorId) {
+export async function batchUpsertBlocks(blocks, contributorId, byName = '') {
   await connectDB();
-  return settleBatch(blocks, (b) => upsertBlock(b, contributorId));
+  const ids = [...new Set(blocks.map((b) => b?.contentId).filter(Boolean))];
+  const sectionIds = [...new Set(blocks.map((b) => b?.sectionContentId || b?.sectionId).filter(Boolean))];
+  const [existingBlocks, sections] = await Promise.all([
+    ids.length ? Block.find({ contentId: { $in: ids } }).lean() : [],
+    sectionIds.length
+      ? Section.find({ contentId: { $in: sectionIds } }).select('contentId lessonContentId title').lean()
+      : [],
+  ]);
+  const existingById = new Map(existingBlocks.map((b) => [b.contentId, b]));
+  const sectionsById = new Map(sections.map((s) => [s.contentId, s]));
+  return settleBatch(blocks, (b) => upsertBlock(b, contributorId, byName, {
+    existing: existingById.get(b.contentId),
+    sections: sectionsById,
+  }));
 }
 
-export async function deleteBlock(contentId) {
+export async function deleteBlock(contentId, { byId = null, byName = '' } = {}) {
   await connectDB();
   const block = await Block.findOne({ contentId }).lean();
+  let lessonContentId = null;
+  if (block) {
+    const section = await Section.findOne({ contentId: block.sectionContentId })
+      .select('lessonContentId')
+      .lean();
+    lessonContentId = section?.lessonContentId;
+  }
   if (block?.type === 'QUESTION') {
     await deleteCheckpointQuestionForBlock(block);
   }
   const result = await Block.deleteOne({ contentId });
-  if (block) recountAuthoredLater([block.createdBy]);
+  if (result.deletedCount && block) {
+    await writeItemHistory({
+      lessonContentId,
+      entityType: 'block',
+      entityContentId: block.contentId,
+      entityLabel: block.type,
+      version: (block.version || 1) + 1,
+      action: 'deleted',
+      byId,
+      byName,
+      before: plain(block),
+      fields: BLOCK_HISTORY_FIELDS,
+    });
+    recountAuthoredLater([block.createdBy]);
+  }
   return result;
 }
 
