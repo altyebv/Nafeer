@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react';
 import { ScrollText, X } from 'lucide-react';
 import Drawer from '@/components/editor/shared/Drawer';
 import { formatDate } from '@/lib/format';
+import { wordDiff } from '@/lib/wordDiff';
 
 // ─── LessonHistoryDrawer ──────────────────────────────────────────────────────
 // Slide-in panel from the right showing the full lesson audit trail.
-// One entry per version — action chip, author, timestamp, optional label,
+// One entry per saved lesson, section, or block change — action chip, author, timestamp, optional label,
 // optional note, expandable diff block.
 //
 // Props:
@@ -18,6 +19,7 @@ import { formatDate } from '@/lib/format';
 const ACTION_CONFIG = {
   created:  { label: 'إنشاء',    color: 'text-emerald-400', bg: 'bg-emerald-900/20', border: 'border-emerald-800/40', dot: 'bg-emerald-500' },
   edited:   { label: 'تعديل',    color: 'text-sky-400',     bg: 'bg-sky-900/20',     border: 'border-sky-800/40',     dot: 'bg-sky-500'     },
+  deleted:  { label: 'حذف',      color: 'text-red-400',     bg: 'bg-red-900/20',    border: 'border-red-800/40',    dot: 'bg-red-500'     },
   reviewed: { label: 'مراجعة',   color: 'text-amber-400',   bg: 'bg-amber-900/20',   border: 'border-amber-800/40',   dot: 'bg-amber-500'   },
   approved: { label: 'اعتماد',   color: 'text-emerald-400', bg: 'bg-emerald-900/25', border: 'border-emerald-700/50', dot: 'bg-emerald-400' },
   archived: { label: 'أرشفة',    color: 'text-ink-500',     bg: 'bg-ink-800/30',     border: 'border-ink-700/40',     dot: 'bg-ink-600'     },
@@ -33,6 +35,24 @@ const FIELD_LABELS = {
   'metadata.hookAnswer':   'إجابة السؤال التحفيزي',
   'metadata.forwardPull':  'الجملة الشدّاءة',
   'metadata.orientation':  'نقاط التوجيه',
+  'parentLesson':          'الدرس الأصل',
+  'variationType':         'نوع النسخة',
+  'variationNote':         'ملاحظة النسخة',
+  'groupId':               'معرّف المجموعة',
+  'groupTitle':            'عنوان المجموعة',
+  'groupMetadata':         'بيانات المجموعة',
+  'sectionContentId':      'القسم',
+  'type':                  'نوع البلوك',
+  'content':               'المحتوى',
+  'order':                 'الترتيب',
+  'conceptRef':            'المفهوم المرتبط',
+  'caption':               'التعليق',
+  'mediaPath':             'مسار الوسائط',
+  'metadata':              'بيانات إضافية',
+  'learningType':          'طريقة التعلم',
+  'kind':                  'نوع القسم',
+  'conceptIds':            'المفاهيم المرتبطة',
+  'partIndex':             'رقم الجزء',
 };
 
 const STATUS_LABELS = {
@@ -55,13 +75,19 @@ function formatValue(field, val) {
   if (val === null || val === undefined || val === '') return <span className="text-ink-500 italic text-[11px]">فارغ</span>;
   if (field === 'estimatedMinutes') return <span>{val} دقيقة</span>;
   if (field === 'status') return <span>{STATUS_LABELS[val] ?? val}</span>;
+  if (field === 'content' && typeof val === 'string') {
+    return <span className="block max-h-60 overflow-auto whitespace-pre-wrap break-words">{val}</span>;
+  }
   if (Array.isArray(val)) {
     if (val.length === 0) return <span className="text-ink-500 italic text-[11px]">فارغ</span>;
     return (
       <ul className="space-y-0.5 list-none">
-        {val.map((v, i) => <li key={i} className="flex gap-1"><span className="text-ink-500">•</span>{v}</li>)}
+        {val.map((v, i) => <li key={i} className="flex gap-1"><span className="text-ink-500">•</span>{formatValue(field, v)}</li>)}
       </ul>
     );
+  }
+  if (typeof val === 'object') {
+    return <pre className="whitespace-pre-wrap break-words text-[11px]">{JSON.stringify(val, null, 2)}</pre>;
   }
   // Truncate long strings in the diff view
   const str = String(val);
@@ -76,7 +102,24 @@ function DiffBlock({ diff }) {
 
   return (
     <div className="mt-2.5 rounded-xl border border-ink-800/50 overflow-hidden text-xs font-arabic">
-      {Object.entries(diff).map(([field, { from, to }], i) => (
+      {Object.entries(diff).map(([field, { from, to }], i) => {
+        const textDiff = field === 'content' && typeof from === 'string' && typeof to === 'string'
+          ? wordDiff(from, to)
+          : null;
+        const render = (value, side) => {
+          if (!textDiff || !value) return formatValue(field, value);
+          const parts = textDiff[side];
+          return (
+            <span className="whitespace-pre-wrap break-words">
+              {parts.map((part, index) => (
+                <span key={index} className={part.changed ? (side === 'a' ? 'bg-red-900/50 text-red-200' : 'bg-emerald-900/50 text-emerald-200') : ''}>
+                  {part.text}
+                </span>
+              ))}
+            </span>
+          );
+        };
+        return (
         <div
           key={field}
           className={`px-3 py-2.5 space-y-1.5 ${i > 0 ? 'border-t border-ink-800/40' : ''}`}
@@ -88,16 +131,17 @@ function DiffBlock({ diff }) {
             {/* From */}
             <div className="bg-red-950/20 border border-red-900/20 rounded-lg px-2.5 py-1.5 text-red-300/80 leading-relaxed">
               <span className="text-[9px] text-red-700 block mb-0.5 font-mono">من</span>
-              {formatValue(field, from)}
+              {render(from, 'a')}
             </div>
             {/* To */}
             <div className="bg-emerald-950/20 border border-emerald-900/20 rounded-lg px-2.5 py-1.5 text-emerald-300/80 leading-relaxed">
               <span className="text-[9px] text-emerald-700 block mb-0.5 font-mono">إلى</span>
-              {formatValue(field, to)}
+              {render(to, 'b')}
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -120,8 +164,14 @@ function HistoryEntry({ entry, isLast }) {
         {/* Header row */}
         <div className="flex items-center gap-2 px-3 py-2.5 flex-wrap">
           {/* Version badge */}
+          {entry.entityType !== 'lesson' && (
+            <span className="text-[10px] text-ink-400 bg-ink-800/60 px-1.5 py-0.5 rounded shrink-0 font-arabic">
+              {entry.entityType === 'block' ? 'بلوك' : 'قسم'} · {entry.entityLabel || entry.entityContentId}
+              {entry.entityContentId && <span className="mr-1 font-mono text-[9px] opacity-70">{entry.entityContentId}</span>}
+            </span>
+          )}
           <span className="text-[10px] font-mono text-ink-600 bg-ink-800/60 px-1.5 py-0.5 rounded shrink-0">
-            v{entry.version}
+            {entry.entityType === 'lesson' ? `v${entry.version}` : `v${entry.version}`}
           </span>
 
           {/* Action chip */}
@@ -220,10 +270,10 @@ export default function LessonHistoryDrawer({ lessonId, onClose }) {
           >
             <X size={16} strokeWidth={1.9} />
           </button>
-          <h2 id="history-drawer-title" className="text-sm font-semibold text-sand-300 font-arabic">سجل الإصدارات</h2>
+          <h2 id="history-drawer-title" className="text-sm font-semibold text-sand-300 font-arabic">سجل التغييرات</h2>
           {!loading && history.length > 0 && (
             <span className="text-[11px] font-mono text-ink-600 bg-ink-800/60 px-1.5 py-0.5 rounded">
-              {history.length} إصدار
+              {history.length} تغيير
             </span>
           )}
         </div>
@@ -233,7 +283,7 @@ export default function LessonHistoryDrawer({ lessonId, onClose }) {
           <div className="flex items-center gap-4 px-4 py-2.5 border-b border-ink-800/50 shrink-0 bg-ink-900/60">
             <div className="text-center">
               <p className="text-base font-mono text-sand-400 leading-none">{history.length}</p>
-              <p className="text-[10px] text-ink-600 font-arabic mt-0.5">إصدار</p>
+              <p className="text-[10px] text-ink-600 font-arabic mt-0.5">تغيير</p>
             </div>
             <div className="w-px h-6 bg-ink-800" />
             <div className="text-center">
