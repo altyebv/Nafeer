@@ -19,7 +19,7 @@ import { wordDiff } from '@/lib/wordDiff';
 const ACTION_CONFIG = {
   created:  { label: 'إنشاء',    color: 'text-emerald-400', bg: 'bg-emerald-900/20', border: 'border-emerald-800/40', dot: 'bg-emerald-500' },
   edited:   { label: 'تعديل',    color: 'text-sky-400',     bg: 'bg-sky-900/20',     border: 'border-sky-800/40',     dot: 'bg-sky-500'     },
-  deleted:  { label: 'حذف',      color: 'text-red-400',     bg: 'bg-red-900/20',    border: 'border-red-800/40',    dot: 'bg-red-500'     },
+  deleted:  { label: 'حذف',      color: 'text-danger',      bg: 'bg-danger-surface', border: 'border-danger-border', dot: 'bg-danger'       },
   reviewed: { label: 'مراجعة',   color: 'text-amber-400',   bg: 'bg-amber-900/20',   border: 'border-amber-800/40',   dot: 'bg-amber-500'   },
   approved: { label: 'اعتماد',   color: 'text-emerald-400', bg: 'bg-emerald-900/25', border: 'border-emerald-700/50', dot: 'bg-emerald-400' },
   archived: { label: 'أرشفة',    color: 'text-ink-500',     bg: 'bg-ink-800/30',     border: 'border-ink-700/40',     dot: 'bg-ink-600'     },
@@ -112,7 +112,7 @@ function DiffBlock({ diff }) {
           return (
             <span className="whitespace-pre-wrap break-words">
               {parts.map((part, index) => (
-                <span key={index} className={part.changed ? (side === 'a' ? 'bg-red-900/50 text-red-200' : 'bg-emerald-900/50 text-emerald-200') : ''}>
+                <span key={index} className={part.changed ? (side === 'a' ? 'bg-danger-surface text-danger' : 'bg-success-surface text-success') : ''}>
                   {part.text}
                 </span>
               ))}
