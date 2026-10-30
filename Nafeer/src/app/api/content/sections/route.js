@@ -40,7 +40,7 @@ export async function POST(request) {
       sections.map((s) => s?.contentId), sections.map((s) => s?.lessonContentId),
     ));
 
-    const { saved, conflicts } = await batchUpsertSections(sections, actorId);
+    const { saved, conflicts } = await batchUpsertSections(sections, actorId, user.name || '');
     return ok(saved, { total: saved.length, conflicts: await withEditorNames(conflicts) });
   } catch (e) {
     if (e instanceof Response) return e;
