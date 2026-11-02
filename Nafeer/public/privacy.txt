@@ -1,0 +1,752 @@
+# سياسة الخصوصية
+
+## بشير (Basheer)
+
+**تاريخ السريان:** 3 نوفمبر 2026
+**الإصدار:** 1.0
+**النطاق:** تطبيق بشير للأندرويد، جميع الإصدارات.
+
+---
+
+## 1. مقدمة
+
+مرحباً بك في بشير.
+
+بشير منصة تعليمية تهدف إلى دعم طلاب المرحلة الثانوية في السودان، وتوفير تجربة تعليمية تفاعلية متوافقة مع المنهج السوداني الرسمي، مع التركيز على مساعدة الطلاب في رحلتهم التعليمية والاستعداد للانتقال إلى التعليم الجامعي.
+
+نؤمن بأن حماية خصوصية المستخدمين جزء أساسي من بناء تجربة تعليمية موثوقة. ولذلك نلتزم بالشفافية بشأن المعلومات التي نجمعها، وكيفية استخدامها وتخزينها ومعالجتها، والحقوق المتاحة للمستخدمين فيما يتعلق ببياناتهم.
+
+توضح هذه السياسة ممارسات الخصوصية المعتمدة في تطبيق بشير، بما في ذلك جمع البيانات التعليمية، والتحليلات، والإشعارات، والذكاء التعليمي المحلي، والخدمات التقنية المستخدمة لتشغيل التطبيق.
+
+باستخدامك لتطبيق بشير، فإنك تقر باطلاعك على هذه السياسة. أما عمليات معالجة البيانات التي تتطلب موافقة منفصلة، فسيتم طلب موافقتك عليها بصورة واضحة ومستقلة.
+
+---
+
+## 2. الجهة المسؤولة عن التطبيق
+
+يُطوّر تطبيق بشير ويُدار بصورة مستقلة من قبل مطور فرد مقيم في قطر، ينشر على Google Play باسم **Zeer0** (الطيب عبد الجليل الطيب أحمد). : 
+
+التطبيق غير مملوك حالياً لشركة أو كيان تجاري مسجل. وإذا تغيرت الملكية، فسنقوم بتحديث هذه السياسة وإخطار المستخدمين.
+
+يُطوّر التطبيق ويُدار لخدمة الطلاب في السودان، وتتم عمليات المشروع من خلال فريق التطوير وإدارة المحتوى.
+
+للاستفسارات المتعلقة بالخصوصية أو البيانات الشخصية أو طلبات الحذف، يمكنك التواصل معنا عبر:
+
+**البريد الإلكتروني:** [zool@nafeer4sudan.site](mailto:zool@nafeer4sudan.site)
+
+---
+
+## 3. المعلومات التي نجمعها
+
+يجمع تطبيق بشير بعض المعلومات الضرورية لتوفير التجربة التعليمية وتحسين الخدمات المقدمة.
+
+### 3.1 المعلومات الشخصية
+
+أثناء عملية الإعداد الأولي للتطبيق، يُطلب من المستخدم تقديم المعلومات التالية:
+
+* الاسم.
+* العمر.
+* الولاية.
+* المدينة.
+* اسم المدرسة.
+
+هذه المعلومات مطلوبة حالياً لاستكمال عملية الإعداد الأولي.
+
+يُحفظ ملفك الشخصي على جهازك. **وإذا اخترت مشاركة بيانات التطوير (انظر القسم 6)، فستتم مزامنة ملفك الشخصي أيضاً مع خوادمنا المستضافة لدى Supabase في ألمانيا.** أما إذا رفضت، فيبقى ملفك الشخصي على جهازك ولا يُرسل إلى خوادمنا.
+
+لا يطلب التطبيق عنواناً جغرافياً دقيقاً، ولا يجمع إحداثيات GPS أو يتتبع الموقع الجغرافي للمستخدم.
+
+### 3.2 البريد الإلكتروني
+
+يمكن للمستخدم تقديم بريده الإلكتروني بصورة اختيارية.
+
+يُستخدم البريد الإلكتروني للأغراض التالية:
+
+* الرد على الملاحظات والاستفسارات.
+* إرسال الإعلانات والتحديثات المتعلقة بالتطبيق والخدمات التعليمية، **فقط إذا وافقت على تلقيها**.
+
+لا يُشترط تقديم البريد الإلكتروني لاستخدام التطبيق. والموافقة على تلقي الإعلانات خيار منفصل واختياري، ويمكنك إلغاؤه في أي وقت بمراسلتنا أو باستخدام رابط إلغاء الاشتراك في الرسالة.
+
+### 3.3 البيانات التعليمية
+
+يجمع التطبيق معلومات مرتبطة بالنشاط التعليمي للمستخدم، بما في ذلك:
+
+* التقدم الدراسي.
+* سجل إكمال الدروس والأنشطة.
+* نتائج الاختبارات والتقييمات.
+* الإجابات الصحيحة والخاطئة.
+* تفضيلات التعلم.
+* مؤشرات الأداء والتفاعل التعليمي.
+* التوصيات التعليمية الأساسية.
+
+تُستخدم هذه المعلومات لدعم التجربة التعليمية، وتوفير التغذية الراجعة، وتحسين جودة الخدمات والخصائص التعليمية. وتبقى على جهازك ولا تُرسل إلى خوادمنا إلا وفق ما هو موضح في القسم 6.
+
+### 3.4 بيانات الاستخدام والتحليلات
+
+إذا وافقت على مشاركة بيانات التطوير (القسم 6)، فقد يجمع التطبيق إشارات تقنية وسلوكية مرتبطة باستخدامه، وتشمل:
+
+* التنقل بين الشاشات والواجهات.
+* الوقت المستغرق في الدروس والأنشطة.
+* عدد الأسئلة التي تمت الإجابة عنها.
+* التفاعلات مع الخصائص المختلفة.
+* مدة الجلسات التعليمية.
+* تكرار استخدام التطبيق.
+* الأخطاء التقنية ومعلومات الأعطال.
+
+تساعد هذه المعلومات في فهم كيفية استخدام التطبيق وتحديد فرص تحسينه.
+
+### 3.5 المعلومات التقنية
+
+قد يجمع التطبيق معلومات تقنية تتعلق ببيئة التشغيل، ومنها:
+
+* طراز الجهاز.
+* نظام التشغيل وإصداره.
+* إصدار التطبيق.
+* تقارير الأعطال.
+* سجلات التشغيل والأحداث التقنية.
+
+تُسجَّل تقارير الأعطال والأخطاء بواسطة نظام التحليلات الخاص بنا، وليس عبر خدمة خارجية لتقارير الأعطال.  وكأي خدمة عبر الإنترنت، يستقبل مزودو الخدمة لدينا (Google Firebase وSupabase) عنوان IP الخاص بجهازك كلما اتصل التطبيق بهم. ولا نستخدم عناوين IP لتحديد موقعك أو تتبعه.
+
+### 3.6 الإشعارات
+
+إذا سمحت بالإشعارات، فإن خدمة Firebase Cloud Messaging (المقدمة من Google) تمنح جهازك رمز إشعارات (Token) ومعرّف تثبيت Firebase. نستخدمهما فقط لإيصال الرسائل إليك. ويمكنك إيقاف الإشعارات في أي وقت من إعدادات أندرويد.
+
+### 3.7 الاستبيانات
+
+قد يعرض بشير استبيانات قصيرة داخل التطبيق، والمشاركة فيها اختيارية. تُرسل الإجابات التي تقدمها إلى خوادمنا وتُستخدم لتحسين المحتوى والخصائص. 
+
+---
+
+## 4. كيفية استخدام المعلومات
+
+نستخدم المعلومات التي نجمعها للأغراض التالية:
+
+1. توفير الخدمات التعليمية والخصائص الأساسية للتطبيق.
+2. حفظ ومتابعة التقدم التعليمي.
+3. تقديم التغذية الراجعة التعليمية.
+4. تحسين تجربة الاستخدام.
+5. تطوير الخصائص التعليمية والتقنية.
+6. اكتشاف الأخطاء والمشكلات التقنية ومعالجتها.
+7. فهم أنماط استخدام التطبيق وتحسين أدائه.
+8. إيصال الإشعارات والاستبيانات التي سمحت بها.
+9. التواصل مع المستخدمين عند الحاجة.
+10. تطوير المحتوى التعليمي والخدمات المرتبطة به.
+
+لا نبيع البيانات الشخصية للمستخدمين، ولا نستخدمها للإعلانات الموجهة.
+
+---
+
+## 5. الذكاء التعليمي والمعالجة المحلية
+
+يعتمد بشير على بنية تعليمية ذكية تعمل محلياً داخل التطبيق وعلى جهاز المستخدم.
+
+وتشمل هذه البنية آليات تحليل التقدم التعليمي، وفهم التفاعلات، وتوفير التوصيات الأساسية التي تدعم تجربة التعلم.
+
+نؤكد ما يلي:
+
+* تعمل طبقة الذكاء التعليمي دون الحاجة إلى الاتصال بالإنترنت.
+* لا يعتمد التطبيق على مزودي خدمات الذكاء الاصطناعي الخارجيين.
+* لا تُرسل البيانات التعليمية إلى خدمات ذكاء اصطناعي خارجية بغرض المعالجة.
+* تتم العمليات التعليمية المحلية على جهاز المستخدم.
+
+قد يحتاج التطبيق إلى الاتصال بالإنترنت لمزامنة البيانات المصرح بمشاركتها، أو الحصول على تحديثات المحتوى، أو استخدام الخدمات الخلفية الخاصة ببشير.
+
+---
+
+## 6. التحليلات ومشاركة بيانات التطوير
+
+يستخدم بشير نظام تحليلات داخلياً تم تطويره وإدارته ضمن المشروع، بهدف فهم أداء التطبيق وتحسين التجربة التعليمية.
+
+### 6.1 الموافقة على مشاركة البيانات
+
+خلال عملية الإعداد الأولي، يُمنح المستخدم خياراً واضحاً بشأن مشاركة بيانات الاستخدام والتحليلات، وملفه الشخصي، لأغراض تطوير بشير.
+
+المشاركة اختيارية.
+
+إذا اختار المستخدم عدم المشاركة:
+
+* لن تُرسل بيانات التحليلات الخاصة بالتطوير ولا الملف الشخصي إلى خوادم بشير.
+* لن تؤثر هذه الاختيارات على إمكانية استخدام الخصائص التعليمية الأساسية.
+* لن يُحرم المستخدم من الخدمات التعليمية بسبب رفضه المشاركة.
+
+تعمل الإشعارات والملاحظات والاستبيانات بصورة مستقلة عن هذا الاختيار، ولا تنقل بيانات إلا وفق ما هو موضح في الأقسام 3.6 و3.7 و14.
+
+### 6.2 البيانات ذات المعرفات المستعارة
+
+عند الموافقة على مشاركة بيانات التطوير، قد يستخدم التطبيق معرفاً مستعاراً مرتبطاً بالجهاز، يُعرف باسم (Device Hash).
+يساعد هذا المعرف في ربط الأحداث التعليمية والتقنية عبر جلسات استخدام متعددة، وفهم مسار الاستخدام والتقدم بمرور الوقت.
+
+تُزال المعلومات الشخصية المباشرة من بيانات التحليلات قبل إرسالها وفق آلية المعالجة المعتمدة.
+
+ومع ذلك، فإن استخدام معرف مستعار مستمر يعني أن هذه البيانات قد تظل قابلة للربط بين الجلسات، ولذلك لا نصفها بأنها مجهولة الهوية بصورة مطلقة.
+
+### 6.3 أغراض التحليلات
+
+تُستخدم التحليلات للأغراض التالية:
+
+* تحسين أداء التطبيق.
+* تطوير الخصائص التعليمية.
+* تقييم جودة التجربة التعليمية.
+* فهم أنماط التفاعل والاستخدام.
+* تحسين التغذية الراجعة التعليمية.
+* اكتشاف المشكلات التقنية ومعالجتها.
+
+### 6.4 آلية المزامنة
+
+تُجمع إشارات التحليلات محلياً، وتُعالج على دفعات، ثم تتم مزامنتها عند توفر الاتصال بالإنترنت، وذلك وفقاً لاختيار المستخدم وموافقته.
+
+---
+
+## 7. تخزين البيانات والبنية التحتية
+
+يعتمد بشير على بنية تحتية تقنية خاصة بالمشروع، مع استخدام خدمات Firebase (من Google) وSupabase لتوفير بعض وظائف التخزين والخدمات الخلفية.
+
+**Firebase (من Google):**
+
+* إعدادات التطبيق والنصوص المُدارة عن بُعد.
+* تحديثات التطبيق وتوزيع المحتوى.
+* إيصال الإشعارات (Firebase Cloud Messaging).
+
+تُستخدم موارد Firebase المضبوطة على منطقة `me-central`، والتي تقع في الدوحة، قطر. كما تُوضَّح طريقة تعامل Google مع البيانات في [سياسة خصوصية Google](https://policies.google.com/privacy).
+
+**Supabase:**
+
+* الخدمات الخلفية.
+* واجهات برمجة التطبيقات الخاصة بالملاحظات والاستبيانات والتحليلات.
+* تخزين الملف الشخصي، فقط إذا اخترت مشاركة بيانات التطوير.
+
+تتم استضافة مجموعة بيانات Supabase المستخدمة حالياً في ألمانيا. راجع [سياسة خصوصية Supabase](https://supabase.com/privacy).
+
+قد تتم معالجة البيانات أو تخزينها في قطر وألمانيا بحسب الخدمة المستخدمة وموقع مواردها. ولأن معظم مستخدمي بشير في السودان، فإن استخدام هذه الخدمات يتضمن نقل معلومات من السودان إلى هذه المواقع.
+
+يستخدم بشير تشفير البيانات أثناء انتقالها عبر الشبكة، وكذلك أثناء تخزينها، وفق آليات التشفير التي توفرها البنية التحتية والخدمات المستخدمة.
+
+نستخدم هذه الخدمات ضمن نطاق مسؤولياتها التقنية، ولا نمنحها صلاحية استخدام بيانات المستخدمين لأغراض إعلانية أو تجارية مستقلة نيابة عن بشير.
+
+---
+
+## 8. الوصول إلى البيانات ومشاركتها
+
+نحافظ على تقييد الوصول إلى بيانات المستخدمين وفقاً لطبيعة المسؤوليات داخل المشروع.
+
+حالياً:
+
+* يقتصر الوصول إلى البيانات الخام على مالك المشروع.
+* يحصل أعضاء فريق التطوير وإدارة المحتوى على المعلومات اللازمة لأداء مسؤولياتهم فقط.
+* تتم مشاركة البيانات الداخلية بعد تصفيتها وتحديد نطاقها وفقاً لطبيعة المهمة.
+* لا يُمنح أعضاء الفريق وصولاً عاماً ومفتوحاً إلى جميع بيانات المستخدمين.
+
+لا نبيع بيانات المستخدمين، ولا نشاركها مع شبكات إعلانية أو وسطاء بيانات.
+
+قد تتم معالجة المعلومات من خلال مزودي البنية التحتية المذكورين في هذه السياسة بالقدر اللازم لتشغيل الخدمات المرتبطة بهم. وقد نفصح عن المعلومات إذا اقتضى القانون ذلك.
+
+---
+
+## 9. أمن المعلومات
+
+نتخذ إجراءات تقنية وتنظيمية تهدف إلى حماية بيانات المستخدمين من الوصول غير المصرح به أو الاستخدام غير المشروع أو الكشف أو التعديل غير المصرح به.
+
+تشمل الإجراءات الحالية:
+
+* تشفير البيانات أثناء انتقالها باستخدام بروتوكولات الاتصال الآمنة.
+* تشفير البيانات أثناء تخزينها من خلال البنية التحتية المستخدمة.
+* تقييد الوصول إلى البيانات الخام.
+* توزيع الصلاحيات وفقاً للمسؤوليات.
+* تقليل المعلومات التي تتم مشاركتها داخلياً.
+* استخدام بنية تحتية مخصصة لإدارة الخدمات والبيانات.
+
+لا يمكن ضمان أمان أي نظام تقني بصورة مطلقة، ولذلك نعمل على مراجعة وتحسين إجراءات الحماية باستمرار.
+
+---
+
+## 10. الاحتفاظ بالبيانات
+
+نلتزم بالاحتفاظ بالبيانات للفترات المحددة التالية، وبعد انتهاء المدة المعنية يتم حذف البيانات أو إزالة إمكانية ربطها بالمستخدم بحسب طبيعتها:
+
+| نوع البيانات                                           | مدة الاحتفاظ                      |
+| ------------------------------------------------------ | --------------------------------- |
+| الملف الشخصي على خوادمنا (فقط عند تفعيل المشاركة)      | حتى تطلب حذفه                     |
+| البيانات التحليلية الخام                               | 12 شهراً                          |
+| البيانات التحليلية ذات المعرفات المستعارة              | 24 شهراً                          |
+| الملاحظات وإجابات الاستبيانات                          | 12 شهراً                          |
+| رموز الإشعارات                                         | حتى تنتهي صلاحيتها أو تطلب حذفها  |
+| تقارير الأعطال                                         | 90 يوماً                          |
+| السجلات التشغيلية                                      | من 30 إلى 90 يوماً                |
+
+
+تُطبق هذه المدد وفقاً لنوع البيانات والغرض من الاحتفاظ بها.
+
+---
+
+## 11. حذف بياناتك <a id="delete"></a>
+
+**من داخل التطبيق:** انتقل إلى **الإعدادات ← الخصوصية ← حذف بياناتي**
+**بدون التطبيق (مثلاً بعد إزالته):** أرسل رسالة إلى [zool@nafeer4sudan.site](mailto:zool@nafeer4sudan.site) بعنوان "طلب حذف بيانات بشير"، واذكر فيها الاسم واسم المدرسة اللذين استخدمتهما في بشير (وبريدك الإلكتروني إن كنت قد قدمته). سنعالج طلبك خلال 30 يوماً ونؤكد لك بالبريد الإلكتروني عند اكتماله.
+
+**ما نحذفه:** ملفك الشخصي وبياناتك التعليمية المحفوظة على خوادمنا، وأي ملاحظات أو إجابات استبيانات مرتبطة بك.
+
+**ما قد يبقى:** قد تبقى السجلات التحليلية بصيغة ذات معرفات مستعارة إلى حين انتهاء مدة الاحتفاظ المحددة في القسم 10. أما السجلات التشغيلية وتقارير الأعطال فتُحذف تلقائياً خلال 30 إلى 90 يوماً. وإذا أزلت التطبيق قبل تقديم طلب الحذف، فقد لا نتمكن من مطابقة السجلات ذات المعرفات المستعارة معك.
+
+حذف التطبيق من الجهاز لا يعني حذف المعلومات المخزنة على خوادمنا، لذلك يرجى استخدام أحد الخيارين أعلاه.
+
+---
+
+## 12. خصوصية الطلاب والقُصّر
+
+صُمم بشير أساساً لخدمة طلاب المرحلة الثانوية في السودان.
+
+تتراوح الفئة العمرية المسموح بها حالياً في الإعداد الأولي بين 16 و24 عاماً. والتطبيق غير موجه للأطفال دون 16 عاماً.
+
+نولي اهتماماً خاصاً بحماية المعلومات المتعلقة بالطلاب، ولا نستخدم بياناتهم لأغراض الإعلانات الموجهة.
+
+بالنسبة للمستخدمين الذين تقل أعمارهم عن 18 عاماً، يطلب بشير أثناء الإعداد الأولي أن يؤكد المستخدم أن أحد والديه أو وصيه القانوني على علم باستخدامه بشير ويوافق على ممارسات البيانات الموضحة في هذه السياسة. وهذا إقرار ذاتي لا يمكننا التحقق منه بصورة مستقلة. ونحتفظ بهذا الإقرار على جهازك، وعلى خوادمنا إذا شاركت بيانات التطوير.
+
+ويحق لأولياء الأمور والأوصياء التواصل معنا للاستفسار عن البيانات المتعلقة بالقُصّر وطلب الاطلاع عليها أو حذفها وفقاً للقوانين المعمول بها.
+
+---
+
+## 13. حقوق المستخدم
+
+وفقاً للقوانين واللوائح المعمول بها، قد يتمتع المستخدم بحقوق تتعلق ببياناته الشخصية، بما في ذلك:
+
+* معرفة طبيعة المعلومات التي يتم جمعها.
+* طلب الاطلاع على المعلومات المرتبطة به.
+* طلب تصحيح المعلومات غير الدقيقة.
+* طلب حذف البيانات الشخصية.
+* سحب الموافقة على مشاركة بيانات التحليلات لأغراض التطوير.
+* الاستفسار عن كيفية استخدام المعلومات ومعالجتها.
+* تقديم شكوى تتعلق بالخصوصية أو حماية البيانات.
+
+لممارسة هذه الحقوق، يمكن للمستخدم استخدام خيارات الخصوصية المتاحة داخل التطبيق أو التواصل معنا عبر البريد الإلكتروني:
+
+**[zool@nafeer4sudan.site](mailto:zool@nafeer4sudan.site)**
+
+---
+
+## 14. الملاحظات والتواصل
+
+يتيح بشير للمستخدمين إرسال الملاحظات والبلاغات من داخل التطبيق.
+
+قد تتضمن هذه الملاحظات معلومات مكتوبة بصورة حرة، بالإضافة إلى التصنيف الذي يحدده المستخدم عند الإرسال.
+
+نستخدم هذه المعلومات للأغراض التالية:
+
+* معالجة المشكلات التقنية.
+* تحسين المحتوى التعليمي.
+* تطوير تجربة الاستخدام.
+* الرد على استفسارات المستخدمين.
+* فهم احتياجات الطلاب وتحدياتهم.
+
+نوصي المستخدمين بعدم تضمين معلومات شخصية حساسة أو كلمات مرور أو بيانات تخص أشخاصاً آخرين ضمن الملاحظات المرسلة.
+
+---
+
+## 15. التحديثات وتغييرات السياسة
+
+قد نقوم بتحديث سياسة الخصوصية من وقت لآخر بما يتناسب مع:
+
+* تطوير خصائص التطبيق.
+* إضافة خدمات أو وظائف جديدة.
+* تغيير البنية التحتية التقنية.
+* تحديث ممارسات جمع البيانات ومعالجتها.
+* التغيرات في الملكية أو في المتطلبات القانونية والتنظيمية.
+
+ستُنشر النسخة المحدثة من السياسة على عنوان هذه الصفحة.
+
+وسيتضمن كل تحديث تاريخ السريان ورقم الإصدار الجديد.
+
+في حال حدوث تغيير جوهري في طريقة جمع البيانات أو استخدامها، سنعمل على إخطار المستخدمين والحصول على الموافقات الإضافية اللازمة، حيثما يتطلب الأمر ذلك.
+
+---
+
+## 16. التواصل والاستفسارات
+
+إذا كانت لديك أي أسئلة أو استفسارات أو طلبات تتعلق بهذه السياسة أو ببياناتك الشخصية، يمكنك التواصل معنا عبر:
+
+**بشير — Basheer، يُدار بواسطة Zeer0**
+
+البريد الإلكتروني:
+
+[zool@nafeer4sudan.site](mailto:zool@nafeer4sudan.site)
+
+نلتزم بالتعامل مع استفسارات الخصوصية وطلبات المستخدمين بعناية وشفافية.
+
+---
+
+**بشير — المعرفة أقرب إليك.**
+
+
+# Privacy Policy
+
+## Basheer (بشير)
+
+**Effective Date:** November 3, 2026
+**Version:** 1.0
+**Scope:** The Basheer Android application, all releases.
+
+---
+
+## 1. Introduction
+
+Welcome to Basheer.
+
+Basheer is an educational platform designed to support secondary-school students in Sudan by providing an interactive learning experience aligned with the official Sudanese curriculum. Our goal is to support students throughout their educational journey and help them prepare for higher education.
+
+We believe that protecting user privacy is an essential part of building a trustworthy educational experience. We are committed to being transparent about the information we collect, how it is used, stored, and processed, and the rights available to users regarding their personal information.
+
+This Privacy Policy explains the privacy practices applicable to the Basheer application, including educational data collection, analytics, notifications, local educational intelligence, and the technical services used to operate the application.
+
+By using Basheer, you acknowledge that you have read this policy. Where separate consent is required for specific data-processing activities, we will request that consent clearly and independently.
+
+---
+
+## 2. Who Operates Basheer?
+
+Basheer is independently developed and operated by an individual developer based in Qatar, who publishes on Google Play as **Zeer0** (Eltayeb Abdeljalil Eltayeb Ahmed).
+Basheer is not currently owned by a registered company. If ownership changes, we will update this policy and notify users.
+
+The application is developed and maintained to serve students in Sudan, with project operations carried out through the development and content management teams.
+
+For privacy-related inquiries, personal data requests, or deletion requests, contact us at:
+
+**Email:** [zool@nafeer4sudan.site](mailto:zool@nafeer4sudan.site)
+
+---
+
+## 3. Information We Collect
+
+Basheer collects certain information necessary to provide its educational experience and improve its services.
+
+### 3.1 Personal Information
+
+During the initial onboarding process, users are required to provide the following information:
+
+* Name.
+* Age.
+* State.
+* City.
+* School name.
+
+These details are currently mandatory to complete onboarding.
+
+Your profile is stored on your device. **If you choose to share development data (see Section 6), your profile is also synced to our servers, hosted by Supabase in Germany.** If you decline, your profile stays on your device and is not sent to our servers.
+
+Basheer does not request precise geographical addresses and does not collect GPS coordinates or track users' physical locations.
+
+### 3.2 Email Address
+
+Users may optionally provide an email address.
+
+Email addresses may be used for:
+
+* Responding to feedback and inquiries.
+* Sending application announcements and educational service updates, **only if you have agreed to receive them**.
+
+Providing an email address is not required to use Basheer. Agreeing to receive announcements is a separate, optional choice, and you can opt out at any time by emailing us or using the unsubscribe link in the message.
+
+### 3.3 Educational Information
+
+Basheer collects information related to users' educational activities, including:
+
+* Learning progress.
+* Lesson and activity completion history.
+* Quiz and assessment results.
+* Correct and incorrect answers.
+* Learning preferences.
+* Learning performance and engagement indicators.
+* Basic educational recommendations.
+
+This information is used to support the learning experience, provide educational feedback, and improve the quality of our educational services and features. It is kept on your device and is transmitted to our servers only as described in Section 6.
+
+### 3.4 Usage and Analytics Information
+
+If you agree to share development data (Section 6), Basheer may collect technical and behavioral signals associated with application usage, including:
+
+* Screen and interface navigation.
+* Time spent on lessons and activities.
+* Number of questions attempted.
+* Interactions with application features.
+* Educational session duration.
+* Application usage frequency.
+* Technical errors and crashes.
+
+This information helps us understand how the application is used and identify opportunities for improvement.
+
+### 3.5 Technical Information
+
+The application may collect information about the user's operating environment, including:
+
+* Device model.
+* Operating system and version.
+* Application version.
+* Crash reports.
+* Operational logs and technical events.
+
+Crash reports and error events are recorded by our own analytics system, not by a third-party crash-reporting service.
+Like any online service, our service providers (Google Firebase and Supabase) receive your device's IP address whenever the application connects to them. We do not use IP addresses to determine or track your location.
+
+### 3.6 Notifications
+
+If you allow notifications, Firebase Cloud Messaging (provided by Google) assigns your device a notification token and a Firebase installation ID. We use these only to deliver messages to you. You can turn notifications off at any time in your Android settings.
+
+### 3.7 Surveys
+
+Basheer may show short in-app surveys. Taking part is optional. Responses you submit are sent to our servers and are used to improve content and features.
+---
+
+## 4. How We Use Information
+
+We use collected information for the following purposes:
+
+1. Providing educational services and core application functionality.
+2. Maintaining and tracking educational progress.
+3. Providing educational feedback.
+4. Improving the user experience.
+5. Developing educational and technical features.
+6. Identifying and resolving technical errors and issues.
+7. Understanding application usage patterns and improving performance.
+8. Delivering notifications and surveys you have allowed.
+9. Communicating with users when necessary.
+10. Improving educational content and related services.
+
+We do not sell users' personal information or use it for targeted advertising.
+
+---
+
+## 5. Educational Intelligence and Local Processing
+
+Basheer uses an intelligent educational architecture that operates locally within the application on the user's device.
+
+This architecture includes mechanisms for analyzing educational progress, understanding interactions, and providing basic recommendations that support the learning experience.
+
+We confirm that:
+
+* The educational intelligence layer operates without requiring an internet connection.
+* The application does not rely on external AI service providers.
+* Educational data is not transmitted to external AI services for processing.
+* Local educational intelligence operations take place on the user's device.
+
+The application may still require an internet connection to synchronize data that users have authorized us to share, receive content updates, or access Basheer's own backend services.
+
+---
+
+## 6. Analytics and Development Data Sharing
+
+Basheer operates an internally developed analytics system designed to help us understand application performance and improve the educational experience.
+
+### 6.1 Consent to Share Data
+
+During onboarding, users are presented with a clear choice regarding the sharing of usage and analytics data, and of their profile, for Basheer's development purposes.
+
+Participation is optional.
+
+If a user chooses not to participate:
+
+* Development analytics data and the onboarding profile will not be transmitted to Basheer's servers.
+* The user's access to core educational functionality will not be affected.
+* Users will not be denied educational services because they declined sharing.
+
+Notifications, feedback and surveys work independently of this choice and transmit data only as described in Sections 3.6, 3.7 and 14.
+
+### 6.2 Pseudonymous Data
+
+When a user agrees to share development data, the application may use a pseudonymous identifier associated with the device, known as a Device Hash. 
+This identifier helps connect educational and technical events across multiple application sessions, allowing us to understand usage patterns and learning journeys over time.
+
+Direct personal information is removed from analytics data before transmission according to our data-processing procedures.
+
+However, because a persistent pseudonymous identifier may remain, the resulting data can still be linked across multiple sessions. Therefore, we do not describe this data as completely anonymous.
+
+### 6.3 Purposes of Analytics
+
+Analytics data is used for:
+
+* Improving application performance.
+* Developing educational features.
+* Evaluating the quality of the educational experience.
+* Understanding interaction and usage patterns.
+* Improving educational feedback.
+* Identifying and resolving technical issues.
+
+### 6.4 Synchronization
+
+Analytics signals are collected locally, processed in batches, and synchronized when an internet connection becomes available, subject to the user's consent and sharing preferences.
+
+---
+
+## 7. Data Storage and Infrastructure
+
+Basheer relies on project-managed technical infrastructure and uses Firebase (Google) and Supabase to provide certain storage and backend services.
+
+**Firebase (Google):**
+
+* Application configuration and remotely managed text.
+* Application updates and content distribution.
+* Push notification delivery (Firebase Cloud Messaging).
+
+Basheer's Firebase resources configured for regional hosting use the `me-central` region, located in Doha, Qatar. Google's handling of data is also described in [Google's Privacy Policy](https://policies.google.com/privacy).
+
+**Supabase:**
+
+* Backend services.
+* APIs used for feedback, surveys and analytics.
+* Storage of the onboarding profile, only if you chose to share development data.
+
+The Supabase database cluster currently used by Basheer is hosted in Germany. See [Supabase's Privacy Policy](https://supabase.com/privacy).
+
+Depending on the service and resource involved, data may therefore be processed or stored in Qatar and Germany. Because most Basheer users are in Sudan, using these services involves transferring information from Sudan to those locations.
+
+Basheer uses encryption for data in transit and data at rest, through the encryption mechanisms provided by its infrastructure and services.
+
+We use these services within the scope of their technical responsibilities and do not authorize them to independently use Basheer user information for advertising or unrelated commercial purposes on our behalf.
+
+---
+
+## 8. Access to and Sharing of Information
+
+We restrict access to user information according to individual responsibilities within the project.
+
+Currently:
+
+* Access to raw data is restricted to the project owner.
+* Development and content management team members receive only the information necessary to perform their responsibilities.
+* Internal information is filtered and scoped according to the nature of each task.
+* Team members are not granted unrestricted access to all user information.
+
+We do not sell user information or share it with advertising networks or data brokers.
+
+Information may be processed through the infrastructure providers identified in this policy to the extent necessary to operate their associated services. We may also disclose information if required by law.
+
+---
+
+## 9. Information Security
+
+We implement technical and organizational measures intended to protect user information against unauthorized access, unlawful use, disclosure, or modification.
+
+Our current measures include:
+
+* Encryption of data in transit using secure communication protocols.
+* Encryption of stored data through the infrastructure services we use.
+* Restricted access to raw data.
+* Distribution of permissions according to responsibilities.
+* Limiting the information shared internally.
+* Using dedicated infrastructure to manage project services and data.
+
+No technical system can guarantee absolute security. We therefore aim to continuously review and improve our security practices.
+
+---
+
+## 10. Data Retention
+
+We commit to retaining information for the following periods. After the applicable period expires, information will be deleted or processed to remove its link to the user, depending on its nature:
+
+| Data Category                                              | Retention Period                 |
+| ---------------------------------------------------------- | -------------------------------- |
+| Onboarding profile on our servers (only if sharing is on)  | Until you request deletion       |
+| Raw analytics data                                         | 12 months                        |
+| Pseudonymous analytics data                                | 24 months                        |
+| In-app feedback and survey responses                       | 12 months                        |
+| Notification tokens                                        | Until they expire or you request deletion |
+| Crash reports                                              | 90 days                          |
+| Operational logs                                           | 30–90 days                       |
+
+
+These periods are applied according to the type of information and its intended purpose.
+
+---
+
+## 11. Delete Your Data <a id="delete"></a>
+
+**In the app:** go to **Settings → Privacy → Delete my data**.
+**Without the app (for example, after uninstalling):** email [zool@nafeer4sudan.site](mailto:zool@nafeer4sudan.site) with the subject "Basheer data deletion request", and include the name and school you used in Basheer (and your email address, if you provided one). We will process your request within 30 days and confirm by email when it is done.
+
+**What we delete:** your profile and learning data held on our servers, and any feedback or survey responses linked to you.
+
+**What may remain:** analytics records may remain in pseudonymous form until their retention period in Section 10 ends. Operational logs and crash reports are deleted automatically within 30–90 days. If you uninstalled before requesting deletion, we may be unable to match pseudonymous records to you.
+
+Uninstalling Basheer does not delete information stored on our servers. Please use one of the options above.
+
+---
+
+## 12. Student and Children's Privacy
+
+Basheer is primarily designed to serve secondary-school students in Sudan.
+
+The application's currently permitted onboarding age range is 16–24 years. Basheer is not intended for children under 16.
+
+We give particular attention to protecting information relating to students and do not use their information for targeted advertising.
+
+For users under 18, Basheer asks during onboarding that the user confirm that a parent or legal guardian knows they use Basheer and agrees to the data practices described in this policy. This is a self-declared confirmation; we cannot independently verify it. We store the confirmation on your device and, if you share development data, on our servers.
+
+Parents and legal guardians may contact us to ask about personal information relating to a minor and to request access to or deletion of that information, subject to applicable law.
+
+---
+
+## 13. User Rights
+
+Subject to applicable laws and regulations, users may have rights concerning their personal information, including:
+
+* Knowing what types of information are collected.
+* Requesting access to information associated with them.
+* Requesting correction of inaccurate information.
+* Requesting deletion of personal information.
+* Withdrawing consent to share analytics data for development purposes.
+* Asking how their information is used and processed.
+* Submitting privacy or data protection complaints.
+
+To exercise these rights, users may use the privacy options available within the application or contact us at:
+
+**[zool@nafeer4sudan.site](mailto:zool@nafeer4sudan.site)**
+
+---
+
+## 14. Feedback and Communication
+
+Basheer allows users to submit feedback and reports directly through the application.
+
+These submissions may include free-text descriptions and a category selected by the user.
+
+We use submitted information to:
+
+* Resolve technical issues.
+* Improve educational content.
+* Develop the user experience.
+* Respond to user inquiries.
+* Understand students' needs and challenges.
+
+We encourage users not to include sensitive personal information, passwords, or information belonging to other individuals in their submissions.
+
+---
+
+## 15. Policy Updates and Changes
+
+We may update this Privacy Policy from time to time to reflect:
+
+* New application features.
+* Additional services or functionality.
+* Changes to technical infrastructure.
+* Changes to information collection and processing practices.
+* Changes in ownership or in applicable legal and regulatory requirements.
+
+Updated versions of this policy will be published at this page's address.
+
+Each update will include its effective date and version number.
+
+If a material change affects how information is collected or used, we will make reasonable efforts to notify users and obtain any additional consent required.
+
+---
+
+## 16. Contact and Inquiries
+
+If you have questions, concerns, or requests regarding this Privacy Policy or your personal information, contact us at:
+
+**Basheer (بشير), operated by Zeer0**
+
+Email:
+[zool@nafeer4sudan.site](mailto:zool@nafeer4sudan.site)
+
+We are committed to handling privacy inquiries and user requests with care and transparency.
+
+---
+
+**Basheer — Bringing Knowledge Closer to You.**
