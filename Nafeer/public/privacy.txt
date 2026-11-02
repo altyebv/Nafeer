@@ -402,7 +402,7 @@ By using Basheer, you acknowledge that you have read this policy. Where separate
 
 ## 2. Who Operates Basheer?
 
-Basheer is independently developed and operated by an individual developer based in Qatar, who publishes on Google Play as **Zeer0** (Eltayeb Abdeljalil Eltayeb Ahmed).
+Basheer is independently developed and operated by an individual developer based in Qatar, who publishes on Google Play as **Zeer0** (Altyeb Abdeljalil Altyeb Ahmed).
 Basheer is not currently owned by a registered company. If ownership changes, we will update this policy and notify users.
 
 The application is developed and maintained to serve students in Sudan, with project operations carried out through the development and content management teams.
