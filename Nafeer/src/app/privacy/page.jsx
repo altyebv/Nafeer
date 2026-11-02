@@ -3,12 +3,16 @@ import path from 'node:path';
 import { pageMetadata } from '@/lib/seo';
 import PrivacyPolicyContent from './PrivacyPolicyContent';
 
-export const metadata = pageMetadata({
-  title: 'سياسة الخصوصية — بشير',
-  description: 'سياسة خصوصية تطبيق بشير باللغتين العربية والإنجليزية.',
-  path: '/privacy',
-  absoluteTitle: true,
-});
+export const metadata = {
+  ...pageMetadata({
+    title: 'سياسة الخصوصية — بشير',
+    description: 'سياسة خصوصية تطبيق بشير باللغتين العربية والإنجليزية.',
+    path: '/privacy',
+    absoluteTitle: true,
+  }),
+  authors: [{ name: 'Altyeb Abdaljalil', url: 'https://altyeb.my/' }],
+  creator: 'Altyeb Abdaljalil (@altyebv)',
+};
 
 export default async function PrivacyPage() {
   const policyPath = path.join(process.cwd(), 'public', 'privacy.txt');
