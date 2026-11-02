@@ -241,6 +241,38 @@ export default function PrivacyPolicyContent({ arabic, english }) {
           </div>
         </header>
 
+        <section
+          aria-label={isArabic ? 'معلومات المطوّر' : 'Developer information'}
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-mid)] bg-[var(--bg-card)] px-5 py-4 sm:px-7"
+        >
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+              {isArabic ? 'مطوّر بشير' : 'Basheer developer'}
+            </p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]" dir="ltr">
+              Altyeb Abdaljalil
+              <span className="mx-2 font-normal text-[var(--text-muted)]">·</span>
+              <a
+                href="https://github.com/altyebv"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[var(--accent)] hover:underline"
+              >
+                @altyebv
+              </a>
+            </p>
+          </div>
+          <a
+            href="https://altyeb.my/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm text-[var(--text-secondary)] underline decoration-[var(--border-mid)] underline-offset-4 transition-colors hover:text-[var(--accent)]"
+          >
+            {isArabic ? 'الموقع الشخصي' : 'Personal website'}
+            <span className="sr-only"> (altyeb.my)</span>
+          </a>
+        </section>
+
         <div className="mb-6 rounded-2xl border border-[var(--border-mid)] bg-[var(--bg-card)] px-5 py-5 sm:px-7">
           <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             {isArabic ? 'بشير · الخصوصية والبيانات' : 'Basheer · Privacy & data'}
