@@ -34,6 +34,7 @@ export const revalidate = 3600;
 const STATIC_ROUTES = [
   { path: '/',        lastModified: '2026-09-29', changeFrequency: 'weekly',  priority: 1.0 },
   { path: '/demo',    lastModified: '2026-08-14', changeFrequency: 'monthly', priority: 0.9 },
+  { path: '/privacy', lastModified: '2026-11-03', changeFrequency: 'yearly',  priority: 0.5 },
   { path: '/prejoin', lastModified: '2026-08-14', changeFrequency: 'monthly', priority: 0.7 },
 ];
 
