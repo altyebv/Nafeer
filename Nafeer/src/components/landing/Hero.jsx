@@ -44,6 +44,7 @@ export default function Hero() {
 
   // ── Cursor glow — zero re-renders ─────────────────────────────────────────
   const handleWatermarkMove = useCallback((e) => {
+    if (e.pointerType === 'touch') return; // touch gets the ripple below
     if (!glowRef.current || !watermarkRef.current) return;
     const rect = watermarkRef.current.getBoundingClientRect();
     const mask = `radial-gradient(circle 280px at ${e.clientX - rect.left + 240}px ${e.clientY - rect.top + 240}px, black 0%, transparent 68%)`;
@@ -51,10 +52,66 @@ export default function Hero() {
     glowRef.current.style.maskImage       = mask;
   }, []);
 
-  const handleWatermarkLeave = useCallback(() => {
-    if (!glowRef.current) return;
+  const handleWatermarkLeave = useCallback((e) => {
+    if (e.pointerType === 'touch' || !glowRef.current) return;
     glowRef.current.style.webkitMaskImage = MASK_OFFSCREEN;
     glowRef.current.style.maskImage       = MASK_OFFSCREEN;
+  }, []);
+
+  // ── Touch devices: no hover, so the watermark glows on its own and a tap
+  //    sends a ripple ring through it. Same mask layer as the cursor glow. ────
+  useEffect(() => {
+    const hero = heroRef.current;
+    const glow = glowRef.current;
+    const mark = watermarkRef.current;
+    if (!hero || !glow || !mark || prefersReducedMotion() || !window.matchMedia('(hover: none)').matches) return undefined;
+
+    const PAD = 240;
+    const setMask = (m) => { glow.style.webkitMaskImage = m; glow.style.maskImage = m; };
+    let rippling = false;
+
+    // Ambient: a soft spot drifts back and forth across the watermark.
+    const sweep = { t: 0 };
+    const ambient = gsap.to(sweep, {
+      t: 1, duration: 12, ease: 'sine.inOut', yoyo: true, repeat: -1,
+      onUpdate: () => {
+        if (rippling) return;
+        const w = mark.offsetWidth, h = mark.offsetHeight;
+        setMask(`radial-gradient(circle 260px at ${PAD + w * sweep.t}px ${PAD + h * 0.5}px, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.45) 30%, rgba(0,0,0,0.15) 60%, transparent 100%)`);
+      },
+    });
+
+    // Tap: an expanding ring from the touch point, fading as it grows.
+    let ripple;
+    const onTap = (e) => {
+      if (e.pointerType !== 'touch') return;
+      const rect = mark.getBoundingClientRect();
+      const x = PAD + e.clientX - rect.left;
+      const y = PAD + e.clientY - rect.top;
+      const ring = { r: 0 };
+      ripple?.kill();
+      rippling = true;
+      glow.style.opacity = '1';
+      ripple = gsap.to(ring, {
+        r: 560, duration: 2.8, ease: 'sine.out',
+        onUpdate: () => {
+          const r = ring.r, w = 190; // wide, feathered band
+          setMask(`radial-gradient(circle at ${x}px ${y}px, transparent ${Math.max(r - w, 0)}px, rgba(0,0,0,0.35) ${Math.max(r - w * 0.5, 0)}px, black ${r}px, rgba(0,0,0,0.35) ${r + w * 0.5}px, transparent ${r + w}px)`);
+          const k = 1 - r / 560;
+          glow.style.opacity = String(k * k); // ease the fade-out
+        },
+        onComplete: () => { rippling = false; gsap.to(glow, { opacity: 1, duration: 1.5, ease: 'sine.inOut' }); },
+      });
+    };
+    hero.addEventListener('pointerdown', onTap, { passive: true });
+
+    return () => {
+      hero.removeEventListener('pointerdown', onTap);
+      ambient.kill();
+      ripple?.kill();
+      glow.style.opacity = '';
+      setMask(MASK_OFFSCREEN);
+    };
   }, []);
 
   useMotion(heroRef, (hero) => {
@@ -89,8 +146,8 @@ export default function Hero() {
     <section
       ref={heroRef}
       className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-page"
-      onMouseMove={handleWatermarkMove}
-      onMouseLeave={handleWatermarkLeave}
+      onPointerMove={handleWatermarkMove}
+      onPointerLeave={handleWatermarkLeave}
     >
       <div aria-hidden="true" className="absolute inset-0 mesh-bg" />
 
