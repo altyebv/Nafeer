@@ -46,7 +46,7 @@ export default function Hero() {
   const handleWatermarkMove = useCallback((e) => {
     if (!glowRef.current || !watermarkRef.current) return;
     const rect = watermarkRef.current.getBoundingClientRect();
-    const mask = `radial-gradient(circle 280px at ${e.clientX - rect.left}px ${e.clientY - rect.top}px, black 0%, transparent 68%)`;
+    const mask = `radial-gradient(circle 280px at ${e.clientX - rect.left + 240}px ${e.clientY - rect.top + 240}px, black 0%, transparent 68%)`;
     glowRef.current.style.webkitMaskImage = mask;
     glowRef.current.style.maskImage       = mask;
   }, []);
@@ -86,16 +86,19 @@ export default function Hero() {
   });
 
   return (
-    <section ref={heroRef} className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-page">
+    <section
+      ref={heroRef}
+      className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-page"
+      onMouseMove={handleWatermarkMove}
+      onMouseLeave={handleWatermarkLeave}
+    >
       <div aria-hidden="true" className="absolute inset-0 mesh-bg" />
 
       {/* ── Watermark: a dim base and a glow layer revealed under the pointer ── */}
       <div
         ref={watermarkRef}
         aria-hidden="true"
-        className="gsap-watermark absolute left-0 top-1/2 -translate-y-1/2 select-none cursor-default"
-        onMouseMove={handleWatermarkMove}
-        onMouseLeave={handleWatermarkLeave}
+        className="gsap-watermark absolute left-0 top-1/2 -translate-y-1/2 select-none cursor-default pointer-events-none"
       >
         <span className="gsap-watermark-base l-watermark l-mark-24 font-arabic font-bold leading-none block pointer-events-none">بشير</span>
         <span ref={glowRef} className="l-glow-text absolute top-0 left-0 l-mark-24 font-arabic font-bold leading-none block pointer-events-none">بشير</span>
