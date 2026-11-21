@@ -438,6 +438,12 @@
       0 0 160px color-mix(in srgb, var(--accent) 40%, transparent),
       0 0 240px color-mix(in srgb, var(--accent) 20%, transparent);
     /* Off-screen until the pointer moves over it (Hero sets the mask). */
+    /* Grow the box (not the text) so the mask covers the text-shadow halo.
+       Hero.jsx adds the same 240px to the mask position. */
+    padding: 240px;
+    margin: -240px;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
     -webkit-mask-image: radial-gradient(circle 260px at -9999px -9999px, black 0%, transparent 72%);
     mask-image:         radial-gradient(circle 260px at -9999px -9999px, black 0%, transparent 72%);
   }
