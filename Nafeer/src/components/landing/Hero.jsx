@@ -77,7 +77,7 @@ export default function Hero() {
       onUpdate: () => {
         if (rippling) return;
         const w = mark.offsetWidth, h = mark.offsetHeight;
-        setMask(`radial-gradient(circle 260px at ${PAD + w * sweep.t}px ${PAD + h * 0.5}px, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.45) 30%, rgba(0,0,0,0.15) 60%, transparent 100%)`);
+        setMask(`radial-gradient(circle 260px at ${PAD + w * sweep.t}px ${PAD + h * 0.5}px, color-mix(in srgb, black 70%, transparent) 0%, color-mix(in srgb, black 45%, transparent) 30%, color-mix(in srgb, black 15%, transparent) 60%, transparent 100%)`);
       },
     });
 
@@ -96,7 +96,7 @@ export default function Hero() {
         r: 560, duration: 2.8, ease: 'sine.out',
         onUpdate: () => {
           const r = ring.r, w = 190; // wide, feathered band
-          setMask(`radial-gradient(circle at ${x}px ${y}px, transparent ${Math.max(r - w, 0)}px, rgba(0,0,0,0.35) ${Math.max(r - w * 0.5, 0)}px, black ${r}px, rgba(0,0,0,0.35) ${r + w * 0.5}px, transparent ${r + w}px)`);
+          setMask(`radial-gradient(circle at ${x}px ${y}px, transparent ${Math.max(r - w, 0)}px, color-mix(in srgb, black 35%, transparent) ${Math.max(r - w * 0.5, 0)}px, black ${r}px, color-mix(in srgb, black 35%, transparent) ${r + w * 0.5}px, transparent ${r + w}px)`);
           const k = 1 - r / 560;
           glow.style.opacity = String(k * k); // ease the fade-out
         },
