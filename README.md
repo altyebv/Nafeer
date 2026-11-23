@@ -1,3 +1,9 @@
+<div align="right">
+
+[العربية](README.ar.md) | English
+
+</div>
+
 <div align="center">
 
 <img src="Nafeer/public/logo.png" alt="Nafeer logo: two figures pulling each other up" width="112" />
