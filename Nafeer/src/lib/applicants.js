@@ -3,7 +3,7 @@ import { Contributor }     from '@/lib/models/Contributor';
 import { ContributorRole } from '@/lib/models/ContributorRole';
 import { REAL_PEOPLE }     from '@/lib/SeedActor';
 import { pipelineStage }   from '@/lib/adminPipeline';
-import { newToken, onboardingLink } from '@/lib/applicationLinks';
+import { newToken, onboardingLink, ONBOARDING_DAYS } from '@/lib/applicationLinks';
 import { sendEmail }       from '@/lib/email/emailService';
 
 // ─── Applicants, as a team lead sees and decides them (docs/team-leads.md L3) ─
@@ -26,7 +26,6 @@ import { sendEmail }       from '@/lib/email/emailService';
 export const UNDO_MINUTES = 30;
 const MINUTE_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
-const ONBOARDING_DAYS = 7;
 
 // Fields read for a lead. Anything not listed never leaves the database here.
 const LEAD_FIELDS = [
