@@ -3,25 +3,30 @@ import { emailLayout, emailHeading, emailParagraph, emailButton, fallbackLink, s
 /**
  * Onboarding invite — sent when a contributor is approved and needs to complete setup.
  *
- * @param {{ expiresIn?: string }} data
+ * @param {{ expiresIn?: string; isDirectInvite?: boolean }} data
  */
-export function onboardingInviteDefaults({ expiresIn } = {}) {
+export function onboardingInviteDefaults({ expiresIn, isDirectInvite = false } = {}) {
   return {
-    subject: 'تمت الموافقة على طلبك في منصة نفير',
-    body: [
-      'تمت الموافقة على طلبك للانضمام كمساهم في منصة نفير التعليمية. أنت الآن جزء من فريق يبني مستقبل التعليم العربي.',
-      ['انقر على الزر أدناه لإكمال تأهيلك وإعداد حسابك. الرابط صالح لمدة ', strong(expiresIn || '7 أيام'), '.'],
-    ],
+    subject: isDirectInvite ? 'دعوة للانضمام إلى منصة نفير' : 'تمت الموافقة على طلبك في منصة نفير',
+    body: isDirectInvite
+      ? [
+          'ندعوك للانضمام كمساهم في منصة نفير التعليمية والمشاركة في بناء مستقبل التعليم العربي.',
+          ['انقر على الزر أدناه لإعداد حسابك. الرابط صالح لمدة ', strong(expiresIn || '7 أيام'), '.'],
+        ]
+      : [
+          'تمت الموافقة على طلبك للانضمام كمساهم في منصة نفير التعليمية. أنت الآن جزء من فريق يبني مستقبل التعليم العربي.',
+          ['انقر على الزر أدناه لإكمال تأهيلك وإعداد حسابك. الرابط صالح لمدة ', strong(expiresIn || '7 أيام'), '.'],
+        ],
   };
 }
 
 /**
- * @param {{ name?: string; link: string; expiresIn?: string; body?: string }} data
+ * @param {{ name?: string; link: string; expiresIn?: string; body?: string; isDirectInvite?: boolean }} data
  * @returns {{ subject: string; html: string; text: string }}
  */
-export function onboardingInviteTemplate({ name, link, expiresIn, body }) {
+export function onboardingInviteTemplate({ name, link, expiresIn, body, isDirectInvite }) {
   const greeting = name ? `مرحباً ${name}،` : 'مرحباً،';
-  const d = onboardingInviteDefaults({ expiresIn });
+  const d = onboardingInviteDefaults({ expiresIn, isDirectInvite });
 
   return {
     subject: d.subject,
