@@ -38,7 +38,7 @@ export const TEMPLATE_META = {
   },
   onboarding_invite: {
     label: 'دعوة التأهيل', group: 'contributors', icon: UserPlus,
-    description: 'رابط إكمال التسجيل لمساهم معتمد. تُرسل تلقائياً عند الاعتماد.',
+    description: 'رابط إعداد الحساب لمساهم معتمد أو مدعو مباشرة.',
     fields: [
       { key: 'link',      label: 'رابط التأهيل', type: 'url',  required: true, placeholder: 'https://...' },
       { key: 'expiresIn', label: 'مدة الصلاحية', type: 'text', placeholder: '7 أيام' },
