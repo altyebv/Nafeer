@@ -6,6 +6,7 @@ import { AdminSidebar }           from './components/AdminSidebar';
 import { MediaSection }           from './components/MediaSection';
 import { AdminsSection }          from './components/AdminSection';
 import { CreateContributorModal } from './components/modals/CreateContributorModal';
+import { InviteContributorModal } from './components/modals/InviteContributorModal';
 import { SiteSettingsSection }    from './components/SiteSettingSection';
 import { PublishSection }         from './components/PublishSection';
 import { MailScreen }             from './screens/MailScreen';
@@ -38,6 +39,7 @@ export default function AdminDashboard() {
   const [isInitialLoad,   setIsInitialLoad]  = useState(true);
   const [reviewTotal,     setReviewTotal]    = useState(0);
   const [showCreate,      setShowCreate]     = useState(false);
+  const [showInvite,      setShowInvite]     = useState(false);
   const fetchingRef = useRef(false);
 
   // ── Fetch all contributors ─────────────────────────────────────────────────
@@ -97,6 +99,7 @@ export default function AdminDashboard() {
         onOpenChange={setNavOpen}
         onSelect={setSection}
         onCreateContributor={() => setShowCreate(true)}
+        onInviteContributor={() => setShowInvite(true)}
         onSignOut={handleSignOut}
       />
 
@@ -122,6 +125,12 @@ export default function AdminDashboard() {
         <CreateContributorModal
           onClose={() => setShowCreate(false)}
           onCreated={() => { setShowCreate(false); loadAll(); }}
+        />
+      )}
+      {showInvite && (
+        <InviteContributorModal
+          onClose={() => setShowInvite(false)}
+          onInvited={loadAll}
         />
       )}
     </div>
