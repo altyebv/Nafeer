@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { Menu, X, Plus, LogOut } from 'lucide-react';
+import { Menu, X, Plus, Send, LogOut } from 'lucide-react';
 import { NAV, NAV_GROUPS } from '../constants';
 
 // Sidebar on large screens; under `lg` it becomes a drawer opened from a top
@@ -29,7 +29,7 @@ function NavItem({ item, active, count, onSelect }) {
   );
 }
 
-export function AdminSidebar({ section, badges, open, onOpenChange, onSelect, onCreateContributor, onSignOut }) {
+export function AdminSidebar({ section, badges, open, onOpenChange, onSelect, onCreateContributor, onInviteContributor, onSignOut }) {
   const current = NAV.find((item) => item.id === section);
 
   // Close the drawer with Escape.
@@ -111,8 +111,15 @@ export function AdminSidebar({ section, badges, open, onOpenChange, onSelect, on
         {/* Footer actions */}
         <div className="shrink-0 px-3 py-3 border-t border-ink-800/60 space-y-1">
           <button
-            onClick={() => { onCreateContributor(); onOpenChange(false); }}
+            onClick={() => { onInviteContributor(); onOpenChange(false); }}
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-arabic font-semibold bg-sand-600 hover:bg-sand-500 text-ink-950 transition-colors"
+          >
+            <Send size={16} strokeWidth={2} />
+            <span>دعوة مساهم</span>
+          </button>
+          <button
+            onClick={() => { onCreateContributor(); onOpenChange(false); }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-arabic text-ink-400 hover:text-ink-100 hover:bg-ink-800/60 transition-colors"
           >
             <Plus size={16} strokeWidth={2.25} />
             <span>مساهم جديد</span>
