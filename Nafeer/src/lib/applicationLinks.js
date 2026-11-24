@@ -13,6 +13,7 @@ import { interviewSnapshot } from '@/lib/interview';
 
 const DAY_MS = 86_400_000;
 export const INTERVIEW_DAYS = 14;
+export const ONBOARDING_DAYS = 7;
 
 export const newToken = () => randomBytes(32).toString('hex');
 
