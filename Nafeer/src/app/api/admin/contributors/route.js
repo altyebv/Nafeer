@@ -9,6 +9,7 @@ import { sendEmail } from '@/lib/email/emailService';
 import { ContributorRole } from '@/lib/models/ContributorRole';
 import { interviewSnapshot } from '@/lib/interview';
 import { applyDueDecisions } from '@/lib/applicants';
+import { ONBOARDING_DAYS } from '@/lib/applicationLinks';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 
@@ -31,7 +32,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // One entry per emailed link: how long it lives and which template carries it.
 const LINK_KINDS = {
   interview:  { days: 14, expiresIn: '14 يوماً', template: 'interview_invite'  },
-  onboarding: { days: 7,  expiresIn: '7 أيام',   template: 'onboarding_invite' },
+  onboarding: { days: ONBOARDING_DAYS, expiresIn: '7 أيام', template: 'onboarding_invite' },
 };
 
 // Emails a link to the contributor. Never throws — a failed send is reported
