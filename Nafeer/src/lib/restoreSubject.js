@@ -6,6 +6,7 @@ import { Unit } from '@/lib/models/Unit';
 import { Lesson } from '@/lib/models/Lesson';
 import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
+import { Piece } from '@/lib/models/Piece';
 import { Concept } from '@/lib/models/Concept';
 import { Tag } from '@/lib/models/Tag';
 import { FeedItem } from '@/lib/models/FeedItem';
@@ -28,10 +29,10 @@ import { deleteSubjectContent, writtenContent } from '@/lib/subjectContent';
 //  3. Nothing is lost silently. unpublishedWork lists what the restore would
 //     throw away, and the route refuses until the owner has seen it.
 
-const MODELS = { Subject, Unit, Lesson, Section, Block, Concept, Tag, FeedItem, Question, Exam };
+const MODELS = { Subject, Unit, Lesson, Section, Block, Concept, Tag, FeedItem, Question, Exam, Piece };
 
 // Insert order inside the transaction: parents before children.
-const INSERT_ORDER = ['Subject', 'Unit', 'Lesson', 'Section', 'Block', 'Concept', 'Tag', 'FeedItem', 'Question', 'Exam'];
+const INSERT_ORDER = ['Subject', 'Unit', 'Lesson', 'Section', 'Block', 'Concept', 'Tag', 'FeedItem', 'Question', 'Exam', 'Piece'];
 
 // What a document keeps from its database copy, per model.
 const CARRIED = {
@@ -73,7 +74,7 @@ export function publishedIds(data) {
       }
     }
   }
-  for (const [name, key] of [['Concept', 'concepts'], ['Tag', 'tags'], ['FeedItem', 'feedItems'], ['Question', 'questions'], ['Exam', 'exams']]) {
+  for (const [name, key] of [['Concept', 'concepts'], ['Tag', 'tags'], ['FeedItem', 'feedItems'], ['Question', 'questions'], ['Exam', 'exams'], ['Piece', 'pieces']]) {
     for (const item of data[key] || []) ids[name].add(item.id);
   }
   return ids;
@@ -96,7 +97,7 @@ export async function unpublishedWork(subjectId, data, publishedAt) {
     Section.find({ subjectId }).select('contentId lessonContentId updatedAt').lean(),
     Block.find({ subjectId }).select('contentId sectionContentId updatedAt').lean(),
     writtenContent(subjectId),
-    ...['Unit', 'Concept', 'Tag', 'FeedItem', 'Question', 'Exam'].map((n) =>
+    ...['Unit', 'Concept', 'Tag', 'FeedItem', 'Question', 'Exam', 'Piece'].map((n) =>
       MODELS[n].find({ subjectId }).select('contentId updatedAt').lean()),
   ]);
 
@@ -115,7 +116,7 @@ export async function unpublishedWork(subjectId, data, publishedAt) {
   }
 
   const other = {};
-  ['Unit', 'Concept', 'Tag', 'FeedItem', 'Question', 'Exam'].forEach((n, i) => {
+  ['Unit', 'Concept', 'Tag', 'FeedItem', 'Question', 'Exam', 'Piece'].forEach((n, i) => {
     const count = others[i].filter((d) => !inFile[n].has(d.contentId) || after(d)).length;
     if (count) other[n] = count;
   });
@@ -308,6 +309,21 @@ export function buildRestoreDocs(data, { seedActor, actorId, now = new Date() })
       examType: exam.examType || null,
       questionContentIds: exam.questionIds || [],
       sectionsJson: exam.sectionsJson || null,
+    });
+  }
+
+  for (const piece of data.pieces || []) {
+    docs.Piece.push({
+      ...meta(piece.status),
+      contentId: piece.id,
+      kind: piece.kind === 'QURAN' ? 'QURAN' : 'POETRY',
+      title: piece.title,
+      lines: piece.lines || [],
+      poet: piece.poet || null,
+      surah: piece.surah || null,
+      ayahFrom: piece.ayahFrom ?? null,
+      ayahTo: piece.ayahTo ?? null,
+      order: piece.order || 0,
     });
   }
 
