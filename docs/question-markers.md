@@ -2,8 +2,14 @@
 
 Marker questions: a picture with pins that the student labels or finds.
 They reuse the marker system that lesson images already have
-(`components/media/MarkerPin.jsx`, `lib/markerUtils.js`) and stay hidden
-behind the `hotspotEnabled` switch until the Android app can grade them.
+(`components/media/MarkerPin.jsx`, `lib/markerUtils.js`).
+
+**Update, 27 November 2026.** The app has no `IMAGE_MARKER` type, but its
+`FIGURE` question has a PIN mode that is the same exercise as label the pins.
+Publishing now sends each valid label question as a `FIGURE` PIN question and
+leaves locate questions out; `hotspotEnabled` gates nothing any more and is
+gone from the dashboard. The mapping is in `lib/appExport.js` and in
+`docs/contract.md` (G7). The M4 notes below predate it.
 
 Status: M1–M3 built on the web, 22 October 2026 (see §6). M4, the
 Android app, is next. Decisions taken with the owner:
