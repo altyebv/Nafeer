@@ -217,7 +217,6 @@ function FlagsPanel({ flags, onFlagChange }) {
   const TOGGLES = [
     { key: 'feedEnabled',      label: 'بطاقات التغذية',    desc: 'شاشة المراجعة بالتكرار المتباعد' },
     { key: 'examModeEnabled',  label: 'وضع الاختبار',       desc: 'محاكاة الامتحانات الكاملة'       },
-    { key: 'hotspotEnabled',   label: 'أسئلة الصور التفاعلية', desc: 'تُنشر مع المادة فقط وهو مفعّل — يحتاج دعم التطبيق', warn: true },
   ];
 
   return (
