@@ -9,6 +9,10 @@ import { useUndoStore } from '@/store/undoStore';
 import MediaPicker from '@/components/editor/media/MediaPicker';
 import ImageMarkerEditor from '@/components/editor/media/ImageMarkerEditor';
 import { sanitiseMarkers } from '@/lib/markerUtils';
+
+// An interactive image's pins: Nafeer writes them as `markers`, Basheer's own
+// content (restored from the app's files) as `pins`; the app reads either.
+const blockMarkers = (meta) => sanitiseMarkers(meta?.markers?.length ? meta.markers : meta?.pins);
 import { styleKey } from '@/lib/appExport';
 import { MarkedImage } from '@/components/media/MarkerPin';
 import FormulaEditor from '@/components/editor/blocks/FormulaEditor';
@@ -111,7 +115,7 @@ function BlockPreview({ block }) {
         return (
           <div className="mx-4 my-2">
             <MarkedImage src={block.content} alt={block.metadata?.alt || block.caption || ''}
-              markers={sanitiseMarkers(block.metadata?.markers)} caption={block.caption} />
+              markers={blockMarkers(block.metadata)} caption={block.caption} />
           </div>
         );
       }
@@ -567,18 +571,25 @@ function MediaBlockEditor({ block, update, subjectId }) {
   const hasUrl = Boolean(block.content?.trim());
   const isGif = block.type === 'GIF';
   const isInteractive = block.type === 'INTERACTIVE_IMAGE';
-  const markers = sanitiseMarkers(block.metadata?.markers);
+  const markers = blockMarkers(block.metadata);
+  // Written as `markers`; a restored `pins` list is taken over, not kept beside it.
+  const setMarkers = (next, extra = {}) => update({ ...extra, metadata: { ...(block.metadata || {}), markers: next, pins: undefined } });
 
-  const handleInteractiveToggle = (on) => update({
-    type: on ? 'INTERACTIVE_IMAGE' : 'IMAGE',
-    metadata: { ...(block.metadata || {}), markers: on ? (block.metadata?.markers || []) : [] },
-  });
+  const handleInteractiveToggle = (on) => setMarkers(on ? markers : [], { type: on ? 'INTERACTIVE_IMAGE' : 'IMAGE' });
+  // The picture's width over its height, so the app sizes the block before the
+  // picture arrives and caps a tall one (ImageBlock.kt). Read when it loads here.
+  const onImageLoad = (e) => {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    if (!w || !h) return;
+    const aspectRatio = Math.round((w / h) * 10000) / 10000;
+    if (block.metadata?.aspectRatio !== aspectRatio) update({ metadata: { ...(block.metadata || {}), aspectRatio } });
+  };
   // Markers are positions on one picture; on another they point at nothing.
   // A new image therefore starts without them — after asking, when there are some.
   const replaceImage = (url, meta) => {
     if (url === block.content) return true;
     if (markers.length && !window.confirm(`تغيير الصورة يحذف علاماتها (${markers.length}). متابعة؟`)) return false;
-    update({ content: url, metadata: { ...(block.metadata || {}), ...meta, markers: [] } });
+    update({ content: url, metadata: { ...(block.metadata || {}), ...meta, markers: [], pins: undefined, aspectRatio: undefined } });
     return true;
   };
   const handleSelect = (item) => {
@@ -586,7 +597,7 @@ function MediaBlockEditor({ block, update, subjectId }) {
   };
   const handleClear = () => update({
     type: isInteractive ? 'IMAGE' : block.type, content: '',
-    metadata: { ...(block.metadata || {}), mediaId: null, alt: '', markers: [] },
+    metadata: { ...(block.metadata || {}), mediaId: null, alt: '', markers: [], pins: undefined, aspectRatio: undefined },
   });
 
   return (
@@ -596,7 +607,7 @@ function MediaBlockEditor({ block, update, subjectId }) {
           <div className={`relative group/thumb rounded-lg overflow-hidden border bg-ink-950 ${isInteractive ? 'border-sand-700/50' : 'border-ink-800'}`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={block.content} alt={block.metadata?.alt || ''} className="max-h-48 w-auto mx-auto object-contain py-2"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              onLoad={onImageLoad} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             <button onClick={handleClear} aria-label="إزالة الصورة" className="touch-target absolute top-2 left-2 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-red-400 hover:bg-black/80 transition-all opacity-0 group-hover/thumb:opacity-100 text-xs"><X size={14} strokeWidth={1.9} /></button>
             {isGif && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-900/80 text-purple-300 text-[10px] font-bold rounded">GIF</span>}
             {isInteractive && markers.length > 0 && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-sand-900/80 text-sand-300 text-[10px] font-bold rounded border border-sand-700/60 inline-flex items-center gap-1"><Sparkles size={10} strokeWidth={1.8} /> {markers.length}</span>}
@@ -625,7 +636,7 @@ function MediaBlockEditor({ block, update, subjectId }) {
                 {!hasUrl
                   ? <p className="text-xs text-ink-500 font-arabic text-center py-3">اختر صورة أولاً لإضافة العلامات</p>
                   : <ImageMarkerEditor imageUrl={block.content} markers={markers}
-                    onChange={(next) => update({ metadata: { ...(block.metadata || {}), markers: next } })} />}
+                    onChange={(next) => setMarkers(next)} />}
               </div>
             )}
           </div>
