@@ -12,6 +12,8 @@
 // lesson merges the server copy in without dropping local work. Neither costs
 // a request of its own: the save request and the lesson GET already happen.
 
+import { metadataObject } from '@/lib/appExport';
+
 export const LESSON_FIELDS = [
   'title', 'estimatedMinutes', 'summary', 'metadata', 'parentLesson',
   'variationType', 'variationNote', 'groupId', 'groupTitle', 'groupMetadata',
@@ -70,7 +72,8 @@ export const fromServerBlock = (b) => ({
   order:      b.order,
   conceptRef: b.conceptRef || null,
   caption:    b.caption    || null,
-  metadata:   b.metadata   ?? null,
+  // Restored before the restore parsed it, metadata may still be a JSON string.
+  metadata:   metadataObject(b.metadata),
   mediaPath:  b.mediaPath  || null,
   _v:         b.version    ?? 1,
 });
