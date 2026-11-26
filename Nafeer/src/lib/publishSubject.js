@@ -10,6 +10,8 @@ import { Tag }                    from '@/lib/models/Tag';
 import { FeedItem }               from '@/lib/models/FeedItem';
 import { Question }               from '@/lib/models/Question';
 import { Exam }                   from '@/lib/models/Exam';
+import { Piece }                  from '@/lib/models/Piece';
+import { blockMetadataForApp, pieceLessons, pieceForApp } from '@/lib/appExport';
 import { uploadFile, getPublicUrl } from '@/lib/supabase';
 import { getMathNotation }        from '@/shared/curriculum';
 import { getManifest, upsertDeltaSubjectEntry } from '@/lib/FirebaseAdmin';
@@ -80,7 +82,7 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
     // ── 1. Fetch all approved content for this subject ────────────────────────
     const [
       subject, units, lessons, sections, blocks,
-      concepts, tags, feedItems, questions, exams,
+      concepts, tags, feedItems, questions, exams, pieces,
     ] = await Promise.all([
       Subject.findOne({ subjectId }).lean(),
       Unit.find({ subjectId }).sort({ order: 1 }).lean(),
@@ -95,6 +97,8 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
         $or: [{ status: 'approved' }, { isCheckpoint: true }],
       }).lean(),
       Exam.find({ subjectId, status: 'approved' }).lean(),
+      // Every piece goes: one missing from a full export is retired on the device.
+      Piece.find({ subjectId, status: { $ne: 'archived' } }).sort({ order: 1, createdAt: 1 }).lean(),
     ]);
 
     if (!subject) {
@@ -217,7 +221,7 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
         order:      block.order,
         conceptRef: block.conceptRef || null,
         caption:    block.caption    || null,
-        metadata:   coerceMixedToString(block.metadata),
+        metadata:   blockMetadataForApp(block.type, block.metadata),
         mediaPath:  block.mediaPath  || null,
       }));
 
@@ -308,12 +312,22 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
     const indexedSections  = sections.filter((s) => approvedSectionIds.has(s.contentId));
     const indexedBlocks    = blocks.filter((b) => exportedBlockIds.has(b.contentId));
 
+    // ── Pieces: each taught by the first exported lesson whose verse shows it.
+    // That lesson is part of the piece the app receives but not of its document,
+    // so it goes into the piece's version token: moving the verse re-sends it.
+    const lessonOfPiece = pieceLessons({ units, lessons, sections: indexedSections, blocks: indexedBlocks });
+    const piecesExport  = pieces.map((p) => pieceForApp(p, lessonOfPiece.get(p.contentId)));
+    const indexedPieces = pieces.map((p) => ({
+      ...p,
+      updatedAt: `${new Date(p.updatedAt || p.createdAt || 0).toISOString()}|${lessonOfPiece.get(p.contentId) || ''}`,
+    }));
+
     // ── Full export (lazy — built only when a path needs it) ──────────────────
     const buildFullExport = () => assembleFullExport({
       subjectExport, tagsExport, conceptsExport,
       unitsExport, lessonsExport: lessons, // full export uses nested shape
       sectionsExport: sections, blocksExport: blocks,
-      questionsExport, examsExport, feedItemsExport,
+      questionsExport, examsExport, feedItemsExport, piecesExport,
       lessonsByUnit, sectionsByLesson, blocksBySection,
       approvedLessonIds,
     });
@@ -329,7 +343,7 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
         snapshot: {
           subject, tags, concepts, units, lessons,
           sections: indexedSections, blocks: indexedBlocks,
-          questions: scopedQuestions, exams, feedItems,
+          questions: scopedQuestions, exams, feedItems, pieces: indexedPieces,
         },
         prevEntry,
       });
@@ -370,7 +384,7 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
           questions: scopedQuestions,  questionsExport,
           exams,      examsExport,
           feedItems,  feedItemsExport,
-          
+          pieces:   indexedPieces,   piecesExport,
         },
         stats: {
           lessons:   lessons.length,
@@ -601,7 +615,7 @@ async function uploadFullExport(subjectId, exportData) {
 function assembleFullExport({
   subjectExport, tagsExport, conceptsExport,
   unitsExport, lessonsExport, sectionsExport, blocksExport,
-  questionsExport, examsExport, feedItemsExport,
+  questionsExport, examsExport, feedItemsExport, piecesExport = [],
   lessonsByUnit, sectionsByLesson, blocksBySection,
   approvedLessonIds,
 }) {
@@ -644,7 +658,7 @@ function assembleFullExport({
               order:      block.order,
               conceptRef: block.conceptRef || null,
               caption:    block.caption    || null,
-              metadata:   coerceMixedToString(block.metadata),
+              metadata:   blockMetadataForApp(block.type, block.metadata),
               mediaPath:  block.mediaPath  || null,
             })),
           })),
@@ -653,6 +667,8 @@ function assembleFullExport({
     questions: questionsExport,
     exams:     examsExport,
     feedItems: feedItemsExport,
+    // Left out when there are none, so existing subjects' files do not change.
+    ...(piecesExport.length ? { pieces: piecesExport } : {}),
   };
 }
 
