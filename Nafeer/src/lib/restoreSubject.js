@@ -7,6 +7,7 @@ import { Lesson } from '@/lib/models/Lesson';
 import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { Piece } from '@/lib/models/Piece';
+import { metadataObject } from '@/lib/appExport';
 import { Concept } from '@/lib/models/Concept';
 import { Tag } from '@/lib/models/Tag';
 import { FeedItem } from '@/lib/models/FeedItem';
@@ -212,7 +213,8 @@ export function buildRestoreDocs(data, { seedActor, actorId, now = new Date() })
             order: block.order,
             conceptRef: block.conceptRef || null,
             caption: block.caption || null,
-            metadata: block.metadata || null,
+            // The file carries it as a JSON string; the editor works on an object.
+            metadata: metadataObject(block.metadata) || null,
           });
         }
       }
