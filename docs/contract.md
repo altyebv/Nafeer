@@ -52,16 +52,12 @@ rolled back; in a delta patch the exception is rethrown. Two consequences:
   Nafeer-only (checkpoint placeholders) and are dropped from every export.
 - A subject that contains `VERSE` or `WIDGET` blocks only imports on Basheer
   builds that know those types, and Basheer does not check the manifest's
-  `minAppVersion`. So each newer type has a manifest feature flag, as
-  IMAGE_MARKER questions have `hotspotEnabled`: `verseBlocksEnabled` (VERSE
-  blocks and every piece) and `widgetBlocksEnabled` (WIDGET blocks). While a
-  flag is off, publish, delta bundles and `/api/export` leave those blocks out;
-  their lessons still go. Turn a flag on (admin dashboard, feature flags) once
-  every app build in use knows the type; the next delta publish then sends the
-  blocks as new. Both default to off. Turning `verseBlocksEnabled` off again
-  retires every piece on the devices at the next publish, and the students'
-  records on them. The gate is `blockGoesToApp` in
-  `src/lib/appExport.js`; a new block type gets its flag there.
+  `minAppVersion`. Nothing has been published yet, so both are always exported
+  (decided 2026-11-27). Once builds are in students' hands, a block type added
+  later needs a gate before it is published: `blockGoesToApp` in
+  `src/lib/appExport.js` is the one place every export path asks, and a
+  manifest feature flag (as `hotspotEnabled` gates IMAGE_MARKER questions) is
+  the pattern.
 
 The export envelope's `version` is `"1.0"`, matching
 `ContentSeeder.SUPPORTED_EXPORT_VERSION`. Any other value is refused.
@@ -249,8 +245,7 @@ recitals on the piece, not on the block.
 | `order` | Position among the subject's pieces. |
 
 - **Every piece of the subject is exported**, whatever its status (only
-  `archived` is left out), while `verseBlocksEnabled` is on; while it is off,
-  none is (§1). A piece missing from a full export is retired on the
+  `archived` is left out). A piece missing from a full export is retired on the
   device, **and so is every student's record on it**. So Nafeer refuses to
   delete a piece while a verse still names it, and asks before deleting.
 - A subject with no pieces has no `pieces` key, so existing subjects' files do
@@ -306,9 +301,9 @@ Found while writing this file. G1, G2, G4, G5 and G6 were fixed on 2026-11-27.
   list as bullets. Export now lower-cases them; the editor reads either case.
 - **G2. Fixed.** Nafeer has memorization pieces (§3a).
 - **G3. WIDGET is not authorable** (§4).
-- **G4. Fixed.** VERSE and WIDGET blocks would fail a subject's import on
-  older app builds. They are now published only while their manifest flag is on
-  (§1).
+- **G4. Closed.** VERSE and WIDGET blocks fail a subject's import on app builds
+  older than those types. Nothing has been published yet, so there are no such
+  builds to protect: both are always exported (§1).
 - **G5. Fixed.** A restore stored block `metadata` as the JSON string from the
   published file, and the block editors spread it into characters when edited.
   The restore now parses it, and the editor parses any string still in the
