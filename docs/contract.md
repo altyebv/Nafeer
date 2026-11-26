@@ -38,7 +38,7 @@ write each block as:
 | `order` | int | yes | Position in the section, 1-based. |
 | `conceptRef` | string? | no | A concept id of the same subject. |
 | `caption` | string? | no | Shown under images, verses, examples. |
-| `metadata` | **string**? | no | A JSON object **serialised to a string**. Basheer's `BlockJson.metadata` is `String?`: a raw object here fails the import. Nafeer stores it as an object and turns it into a string on export (`coerceMixedToString`). |
+| `metadata` | **string**? | no | A JSON object **serialised to a string**. Basheer's `BlockJson.metadata` is `String?`: a raw object here fails the import. Nafeer stores it as an object and turns it into a string on export (`blockMetadataForApp` in `src/lib/appExport.js`). |
 | `mediaPath` | string? | no | Supabase path of an IMAGE/GIF. Informational; not used to name the saved file. |
 | `sectionId` | string? | delta only | Present in flat delta patches; ignored in full exports. |
 
@@ -87,14 +87,16 @@ each type falls back to is listed below.
 
 ### HIGHLIGHT_BOX
 `{ "style": "definition" | "warning" | "tip" | "note" }`, **lower case**.
-Anything else, no metadata or bad JSON: `note`. See gap G1.
+Anything else, no metadata or bad JSON: `note`. Nafeer stores the style in
+upper case (`DEFINITION`) and lower-cases it on export; the editor reads either.
 
 ### LIST
 `{ "style": "numbered" | "bullet", "hasConceptLinks": false }`, **lower case**.
 Anything but `"numbered"` is a bullet list. `content` is one item per line, or,
 when `hasConceptLinks` is true or the content starts with `[`, a JSON array of
 `{ text, conceptRef?, children? }`. An array that cannot be read falls back to
-one item per line. See gap G1.
+one item per line. Nafeer stores `BULLET` / `NUMBERED` and lower-cases them on
+export, as for HIGHLIGHT_BOX.
 
 ### IMAGE / GIF
 `{ "aspectRatio": 1.5 }`. A ratio of 0 or less, or none, means "measure the
@@ -200,6 +202,49 @@ in Mongo, and publish/export pass it through untouched (stringified). Entries
 that are still half-typed (a word with no meaning yet) are kept as typed;
 Basheer drops them as described. VERSE needs no section-level field.
 
+## 3a. Memorization pieces
+
+A piece is a poem (or some of its أبيات) or a Quran passage the student learns
+by heart. VERSE blocks show it by naming it in `pieceId`. Basheer schedules
+recitals on the piece, not on the block.
+
+**In the export**, the envelope gets a top-level `pieces` array (`PieceJson`):
+
+```json
+{ "id": "pc_…", "kind": "QURAN", "title": "سورة النور، 1–10",
+  "lines": ["…", "…"], "poet": null, "surah": "النور",
+  "ayahFrom": 1, "ayahTo": 10, "lessonId": "ARABIC_U2_L3", "order": 0 }
+```
+
+| Field | Rule |
+|---|---|
+| `id` | Nafeer's `contentId`; what a verse's `pieceId` names. |
+| `kind` | `POETRY` or `QURAN`. Basheer calls `PieceKind.valueOf`: anything else fails the import. |
+| `lines` | One per بيت (`"صدر | عجز"`) or per آية, trimmed, none blank. At least one. |
+| `poet` | Poetry only. |
+| `surah`, `ayahFrom`, `ayahTo` | Quran only. `ayahTo` defaults to `ayahFrom + lines − 1`. |
+| `lessonId` | Not stored. At export: the first exported lesson (unit order, then lesson order) with a VERSE block naming the piece. Finishing that lesson enters the piece into review. Null when no exported lesson shows it. |
+| `order` | Position among the subject's pieces. |
+
+- **Every piece of the subject is exported**, whatever its status (only
+  `archived` is left out). A piece missing from a full export is retired on the
+  device, **and so is every student's record on it**. So Nafeer refuses to
+  delete a piece while a verse still names it, and asks before deleting.
+- A subject with no pieces has no `pieces` key, so existing subjects' files do
+  not change.
+- **Delta sync:** entity type `PIECE` (Basheer applyOrder 11); patches carry
+  `pieces: [...]`; deletions sit under `"PIECE"`. The piece's version token
+  includes its `lessonId`, so moving the verse that teaches it re-sends the piece.
+- **Restore** from a published file brings the pieces back.
+
+**In Nafeer:** `src/lib/models/Piece.js`; `/api/content/pieces` (GET by subject,
+POST) and `/api/content/pieces/[id]` (PUT, DELETE), validated by `normalizePiece`
+in `src/lib/verse.js`. In the verse editor's "للحفظ" section an author picks
+the piece, creates or edits one (a new piece starts from the block's text), sets
+the line range, and can fill the block's text from those lines of the piece. The
+editor warns when the piece does not exist, the range runs past the piece, or a
+block with no range does not show the whole piece.
+
 ## 4. WIDGET (not yet editable in Nafeer)
 
 Shape only. Nafeer can store and pass through a WIDGET block (for example one
@@ -231,24 +276,12 @@ texts, and the still. See `docs/features/widgets.md` in Basheer.
 
 ## 5. Gaps
 
-Found while writing this file. None is fixed by the VERSE work.
+Found while writing this file. G1 and G2 were fixed on 2026-11-27.
 
-- **G1. Style values are upper case in Nafeer, lower case in Basheer.** Nafeer
-  writes `HIGHLIGHT_BOX` `style` as `DEFINITION` / `WARNING` / `NOTE` / `TIP` and
-  `LIST` `style` as `BULLET` / `NUMBERED` (`src/shared/constants.js`,
-  `BlockEditor.jsx`). Basheer compares against lower case only, so every
-  highlight box authored in Nafeer shows as a plain note and every numbered
-  list as bullets. The reverse holds too: content restored from Basheer's
-  generator (lower case) shows in Nafeer's editor as a note / bullet list.
-  Fix on one side: lower-case on export, or match case-insensitively in Basheer.
-- **G2. No memorization pieces in Nafeer.** `pieceId` and `pieceLines` can be
-  typed on a VERSE block, but Nafeer has no pieces collection, no piece picker,
-  and no top-level `pieces` array in the export (`PieceJson`: `id`, `kind`
-  POETRY/QURAN, `title`, `lines`, `poet?`, `surah?`, `ayahFrom?`, `ayahTo?`,
-  `lessonId?`, `order`). Delta sync would also need entity type `PIECE`. Until
-  then a `pieceId` from Nafeer names no piece on the device, and no recital is
-  scheduled for it. See "What Nafeer must add" in Basheer's
-  `docs/features/memorization.md`.
+- **G1. Fixed.** Style values were upper case in Nafeer and lower case in
+  Basheer, so every Nafeer highlight box showed as a note and every numbered
+  list as bullets. Export now lower-cases them; the editor reads either case.
+- **G2. Fixed.** Nafeer has memorization pieces (§3a).
 - **G3. WIDGET is not authorable** (§4).
 - **G4. Old app builds.** Any VERSE or WIDGET block in a published subject
   makes that subject fail to import on Basheer builds from before those types
