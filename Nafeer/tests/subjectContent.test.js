@@ -50,7 +50,7 @@ vi.mock('@/lib/lessonAccess', () => ({
   unclaimedOwners: async (ids) => new Set(ids.filter((id) => id && !db.people.has(id))),
 }));
 for (const name of ['Subject', 'Unit', 'Lesson', 'Section', 'Block', 'Concept', 'Tag',
-  'FeedItem', 'Question', 'Exam', 'LessonHistory']) {
+  'FeedItem', 'Question', 'Exam', 'Piece', 'LessonHistory']) {
   vi.doMock(`@/lib/models/${name}`, () => ({ [name]: fake(name) }));
 }
 
