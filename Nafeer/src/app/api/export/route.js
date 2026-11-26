@@ -11,7 +11,7 @@ import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
 import { Piece } from '@/lib/models/Piece';
-import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, piecesGoToApp } from '@/lib/appExport';
+import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp } from '@/lib/appExport';
 import { getManifest } from '@/lib/FirebaseAdmin';
 import { getMathNotation } from '@/shared/curriculum';
 
@@ -87,7 +87,7 @@ export async function GET(request) {
 
     const scopedSectionIds = new Set(scopedSections.map((section) => section.contentId));
     const scopedBlocks = blocks.filter((block) => (
-      scopedSectionIds.has(block.sectionContentId) && blockGoesToApp(block.type, manifest?.featureFlags)
+      scopedSectionIds.has(block.sectionContentId) && blockGoesToApp(block.type)
     ));
     const scopedQuestions = questions.filter((question) => (
       canIncludeAll ||
@@ -96,10 +96,7 @@ export async function GET(request) {
     ));
 
     const lessonOfPiece = pieceLessons({ units, lessons, sections: scopedSections, blocks: scopedBlocks });
-    // Gated with VERSE blocks, as in the published file (lib/appExport.js).
-    const piecesExport = piecesGoToApp(manifest?.featureFlags)
-      ? pieces.map((p) => pieceForApp(p, lessonOfPiece.get(p.contentId)))
-      : [];
+    const piecesExport = pieces.map((p) => pieceForApp(p, lessonOfPiece.get(p.contentId)));
 
     const blocksBySection = scopedBlocks.reduce((acc, block) => {
       if (!acc[block.sectionContentId]) acc[block.sectionContentId] = [];
