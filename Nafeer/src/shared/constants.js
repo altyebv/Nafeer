@@ -13,6 +13,7 @@ export const BLOCK_TYPES = {
   TABLE: 'TABLE',
   QUOTE: 'QUOTE',
   DIVIDER: 'DIVIDER',
+  VERSE: 'VERSE',        // Quran or poetry; variant and glosses in metadata (docs/contract.md §3)
   QUESTION: 'QUESTION',  // interactive checkpoint question
 };
 
@@ -36,6 +37,10 @@ export const BLOCK_TYPE_CONFIG = {
   QUOTE:         { label: 'اقتباس',        icon: '❝',  color: 'slate' },
   DIVIDER:       { label: 'فاصل',          icon: '—',  color: 'stone' },
   QUESTION:      { label: 'نقطة تحقق',     icon: '◎',  color: 'amber', defaultMeta: null },
+  VERSE:         { label: 'آيات أو شعر',   icon: '۝',  color: 'sand',
+                   defaultMeta: { variant: 'poetry' } },
+  // Kept and passed through, not authored in Nafeer yet (docs/contract.md §4).
+  WIDGET:        { label: 'تجربة تفاعلية', icon: '⚙',  color: 'teal' },
 
 };
 
