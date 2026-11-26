@@ -3,9 +3,45 @@
 // publish pipeline's full export and delta bundles (lib/publishSubject.js).
 // docs/contract.md is the reference.
 
+// ── Block types older app builds do not know ──────────────────────────────────
+// The app fails a whole subject's import on a block type it lacks
+// (BlockType.valueOf), and it does not check minAppVersion. So each newer type
+// is published only while its manifest flag is on, as IMAGE_MARKER questions
+// are with hotspotEnabled: turn it on once every build in use knows the type.
+// Off, the blocks are left out (their lesson still goes), and so are pieces.
+export const GATED_BLOCK_FLAGS = {
+  VERSE:  'verseBlocksEnabled',
+  WIDGET: 'widgetBlocksEnabled',
+};
+
+/** Whether a block of this type goes to the app, given the manifest's featureFlags. */
+export function blockGoesToApp(type, flags) {
+  if (type === 'QUESTION') return false; // Nafeer-only checkpoint placeholder
+  const flag = GATED_BLOCK_FLAGS[type];
+  return !flag || flags?.[flag] === true;
+}
+
+/** Pieces only mean something to builds that show verses. */
+export const piecesGoToApp = (flags) => flags?.[GATED_BLOCK_FLAGS.VERSE] === true;
+
 // Nafeer stores these styles in upper case (DEFINITION, NUMBERED); the app
 // only matches lower case, and reads anything else as a note or a bullet list.
 const LOWER_CASE_STYLE = new Set(['HIGHLIGHT_BOX', 'LIST']);
+
+/**
+ * Block metadata as Nafeer keeps it: an object. The app's files carry it as a
+ * JSON string; a string that holds a JSON object is parsed, anything else is
+ * kept as it is.
+ */
+export function metadataObject(value) {
+  if (typeof value !== 'string') return value ?? null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : value;
+  } catch {
+    return value;
+  }
+}
 
 const asString = (value) => (value == null ? null : typeof value === 'string' ? value : JSON.stringify(value));
 
