@@ -52,6 +52,7 @@ export const ENTITY_TYPES = {
   QUESTION:  'QUESTION',
   EXAM:      'EXAM',
   FEED_ITEM: 'FEED_ITEM',
+  PIECE:     'PIECE',      // memorization pieces (Android applyOrder 11)
 };
 
 // Apply order must match Android's DeltaEntityType.applyOrder
@@ -66,6 +67,7 @@ const APPLY_ORDER = [
   ENTITY_TYPES.QUESTION,
   ENTITY_TYPES.EXAM,
   ENTITY_TYPES.FEED_ITEM,
+  ENTITY_TYPES.PIECE,
 ];
 
 // ── Public API ─────────────────────────────────────────────────────────────────
@@ -174,6 +176,7 @@ function snapshotToEntityMaps(snapshot, subjectId) {
   maps[ENTITY_TYPES.QUESTION]  = toMap(snapshot.questions, 'contentId');
   maps[ENTITY_TYPES.EXAM]      = toMap(snapshot.exams,     'contentId');
   maps[ENTITY_TYPES.FEED_ITEM] = toMap(snapshot.feedItems, 'contentId');
+  maps[ENTITY_TYPES.PIECE]     = toMap(snapshot.pieces,    'contentId');
 
   return maps;
 }
@@ -361,6 +364,9 @@ function buildPatchPayload({ subjectId, exportVersion, entityType, changed, dele
     case ENTITY_TYPES.FEED_ITEM:
       return { ...base, feedItems: filterById(snapshot.feedItemsExport, changed, 'id') };
 
+    case ENTITY_TYPES.PIECE:
+      return { ...base, pieces: filterById(snapshot.piecesExport, changed, 'id') };
+
     default:
       return base;
   }
@@ -444,6 +450,7 @@ function getAllEntityIds(patch) {
   if (patch.questions)  patch.questions.forEach((e)  => ids.push(e.id));
   if (patch.exams)      patch.exams.forEach((e)      => ids.push(e.id));
   if (patch.feedItems)  patch.feedItems.forEach((e)  => ids.push(e.id));
+  if (patch.pieces)     patch.pieces.forEach((e)     => ids.push(e.id));
   return ids;
 }
 
