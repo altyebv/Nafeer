@@ -9,6 +9,7 @@ import { Tag } from '@/lib/models/Tag';
 import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
+import { Piece } from '@/lib/models/Piece';
 import { LessonHistory } from '@/lib/models/LessonHistory';
 import { lessonOwnerId } from '@/lib/credits';
 import { unclaimedOwners } from '@/lib/lessonAccess';
@@ -22,7 +23,7 @@ import { reconcileAuthoredStatsLater } from '@/lib/authoredStats';
 
 /** Collections that hold a subject's content, keyed by `subjectId`. */
 export const SUBJECT_CONTENT_MODELS = {
-  Subject, Unit, Lesson, Section, Block, Concept, Tag, FeedItem, Question, Exam,
+  Subject, Unit, Lesson, Section, Block, Concept, Tag, FeedItem, Question, Exam, Piece,
 };
 
 /**
@@ -85,7 +86,7 @@ export function hasWrittenContent(lesson, { sectionLessonIds, unclaimed }) {
 
 /**
  * What in a subject is someone's work. `lessons` is the set of written lesson
- * ids; `other` counts concepts, questions, feed items, exams and tags, which
+ * ids; `other` counts concepts, questions, feed items, exams, tags and pieces, which
  * the catalog never creates, so every one of them was written by a person.
  * Three reads plus one count per collection.
  */
@@ -100,6 +101,7 @@ export async function writtenContent(subjectId) {
     FeedItem.countDocuments({ subjectId }),
     Exam.countDocuments({ subjectId }),
     Tag.countDocuments({ subjectId }),
+    Piece.countDocuments({ subjectId }),
   ]);
 
   const unclaimed = await unclaimedOwners(lessons.map(lessonOwnerId));
