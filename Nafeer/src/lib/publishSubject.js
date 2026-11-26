@@ -11,7 +11,7 @@ import { FeedItem }               from '@/lib/models/FeedItem';
 import { Question }               from '@/lib/models/Question';
 import { Exam }                   from '@/lib/models/Exam';
 import { Piece }                  from '@/lib/models/Piece';
-import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp } from '@/lib/appExport';
+import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, questionGoesToApp, questionForApp } from '@/lib/appExport';
 import { uploadFile, getPublicUrl } from '@/lib/supabase';
 import { getMathNotation }        from '@/shared/curriculum';
 import { getManifest, upsertDeltaSubjectEntry } from '@/lib/FirebaseAdmin';
@@ -226,15 +226,14 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
       }));
 
     // ── Questions
-    // Marker questions stay out until the app can grade them: a build that
-    // doesn't know the type may fail on it (docs/question-markers.md §M4).
-    const markersOn = manifest?.featureFlags?.hotspotEnabled === true;
+    // Marker questions go as the app's FIGURE PIN questions; the kinds the app
+    // cannot take stay out (lib/appExport.js, docs/contract.md G7).
     const scopedQuestions = questions.filter((q) => (
       (q.status === 'approved' || (q.isCheckpoint && approvedSectionIds.has(q.sectionContentId)))
-      && (markersOn || q.type !== 'IMAGE_MARKER')
+      && questionGoesToApp(q)
     ));
 
-    const questionsExport = scopedQuestions.map((q) => ({
+    const questionsExport = scopedQuestions.map((q) => questionForApp(q, {
       id:               q.contentId,
       type:             q.type,
       textAr:           q.textAr,
@@ -262,8 +261,6 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
       isCheckpoint:     q.isCheckpoint     || false,
       conceptIds:       q.conceptIds       || [],
       markers:          q.markers          || [],
-      markerMode:       q.markerMode       || null,
-      image:            q.image            || null,
     }));
 
     // ── Exams
