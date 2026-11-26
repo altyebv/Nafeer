@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { Plus, X } from 'lucide-react';
-import { Field, Input, Textarea, Select, Segmented, Button, cx } from '@/components/ui';
+import { Pencil, Plus, X } from 'lucide-react';
+import { Field, Input, Textarea, Select, Segmented, Button, Dialog, cx } from '@/components/ui';
+import { usePieces } from '@/hooks/usePieces';
 import {
   readVerseMeta, isQuran, verseLines, variantPatch, patchVerseMeta,
-  pieceLinesFrom, setLineMeaning, lineWords, verseProblems,
+  pieceLinesFrom, setLineMeaning, lineWords, verseProblems, verseFromPiece,
 } from '@/lib/verse';
 
 // ─── VerseEditor ──────────────────────────────────────────────────────────────
@@ -17,11 +18,12 @@ const VARIANTS = [
   { id: 'poetry', label: 'شعر' },
 ];
 
-export default function VerseEditor({ block, update }) {
+export default function VerseEditor({ block, update, subjectId }) {
   const meta = readVerseMeta(block.metadata);
   const quran = isQuran(meta);
   const lines = verseLines(block.content);
-  const problems = verseProblems(block.content, meta);
+  const piecesApi = usePieces(subjectId);
+  const problems = verseProblems(block.content, meta, piecesApi.pieces);
   const words = Array.isArray(meta.words) ? meta.words : [];
   const meanings = Array.isArray(meta.meanings) ? meta.meanings : [];
 
@@ -76,7 +78,7 @@ export default function VerseEditor({ block, update }) {
 
       <Meanings lines={lines} meanings={meanings} setMeanings={setMeanings} orphans={orphanMeanings} />
 
-      <Piece meta={meta} setMeta={setMeta} problems={pieceProblems} />
+      <Piece block={block} meta={meta} update={update} setMeta={setMeta} problems={pieceProblems} api={piecesApi} />
     </div>
   );
 }
@@ -171,36 +173,153 @@ function Meanings({ lines, meanings, setMeanings, orphans }) {
 }
 
 // ── Memorization piece ────────────────────────────────────────────────────────
-function Piece({ meta, setMeta, problems }) {
+// The piece this verse shows, picked from the subject's pieces, and the lines
+// of it. "املأ النص" copies those lines into the block, so the text the student
+// recites is the piece's own.
+function Piece({ block, meta, update, setMeta, problems, api }) {
+  const { pieces, loading, error } = api;
+  const piece = pieces?.find((p) => p.id === meta.pieceId) || null;
   const [from, to] = Array.isArray(meta.pieceLines) ? meta.pieceLines : [];
-  const setRange = (a, b) => setMeta({ pieceLines: pieceLinesFrom(a, b) });
   const [draft, setDraft] = useState({ from: from ?? '', to: to ?? '' });
+  const [form, setForm] = useState(null); // null, or the piece being created or edited
+
   const onRange = (key, value) => {
     const next = { ...draft, [key]: value };
     setDraft(next);
-    setRange(next.from, next.to);
+    setMeta({ pieceLines: pieceLinesFrom(next.from, next.to) });
   };
+  const pick = (id) => {
+    setDraft({ from: '', to: '' });
+    setMeta({ pieceId: id || undefined, pieceLines: undefined });
+  };
+  const fill = () => {
+    if (!piece) return;
+    const { content, patch } = verseFromPiece(piece, from, to);
+    if (block.content?.trim() && block.content.trim() !== content
+      && !window.confirm('النص الحالي بيتبدّل بسطور القطعة. متابعة؟')) return;
+    const change = { content, metadata: patchVerseMeta(block.metadata, patch) };
+    if (piece.kind === 'POETRY' && !block.caption?.trim() && piece.poet) change.caption = piece.poet;
+    update(change);
+  };
+  // A new piece starts from what the block holds.
+  const fromBlock = () => ({
+    kind: isQuran(meta) ? 'QURAN' : 'POETRY',
+    title: '', lines: block.content || '',
+    poet: isQuran(meta) ? '' : block.caption || '', surah: meta.surah || '',
+    ayahFrom: String(meta.ayah ?? '').match(/\d+/)?.[0] ?? '', ayahTo: '',
+  });
 
   return (
-    <Section title="للحفظ" hint="لو الأبيات أو الآيات دي جزء من قطعة الطالب بيحفظها. قطع الحفظ لسه ما عندها مكتبة في نفير؛ اكتب معرّفها زي ما متفق عليهو."
-      collapsed={!meta.pieceId && meta.pieceLines == null}>
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="معرّف القطعة" className="col-span-3 sm:col-span-1">
-          <Input value={meta.pieceId ?? ''} onChange={(e) => setMeta({ pieceId: e.target.value.trim() })} placeholder="qr_nur" dir="ltr" />
+    <Section title="للحفظ" collapsed={!meta.pieceId}
+      hint="لو الأبيات أو الآيات دي جزء من قطعة الطالب بيحفظها. التطبيق بيراجعها معاهو سطر سطر.">
+      {error && <Warning>{error}</Warning>}
+      <div className="flex gap-2 items-end flex-wrap">
+        <Field label="القطعة" className="flex-1 min-w-48">
+          <Select value={meta.pieceId ?? ''} onChange={(e) => pick(e.target.value)} disabled={loading}>
+            <option value="">{loading ? 'جاري التحميل…' : 'ما جزء من قطعة'}</option>
+            {(pieces || []).map((p) => (
+              <option key={p.id} value={p.id}>{p.title} · {p.lines.length} سطر</option>
+            ))}
+            {meta.pieceId && pieces && !piece && <option value={meta.pieceId}>{meta.pieceId} (ما موجودة)</option>}
+          </Select>
         </Field>
-        <Field label="من سطر" hint="في القطعة">
-          <Input type="number" min={1} value={draft.from} onChange={(e) => onRange('from', e.target.value)} dir="ltr" />
-        </Field>
-        <Field label="إلى سطر" hint="فاضي = القطعة كلها">
-          <Input type="number" min={1} value={draft.to} onChange={(e) => onRange('to', e.target.value)} dir="ltr" />
-        </Field>
+        {piece && <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setForm({ ...piece, lines: piece.lines.join('\n') })}>عدّل القطعة</Button>}
+        <Button size="sm" icon={Plus} disabled={loading || Boolean(error)} onClick={() => setForm(fromBlock())}>قطعة جديدة</Button>
       </div>
-      {problems.map((p) => <Warning key={p.kind}>{p.message}</Warning>)}
+
+      {meta.pieceId && (
+        <div className="flex gap-3 items-end flex-wrap">
+          <Field label="من سطر" hint="في القطعة">
+            <Input type="number" min={1} max={piece?.lines.length} value={draft.from} onChange={(e) => onRange('from', e.target.value)} dir="ltr" className="w-24" />
+          </Field>
+          <Field label="إلى سطر" hint="فاضي = القطعة كلها">
+            <Input type="number" min={1} max={piece?.lines.length} value={draft.to} onChange={(e) => onRange('to', e.target.value)} dir="ltr" className="w-24" />
+          </Field>
+          {piece && <Button size="sm" onClick={fill}>املأ النص من القطعة</Button>}
+        </div>
+      )}
+      {problems.map((p) => <Warning key={p.kind + p.message}>{p.message}</Warning>)}
+
+      {form && (
+        <PieceForm initial={form} api={api} onClose={() => setForm(null)}
+          onSaved={(saved) => { setForm(null); if (!form.id) pick(saved.id); }}
+          onDeleted={() => { setForm(null); }} />
+      )}
     </Section>
   );
 }
 
-// ── Pieces ────────────────────────────────────────────────────────────────────
+const KINDS = [
+  { id: 'QURAN', label: 'قرآن' },
+  { id: 'POETRY', label: 'شعر' },
+];
+
+function PieceForm({ initial, api, onClose, onSaved, onDeleted }) {
+  const [v, setV] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState(null);
+  const set = (patch) => setV((cur) => ({ ...cur, ...patch }));
+  const quran = v.kind === 'QURAN';
+  const count = verseLines(v.lines).length;
+
+  const run = async (fn) => {
+    setBusy(true); setProblem(null);
+    try { await fn(); } catch (e) { setProblem(e.message); } finally { setBusy(false); }
+  };
+  const save = () => run(async () => {
+    const body = { ...v, lines: verseLines(v.lines) };
+    onSaved(v.id ? await api.update(v.id, body) : await api.create(body));
+  });
+  const remove = () => {
+    if (!window.confirm('حذف القطعة بيحذف حفظ الطلاب فيها من التطبيق بعد النشر الجاي. متابعة؟')) return;
+    run(async () => { await api.remove(v.id); onDeleted(); });
+  };
+
+  return (
+    <Dialog open onClose={onClose} size="lg" title={v.id ? 'تعديل القطعة' : 'قطعة جديدة'}
+      description="قطعة الحفظ: قصيدة أو أبيات منها، أو آيات. النص زي ما في الكتاب بالضبط."
+      footer={(
+        <>
+          {v.id && <Button variant="danger" disabled={busy} onClick={remove}>احذف القطعة</Button>}
+          <div className="flex-1" />
+          <Button variant="ghost" disabled={busy} onClick={onClose}>إلغاء</Button>
+          <Button variant="primary" loading={busy} onClick={save}>حفظ</Button>
+        </>
+      )}>
+      <div className="space-y-4">
+        <Segmented label="نوع القطعة" items={KINDS} value={v.kind} onChange={(kind) => set({ kind })} size="sm" />
+        <Field label="العنوان" hint={quran ? 'مثلاً: سورة النور، 1–10' : 'مثلاً: النيل'} required>
+          <Input value={v.title} onChange={(e) => set({ title: e.target.value })} />
+        </Field>
+        {quran ? (
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="السورة">
+              <Input value={v.surah ?? ''} onChange={(e) => set({ surah: e.target.value })} placeholder="النور" />
+            </Field>
+            <Field label="من آية">
+              <Input type="number" min={1} value={v.ayahFrom ?? ''} onChange={(e) => set({ ayahFrom: e.target.value })} dir="ltr" />
+            </Field>
+            <Field label="إلى آية" hint="فاضي = حسب عدد السطور">
+              <Input type="number" min={1} value={v.ayahTo ?? ''} onChange={(e) => set({ ayahTo: e.target.value })} dir="ltr" />
+            </Field>
+          </div>
+        ) : (
+          <Field label="الشاعر">
+            <Input value={v.poet ?? ''} onChange={(e) => set({ poet: e.target.value })} />
+          </Field>
+        )}
+        <Field label={`السطور (${count})`} required
+          hint={quran ? 'كل آية في سطر، منقولة من صفحة الكتاب.' : 'كل بيت في سطر، والصدر والعجز بينهم | '}>
+          <Textarea rows={Math.min(14, Math.max(4, count + 1))} value={v.lines} onChange={(e) => set({ lines: e.target.value })}
+            dir="rtl" className="font-arabic text-base leading-loose" />
+        </Field>
+        {problem && <p role="alert" className="t-label text-danger">{problem}</p>}
+      </div>
+    </Dialog>
+  );
+}
+
+// ── Parts ────────────────────────────────────────────────────────────────────
 function Section({ title, count, hint, collapsed = false, children }) {
   return (
     <details open={!collapsed} className="group rounded-control border border-line">
