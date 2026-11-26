@@ -11,7 +11,7 @@ import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
 import { Piece } from '@/lib/models/Piece';
-import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp } from '@/lib/appExport';
+import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, questionGoesToApp, questionForApp } from '@/lib/appExport';
 import { getManifest } from '@/lib/FirebaseAdmin';
 import { getMathNotation } from '@/shared/curriculum';
 
@@ -89,10 +89,12 @@ export async function GET(request) {
     const scopedBlocks = blocks.filter((block) => (
       scopedSectionIds.has(block.sectionContentId) && blockGoesToApp(block.type)
     ));
+    // Marker questions in the app's terms, as in the published file (lib/appExport.js).
     const scopedQuestions = questions.filter((question) => (
-      canIncludeAll ||
-      question.status === 'approved' ||
-      (question.isCheckpoint && scopedSectionIds.has(question.sectionContentId))
+      (canIncludeAll ||
+        question.status === 'approved' ||
+        (question.isCheckpoint && scopedSectionIds.has(question.sectionContentId)))
+      && questionGoesToApp(question)
     ));
 
     const lessonOfPiece = pieceLessons({ units, lessons, sections: scopedSections, blocks: scopedBlocks });
@@ -195,7 +197,7 @@ export async function GET(request) {
           })),
         })),
       })),
-      questions: scopedQuestions.map((question) => ({
+      questions: scopedQuestions.map((question) => questionForApp(question, {
         id: question.contentId,
         subjectId: question.subjectId,
         type: question.type,
@@ -224,8 +226,6 @@ export async function GET(request) {
         isCheckpoint: question.isCheckpoint || false,
         conceptIds: question.conceptIds || [],
         markers: question.markers || [],
-        markerMode: question.markerMode || null,
-        image: question.image || null,
         status: question.status || 'draft',
       })),
       exams: exams.map((exam) => ({
