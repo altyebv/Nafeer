@@ -69,15 +69,92 @@ export function lineWords(line) {
   return String(line ?? '').split(/[\s|]+/).map((w) => w.replace(PUNCT, '')).filter(Boolean);
 }
 
+// ── Memorization pieces ───────────────────────────────────────────────────────
+
+const toInt = (v) => {
+  if (v === '' || v == null) return null;
+  const n = Number(v);
+  return Number.isInteger(n) ? n : NaN;
+};
+
+/**
+ * A piece from a form or a request body, cleaned: { value } or { error }.
+ * `lines` may be an array or text with one line per بيت or آية.
+ */
+export function normalizePiece(input = {}) {
+  const kind = String(input.kind ?? '').toUpperCase() === 'QURAN' ? 'QURAN' : 'POETRY';
+  const title = String(input.title ?? '').trim();
+  const raw = Array.isArray(input.lines) ? input.lines : String(input.lines ?? '').split('\n');
+  const lines = raw.map((l) => String(l).trim()).filter(Boolean);
+  if (!title) return { error: 'القطعة محتاجة عنوان.' };
+  if (!lines.length) return { error: 'القطعة محتاجة سطر واحد على الأقل.' };
+
+  const value = { kind, title, lines, poet: null, surah: null, ayahFrom: null, ayahTo: null };
+  if (kind === 'POETRY') value.poet = String(input.poet ?? '').trim() || null;
+  else {
+    value.surah = String(input.surah ?? '').trim() || null;
+    const from = toInt(input.ayahFrom);
+    const to = toInt(input.ayahTo);
+    if (Number.isNaN(from) || Number.isNaN(to) || (from != null && from < 1) || (to != null && to < 1)) {
+      return { error: 'أرقام الآيات لازم تكون أرقام صحيحة من 1 فما فوق.' };
+    }
+    if (from != null && to != null && to < from) return { error: 'آخر آية ما ممكن تكون قبل أول آية.' };
+    value.ayahFrom = from;
+    value.ayahTo = to ?? (from != null ? from + lines.length - 1 : null);
+  }
+  const order = toInt(input.order);
+  if (order != null && !Number.isNaN(order)) value.order = order;
+  return { value };
+}
+
+/**
+ * A verse block showing lines [from, to] of a piece (the whole piece when
+ * either is missing): its content and the metadata patch that links it,
+ * numbered from the piece's first آية as Basheer's generator does.
+ */
+export function verseFromPiece(piece, from, to) {
+  const n = piece.lines.length;
+  const a = Number.isInteger(from) ? from : 1;
+  const b = Number.isInteger(to) ? to : n;
+  const slice = piece.lines.slice(a - 1, b);
+  const whole = a === 1 && b === n;
+  const patch = { pieceId: piece.id, pieceLines: whole ? undefined : [a, b] };
+  if (piece.kind === 'QURAN') {
+    const first = Number.isInteger(piece.ayahFrom) ? piece.ayahFrom + a - 1 : null;
+    const last = Number.isInteger(piece.ayahFrom) ? piece.ayahFrom + b - 1 : null;
+    Object.assign(patch, {
+      variant: 'quran', surah: piece.surah || undefined,
+      ayah: first == null ? undefined : first === last ? String(first) : `${first}–${last}`,
+    });
+  } else {
+    Object.assign(patch, { variant: 'poetry', surah: undefined, ayah: undefined });
+  }
+  return { content: slice.join('\n'), patch };
+}
+
 /**
  * What Basheer's generator would refuse, as warnings for the author. Each is
- * { kind, index?, line?, message }. Nothing here blocks a save.
+ * { kind, index?, line?, message }. Nothing here blocks a save. With the
+ * subject's `pieces` ({ id, lines }), the piece link is checked too.
  */
-export function verseProblems(content, metadata) {
+export function verseProblems(content, metadata, pieces = null) {
   const meta = readVerseMeta(metadata);
   const lines = verseLines(content);
   const n = lines.length;
   const out = [];
+
+  if (pieces && meta.pieceId) {
+    const piece = pieces.find((p) => p.id === meta.pieceId);
+    if (!piece) out.push({ kind: 'pieceId', message: `ما في قطعة بالمعرّف «${meta.pieceId}» في المادة دي.` });
+    else {
+      const pl = Array.isArray(meta.pieceLines) ? meta.pieceLines : null;
+      if (pl && pl[1] > piece.lines.length) {
+        out.push({ kind: 'pieceLines', message: `القطعة فيها ${piece.lines.length} سطر بس.` });
+      } else if (!pl && n && n !== piece.lines.length) {
+        out.push({ kind: 'pieceLines', message: `بدون مدى، النص لازم يكون القطعة كلها (${piece.lines.length} سطر)، وهو ${n}.` });
+      }
+    }
+  }
 
   if (isQuran(meta) && /[﴿﴾۝]/.test(String(content ?? ''))) {
     out.push({ kind: 'marks', message: 'ما تكتب ﴿ ﴾ ولا علامة نهاية الآية؛ التطبيق بيضيفها.' });
@@ -114,3 +191,10 @@ export function verseProblems(content, metadata) {
 
   return out;
 }
+
+/** A stored piece as the editor and the API hand it around. */
+export const pieceToClient = (p) => ({
+  id: p.contentId, kind: p.kind, title: p.title, lines: p.lines || [],
+  poet: p.poet || null, surah: p.surah || null,
+  ayahFrom: p.ayahFrom ?? null, ayahTo: p.ayahTo ?? null, order: p.order || 0,
+});
