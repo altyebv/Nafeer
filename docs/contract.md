@@ -51,8 +51,17 @@ rolled back; in a delta patch the exception is rethrown. Two consequences:
 - Nafeer must never export a type Basheer does not have. `QUESTION` blocks are
   Nafeer-only (checkpoint placeholders) and are dropped from every export.
 - A subject that contains `VERSE` or `WIDGET` blocks only imports on Basheer
-  builds that know those types. Older installs fail on it. Publish such blocks
-  only once every supported Basheer build has them.
+  builds that know those types, and Basheer does not check the manifest's
+  `minAppVersion`. So each newer type has a manifest feature flag, as
+  IMAGE_MARKER questions have `hotspotEnabled`: `verseBlocksEnabled` (VERSE
+  blocks and every piece) and `widgetBlocksEnabled` (WIDGET blocks). While a
+  flag is off, publish, delta bundles and `/api/export` leave those blocks out;
+  their lessons still go. Turn a flag on (admin dashboard, feature flags) once
+  every app build in use knows the type; the next delta publish then sends the
+  blocks as new. Both default to off. Turning `verseBlocksEnabled` off again
+  retires every piece on the devices at the next publish, and the students'
+  records on them. The gate is `blockGoesToApp` in
+  `src/lib/appExport.js`; a new block type gets its flag there.
 
 The export envelope's `version` is `"1.0"`, matching
 `ContentSeeder.SUPPORTED_EXPORT_VERSION`. Any other value is refused.
@@ -100,7 +109,13 @@ export, as for HIGHLIGHT_BOX.
 
 ### IMAGE / GIF
 `{ "aspectRatio": 1.5 }`. A ratio of 0 or less, or none, means "measure the
-picture". Nafeer also stores `mediaId` and `alt`; Basheer ignores them.
+picture": the block takes the full width and grows to the picture's height
+once it loads, with no height cap. With a ratio the block is sized before the
+picture arrives and a tall one is capped. Nafeer writes the ratio (width ÷
+height, 4 decimals) when the picture loads in the image block's editor, and
+clears it when the picture is replaced or removed. Blocks never opened in the
+editor since then have none. Nafeer also stores `mediaId` and `alt`; Basheer
+ignores them.
 
 ### INTERACTIVE_IMAGE
 `{ "markers": [{ "id", "x", "y", "label", "description" }], "aspectRatio"? }`.
@@ -108,6 +123,13 @@ Basheer's own generator writes the list as `pins`; both keys are read, the first
 non-empty wins. `x` and `y` are 0–1 from the top-left corner and are clamped to
 that range. A pin with no `id`, `x` or `y` is dropped. `label` and
 `description` default to `""`. Without metadata it is still drawn as a picture.
+Pins follow the picture's measured size either way, so `aspectRatio` only
+affects sizing, as for IMAGE.
+
+In Nafeer it is not a separate block to add: it is the image block with its
+"صورة تفاعلية" switch on, which changes the type to `INTERACTIVE_IMAGE`. The
+editor reads `markers`, or `pins` when restored from the app's files, and
+always writes `markers` (dropping `pins`).
 
 ### EXAMPLE
 `{ "interactive": true, "steps": [ "…", { "text": "…", "predict": { "choices": ["right", "wrong", …], "answer": 0 } } ] }`.
@@ -227,7 +249,8 @@ recitals on the piece, not on the block.
 | `order` | Position among the subject's pieces. |
 
 - **Every piece of the subject is exported**, whatever its status (only
-  `archived` is left out). A piece missing from a full export is retired on the
+  `archived` is left out), while `verseBlocksEnabled` is on; while it is off,
+  none is (§1). A piece missing from a full export is retired on the
   device, **and so is every student's record on it**. So Nafeer refuses to
   delete a piece while a verse still names it, and asks before deleting.
 - A subject with no pieces has no `pieces` key, so existing subjects' files do
@@ -276,23 +299,24 @@ texts, and the still. See `docs/features/widgets.md` in Basheer.
 
 ## 5. Gaps
 
-Found while writing this file. G1 and G2 were fixed on 2026-11-27.
+Found while writing this file. G1, G2, G4, G5 and G6 were fixed on 2026-11-27.
 
 - **G1. Fixed.** Style values were upper case in Nafeer and lower case in
   Basheer, so every Nafeer highlight box showed as a note and every numbered
   list as bullets. Export now lower-cases them; the editor reads either case.
 - **G2. Fixed.** Nafeer has memorization pieces (§3a).
 - **G3. WIDGET is not authorable** (§4).
-- **G4. Old app builds.** Any VERSE or WIDGET block in a published subject
-  makes that subject fail to import on Basheer builds from before those types
-  (§1). Nafeer has no check for it.
-- **G5. Restored metadata is a string.** `lib/restoreSubject.js` stores block
-  `metadata` as the string it finds in the published file, while the editor
-  expects an object. The VERSE editor reads either; the other block editors
-  spread a string into characters when edited. The restore should parse it.
-- **G6. INTERACTIVE_IMAGE** is authorable through the image block's
-  "صورة تفاعلية" toggle, but it is not in the add-block menu, and Nafeer never
-  writes `aspectRatio`, so Basheer measures each picture itself.
+- **G4. Fixed.** VERSE and WIDGET blocks would fail a subject's import on
+  older app builds. They are now published only while their manifest flag is on
+  (§1).
+- **G5. Fixed.** A restore stored block `metadata` as the JSON string from the
+  published file, and the block editors spread it into characters when edited.
+  The restore now parses it, and the editor parses any string still in the
+  database when it loads a lesson (`fromServerBlock`).
+- **G6. Fixed.** INTERACTIVE_IMAGE is the image block's "صورة تفاعلية" switch
+  (§2), so it needs no menu entry. Image blocks never wrote `aspectRatio`; they
+  now do when the picture loads in the editor. Marker questions already stored
+  the picture's size (`image.width/height`), which Basheer ignores (G7).
 - **G7. Marker questions** (`QuestionJson.markers`) are exported by Nafeer; see
   `docs/question-markers.md`. Nafeer also exports `markerMode` and `image`,
   which Basheer ignores.
