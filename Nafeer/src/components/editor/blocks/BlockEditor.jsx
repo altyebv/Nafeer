@@ -12,12 +12,14 @@ import { sanitiseMarkers } from '@/lib/markerUtils';
 import { MarkedImage } from '@/components/media/MarkerPin';
 import FormulaEditor from '@/components/editor/blocks/FormulaEditor';
 import MathTextarea from '@/components/editor/shared/MathTextarea';
+import VerseEditor from '@/components/editor/blocks/VerseEditor';
 
 // Demo renderers — the actual lesson appearance
 import { HeadingBlock, TextBlock, TipBlock, ArabicFormulaBlock, ImagePlaceholderBlock, GifPlaceholderBlock, TableBlock } from '@/components/demo/blocks/PrimitiveBlocks';
 import { HighlightBox } from '@/components/demo/blocks/HighlightBox';
 import { FormulaBlock } from '@/components/demo/blocks/FormulaBlock';
 import { ExampleBlock } from '@/components/demo/blocks/ExampleBlock';
+import { VerseBlock, WidgetBlock } from '@/components/demo/blocks/VerseBlock';
 import '@/components/demo/demo.css';
 import {
   ArrowDown,
@@ -166,6 +168,12 @@ function BlockPreview({ block }) {
           <p className="font-arabic text-sm italic leading-loose text-ink-300">{block.content}</p>
         </div>
       );
+
+    case 'VERSE':
+      return <VerseBlock block={block} />;
+
+    case 'WIDGET':
+      return <WidgetBlock block={block} />;
 
     case 'DIVIDER':
       return (
@@ -509,6 +517,19 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
         </div>
       );
     }
+
+    case 'VERSE':
+      return <VerseEditor block={block} update={update} />;
+
+    // Not editable in Nafeer yet (docs/contract.md §4): only its line; the metadata is kept as it is.
+    case 'WIDGET':
+      return (
+        <div className="space-y-2">
+          <WidgetBlock block={block} />
+          <textarea value={block.content} onChange={(e) => update({ content: e.target.value })}
+            className={`${ta} min-h-[60px]`} placeholder="السطر اللي بيدعو الطالب يجرّب…" />
+        </div>
+      );
 
     case 'TABLE':
       return <LessonTableEditor value={block.content} onChange={(v) => update({ content: v })} />;
