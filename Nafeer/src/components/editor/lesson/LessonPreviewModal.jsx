@@ -5,6 +5,7 @@ import FormulaPreview from '@/components/editor/shared/FormulaPreview';
 import MathText from '@/components/editor/shared/MathText';
 import { MarkedImage } from '@/components/media/MarkerPin';
 import { sanitiseMarkers } from '@/lib/markerUtils';
+import { readVerseMeta, isQuran, verseLines } from '@/lib/verse';
 import {
   AlertTriangle,
   BookOpen,
@@ -402,6 +403,20 @@ function BlockPreview({ block }) {
           <p className="text-sm italic font-arabic text-white/50 leading-relaxed">{block.content || '…'}</p>
         </div>
       );
+
+    case 'VERSE': {
+      const meta  = readVerseMeta(block.metadata);
+      const lines = verseLines(block.content);
+      const ref   = isQuran(meta) ? [meta.surah && `سورة ${meta.surah}`, meta.ayah].filter(Boolean).join(' ') : '';
+      return (
+        <div className="text-center space-y-1">
+          {lines.map((line, i) => (
+            <p key={i} className="text-base font-arabic text-white/85 leading-loose">{line.replace(/\s*\|\s*/, '   ')}</p>
+          ))}
+          {(block.caption || ref) && <p className="text-xs font-arabic text-white/40">{block.caption || ref}</p>}
+        </div>
+      );
+    }
 
     case 'DIVIDER':
       return <div className="h-px" style={{ background: '#2a2520' }} />;
