@@ -56,8 +56,8 @@ rolled back; in a delta patch the exception is rethrown. Two consequences:
   (decided 2026-11-27). Once builds are in students' hands, a block type added
   later needs a gate before it is published: `blockGoesToApp` in
   `src/lib/appExport.js` is the one place every export path asks, and a
-  manifest feature flag (as `hotspotEnabled` gates IMAGE_MARKER questions) is
-  the pattern.
+  manifest feature flag is the pattern. The same holds for question types:
+  `questionGoesToApp` decides which questions go (G7).
 
 The export envelope's `version` is `"1.0"`, matching
 `ContentSeeder.SUPPORTED_EXPORT_VERSION`. Any other value is refused.
@@ -294,7 +294,7 @@ texts, and the still. See `docs/features/widgets.md` in Basheer.
 
 ## 5. Gaps
 
-Found while writing this file. G1, G2, G4, G5 and G6 were fixed on 2026-11-27.
+Found while writing this file. All but G3 were fixed or closed on 2026-11-27.
 
 - **G1. Fixed.** Style values were upper case in Nafeer and lower case in
   Basheer, so every Nafeer highlight box showed as a note and every numbered
@@ -312,6 +312,24 @@ Found while writing this file. G1, G2, G4, G5 and G6 were fixed on 2026-11-27.
   (§2), so it needs no menu entry. Image blocks never wrote `aspectRatio`; they
   now do when the picture loads in the editor. Marker questions already stored
   the picture's size (`image.width/height`), which Basheer ignores (G7).
-- **G7. Marker questions** (`QuestionJson.markers`) are exported by Nafeer; see
-  `docs/question-markers.md`. Nafeer also exports `markerMode` and `image`,
-  which Basheer ignores.
+- **G7. Fixed: marker questions.** Nafeer's `IMAGE_MARKER` type does not exist
+  in Basheer (`QuestionType.valueOf` would fail the whole import), so it was
+  kept out behind `hotspotEnabled`, a flag the app itself never reads. But the
+  app's `FIGURE` question has a PIN mode that is the same exercise as "label the
+  pins". The export (`questionGoesToApp` / `questionForApp` in
+  `src/lib/appExport.js`) now:
+  - sends a valid **label** question as `FIGURE` with
+    `tableData: {"variant": "PIN", "pins": [{id, x, y, label}], "suggestions": […]}`.
+    A pin's `label` is its answer; `suggestions` is the answers plus the
+    distractors in `markerBank` order. `correctAnswer` lists the pins'
+    answers by number (shown as the model answer); `options` is null and
+    `markers` is empty. The app grades it with `figureKey`: right when every pin
+    has its answer, so **no partial credit** in the app, unlike Nafeer's
+    `gradeLabels`;
+  - leaves **locate** ("find it") questions out: the app has no such question;
+  - leaves out marker questions that are not valid yet (`markerIssues`);
+  - no longer sends `markerMode` or `image`.
+
+  `hotspotEnabled` is gone from the dashboard and gates nothing. It stays in
+  the manifest because the app's `FeatureFlags` lists it. Still open on the app
+  side: locate questions, and partial credit for labels.
