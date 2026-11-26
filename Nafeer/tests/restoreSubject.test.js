@@ -19,7 +19,7 @@ vi.mock('@/lib/subjectContent', () => ({
   deleteSubjectContent: vi.fn(),
   writtenContent: async () => ({ lessons: db.written, other: 0 }),
 }));
-for (const name of ['Subject', 'Unit', 'Lesson', 'Section', 'Block', 'Concept', 'Tag', 'FeedItem', 'Question', 'Exam']) {
+for (const name of ['Subject', 'Unit', 'Lesson', 'Section', 'Block', 'Concept', 'Tag', 'FeedItem', 'Question', 'Exam', 'Piece']) {
   vi.doMock(`@/lib/models/${name}`, () => ({ [name]: fake(name) }));
 }
 
