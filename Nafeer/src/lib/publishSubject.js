@@ -11,7 +11,7 @@ import { FeedItem }               from '@/lib/models/FeedItem';
 import { Question }               from '@/lib/models/Question';
 import { Exam }                   from '@/lib/models/Exam';
 import { Piece }                  from '@/lib/models/Piece';
-import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, piecesGoToApp } from '@/lib/appExport';
+import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp } from '@/lib/appExport';
 import { uploadFile, getPublicUrl } from '@/lib/supabase';
 import { getMathNotation }        from '@/shared/curriculum';
 import { getManifest, upsertDeltaSubjectEntry } from '@/lib/FirebaseAdmin';
@@ -209,12 +209,10 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
         conceptIds:   section.conceptIds   || [],
       }));
 
-    // ── Blocks (flat — carry sectionId FK). VERSE and WIDGET only while their
-    // flag is on: older app builds fail the whole import on them (lib/appExport.js).
-    const appFlags = manifest?.featureFlags || {};
+    // ── Blocks (flat — carry sectionId FK)
     const approvedSectionIds = new Set(sectionsExport.map((s) => s.id));
     const blocksExport = blocks
-      .filter((b) => approvedSectionIds.has(b.sectionContentId) && blockGoesToApp(b.type, appFlags))
+      .filter((b) => approvedSectionIds.has(b.sectionContentId) && blockGoesToApp(b.type))
       .map((block) => ({
         id:         block.contentId,
         sectionId:  block.sectionContentId,          // FK for delta patches
@@ -318,9 +316,8 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
     // That lesson is part of the piece the app receives but not of its document,
     // so it goes into the piece's version token: moving the verse re-sends it.
     const lessonOfPiece = pieceLessons({ units, lessons, sections: indexedSections, blocks: indexedBlocks });
-    const appPieces     = piecesGoToApp(appFlags) ? pieces : [];
-    const piecesExport  = appPieces.map((p) => pieceForApp(p, lessonOfPiece.get(p.contentId)));
-    const indexedPieces = appPieces.map((p) => ({
+    const piecesExport  = pieces.map((p) => pieceForApp(p, lessonOfPiece.get(p.contentId)));
+    const indexedPieces = pieces.map((p) => ({
       ...p,
       updatedAt: `${new Date(p.updatedAt || p.createdAt || 0).toISOString()}|${lessonOfPiece.get(p.contentId) || ''}`,
     }));
@@ -332,7 +329,7 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
       sectionsExport: sections, blocksExport: blocks,
       questionsExport, examsExport, feedItemsExport, piecesExport,
       lessonsByUnit, sectionsByLesson, blocksBySection,
-      approvedLessonIds, appFlags,
+      approvedLessonIds,
     });
 
     // ── Stat counters (shared by both paths) ──────────────────────────────────
@@ -620,7 +617,7 @@ function assembleFullExport({
   unitsExport, lessonsExport, sectionsExport, blocksExport,
   questionsExport, examsExport, feedItemsExport, piecesExport = [],
   lessonsByUnit, sectionsByLesson, blocksBySection,
-  approvedLessonIds, appFlags = {},
+  approvedLessonIds,
 }) {
   return {
     version:    '1.0',
@@ -653,7 +650,7 @@ function assembleFullExport({
             learningType: section.learningType || 'UNDERSTANDING', kind: section.kind || 'GENERAL',
             conceptIds:   section.conceptIds   || [],
             blocks: (blocksBySection[section.contentId] || [])
-              .filter((block) => blockGoesToApp(block.type, appFlags))
+              .filter((block) => blockGoesToApp(block.type))
               .map((block) => ({
               id:         block.contentId,
               type:       block.type,
