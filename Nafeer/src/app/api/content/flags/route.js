@@ -8,7 +8,7 @@ import { getManifest, updateFeatureFlags } from '@/lib/FirebaseAdmin';
 const ALLOWED_KEYS = [
   'feedEnabled',
   'examModeEnabled',
-  'hotspotEnabled',        // IMAGE_MARKER questions are published only while on (docs/question-markers.md)
+  'hotspotEnabled',        // in the app's manifest; gates nothing since marker questions go as FIGURE (docs/contract.md G7)
   'announcementBanner',    // Arabic string or null
   'visibleSubjectIds',     // [] = all visible; ['PHYSICS', 'CHEMISTRY'] = soft-launch
   // Student comms switches — also written by /api/admin/comms/feature-flags.
