@@ -9,6 +9,8 @@ const ALLOWED_KEYS = [
   'feedEnabled',
   'examModeEnabled',
   'hotspotEnabled',        // IMAGE_MARKER questions are published only while on (docs/question-markers.md)
+  'verseBlocksEnabled',    // VERSE blocks and pieces are published only while on (lib/appExport.js)
+  'widgetBlocksEnabled',   // WIDGET blocks likewise
   'announcementBanner',    // Arabic string or null
   'visibleSubjectIds',     // [] = all visible; ['PHYSICS', 'CHEMISTRY'] = soft-launch
   // Student comms switches — also written by /api/admin/comms/feature-flags.
@@ -22,6 +24,8 @@ const DEFAULT_FLAGS = {
   feedEnabled:        true,
   examModeEnabled:    true,
   hotspotEnabled:     false,
+  verseBlocksEnabled: false,
+  widgetBlocksEnabled: false,
   announcementBanner: null,
   visibleSubjectIds:  [],
   commCenterEnabled:  false,
