@@ -10,6 +10,8 @@ import { Tag } from '@/lib/models/Tag';
 import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
+import { Piece } from '@/lib/models/Piece';
+import { blockMetadataForApp, pieceLessons, pieceForApp } from '@/lib/appExport';
 import { getManifest } from '@/lib/FirebaseAdmin';
 import { getMathNotation } from '@/shared/curriculum';
 
@@ -51,6 +53,7 @@ export async function GET(request) {
       feedItems,
       questions,
       exams,
+      pieces,
     ] = await Promise.all([
       Subject.findOne({ subjectId }).lean(),
       Unit.find({ subjectId }).sort({ order: 1 }).lean(),
@@ -66,6 +69,7 @@ export async function GET(request) {
           : { subjectId, $or: [{ status: 'approved' }, { isCheckpoint: true }] }
       ).lean(),
       Exam.find({ subjectId, ...contentStatusFilter }).lean(),
+      Piece.find({ subjectId, status: { $ne: 'archived' } }).sort({ order: 1, createdAt: 1 }).lean(),
     ]);
 
     if (!subject) {
@@ -90,6 +94,9 @@ export async function GET(request) {
       question.status === 'approved' ||
       (question.isCheckpoint && scopedSectionIds.has(question.sectionContentId))
     ));
+
+    const lessonOfPiece = pieceLessons({ units, lessons, sections: scopedSections, blocks: scopedBlocks });
+    const piecesExport = pieces.map((p) => pieceForApp(p, lessonOfPiece.get(p.contentId)));
 
     const blocksBySection = scopedBlocks.reduce((acc, block) => {
       if (!acc[block.sectionContentId]) acc[block.sectionContentId] = [];
@@ -181,7 +188,7 @@ export async function GET(request) {
               order: block.order,
               conceptRef: block.conceptRef || null,
               caption: block.caption || null,
-              metadata: coerceMixedToString(block.metadata),
+              metadata:   blockMetadataForApp(block.type, block.metadata),
               mediaPath: block.mediaPath || null,
               status: block.status || 'draft',
             })),
@@ -256,6 +263,7 @@ export async function GET(request) {
         unitId: item.unitContentId || null,
         status: item.status || 'draft',
       })),
+      ...(piecesExport.length ? { pieces: piecesExport } : {}),
     };
 
     if (
