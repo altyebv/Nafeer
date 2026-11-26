@@ -9,6 +9,8 @@ import { versioningFields } from './versioning';
 const BLOCK_TYPES = [
   'TEXT', 'HEADING', 'IMAGE', 'INTERACTIVE_IMAGE', 'GIF', 'FORMULA',
   'HIGHLIGHT_BOX', 'EXAMPLE', 'TIP', 'LIST', 'TABLE', 'QUOTE', 'DIVIDER',
+  'VERSE',   // Quran or poetry (docs/contract.md §3)
+  'WIDGET',  // not authored here yet; kept so restored subjects that have one still load
 ];
 
 const BlockSchema = new mongoose.Schema(
