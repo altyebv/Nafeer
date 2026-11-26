@@ -9,6 +9,7 @@ import { useUndoStore } from '@/store/undoStore';
 import MediaPicker from '@/components/editor/media/MediaPicker';
 import ImageMarkerEditor from '@/components/editor/media/ImageMarkerEditor';
 import { sanitiseMarkers } from '@/lib/markerUtils';
+import { styleKey } from '@/lib/appExport';
 import { MarkedImage } from '@/components/media/MarkerPin';
 import FormulaEditor from '@/components/editor/blocks/FormulaEditor';
 import MathTextarea from '@/components/editor/shared/MathTextarea';
@@ -86,7 +87,7 @@ function BlockPreview({ block }) {
 
     case 'HIGHLIGHT_BOX': {
       if (!block.content?.trim()) return null;
-      return <HighlightBox block={{ ...b, style: block.metadata?.style ?? 'NOTE', title: block.metadata?.title }} />;
+      return <HighlightBox block={{ ...b, style: styleKey(block.metadata?.style, 'NOTE'), title: block.metadata?.title }} />;
     }
 
     case 'FORMULA':
@@ -148,7 +149,7 @@ function BlockPreview({ block }) {
     case 'LIST': {
       if (!block.content?.trim()) return null;
       const lines = block.content.split('\n').filter(Boolean);
-      const isNum = (block.metadata?.style ?? 'BULLET') === 'NUMBERED';
+      const isNum = styleKey(block.metadata?.style, 'BULLET') === 'NUMBERED';
       return (
         <div className="mx-4 my-2 space-y-1" dir="rtl">
           {lines.map((line, i) => (
@@ -369,7 +370,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       return <FormulaEditor value={block.content} onChange={(v) => update({ content: v })} autoFocus />;
 
     case 'HIGHLIGHT_BOX': {
-      const style = block.metadata?.style ?? 'NOTE';
+      const style = styleKey(block.metadata?.style, 'NOTE');
       const colors = HL_COLORS[style] || HL_COLORS.NOTE;
       return (
         <div className="space-y-2.5">
@@ -500,7 +501,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
       );
 
     case 'LIST': {
-      const style = block.metadata?.style ?? 'BULLET';
+      const style = styleKey(block.metadata?.style, 'BULLET');
       return (
         <div className="space-y-2">
           <div className="flex gap-1">
@@ -519,7 +520,7 @@ function BlockBodyEditor({ block, update, patchMeta, subjectId }) {
     }
 
     case 'VERSE':
-      return <VerseEditor block={block} update={update} />;
+      return <VerseEditor block={block} update={update} subjectId={subjectId} />;
 
     // Not editable in Nafeer yet (docs/contract.md §4): only its line; the metadata is kept as it is.
     case 'WIDGET':
