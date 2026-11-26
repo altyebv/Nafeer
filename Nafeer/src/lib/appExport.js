@@ -3,6 +3,8 @@
 // publish pipeline's full export and delta bundles (lib/publishSubject.js).
 // docs/contract.md is the reference.
 
+import { MARKER_TYPE, markerIssues, markerBank } from '@/lib/markerQuestion';
+
 /** Whether a block of this type goes to the app: all but QUESTION, a Nafeer-only checkpoint placeholder. */
 export const blockGoesToApp = (type) => type !== 'QUESTION';
 
@@ -92,5 +94,37 @@ export function pieceForApp(piece, lessonId = null) {
     ayahTo:   Number.isInteger(piece.ayahTo)   ? piece.ayahTo   : null,
     lessonId: lessonId || null,
     order:    piece.order || 0,
+  };
+}
+
+// ── Marker questions ──────────────────────────────────────────────────────────
+// The app has no IMAGE_MARKER type (QuestionType.valueOf would fail the whole
+// import). A `label` question is the app's FIGURE question in PIN mode: a
+// picture with numbered pins and a pool of names (FigureCard.kt, graded by
+// figureKey in AnswerKeys.kt). A `locate` question has no counterpart, so it
+// stays out, as does any marker question that is not valid yet.
+
+/** Whether a question goes to the app at all. */
+export function questionGoesToApp(q) {
+  if (q?.type !== MARKER_TYPE) return true;
+  return q.markerMode === 'label' && markerIssues(q).length === 0;
+}
+
+/**
+ * The exported question `dto` in the app's terms: a label-the-pins question
+ * becomes FIGURE with its pins in tableData. Other questions are unchanged.
+ * Assumes questionGoesToApp(q).
+ */
+export function questionForApp(q, dto) {
+  if (q?.type !== MARKER_TYPE) return dto;
+  const pins = q.markers.map((m) => ({ id: m.id, x: m.x, y: m.y, label: String(m.answer).trim() }));
+  return {
+    ...dto,
+    type:          'FIGURE',
+    tableData:     JSON.stringify({ variant: 'PIN', pins, suggestions: markerBank(q) }),
+    // Not used to grade a PIN figure; shown as the model answer.
+    correctAnswer: pins.map((p, i) => `${i + 1}: ${p.label}`).join('\n'),
+    options:       null,
+    markers:       [],
   };
 }
