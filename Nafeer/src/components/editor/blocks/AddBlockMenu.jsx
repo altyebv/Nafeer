@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AlignLeft, BookOpen, CircleHelp, Heading2, Image, List, Minus, PenLine, Quote, Search, Sigma, Sparkles, Table2, Zap,
+  AlignLeft, BookOpen, CircleHelp, Feather, Heading2, Image, List, Minus, PenLine, Quote, Search, Sigma, Sparkles, Table2, Zap,
 } from 'lucide-react';
 import { BLOCK_TYPE_CONFIG } from '@/shared/constants';
 import { cx } from '@/components/ui';
@@ -20,6 +20,7 @@ const GROUPS = [
     { type: 'HEADING', hint: 'عنوان فرعي داخل القسم', words: 'عنوان' },
     { type: 'LIST', hint: 'نقاط أو خطوات مرقّمة', words: 'قائمة نقاط' },
     { type: 'QUOTE', hint: 'نص منقول بمصدره', words: 'اقتباس' },
+    { type: 'VERSE', hint: 'آيات أو أبيات، بمعاني كلماتها', words: 'آية آيات قرآن سورة شعر بيت أبيات قصيدة حفظ' },
   ] },
   { name: 'توضيح', items: [
     { type: 'EXAMPLE', hint: 'مثال محلول، خطوة بخطوة', words: 'مثال حل' },
@@ -43,6 +44,7 @@ const GROUPS = [
 const ICONS = {
   TEXT: AlignLeft, HEADING: Heading2, LIST: List, QUOTE: Quote, EXAMPLE: PenLine, HIGHLIGHT_BOX: BookOpen,
   TIP: Sparkles, FORMULA: Sigma, TABLE: Table2, IMAGE: Image, GIF: Zap, QUESTION: CircleHelp, DIVIDER: Minus,
+  VERSE: Feather,
 };
 
 const label = (type) => BLOCK_TYPE_CONFIG[type]?.label || type;
