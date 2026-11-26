@@ -5,6 +5,7 @@ import FormulaPreview from '@/components/editor/shared/FormulaPreview';
 import MathText from '@/components/editor/shared/MathText';
 import { MarkedImage } from '@/components/media/MarkerPin';
 import { sanitiseMarkers } from '@/lib/markerUtils';
+import { styleKey } from '@/lib/appExport';
 import { readVerseMeta, isQuran, verseLines } from '@/lib/verse';
 import {
   AlertTriangle,
@@ -300,7 +301,7 @@ function BlockPreview({ block }) {
       );
 
     case 'HIGHLIGHT_BOX': {
-      const style  = block.metadata?.style ?? 'NOTE';
+      const style  = styleKey(block.metadata?.style, 'NOTE');
       const colors = {
         DEFINITION: { bg: '#0f172a', border: '#3b82f6', text: '#93c5fd' },
         WARNING:    { bg: '#1f0a0a', border: '#ef4444', text: '#fca5a5' },
@@ -358,7 +359,7 @@ function BlockPreview({ block }) {
       );
 
     case 'LIST': {
-      const style = block.metadata?.style ?? 'BULLET';
+      const style = styleKey(block.metadata?.style, 'BULLET');
       const items = (block.content || '').split('\n').filter(Boolean);
       return (
         <div className="space-y-1.5">
