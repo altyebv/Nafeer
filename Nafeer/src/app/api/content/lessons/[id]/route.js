@@ -14,6 +14,7 @@ import { assertCanEditLessons, interventionOpen, lessonAccess, unclaimedOwners }
 import { lessonOwnerId } from '@/lib/credits';
 import { closeIntervention } from '@/lib/intervention';
 import { dropPublishedCopy } from '@/lib/publishedCopy';
+import { readBody, assertInput, invalidData } from '@/lib/limits';
 
 // GET /api/content/lessons/[id]
 // Returns lesson + sections + blocks (full content for editor), plus
@@ -92,7 +93,8 @@ export async function PUT(request, { params }) {
     const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
     await assertCanEditLessons(user, [(await params).id]);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
-    const body = await request.json();
+    const body = await readBody(request);
+    assertInput(body, ['title']);
     const { note, versionLabel, baseVersion, ...updates } = body;
 
     // Whitelist updatable fields
@@ -123,6 +125,8 @@ export async function PUT(request, { params }) {
       const [conflict] = await withEditorNames([e.toJSON()]);
       return Response.json({ ok: false, conflict }, { status: 409 });
     }
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[PUT /api/content/lessons/[id]]', e);
     return err('خطأ في الخادم', 500);
   }
@@ -135,7 +139,7 @@ export async function PATCH(request, { params }) {
     const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
     await assertCanEditLessons(user, [(await params).id]);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
-    const { status, note, versionLabel } = await request.json();
+    const { status, note, versionLabel } = await readBody(request);
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) {
       return err('حالة غير صالحة');
@@ -144,6 +148,16 @@ export async function PATCH(request, { params }) {
     // Only admins can approve
     if (status === 'approved' && user.role !== 'admin') {
       return err('الاعتماد متاح للمشرفين فقط', 403);
+    }
+
+    // Archiving takes a lesson out of the app: for approved work (and work
+    // being revised) that is the platform owner's call.
+    if (status === 'archived' && user.role !== 'admin') {
+      await connectDB();
+      const now = await Lesson.findOne({ contentId: (await params).id }).select('status revising').lean();
+      if (now && (now.status === 'approved' || now.revising)) {
+        return err('هذا درس معتمد يراه الطلاب — أرشفته للمشرف وحده', 403);
+      }
     }
 
     const lesson = await updateLessonStatus(
@@ -165,7 +179,7 @@ export async function PATCH(request, { params }) {
 
 // DELETE /api/content/lessons/[id]
 // Only drafts can be hard-deleted. Approved lessons, and ones being revised,
-// must be archived; curriculum lessons are removed by the owner only.
+// must be archived; a member deletes only lessons they created.
 export async function DELETE(request, { params }) {
   try {
     const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
@@ -179,10 +193,10 @@ export async function DELETE(request, { params }) {
       return err('لا يمكن حذف درس معتمد. استخدم الأرشفة بدلاً من الحذف.');
     }
 
-    // Created by no person: the textbook's scaffold, claimed or not. Deleting
-    // it would leave a hole in the unit.
-    if (user.role !== 'admin' && (await unclaimedOwners([lesson.createdBy])).size) {
-      return err('هذا درس من المنهج ولا يمكن حذفه. اطلب من المشرف إن كان يجب إزالته.', 403);
+    // Only what you created: not the textbook's scaffold (claimed or not), and
+    // not a lesson someone else started and handed back.
+    if (user.role !== 'admin' && lesson.createdBy && String(lesson.createdBy) !== String(user.id)) {
+      return err('لا تحذف إلا درساً أنشأته أنت. اطلب من المشرف إن كان يجب إزالته.', 403);
     }
 
     // Cascade: delete sections + blocks
