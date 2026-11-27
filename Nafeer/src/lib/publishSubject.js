@@ -12,6 +12,8 @@ import { Question }               from '@/lib/models/Question';
 import { Exam }                   from '@/lib/models/Exam';
 import { Piece }                  from '@/lib/models/Piece';
 import { revisingCopies, mergePublished } from '@/lib/publishedCopy';
+import { closeReferences } from '@/lib/releaseLinks';
+import { describeOmissions } from '@/lib/omissions';
 import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, questionGoesToApp, questionForApp } from '@/lib/appExport';
 import { uploadFile, getPublicUrl } from '@/lib/supabase';
 import { getMathNotation }        from '@/shared/curriculum';
@@ -83,14 +85,18 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
     // ── 1. Fetch all approved content for this subject ────────────────────────
     const [
       subject, units, approved, liveSections, liveBlocks,
-      concepts, tags, liveFeed, liveQuestions, exams, pieces, copies,
+      conceptDocs, tags, liveFeed, liveQuestions, examDocs, pieces, copies,
     ] = await Promise.all([
       Subject.findOne({ subjectId }).lean(),
       Unit.find({ subjectId }).sort({ order: 1 }).lean(),
       Lesson.find({ subjectId, status: 'approved' }).sort({ order: 1 }).lean(),
       Section.find({ subjectId, status: { $ne: 'archived' } }).sort({ order: 1 }).lean(),
       Block.find({ subjectId, status: { $ne: 'archived' } }).sort({ order: 1 }).lean(),
-      Concept.find({ subjectId, status: 'approved' }).lean(),
+      // One being edited ships as it was last approved (lib/api/concepts.js).
+      Concept.find({
+        subjectId,
+        $or: [{ status: 'approved' }, { status: { $in: ['draft', 'review'] }, published: { $ne: null } }],
+      }).select('+published').lean(),
       Tag.find({ subjectId, status: 'approved' }).lean(),
       FeedItem.find({ subjectId, status: 'approved' }).sort({ order: 1 }).lean(),
       Question.find({
@@ -104,10 +110,18 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
     ]);
 
     // A lesson being revised ships as it was last approved (lib/publishedCopy.js).
-    const { lessons, sections, blocks, questions, feedItems } = mergePublished(
+    const merged = mergePublished(
       { lessons: approved, sections: liveSections, blocks: liveBlocks, questions: liveQuestions, feedItems: liveFeed },
       copies,
     );
+    // Nothing leaves pointing at something that is not in it (lib/releaseLinks.js).
+    const { lessons, sections, blocks, questions, feedItems, concepts, exams, omitted } = closeReferences({
+      ...merged,
+      units,
+      tags,
+      concepts: conceptDocs.map(({ published, ...c }) => (c.status === 'approved' ? c : published)),
+      exams: examDocs,
+    });
 
     if (!subject) {
       return NextResponse.json({ ok: false, error: 'المادة غير موجودة' }, { status: 404 });
@@ -118,6 +132,9 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
         { status: 422 }
       );
     }
+
+    // Reported with the stats of every outcome, preview included.
+    const leftOut = await describeOmissions(omitted);
 
     // ── 2. Get current manifest entry ─────────────────────────────────────────
     const manifest  = await getManifest().catch(() => null);
@@ -364,7 +381,7 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
             removed: (delta.deletedByType.LESSON || []).map((id) => ({ id })),
           },
         },
-        stats: { lessons: lessons.length, sections: totalSections, blocks: totalBlocks },
+        stats: { lessons: lessons.length, sections: totalSections, blocks: totalBlocks, omitted: leftOut },
       });
     }
 
@@ -399,6 +416,7 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
           feedItems: feedItems.length,
           concepts:  concepts.length,
           exams:     exams.length,
+          omitted:   leftOut,
         },
         // Every delta publish also uploads the full export: it is the baseline for
         // devices the bundles cannot complete (first sync, or a missed publish).
@@ -419,6 +437,7 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
           feedItems: feedItems.length,
           concepts:  concepts.length,
           exams:     exams.length,
+          omitted:   leftOut,
         },
       });
     }
