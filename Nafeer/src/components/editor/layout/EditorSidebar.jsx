@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useMediaStore }   from '@/store/mediaStore';
 import { useThemeStore }   from '@/store/themeStore';
 import { useAnnouncementStore } from '@/store/announcementStore';
+import { useWaiting, waitingOwner } from '@/components/editor/pages/DashboardWaiting';
 import { useRouter }       from 'next/navigation';
 import { Menu }            from 'lucide-react';
 import { SUBJECTS_CATALOG } from '@/shared/curriculum';
@@ -120,6 +121,7 @@ export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
   const fetchAnnouncements = useAnnouncementStore((s) => s.fetchAnnouncements);
 
   useEffect(() => { fetchAnnouncements(); }, [fetchAnnouncements]);
+  const waiting = useWaiting(waitingOwner(contributor)).length;
 
   const expanded = isOpen;
   const w        = expanded ? EXPANDED_W : RAIL_W;
@@ -144,7 +146,8 @@ export function DesktopSidebar({ currentPage, contributor, isOpen, onToggle }) {
   const profileHref = contributor?.username ? `/contributor/${encodeURIComponent(contributor.username)}` : null;
 
   const counts = {
-    dashboard: annoCount,
+    // What is waiting for the member; with nothing, the announcements.
+    dashboard: waiting || annoCount,
     lessons:   lessons.length,
     feeds:     feedItems.length,
     quizbank:  questions.length,
@@ -492,6 +495,7 @@ export function MobileBottomNav({ currentPage, contributor, moreOpen, onToggleMo
   const textActive = 'var(--chrome-text-active)';
   const accent     = 'rgb(var(--sand-500))';
 
+  const waiting = useWaiting(waitingOwner(contributor)).length;
   const nav = navFor(contributor);
   const primaryNav = nav.filter((n) => MOBILE_PRIMARY.includes(n.id));
 
@@ -530,6 +534,11 @@ export function MobileBottomNav({ currentPage, contributor, moreOpen, onToggleMo
                 />
               )}
               <Icon size={18} strokeWidth={1.9} style={{ color: active ? accent : 'inherit' }} />
+              {item.id === 'dashboard' && waiting > 0 && (
+                <span className="absolute top-1 right-1/2 -mr-5 px-1.5 rounded-chip bg-accent text-fg-on-accent t-caption tabular-nums" aria-label={`ينتظرك: ${waiting}`}>
+                  {waiting > 99 ? '99+' : waiting}
+                </span>
+              )}
               <span style={{ fontSize: 10.5, fontFamily: 'var(--font-arabic, serif)', fontWeight: active ? 700 : 400, lineHeight: 1 }}>
                 {item.label}
               </span>
