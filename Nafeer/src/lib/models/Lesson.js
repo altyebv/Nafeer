@@ -83,6 +83,14 @@ const LessonSchema = new mongoose.Schema(
     // approved version until the change is approved (lib/publishedCopy.js).
     revising: { type: Boolean, default: false },
 
+    // Moves when content changes while the lesson waits for review
+    // (lib/reviewStamp.js).
+    contentRev: { type: Number, default: 0 },
+
+    // When the current owner took it (lib/lessonAccess.js), so a fresh claim is
+    // not reported as stuck (lib/api/leadInbox.js).
+    claimedAt: { type: Date, default: null },
+
     // ── Lesson Variations ─────────────────────────────────────────────────
     // A variation is a lesson that is linked to another lesson (its parent).
     // The parent field is a contentId string (not an ObjectId ref) so it stays
