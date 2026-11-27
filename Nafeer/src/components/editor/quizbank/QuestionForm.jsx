@@ -9,6 +9,9 @@ import {
 import MatchPairs from './MatchPairs';
 import MCQOptions from './McqOptions';
 import OrderItems from './OrderItems';
+import FillBlankWords from './FillBlankWords';
+import TableAnswer from './TableAnswer';
+import CompareAnswer from './CompareAnswer';
 import MarkerFields from './MarkerFields';
 
 const inputClass =
@@ -122,6 +125,18 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons, 
       );
     }
 
+    if (form.type === 'FILL_BLANK') {
+      return (
+        <FillBlankWords
+          textAr={form.textAr}
+          answer={form.correctAnswer}
+          options={asArray(form.options)}
+          onChange={(patch) => setForm({ ...form, ...patch })}
+          onInsertGap={() => setField('textAr', `${(form.textAr || '').trimEnd()} ____`)}
+        />
+      );
+    }
+
     if (form.type === 'LIST') {
       return (
         <textarea
@@ -133,15 +148,14 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons, 
       );
     }
 
+    // Both keep their own model while typed and hand the form the saved shape
+    // (lib/answerGrids.js), so the app can mark them instead of the student.
     if (form.type === 'TABLE') {
-      return (
-        <textarea
-          value={form.correctAnswer || ''}
-          onChange={(e) => setField('correctAnswer', e.target.value)}
-          className={`${inputClass} min-h-[108px] resize-y leading-7`}
-          placeholder="اكتب نموذج الإجابة أو بنية الجدول المتوقعة..."
-        />
-      );
+      return <TableAnswer question={form} onChange={(patch) => setForm({ ...form, ...patch })} />;
+    }
+
+    if (form.type === 'COMPARE') {
+      return <CompareAnswer question={form} onChange={(patch) => setForm({ ...form, ...patch })} />;
     }
 
     return (
@@ -150,11 +164,9 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons, 
         onChange={(e) => setField('correctAnswer', e.target.value)}
         className={`${inputClass} min-h-[96px] resize-y leading-7`}
         placeholder={
-          form.type === 'FILL_BLANK'
-            ? 'الإجابة التي تملأ الفراغ...'
-            : form.type === 'EXPLAIN'
-              ? 'النقاط الأساسية التي يجب أن تظهر في الإجابة...'
-              : 'الإجابة النموذجية...'
+          form.type === 'EXPLAIN'
+            ? 'النقاط الأساسية التي يجب أن تظهر في الإجابة...'
+            : 'الإجابة النموذجية...'
         }
       />
     );
@@ -315,6 +327,20 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons, 
             />
           </div>
         </div>
+
+        {/* For reviewers and leads: the app stores it but never shows it to the student. */}
+        <div className="mt-3">
+          <label className={labelClass}>تفاصيل المصدر (اختياري)</label>
+          <input
+            type="text"
+            maxLength={200}
+            value={form.sourceDetails || ''}
+            onChange={(e) => setField('sourceDetails', e.target.value)}
+            className={inputClass}
+            placeholder="مثال: تدريب (3) ص 42 في الكتاب، أو امتحان الشهادة، السؤال الثاني"
+          />
+          <p className="mt-1 t-caption text-ink-600 font-arabic">من أين أُخذ السؤال بالضبط. يراه المراجع مع السؤال، ولا يظهر للطالب.</p>
+        </div>
       </section>
 
       <section className="rounded-xl border border-ink-800 bg-ink-900/50 p-4">
@@ -336,7 +362,8 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons, 
           />
         </div>
 
-        {(form.type === 'FILL_BLANK' || form.type === 'SHORT_ANSWER') && (
+        {/* With a word bank the student picks the right word, so other spellings only matter when they type it. */}
+        {((form.type === 'FILL_BLANK' && asArray(form.options).length === 0) || form.type === 'SHORT_ANSWER') && (
           <div className="mt-4">
             <label className={labelClass}>إجابات أخرى مقبولة (اختياري)</label>
             <textarea
@@ -396,16 +423,11 @@ export default function QuestionForm({ form, setForm, concepts, units, lessons, 
             />
             يظهر في التغذية
           </label>
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-ink-800 bg-ink-950 px-3 py-2 text-xs text-ink-400 font-arabic">
-            <input
-              type="checkbox"
-              checked={!!form.isCheckpoint}
-              onChange={(e) => setField('isCheckpoint', e.target.checked)}
-              className="accent-sand-600"
-            />
-            نقطة تحقق
-          </label>
         </div>
+        {/* Checkpoints are not made here: they are written where the lesson asks them. */}
+        <p className="mt-2 text-[11px] text-ink-600 font-arabic">
+          لسؤال يُسأل داخل الدرس، أضف «نقطة تحقق» في مكانها من محتوى الدرس.
+        </p>
       </section>
     </div>
   );
