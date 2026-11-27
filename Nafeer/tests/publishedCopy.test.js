@@ -7,12 +7,14 @@ import path from 'node:path';
 // write reopens an approved lesson first.
 
 vi.mock('@/lib/models/Lesson',        () => ({ Lesson: {} }));
+// Mutable: tests give it the methods they expect to be called.
 vi.mock('@/lib/models/Section',       () => ({ Section: {} }));
 vi.mock('@/lib/models/Block',         () => ({ Block: {} }));
 vi.mock('@/lib/models/Question',      () => ({ Question: {} }));
 vi.mock('@/lib/models/PublishedCopy', () => ({ PublishedCopy: {} }));
 
 const { mergePublished, reopenForRevision } = await import('@/lib/publishedCopy');
+const { reviewStamp } = await import('@/lib/reviewStamp');
 
 const lesson  = (contentId, order, title = contentId) => ({ contentId, order, title });
 const section = (contentId, lessonContentId) => ({ contentId, lessonContentId, order: 1 });
@@ -60,10 +62,27 @@ describe('mergePublished', () => {
 });
 
 describe('reopenForRevision', () => {
-  it('does nothing, and reads nothing, for lessons that are not approved', async () => {
+  it('does nothing, and reads nothing, for drafts', async () => {
     // The mocked models have no methods: any query would throw.
-    await expect(reopenForRevision([{ contentId: 'L1', status: 'draft' }, { contentId: 'L2', status: 'review' }]))
+    await expect(reopenForRevision([{ contentId: 'L1', status: 'draft' }]))
       .resolves.toEqual([]);
+  });
+});
+
+describe('a lesson waiting for review', () => {
+  it('is marked as changed by a content write, and stays in review', async () => {
+    const { Lesson } = await import('@/lib/models/Lesson');
+    Lesson.updateOne = vi.fn(async () => ({ matchedCount: 1 }));
+    await expect(reopenForRevision([{ contentId: 'L1', status: 'review' }])).resolves.toEqual([]);
+    expect(Lesson.updateOne).toHaveBeenCalledWith(
+      { contentId: 'L1', status: 'review' }, { $inc: { contentRev: 1 } }, { timestamps: false },
+    );
+    delete Lesson.updateOne;
+  });
+
+  it('changes its stamp with either counter', () => {
+    expect(reviewStamp({ version: 3 })).toBe('3.0');
+    expect(reviewStamp({ version: 3, contentRev: 1 })).not.toBe(reviewStamp({ version: 3 }));
   });
 });
 
