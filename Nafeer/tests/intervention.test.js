@@ -110,7 +110,7 @@ describe('assertCanEditLessons', () => {
   });
 
   it('passes their own, and lessons that do not exist yet', async () => {
-    await expect(assertCanEditLessons(member, ['L2', 'NEW_LESSON'], NOW)).resolves.toBeUndefined();
+    await expect(assertCanEditLessons(member, ['L2', 'NEW_LESSON'], NOW)).resolves.toBeInstanceOf(Array);
   });
 });
 
@@ -228,7 +228,7 @@ describe('unclaimed scaffold lessons', () => {
     await expect(claimLesson({ ...member, name: 'منى' }, 'S1', NOW)).resolves.toMatchObject({ contentId: 'S1' });
     expect(lessons[0].ownerId).toBe('member');
     expect(creditLesson).toHaveBeenCalledWith('S1', { contributorId: 'member', name: 'منى', kind: 'author' });
-    await expect(assertCanEditLessons(member, ['S1'], NOW)).resolves.toBeUndefined();
+    await expect(assertCanEditLessons(member, ['S1'], NOW)).resolves.toBeInstanceOf(Array);
   });
 
   it('once claimed it is theirs: nobody else can claim it', async () => {
