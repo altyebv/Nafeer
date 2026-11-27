@@ -3,6 +3,15 @@ import { Concept } from '@/lib/models/Concept';
 import { Tag } from '@/lib/models/Tag';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
 
+// ─── Editing an approved concept ──────────────────────────────────────────────
+// Lessons, questions and cards in the app depend on it, so it must not leave a
+// release while its next version is being written. The first change to an
+// approved concept stores it in `published`; approving or archiving clears that.
+function asApproved(doc) {
+  const { changelog, published, ...kept } = doc.toObject ? doc.toObject() : doc;
+  return kept;
+}
+
 // ─── getConceptsForSubject ────────────────────────────────────────────────────
 export async function getConceptsForSubject(subjectId, options = {}) {
   await connectDB();
@@ -32,6 +41,10 @@ export async function updateConcept(contentId, updates, contributorId, note = ''
     { ...updates }, current, contributorId, 'edited', note, '', skipRedraft
   );
 
+  if (current.status === 'approved' && bumpedUpdates.status === 'draft') {
+    bumpedUpdates.published = asApproved(current);
+  }
+
   return Concept.findOneAndUpdate(
     { contentId },
     { $set: bumpedUpdates },
@@ -55,10 +68,17 @@ export async function updateConceptStatus(contentId, newStatus, contributorId, n
     timestamp: new Date(),
   };
 
+  const kept = {};
+  if (current.status === 'approved' && (newStatus === 'draft' || newStatus === 'review')) {
+    kept.published = asApproved(current);
+  }
+  if (newStatus === 'approved' || newStatus === 'archived') kept.published = null;
+
   return Concept.findOneAndUpdate(
     { contentId },
     {
       $set: {
+        ...kept,
         status:     newStatus,
         version:    newVersion,
         updatedBy:  contributorId,
@@ -74,9 +94,9 @@ export async function updateConceptStatus(contentId, newStatus, contributorId, n
 // Hard delete — only if status is 'draft'. Approved concepts must be archived.
 export async function deleteConcept(contentId) {
   await connectDB();
-  const concept = await Concept.findOne({ contentId });
+  const concept = await Concept.findOne({ contentId }).select('+published');
   if (!concept) return null;
-  if (concept.status === 'approved') {
+  if (concept.status === 'approved' || (concept.published && concept.status !== 'archived')) {
     throw new Error('لا يمكن حذف مفهوم معتمد. استخدم الأرشفة بدلاً من الحذف.');
   }
   return Concept.deleteOne({ contentId });
