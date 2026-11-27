@@ -205,7 +205,7 @@ export default function MediaPage({ subjectId, contributor }) {
                 <>
                   <Upload size={28} strokeWidth={1.6} className="text-ink-600" />
                   <span className="text-ink-400 text-sm">اسحب الملفات هنا أو اضغط للتصفح</span>
-                  <span className="text-ink-500 text-xs">JPEG · PNG · GIF · WebP · SVG — حتى 10 ميغابايت</span>
+                  <span className="text-ink-500 text-xs">JPEG · PNG · GIF · WebP · SVG — حتى 4 ميغابايت</span>
                 </>
               )}
             </div>
