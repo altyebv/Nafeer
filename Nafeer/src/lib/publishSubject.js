@@ -83,7 +83,7 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
     // ── 1. Fetch all approved content for this subject ────────────────────────
     const [
       subject, units, approved, liveSections, liveBlocks,
-      concepts, tags, feedItems, liveQuestions, exams, pieces, copies,
+      concepts, tags, liveFeed, liveQuestions, exams, pieces, copies,
     ] = await Promise.all([
       Subject.findOne({ subjectId }).lean(),
       Unit.find({ subjectId }).sort({ order: 1 }).lean(),
@@ -104,8 +104,8 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
     ]);
 
     // A lesson being revised ships as it was last approved (lib/publishedCopy.js).
-    const { lessons, sections, blocks, questions } = mergePublished(
-      { lessons: approved, sections: liveSections, blocks: liveBlocks, questions: liveQuestions },
+    const { lessons, sections, blocks, questions, feedItems } = mergePublished(
+      { lessons: approved, sections: liveSections, blocks: liveBlocks, questions: liveQuestions, feedItems: liveFeed },
       copies,
     );
 
