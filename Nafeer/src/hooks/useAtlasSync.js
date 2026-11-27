@@ -60,6 +60,11 @@ export function useAtlasSync() {
     return json.data;
   }, []);
 
+  // Changing an approved lesson's content sends it back to draft on the server
+  // (lib/publishedCopy.js); show that without waiting for a reload.
+  const markReopened = useCallback((ids) => (ids || []).forEach((id) =>
+    useSubjectStore.getState().updateLesson(id, { atlasStatus: 'draft', revising: true })), []);
+
   // Batch save — returns the written docs and the conflicts beside them.
   const postBatch = useCallback(async (url, body) => {
     const res  = await fetch(url, {
@@ -69,8 +74,9 @@ export function useAtlasSync() {
     });
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'خطأ غير معروف');
+    markReopened(json.reopened);
     return { data: json.data || [], conflicts: json.conflicts || [] };
-  }, []);
+  }, [markReopened]);
 
   // ── FIX: approveAtlasResource ─────────────────────────────────────────────
   // Was referenced but never defined — ReferenceError killed sync for concepts,
@@ -125,6 +131,7 @@ export function useAtlasSync() {
               groupMetadata:    l.groupMetadata      || null,
               atlasStatus:      l.status             || 'draft',
               reviewState:      l.reviewState        ?? null,
+              revising:         !!l.revising,
               // Whose it is, and whether it is unclaimed scaffold (lib/api/subject.js).
               owner:            l.owner              ?? null,
               unclaimed:        !!l.unclaimed,
@@ -643,7 +650,7 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
       await apiFetch(`/api/content/lessons/${lessonId}`, {
         method: 'PATCH', body: JSON.stringify({ status: 'approved', note: 'اعتماد مباشر من لوحة المشرف' }),
       });
-      updateLesson(lessonId, { atlasStatus: 'approved' });
+      updateLesson(lessonId, { atlasStatus: 'approved', revising: false });
       setDone();
     } catch (e) {
       setError(`فشل الاعتماد: ${e.message}`);
@@ -653,7 +660,7 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
 
   // ── Delete helpers ─────────────────────────────────────────────────────────
   const deleteRemote = useCallback(async (url) => {
-    try { await apiFetch(url, { method: 'DELETE' }); }
+    try { markReopened((await apiFetch(url, { method: 'DELETE' }))?.reopened); }
     catch (e) { console.warn(`[deleteRemote] ${url} failed:`, e.message); }
   }, [apiFetch]);
 
