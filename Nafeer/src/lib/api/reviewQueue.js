@@ -1,4 +1,6 @@
 import { connectDB } from '@/lib/db';
+import { reviewStamp, atStamp, STALE_APPROVAL } from '@/lib/reviewStamp';
+import { hasMissingImage, MISSING_IMAGE } from '@/lib/imageRequests';
 import { Lesson }   from '@/lib/models/Lesson';
 import { Concept }  from '@/lib/models/Concept';
 import { FeedItem } from '@/lib/models/FeedItem';
@@ -172,7 +174,7 @@ export async function returnLesson(contentId, { comments = [], summary = '' } = 
 //                    The lead routes pass it; the owner's dashboard may move
 //                    anything, as before.
 //
-export async function approveOrReject(contentId, type, newStatus, adminObjId, note = '', { onlyFromReview = false } = {}) {
+export async function approveOrReject(contentId, type, newStatus, adminObjId, note = '', { onlyFromReview = false, seen } = {}) {
   await connectDB();
 
   const MODEL_MAP = { lesson: Lesson, concept: Concept, feedItem: FeedItem, question: Question };
@@ -183,6 +185,14 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
   if (!doc) throw new Error('المحتوى غير موجود');
   if (onlyFromReview && doc.status !== 'review') {
     throw new ReviewError('العنصر ليس بانتظار المراجعة', 'NOT_IN_REVIEW');
+  }
+
+  // A lesson is approved only as the reviewer read it (lib/reviewStamp.js).
+  const readOnly = type === 'lesson' && newStatus === 'approved' && seen !== undefined;
+  if (readOnly && seen !== reviewStamp(doc)) throw new ReviewError(STALE_APPROVAL, 'STALE');
+
+  if (type === 'lesson' && newStatus === 'approved' && await hasMissingImage(contentId)) {
+    throw new ReviewError(MISSING_IMAGE, 'MISSING_IMAGE');
   }
 
   const newVersion = (doc.version || 1) + 1;
@@ -197,7 +207,11 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
 
   const existing = doc.changelog || [];
   // Conditional on the version read, so two reviewers cannot both act.
-  const filter = onlyFromReview ? { contentId, status: 'review', version: doc.version } : { contentId };
+  const filter = {
+    contentId,
+    ...(onlyFromReview && { status: 'review', version: doc.version }),
+    ...(readOnly && atStamp(doc)),
+  };
   const res = await Model.updateOne(filter, {
     $set: {
       status:     newStatus,
@@ -209,7 +223,7 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
       ...(type === 'lesson' && newStatus === 'approved' && { 'reviewState.returned': false, revising: false }),
     },
   });
-  if (onlyFromReview && !res.matchedCount) {
+  if ((onlyFromReview || readOnly) && !res.matchedCount) {
     throw new ReviewError('تغيّر العنصر أثناء المراجعة — حدّث الصفحة وحاول مجدداً', 'CONFLICT');
   }
 
@@ -262,6 +276,9 @@ export async function getLessonForReview(contentId) {
     summary: lesson.summary,
     status: lesson.status,
     version: lesson.version,
+    // Sent back with an approval (lib/reviewStamp.js). The lesson is read
+    // before its content, so a change in between moves it past this.
+    stamp: reviewStamp(lesson),
     estimatedMinutes: lesson.estimatedMinutes,
     hook: lesson.metadata?.hook || null,
     hookAnswer: lesson.metadata?.hookAnswer || null,
