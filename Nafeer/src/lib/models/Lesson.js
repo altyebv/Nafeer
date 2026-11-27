@@ -79,6 +79,10 @@ const LessonSchema = new mongoose.Schema(
       submittedAt:    { type: Date,    default: null },
     },
 
+    // True while an approved lesson is being changed: releases ship its saved
+    // approved version until the change is approved (lib/publishedCopy.js).
+    revising: { type: Boolean, default: false },
+
     // ── Lesson Variations ─────────────────────────────────────────────────
     // A variation is a lesson that is linked to another lesson (its parent).
     // The parent field is a contentId string (not an ObjectId ref) so it stays
