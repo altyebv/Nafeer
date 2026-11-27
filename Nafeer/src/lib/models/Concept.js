@@ -44,6 +44,10 @@ const ConceptSchema = new mongoose.Schema(
     // Tag IDs (contentIds of Tag documents)
     tagIds: [{ type: String }],
 
+    // The approved version, kept while a change to it waits for approval, so
+    // releases keep shipping it (lib/api/concepts.js).
+    published: { type: mongoose.Schema.Types.Mixed, default: null, select: false },
+
     ...versioningFields,
   },
   { timestamps: true }
