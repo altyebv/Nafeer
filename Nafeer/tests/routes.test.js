@@ -18,6 +18,8 @@ vi.mock('@/lib/models/ContributorRole', model('ContributorRole'));
 vi.mock('@/lib/models/Lesson',          model('Lesson'));
 vi.mock('@/lib/models/Section',         model('Section'));
 vi.mock('@/lib/models/Block',           model('Block'));
+vi.mock('@/lib/models/Question',        model('Question'));
+vi.mock('@/lib/models/PublishedCopy',   model('PublishedCopy'));
 
 vi.mock('@/lib/SeedActor',  () => ({ ensureSystemSeedContributor: vi.fn(async () => 'seed') }));
 vi.mock('@/lib/trackStat',  () => ({ trackStat: vi.fn() }));
