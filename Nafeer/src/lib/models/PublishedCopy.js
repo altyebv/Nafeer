@@ -16,8 +16,9 @@ const PublishedCopySchema = new mongoose.Schema(
     lesson:          { type: mongoose.Schema.Types.Mixed, required: true },
     sections:        { type: [mongoose.Schema.Types.Mixed], default: [] },
     blocks:          { type: [mongoose.Schema.Types.Mixed], default: [] },
-    // Checkpoint questions only: they ship with their section.
+    // The approved questions and feed cards, and the checkpoints.
     questions:       { type: [mongoose.Schema.Types.Mixed], default: [] },
+    feedItems:       { type: [mongoose.Schema.Types.Mixed], default: [] },
   },
   { timestamps: true, minimize: false }
 );
