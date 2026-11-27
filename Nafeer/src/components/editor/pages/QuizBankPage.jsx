@@ -6,6 +6,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync } from '@/hooks/useAtlasSync';
 import { sanitiseMarkers } from '@/lib/markerUtils';
 import { MARKER_SENTINEL, distractorsOf } from '@/lib/markerQuestion';
+import { wordBank, wrongWords } from '@/lib/fillBlank';
+import { optionList } from '@/lib/checkpoints';
 
 import QuestionsTab from '@/components/editor/quizbank/QuestionsTab';
 import ExamsTab from '@/components/editor/quizbank/ExamTab';
@@ -112,6 +114,12 @@ const normaliseQuestion = (draft) => {
     normalised.options = normalised.options.filter((pair) => pair.right?.trim() && pair.left?.trim());
     normalised.correctAnswer = 'MATCH_PAIRS';
   }
+  if (normalised.type === 'FILL_BLANK') {
+    // The bank as the app shows it, the right word placed among the wrong ones (lib/fillBlank.js).
+    const answer = normalised.correctAnswer;
+    // A restored bank may still be the app's JSON string; optionList reads either.
+    normalised.options = wordBank(answer, wrongWords(optionList(draft.options), answer));
+  }
   if (normalised.type === 'ORDER' && Array.isArray(normalised.options)) {
     normalised.options = normalised.options.map((item) => item.trim()).filter(Boolean);
     normalised.correctAnswer = normalised.options.join(' | ');
@@ -143,9 +151,13 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
     addQuestionToExam: s.addQuestionToExam, removeQuestionFromExam: s.removeQuestionFromExam,
   })));
 
-  const visibleQuestions = subjectId
+  // Checkpoints belong to their lesson: the app asks them only there, never in
+  // practice or exams, and they are written on their block in the lesson editor.
+  const subjectQuestions = subjectId
     ? questions.filter((q) => q.subjectId === subjectId)
     : questions;
+  const visibleQuestions = subjectQuestions.filter((q) => !q.isCheckpoint);
+  const checkpointCount = subjectQuestions.length - visibleQuestions.length;
 
   const visibleConcepts = subjectId
     ? concepts.filter((c) => c.subjectId === subjectId)
@@ -333,6 +345,13 @@ export default function QuizBankPage({ subjectId, isAdmin = false }) {
           )}
         </div>
       </header>
+
+      {tab === 'questions' && checkpointCount > 0 && (
+        <p className="mb-3 t-caption text-fg-muted">
+          {checkpointCount === 1 ? 'نقطة تحقق واحدة لا تظهر هنا' : `${checkpointCount} نقاط تحقق لا تظهر هنا`}:
+          {' '}يسألها التطبيق داخل درسها فقط، وتُكتب في مكانها من الدرس.
+        </p>
+      )}
 
       {tab === 'questions' && (
         <QuestionsTab
