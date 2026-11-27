@@ -1,6 +1,7 @@
 import { connectDB } from '@/lib/db';
 import { reviewStamp, atStamp, STALE_APPROVAL } from '@/lib/reviewStamp';
 import { hasMissingImage, MISSING_IMAGE } from '@/lib/imageRequests';
+import { approveLessonItems, heldCards } from '@/lib/lessonItems';
 import { Lesson }   from '@/lib/models/Lesson';
 import { Concept }  from '@/lib/models/Concept';
 import { FeedItem } from '@/lib/models/FeedItem';
@@ -32,19 +33,25 @@ export async function getReviewQueue(subjectId = null) {
       .select('contentId subjectId titleAr type status version createdAt createdBy')
       .sort({ createdAt: -1 }).lean(),
     FeedItem.find(filter)
-      .select('contentId subjectId type contentAr status version createdAt createdBy')
+      .select('contentId subjectId lessonContentId type contentAr status version createdAt createdBy')
       .sort({ createdAt: -1 }).lean(),
     Question.find(filter)
-      .select('contentId subjectId textAr type difficulty status version createdAt createdBy')
+      .select('contentId subjectId lessonContentId textAr type difficulty status version createdAt createdBy')
       .sort({ createdAt: -1 }).lean(),
   ]);
 
+  // A waiting lesson's questions and cards are reviewed with it (lib/lessonItems.js).
+  const waiting = new Set(lessons.map((l) => l.contentId));
+  const alone = (list) => list.filter((d) => !waiting.has(d.lessonContentId));
+  const cards = alone(feedItems);
+  const asked = alone(questions);
+
   return {
-    lessons:   lessons.map((d)   => mapItem(d, 'lesson')),
-    concepts:  concepts.map((d)  => mapItem(d, 'concept')),
-    feedItems: feedItems.map((d) => mapItem(d, 'feedItem')),
-    questions: questions.map((d) => mapItem(d, 'question')),
-    total: lessons.length + concepts.length + feedItems.length + questions.length,
+    lessons:   lessons.map((d)  => mapItem(d, 'lesson')),
+    concepts:  concepts.map((d) => mapItem(d, 'concept')),
+    feedItems: cards.map((d)    => mapItem(d, 'feedItem')),
+    questions: asked.map((d)    => mapItem(d, 'question')),
+    total: lessons.length + concepts.length + cards.length + asked.length,
   };
 }
 
@@ -227,6 +234,8 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
     throw new ReviewError('تغيّر العنصر أثناء المراجعة — حدّث الصفحة وحاول مجدداً', 'CONFLICT');
   }
 
+  if (newStatus === 'approved' && type === 'lesson') await approveLessonItems(contentId, adminObjId);
+
   // Credit the original author, not the reviewing admin — a lesson shipping is
   // the author's effort paying off, and the only stat contributors see on their
   // own profile for "did this actually make it out the door".
@@ -236,6 +245,16 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
 
   return { contentId, status: newStatus };
 }
+// Options are stored as a list or as its JSON text.
+function choicesOf(options) {
+  let list = options;
+  if (typeof list === 'string') {
+    try { list = JSON.parse(list); } catch { return []; }
+  }
+  if (!Array.isArray(list)) return [];
+  return list.map((o) => (typeof o === 'string' ? o : o?.text ?? JSON.stringify(o)));
+}
+
 // ─── getLessonForReview ───────────────────────────────────────────────────────
 // Everything the reviewer reads in one request (DS2 step 3): the lesson and
 // its details, sections with their blocks, its questions and feed cards — the
@@ -251,14 +270,16 @@ export async function getLessonForReview(contentId) {
   if (!lesson) return null;
 
   const [questions, feedItems, author, guide] = await Promise.all([
-    Question.find({ lessonContentId: contentId, isCheckpoint: { $ne: true } }, 'contentId textAr type difficulty correctAnswer options').sort({ createdAt: 1 }).lean(),
-    FeedItem.find({ lessonContentId: contentId }, 'contentId type contentAr back correctAnswer').sort({ order: 1 }).lean(),
+    Question.find({ lessonContentId: contentId, isCheckpoint: { $ne: true }, status: { $ne: 'archived' } }, 'contentId textAr type difficulty correctAnswer options explanation').sort({ createdAt: 1 }).lean(),
+    FeedItem.find({ lessonContentId: contentId, status: { $ne: 'archived' } }, 'contentId type contentAr back correctAnswer options explanation conceptContentId status').sort({ order: 1 }).lean(),
     // Seeded lessons are created by the seed actor; the author is whoever
     // wrote in it, so take the first real person of creator and last editor.
     // Used only when the lesson has no owner (assigned or claimed) to name.
     lesson.ownerId ? null : Contributor.findOne({ _id: { $in: [lesson.createdBy, lesson.updatedBy].filter(Boolean) }, ...REAL_PEOPLE }, 'name username').lean(),
     SubjectGuide.findOne({ subjectId: lesson.subjectId }, 'checklist').lean(),
   ]);
+
+  const held = await heldCards(feedItems.filter((f) => f.status !== 'approved'));
 
   const review = (lesson.notes || [])
     .filter((n) => n.noteType === 'review_feedback')
@@ -291,8 +312,14 @@ export async function getLessonForReview(contentId) {
       id: s.contentId, title: s.title, kind: s.kind || 'GENERAL',
       blocks: s.blocks.map((b) => ({ id: b.contentId, type: b.type, content: b.content, caption: b.caption })),
     })),
-    questions: questions.map((q) => ({ id: q.contentId, text: q.textAr, type: q.type, difficulty: q.difficulty, answer: q.correctAnswer })),
-    feed: feedItems.map((f) => ({ id: f.contentId, type: f.type, text: f.contentAr, back: f.back })),
+    questions: questions.map((q) => ({
+      id: q.contentId, text: q.textAr, type: q.type, difficulty: q.difficulty, answer: q.correctAnswer,
+      choices: choicesOf(q.options), explanation: q.explanation || null,
+    })),
+    feed: feedItems.map((f) => ({
+      id: f.contentId, type: f.type, text: f.contentAr, back: f.back, answer: f.correctAnswer || null,
+      choices: choicesOf(f.options), explanation: f.explanation || null, held: held.get(f.contentId) || null,
+    })),
     review,
     checklist: guide?.checklist || [],
   };
