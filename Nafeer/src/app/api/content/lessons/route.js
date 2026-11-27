@@ -5,6 +5,7 @@ import { Lesson } from '@/lib/models/Lesson';
 import { initialChangelog } from '@/lib/models/versioning';
 import { trackStat } from '@/lib/trackStat';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
+import { readBody, assertInput, invalidData } from '@/lib/limits';
 
 export async function GET(request) {
   try {
@@ -29,7 +30,8 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body = await readBody(request);
+    assertInput(body, ['title']);
     const { contentId, subjectId, unitContentId, title, order } = body;
 
     if (!contentId || !subjectId || !unitContentId || !title || order == null) {
@@ -70,6 +72,8 @@ export async function POST(request) {
   } catch (e) {
     if (e instanceof Response) return e;
     if (e.code === 11000) return err('معرّف الدرس موجود مسبقاً');
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[POST /api/content/lessons]', e);
     return err('خطأ في الخادم', 500);
   }
