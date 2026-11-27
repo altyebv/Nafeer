@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { gsap } from 'gsap';
 import { Button, Card, Textarea, cx } from '@/components/ui';
+import { MAX_ANSWER } from '@/lib/limits';
 
 // ─── /interview?token=… ───────────────────────────────────────────────────────
 // DS3: the written interview on the shared components and role tokens — one
@@ -48,7 +49,7 @@ function Step({ kicker, prompt, hint, value, onChange, min, rows = 7, placeholde
       <span className="t-label text-fg-accent">{kicker}</span>
       <h2 className="read t-h3 leading-relaxed text-fg-strong">{prompt}</h2>
       {hint && <p className="t-label font-normal text-fg-muted">{hint}</p>}
-      <Textarea rows={rows} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+      <Textarea rows={rows} maxLength={MAX_ANSWER} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
         aria-label={prompt} className="read text-base leading-loose" />
       <CharCount value={value} min={min} />
     </div>
