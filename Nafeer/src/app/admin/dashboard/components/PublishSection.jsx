@@ -513,7 +513,7 @@ export function PublishSection() {
       });
       const data = await res.json();
       if (data.ok) {
-        showToast(`✓ نُشر ${subjectId} — نسخة ${data.version} (${data.stats.lessons} درس، ${data.stats.questions} سؤال)`);
+        showToast(`✓ نُشر ${subjectId} — نسخة ${data.version} (${data.stats.lessons} درس، ${data.stats.questions} سؤال)${data.stats.omitted?.length ? ` — تُرك ${data.stats.omitted.length}، التفاصيل في صفحة المادة` : ''}`);
         await load();
       } else {
         showToast(data.error || 'فشل النشر', true);
