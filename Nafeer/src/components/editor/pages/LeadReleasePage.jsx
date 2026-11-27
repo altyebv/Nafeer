@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import EditorPage from '@/components/editor/layout/EditorPage';
 import { Badge, Button, Card, ConfirmButton, EmptyState, Field, PageHeader, Stat, Textarea } from '@/components/ui';
 import { reviewCall } from '@/components/review/LessonReview';
+import { OmittedList } from '@/components/review/OmittedList';
 import { formatDate, formatRelative } from '@/lib/format';
 import { SUBJECTS_BY_ID } from '@/shared/curriculum';
 
@@ -84,6 +85,7 @@ export default function LeadReleasePage({ subjectId }) {
 
       <Card title="ما الذي سيتغيّر في التطبيق">
         {data.previewError && <p className="t-label text-warn">{data.previewError}</p>}
+        {p?.stats.omitted?.length > 0 && <div className="mb-4"><OmittedList items={p.stats.omitted} /></div>}
         {p && p.nothingToPublish && <p className="t-label text-fg-subtle">لا جديد منذ آخر نشر{p.lastPublishedAt ? ` (${formatRelative(p.lastPublishedAt)})` : ''}.</p>}
         {p && !p.nothingToPublish && (
           <div className="flex flex-col gap-4">
