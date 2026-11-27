@@ -34,7 +34,7 @@ const GROUPS = [
     { type: 'GIF', hint: 'حركة قصيرة تشرح خطوة', words: 'متحركة gif' },
   ] },
   { name: 'تفاعلي', items: [
-    { type: 'QUESTION', hint: 'سؤال سريع قبل المتابعة', words: 'سؤال تحقق اختبار' },
+    { type: 'QUESTION', hint: 'سؤال يسأله التطبيق في هذا المكان من الدرس', words: 'سؤال تحقق اختبار تذكر' },
   ] },
   { name: 'تنظيم', items: [
     { type: 'DIVIDER', hint: 'فاصل بين فكرتين', words: 'فاصل خط' },
