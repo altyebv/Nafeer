@@ -89,7 +89,7 @@ export default function LeadReleasePage({ subjectId }) {
           <div className="flex flex-col gap-4">
             <p className="t-caption text-fg-subtle">
               {p.firstPublish ? 'أول نشر لهذه المادة.' : `النسخة الحالية في التطبيق: ${p.fromVersion || '—'}، نُشرت ${formatRelative(p.lastPublishedAt)}.`}
-              {' '}يشمل النشر الدروس المعتمدة فقط ({p.stats.lessons}).
+              {' '}يشمل النشر الدروس المعتمدة فقط ({p.stats.lessons})، وما يُعدَّل منها يُنشر بنسخته المعتمدة.
             </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {changes.map(([k, n]) => {
