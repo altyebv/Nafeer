@@ -7,6 +7,7 @@ import { trackStat } from '@/lib/trackStat';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { assertCanEditLessons, lessonsForBlocks } from '@/lib/lessonAccess';
 import { reopenForRevision } from '@/lib/publishedCopy';
+import { readBody, assertBatch, invalidData } from '@/lib/limits';
 
 // POST /api/content/blocks
 // Body: { blocks: [...] }  — batch upsert. A block may carry `baseVersion`;
@@ -19,7 +20,8 @@ export async function POST(request) {
     const actorId = user.role === 'admin'
       ? await ensureSystemSeedContributor()
       : user.id;
-    const { blocks } = await request.json();
+    const { blocks } = await readBody(request);
+    if (Array.isArray(blocks)) assertBatch(blocks);
 
     if (!Array.isArray(blocks) || blocks.length === 0) {
       return ok([], { total: 0 });
@@ -51,6 +53,8 @@ export async function POST(request) {
     return ok(saved, { total: saved.length, conflicts: await withEditorNames(conflicts), reopened });
   } catch (e) {
     if (e instanceof Response) return e;
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[POST /api/content/blocks]', e);
     return err('خطأ في الخادم', 500);
   }
