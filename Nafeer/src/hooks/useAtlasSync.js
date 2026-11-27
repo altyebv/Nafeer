@@ -137,6 +137,8 @@ export function useAtlasSync() {
               // Whose it is, and whether it is unclaimed scaffold (lib/api/subject.js).
               owner:            l.owner              ?? null,
               unclaimed:        !!l.unclaimed,
+              ownerName:        l.ownerName          ?? '',
+              started:          !!l.started,
               _v:               l.version            ?? 1,
             }))
           );
