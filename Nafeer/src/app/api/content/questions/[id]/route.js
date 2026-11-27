@@ -9,7 +9,7 @@ import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateQuestion, updateQuestionStatus, deleteQuestion } from '@/lib/api/questions';
 import { connectDB } from '@/lib/db'
 import { assertCanEditLessons, lessonsForLinked } from '@/lib/lessonAccess';
-import { reopenForCheckpoint } from '@/lib/publishedCopy';
+import { reopenForItem } from '@/lib/publishedCopy';
 import { markerIssues } from '@/lib/markerQuestion';
 import { readBody, assertInput, invalidData } from '@/lib/limits';
 
@@ -50,11 +50,11 @@ export async function PUT(request, { params }) {
     const issues = markerIssues(safeUpdates);
     if (issues.length) return err(issues[0], 422);
 
-    await reopenForCheckpoint(lessons, (await params).id, safeUpdates);
+    const reopened = await reopenForItem(lessons, Question, (await params).id, safeUpdates);
     const question = await updateQuestion((await params).id, safeUpdates, actorId, note || '');
     if (!question) return err('السؤال غير موجود', 404);
 
-    return ok(question);
+    return ok(question, { reopened });
   } catch (e) {
     if (e instanceof Response) return e;
     const bad = invalidData(e);
@@ -69,11 +69,15 @@ export async function PATCH(request, { params }) {
   await connectDB();
   try {
     const { user } = await requireContentAccess(Question, (await params).id, { write: true });
-    await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id]));
+    const linked = await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id]));
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await readBody(request);
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
+    // Withdrawing an approved item changes what students have.
+    if (status !== 'approved') {
+      await reopenForItem(linked.filter((l) => l.status === 'approved'), Question, (await params).id);
+    }
 
     const question = await updateQuestionStatus((await params).id, status, actorId, note || '');
     if (!question) return err('السؤال غير موجود', 404);
@@ -91,9 +95,9 @@ export async function DELETE(request, { params }) {
     await connectDB();
     const { user } = await requireContentAccess(Question, (await params).id, { write: true });
     const owned = await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id]));
-    await reopenForCheckpoint(owned, (await params).id);
+    const reopened = await reopenForItem(owned, Question, (await params).id);
     await deleteQuestion((await params).id);
-    return ok({ deleted: (await params).id });
+    return ok({ deleted: (await params).id, reopened });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/questions/[id]]', e);
