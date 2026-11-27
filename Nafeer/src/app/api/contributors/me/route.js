@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser, signToken, setAuthCookie, buildTokenPayload } from '@/lib/auth';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
+import { readBody } from '@/lib/limits';
 
 // ─── GET /api/contributors/me ─────────────────────────────────────────────────
 // Returns the current contributor's full profile (including stats).
@@ -29,7 +30,8 @@ export async function PATCH(request) {
   const user = await getCurrentUser();
   if (!user?.id) return NextResponse.json({ ok: false, error: 'غير مصرح' }, { status: 401 });
 
-  const body = await request.json();
+  let body;
+  try { body = await readBody(request); } catch (e) { if (e instanceof Response) return e; throw e; }
 
   // ── Token refresh action ──────────────────────────────────────────────────
   // Re-issues the JWT from the current DB record so any admin-assigned fields
