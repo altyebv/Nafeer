@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Check, ClipboardList, Flag, MessageCircle, RotateCcw, Send, X } from 'lucide-react';
 import Drawer from '@/components/editor/shared/Drawer';
+import { useSubjectStore } from '@/store/subjectStore';
+import { openNotes } from '@/lib/waiting';
 import { formatDate } from '@/lib/format';
 
 // ─── LessonNotesDrawer ────────────────────────────────────────────────────────
@@ -114,15 +116,23 @@ export default function LessonNotesDrawer({ lessonId, currentUser, onClose, onCo
   const [filter,      setFilter]     = useState('all'); // 'all' | 'open' | 'flag'
   const [error,       setError]      = useState(null);
   const textRef = useRef(null);
+  const loadedRef = useRef(false);
+
+  // Keep the home screen's list in step with what is resolved or added here.
+  useEffect(() => {
+    if (loadedRef.current) useSubjectStore.getState().updateLesson(lessonId, { comments: openNotes(notes) });
+  }, [notes, lessonId]);
 
   // ── Load notes ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!lessonId) return;
+    loadedRef.current = false;
     setLoading(true);
     fetch(`/api/content/lessons/${lessonId}/notes`)
       .then((r) => r.json())
       .then((res) => {
         if (res.ok) {
+          loadedRef.current = true;
           setNotes(res.data.notes || []);
           onCountChange?.(res.data.total ?? 0);
         }
