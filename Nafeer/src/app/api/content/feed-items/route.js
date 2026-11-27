@@ -7,6 +7,7 @@ import {
 import { trackStat } from '@/lib/trackStat';
 import { FeedItem } from '@/lib/models/FeedItem';
 import { assertCanEditLessons, lessonsForLinked } from '@/lib/lessonAccess';
+import { readBody, assertInput, invalidData } from '@/lib/limits';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -39,7 +40,8 @@ export async function GET(request) {
 // POST /api/content/feed-items
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body = await readBody(request);
+    assertInput(body);
     const { subjectId, conceptContentId, type } = body;
     if (!subjectId || !conceptContentId || !type) {
       return err('الحقول المطلوبة: subjectId, conceptContentId, type');
@@ -64,6 +66,8 @@ export async function POST(request) {
   } catch (e) {
     if (e instanceof Response) return e;
     if (e.code === 11000) return err('معرّف عنصر التغذية موجود مسبقاً');
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[POST /api/content/feed-items]', e);
     return err('خطأ في الخادم', 500);
   }
