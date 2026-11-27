@@ -490,7 +490,14 @@ export default function LessonEditorPage({
         {lesson.atlasStatus === 'approved' && currentUser?.role !== 'admin' && (
           <div role="note" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-warn-surface border border-warn-border text-warn t-label font-normal">
             <TriangleAlert size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
-            <p className="leading-relaxed">هذا الدرس <strong>معتمد</strong>. أي تعديل سيُعيده إلى حالة المسودة.</p>
+            <p className="leading-relaxed">هذا الدرس <strong>معتمد</strong>. أي تعديل سيُعيده إلى المسودة ليُراجَع من جديد، وتبقى النسخة المعتمدة في التطبيق حتى ذلك.</p>
+          </div>
+        )}
+
+        {lesson.revising && (lesson.atlasStatus === 'draft' || lesson.atlasStatus === 'review') && (
+          <div role="note" className="flex items-start gap-2.5 px-4 py-3 rounded-card bg-info-surface border border-info-border text-info t-label font-normal">
+            <TriangleAlert size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <p className="leading-relaxed">هذا تعديل على درس معتمد. يبقى للطلاب ما اعتُمد سابقاً إلى أن يُعتمد التعديل.</p>
           </div>
         )}
 
