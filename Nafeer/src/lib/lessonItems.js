@@ -16,13 +16,14 @@ export async function heldCards(cards) {
   if (!cards.length) return held;
   const ids = [...new Set(cards.map((c) => c.conceptContentId).filter(Boolean))];
   const concepts = ids.length
-    ? await Concept.find({ contentId: { $in: ids } }).select('contentId titleAr status').lean()
+    ? await Concept.find({ contentId: { $in: ids } }).select('contentId titleAr status +published').lean()
     : [];
   const byId = new Map(concepts.map((c) => [c.contentId, c]));
   for (const card of cards) {
     const concept = byId.get(card.conceptContentId);
     if (!concept) held.set(card.contentId, 'لا مفهوم لها');
-    else if (concept.status !== 'approved') held.set(card.contentId, `مفهومها «${concept.titleAr}» لم يُعتمد بعد`);
+    // One being edited still ships as last approved, so its cards can too.
+    else if (concept.status !== 'approved' && !concept.published) held.set(card.contentId, `مفهومها «${concept.titleAr}» لم يُعتمد بعد`);
   }
   return held;
 }
