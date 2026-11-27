@@ -2,6 +2,7 @@ import { requireSubjectAccess, ok, err } from '@/lib/api/guard';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { Question } from '@/lib/models/Question';
 import { assertCanEditLessons, lessonsForLinked } from '@/lib/lessonAccess';
+import { reopenForRevision } from '@/lib/publishedCopy';
 import {
   getQuestionsForSubject, createQuestion,
 } from '@/lib/api/questions';
@@ -47,7 +48,8 @@ export async function POST(request) {
 
     const user = await requireSubjectAccess(subjectId, { write: true });
     // A question in a lesson is that lesson's owner's to add (lib/lessonAccess.js).
-    await assertCanEditLessons(user, await lessonsForLinked(Question, [body.contentId], [body.lessonContentId]));
+    const lessons = await assertCanEditLessons(user, await lessonsForLinked(Question, [body.contentId], [body.lessonContentId]));
+    if (body.isCheckpoint) await reopenForRevision(lessons);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
 
     const question = await createQuestion(
