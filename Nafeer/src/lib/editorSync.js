@@ -55,6 +55,8 @@ function ownership(l) {
   return {
     ...(owner !== undefined && { owner }),
     ...(l.unclaimed !== undefined && { unclaimed: !!l.unclaimed }),
+    ...(l.ownerName !== undefined && { ownerName: l.ownerName }),
+    ...(l.started !== undefined && { started: !!l.started }),
   };
 }
 
@@ -206,6 +208,8 @@ export function mergeLesson(local, incoming) {
     revising:  incoming.revising  !== undefined ? incoming.revising  : local.revising,
     owner:     incoming.owner     !== undefined ? incoming.owner     : local.owner,
     unclaimed: incoming.unclaimed !== undefined ? incoming.unclaimed : local.unclaimed,
+    ownerName: incoming.ownerName !== undefined ? incoming.ownerName : local.ownerName,
+    started:   incoming.started   !== undefined ? incoming.started   : local.started,
   };
   if (local._dirty) return { ...local, atlasStatus: status, reviewState, ...owned };
   if (!hasVersion(local) && hasVersion(incoming) && !sameFields(local, incoming, LESSON_FIELDS)) {
