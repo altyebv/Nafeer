@@ -5,8 +5,20 @@
 
 import { MARKER_TYPE, markerIssues, markerBank } from '@/lib/markerQuestion';
 
-/** Whether a block of this type goes to the app: all but QUESTION, a Nafeer-only checkpoint placeholder. */
-export const blockGoesToApp = (type) => type !== 'QUESTION';
+// A checkpoint block (QUESTION here, CHECKPOINT in the app) marks where its
+// recall question is asked; its content is the question's id.
+
+/** Whether a block goes to the app: every block, but a checkpoint only once it names its question. */
+export const blockGoesToApp = (type, content = '') => type !== 'QUESTION' || String(content ?? '').trim() !== '';
+
+/** A block's type as the app names it. */
+export const blockTypeForApp = (type) => (type === 'QUESTION' ? 'CHECKPOINT' : type);
+
+/** A block's content as the app takes it: a checkpoint's question id without stray space. */
+export const blockContentForApp = (type, content) => (type === 'QUESTION' ? String(content ?? '').trim() : content || '');
+
+/** A block from the app's files in Nafeer's terms: a CHECKPOINT is a QUESTION block. */
+export const blockTypeFromApp = (type) => (type === 'CHECKPOINT' ? 'QUESTION' : type);
 
 // Nafeer stores these styles in upper case (DEFINITION, NUMBERED); the app
 // only matches lower case, and reads anything else as a note or a bullet list.
