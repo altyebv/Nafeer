@@ -1,6 +1,7 @@
 import { requireContentAccess, ok, err } from '@/lib/api/guard';
 import { Lesson } from '@/lib/models/Lesson';
 import { updateLessonNote, deleteLessonNote } from '@/lib/api/lessons';
+import { readBody } from '@/lib/limits';
 
 // PATCH /api/content/lessons/[id]/notes/[noteId]
 // Body: { resolved?: Boolean, text?: String }
@@ -8,7 +9,7 @@ import { updateLessonNote, deleteLessonNote } from '@/lib/api/lessons';
 export async function PATCH(request, { params }) {
   try {
     const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
-    const { resolved, text } = await request.json();
+    const { resolved, text } = await readBody(request);
     const { id: contentId, noteId } = await params;
 
     if (resolved === undefined && text === undefined) {
@@ -18,7 +19,8 @@ export async function PATCH(request, { params }) {
     const updates = {};
     if (resolved !== undefined) updates.resolved = Boolean(resolved);
     if (text !== undefined) {
-      if (!text.trim()) return err('نص الملاحظة لا يمكن أن يكون فارغاً');
+      if (typeof text !== 'string' || !text.trim()) return err('نص الملاحظة لا يمكن أن يكون فارغاً');
+      if (text.trim().length > 1000) return err('الملاحظة طويلة جداً (الحد 1000 حرف)');
       updates.text = text.trim();
     }
 
