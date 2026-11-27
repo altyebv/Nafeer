@@ -12,9 +12,14 @@ export default function QuestionCard({ question, subjectId, onEdit, onDelete, on
   const cfg = QUESTION_TYPE_CONFIG[question.type];
   const cogCfg = COGNITIVE_LEVEL_CONFIG[question.cognitiveLevel];
   const srcCfg = QUESTION_SOURCE_CONFIG[question.source];
+  // Compare and table answers are stored as the app's JSON; the card names them instead.
   const answerPreview = question.correctAnswer === 'MATCH_PAIRS'
     ? 'الأزواج المحددة'
-    : question.correctAnswer;
+    : question.type === 'COMPARE' && question.correctAnswer?.trim().startsWith('{')
+      ? 'إجابات المقارنة في الجدول'
+      : question.type === 'TABLE' && question.correctAnswer?.trim().startsWith('[')
+        ? 'الخانات الناقصة في الجدول'
+        : question.correctAnswer;
 
   return (
     <article className="group rounded-2xl border border-ink-800 bg-ink-900/70 p-3 transition-colors hover:border-ink-700 hover:bg-ink-900 sm:p-4">
@@ -45,11 +50,6 @@ export default function QuestionCard({ question, subjectId, onEdit, onDelete, on
             {question.feedEligible && (
               <span className="rounded-md border border-blue-800/50 bg-blue-900/20 px-2 py-0.5 text-xs text-blue-400 font-arabic">
                 تغذية
-              </span>
-            )}
-            {question.isCheckpoint && (
-              <span className="rounded-md border border-amber-800/50 bg-amber-900/20 px-2 py-0.5 text-xs text-amber-400 font-arabic">
-                تحقق
               </span>
             )}
             {question.atlasStatus && <StatusBadge status={question.atlasStatus} />}
