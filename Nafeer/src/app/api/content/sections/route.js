@@ -5,6 +5,7 @@ import { batchUpsertSections, deleteSection } from '@/lib/api/content';
 import { withEditorNames } from '@/lib/api/versionCheck';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { assertCanEditLessons, lessonsForSections } from '@/lib/lessonAccess';
+import { reopenForRevision } from '@/lib/publishedCopy';
 
 // POST /api/content/sections
 // Body: { sections: [...] }  — batch upsert (create or update)
@@ -36,12 +37,13 @@ export async function POST(request) {
     ]);
 
     // Only the owner of each lesson these sections are in, or are moving to.
-    await assertCanEditLessons(user, await lessonsForSections(
+    const lessons = await assertCanEditLessons(user, await lessonsForSections(
       sections.map((s) => s?.contentId), sections.map((s) => s?.lessonContentId),
     ));
+    const reopened = await reopenForRevision(lessons);
 
     const { saved, conflicts } = await batchUpsertSections(sections, actorId, user.name || '');
-    return ok(saved, { total: saved.length, conflicts: await withEditorNames(conflicts) });
+    return ok(saved, { total: saved.length, conflicts: await withEditorNames(conflicts), reopened });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[POST /api/content/sections]', e);
