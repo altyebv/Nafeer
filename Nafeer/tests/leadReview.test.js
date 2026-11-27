@@ -50,7 +50,9 @@ const { GET: getInbox }       = await import('@/app/api/lead/inbox/route');
 // Waits a turn after the response so the route's after() work has run.
 const patch = async (body) => {
   const res = await PATCH(new Request('http://test/api/lead/review', {
-    method: 'PATCH', body: JSON.stringify(body), headers: { 'content-type': 'application/json' },
+    // An approval carries the stamp of what was read (lib/reviewStamp.js).
+    method: 'PATCH', body: JSON.stringify(body.status === 'approved' && !('seen' in body) ? { ...body, seen: '1.0' } : body),
+    headers: { 'content-type': 'application/json' },
   }));
   await new Promise((r) => setTimeout(r, 0));
   return res;
@@ -109,6 +111,12 @@ describe('PATCH /api/lead/review — who may decide', () => {
     expect((await patch({ contentId: 'by_lead', type: 'lesson', status: 'approved' })).status).toBe(200);
   });
 
+  it('refuses to approve a lesson without saying what was read', async () => {
+    as('lead');
+    expect((await patch({ contentId: 'by_member', type: 'lesson', status: 'approved', seen: undefined })).status).toBe(409);
+    expect(reviewQueue.approveOrReject).not.toHaveBeenCalled();
+  });
+
   it('refuses an item that is not in review', async () => {
     as('lead');
     expect((await patch({ contentId: 'draft', type: 'lesson', status: 'approved' })).status).toBe(409);
@@ -125,7 +133,7 @@ describe('PATCH /api/lead/review — what a decision leaves behind', () => {
   it('approve: conditional on review, credits the lead, logs it', async () => {
     as('lead');
     expect((await patch({ contentId: 'by_member', type: 'lesson', status: 'approved' })).status).toBe(200);
-    expect(reviewQueue.approveOrReject).toHaveBeenCalledWith('by_member', 'lesson', 'approved', 'lead', '', { onlyFromReview: true });
+    expect(reviewQueue.approveOrReject).toHaveBeenCalledWith('by_member', 'lesson', 'approved', 'lead', '', { onlyFromReview: true, seen: '1.0' });
     expect(creditLesson).toHaveBeenCalledWith('by_member', { contributorId: 'lead', name: 'سارة', kind: 'reviewer' });
     expect(trackStat).toHaveBeenCalledWith('lead', 'reviewsSubmitted');
     expect(recordAudit).toHaveBeenCalledWith(
