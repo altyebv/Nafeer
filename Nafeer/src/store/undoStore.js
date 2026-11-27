@@ -1,6 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { useContentStore } from '@/store/contentStore';
+import { useQuizStore } from '@/store/quizStore';
 
 // ─── undoStore — deletes you can take back ────────────────────────────────────
 // Deleting a block or a section removes it from the editor at once and keeps
@@ -18,15 +19,26 @@ const remove = (url) => fetch(url, { method: 'DELETE', keepalive: true }).catch(
 export const useUndoStore = create((set, get) => ({
   pending: [], // [{ key, label, restore, commit, timer }]
 
-  // Remove a block now; send the delete later unless undone.
+  // Remove a block now; send the delete later unless undone. A checkpoint
+  // block takes its question with it (the server deletes both, lib/api/content.js).
   deleteBlock(block, label) {
     const before = useContentStore.getState().blocks;
     useContentStore.setState({ blocks: before.filter((b) => b.id !== block.id) });
+    const questionId = block.type === 'QUESTION' ? String(block.content ?? '').trim() : '';
     get().schedule({
       key: `block:${block.id}`,
       label,
+      questionId: questionId || null,   // hidden from its section meanwhile (pendingQuestionIds)
       restore: () => useContentStore.setState((s) => ({ blocks: [...s.blocks, block] })),
-      commit: () => remove(`/api/content/blocks/${encodeURIComponent(block.id)}`),
+      // Both go out at once (keepalive), so leaving the page sends both.
+      commit: () => {
+        remove(`/api/content/blocks/${encodeURIComponent(block.id)}`);
+        if (!questionId) return;
+        useQuizStore.getState().deleteQuestion(questionId);
+        // The question saves on its own, so it can be on the server while its
+        // block never was; then only this delete removes it. A 404 is fine.
+        remove(`/api/content/questions/${encodeURIComponent(questionId)}`);
+      },
     });
   },
 
@@ -65,6 +77,11 @@ export const useUndoStore = create((set, get) => ({
     clearTimeout(item.timer);
     item.commit();
     set((s) => ({ pending: s.pending.filter((p) => p.key !== key) }));
+  },
+
+  /** Questions whose checkpoint block is being deleted: not shown as unplaced while it can be undone. */
+  pendingQuestionIds() {
+    return get().pending.map((p) => p.questionId).filter(Boolean);
   },
 
   flush() {
