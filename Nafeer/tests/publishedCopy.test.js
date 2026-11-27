@@ -11,6 +11,7 @@ vi.mock('@/lib/models/Lesson',        () => ({ Lesson: {} }));
 vi.mock('@/lib/models/Section',       () => ({ Section: {} }));
 vi.mock('@/lib/models/Block',         () => ({ Block: {} }));
 vi.mock('@/lib/models/Question',      () => ({ Question: {} }));
+vi.mock('@/lib/models/FeedItem',      () => ({ FeedItem: {} }));
 vi.mock('@/lib/models/PublishedCopy', () => ({ PublishedCopy: {} }));
 
 const { mergePublished, reopenForRevision } = await import('@/lib/publishedCopy');
@@ -86,20 +87,38 @@ describe('a lesson waiting for review', () => {
   });
 });
 
+describe('questions and cards of a revising lesson', () => {
+  const live = {
+    lessons: [], sections: [], blocks: [],
+    questions: [{ contentId: 'Q_new', lessonContentId: 'L2' }],
+    feedItems: [{ contentId: 'F_new', order: 2 }],
+  };
+  const copy = {
+    lessonContentId: 'L2', approvedVersion: 1, lesson: lesson('L2', 1), sections: [], blocks: [],
+    // Edited or deleted since: the approved ones still ship.
+    questions: [{ contentId: 'Q_old', lessonContentId: 'L2' }],
+    feedItems: [{ contentId: 'F_old', order: 1 }],
+  };
+
+  it('ships the approved ones alongside anything approved since', () => {
+    const out = mergePublished(live, [copy]);
+    expect(ids(out.questions)).toEqual(['Q_new', 'Q_old']);
+    expect(out.feedItems.map((f) => f.contentId)).toEqual(['F_old', 'F_new']);
+  });
+});
+
 describe('content write handlers', () => {
   const root = path.resolve(__dirname, '../src/app/api/content');
   const files = ['sections/route.js', 'sections/[id]/route.js', 'blocks/route.js', 'blocks/[id]/route.js',
-    'questions/route.js', 'questions/[id]/route.js'];
+    'questions/route.js', 'questions/[id]/route.js', 'feed-items/route.js', 'feed-items/[id]/route.js'];
   for (const file of files) {
     const handlers = fs.readFileSync(path.join(root, file), 'utf8')
       .split(/(?=export async function )/)
-      // A question's own status change is not a change to the lesson.
       .filter((h) => /^export async function (POST|PUT|PATCH|DELETE)\b/.test(h))
-      .filter((h) => !(file === 'questions/[id]/route.js' && h.startsWith('export async function PATCH')));
     for (const h of handlers) {
       const name = h.match(/function (\w+)/)[1];
       it(`${file} ${name} reopens an approved lesson before writing`, () => {
-        expect(h).toMatch(/reopenFor(Revision|Checkpoint)\(/);
+        expect(h).toMatch(/reopenFor(Revision|Item|NewItem)\(/);
       });
     }
   }
