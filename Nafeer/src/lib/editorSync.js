@@ -38,6 +38,8 @@ export const fromServerLesson = (l) => ({
   // Server-owned like the status: returned / round / when. Never edited
   // locally, so mergeLesson takes the server's copy even over a dirty draft.
   reviewState:      l.reviewState      ?? null,
+  // An approved version is still in the app while this one is worked on.
+  revising:         !!l.revising,
   // Whose it is (docs/team-leads.md L4) — server-owned too. `owner` comes
   // from the subject list; a lesson GET carries ownerId / createdBy.
   ...ownership(l),
@@ -196,6 +198,7 @@ export function mergeLesson(local, incoming) {
   const reviewState = incoming.reviewState !== undefined ? incoming.reviewState : local.reviewState;
   // Ownership is the server's, like the status: never kept from a stale copy.
   const owned = {
+    revising:  incoming.revising  !== undefined ? incoming.revising  : local.revising,
     owner:     incoming.owner     !== undefined ? incoming.owner     : local.owner,
     unclaimed: incoming.unclaimed !== undefined ? incoming.unclaimed : local.unclaimed,
   };
