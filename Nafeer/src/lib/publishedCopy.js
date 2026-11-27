@@ -14,6 +14,9 @@ import { PublishedCopy } from '@/lib/models/PublishedCopy';
 // Approving the lesson clears `revising`; archiving it retires the copy too.
 //
 // The platform owner's content edits skip this: the owner is the approver.
+//
+// A change to a lesson waiting for review moves its `contentRev`, so the
+// reviewer cannot approve what they have not seen (lib/reviewStamp.js).
 
 /** Saves the approved lesson as it is now. Call before changing it. */
 export async function savePublishedCopy(lesson) {
@@ -51,12 +54,19 @@ export async function dropPublishedCopy(lessonContentId) {
 /**
  * Before a content write: moves any approved lesson among `lessons` (as
  * returned by assertCanEditLessons) back to draft, keeping its approved
- * version. Returns the ids moved. No query when none is approved.
+ * version, and marks any lesson in review as changed. Returns the ids moved
+ * back to draft. No query for drafts.
  */
 export async function reopenForRevision(lessons = []) {
   const reopened = [];
   for (const { contentId, status } of lessons) {
-    if (status !== 'approved') continue;
+    if (status === 'review') {
+      const marked = await Lesson.updateOne(
+        { contentId, status: 'review' }, { $inc: { contentRev: 1 } }, { timestamps: false },
+      );
+      if (marked.matchedCount) continue;
+      // Decided between the read and this write: handle it as approved below.
+    } else if (status !== 'approved') continue;
     const lesson = await Lesson.findOne({ contentId, status: 'approved' }).lean();
     if (!lesson) continue; // another request got there first
     await savePublishedCopy(lesson);
@@ -71,7 +81,7 @@ export async function reopenForRevision(lessons = []) {
  * they ship without an approval of their own.
  */
 export async function reopenForCheckpoint(lessons, questionContentId, updates = {}) {
-  if (!lessons?.some((l) => l.status === 'approved')) return [];
+  if (!lessons?.some((l) => l.status === 'approved' || l.status === 'review')) return [];
   const checkpoint = updates.isCheckpoint
     || !!(await Question.exists({ contentId: questionContentId, isCheckpoint: true }));
   return checkpoint ? reopenForRevision(lessons) : [];
