@@ -4,6 +4,7 @@ import { Lesson } from '@/lib/models/Lesson';
 import { addLessonNote } from '@/lib/api/lessons';
 import { trackStat } from '@/lib/trackStat';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
+import { readBody } from '@/lib/limits';
 
 // GET /api/content/lessons/[id]/notes
 // Returns notes for a lesson. Auth-gated to any contributor.
@@ -29,9 +30,9 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   try {
     const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
-    const { text, noteType } = await request.json();
+    const { text, noteType } = await readBody(request);
 
-    if (!text?.trim()) return err('نص الملاحظة مطلوب');
+    if (typeof text !== 'string' || !text.trim()) return err('نص الملاحظة مطلوب');
     if (text.trim().length > 1000) return err('الملاحظة طويلة جداً (الحد 1000 حرف)');
     if (noteType && !['comment', 'flag'].includes(noteType)) return err('نوع ملاحظة غير صالح');
 
