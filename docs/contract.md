@@ -19,6 +19,24 @@ Last checked against Basheer on 2026-11-27.
 
 ---
 
+## 0. Rules for every release
+
+Basheer's database enforces links, and a subject loads in one transaction, so a
+single link to a missing row rejects the whole subject. Nafeer therefore
+(`Nafeer/src/lib/releaseLinks.js`):
+
+- sends a link to a concept, tag, unit, lesson, section or exam question only
+  when that target is in the same release, and sends the item again when it is;
+- holds back a feed card until its concept is in the release;
+- ships a concept being edited as it was last approved;
+- lists every kind in `entityIndex`, empty ones too: Basheer removes what a
+  listed kind no longer has, and leaves a missing kind alone.
+
+Not covered from this side: Basheer reads `minAppVersion` but does not enforce
+it, and an app that does not know a block type rejects the subject.
+
+---
+
 ## 1. The block in the export
 
 Nafeer's `/api/export` and the publish bundles (`src/lib/publishSubject.js`)
