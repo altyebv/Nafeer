@@ -7,7 +7,7 @@ import { Lesson } from '@/lib/models/Lesson';
 import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { Piece } from '@/lib/models/Piece';
-import { metadataObject } from '@/lib/appExport';
+import { metadataObject, blockTypeFromApp } from '@/lib/appExport';
 import { Concept } from '@/lib/models/Concept';
 import { Tag } from '@/lib/models/Tag';
 import { FeedItem } from '@/lib/models/FeedItem';
@@ -208,7 +208,7 @@ export function buildRestoreDocs(data, { seedActor, actorId, now = new Date() })
             ...meta(block.status),
             contentId: block.id,
             sectionContentId: section.id,
-            type: block.type,
+            type: blockTypeFromApp(block.type),
             content: block.content || '',
             order: block.order,
             conceptRef: block.conceptRef || null,
