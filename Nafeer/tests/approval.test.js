@@ -12,6 +12,7 @@ vi.mock('@/lib/imageRequests', () => ({
   MISSING_IMAGE: 'missing image',
 }));
 vi.mock('@/lib/SeedActor', () => ({ REAL_PEOPLE: {} }));
+vi.mock('@/lib/lessonItems', () => ({ approveLessonItems: vi.fn(), heldCards: vi.fn() }));
 vi.mock('@/lib/models/Lesson', () => ({
   Lesson: {
     findOne: vi.fn(async () => db.doc),
@@ -27,10 +28,12 @@ vi.mock('@/lib/models/Contributor',  () => ({ Contributor: {} }));
 vi.mock('@/lib/models/SubjectGuide', () => ({ SubjectGuide: {} }));
 
 const { approveOrReject } = await import('@/lib/api/reviewQueue');
+const { approveLessonItems } = await import('@/lib/lessonItems');
 
 const approve = (seen) => approveOrReject('L', 'lesson', 'approved', 'lead', '', { onlyFromReview: true, seen });
 
 beforeEach(() => {
+  vi.clearAllMocks();
   db.doc = { contentId: 'L', status: 'review', version: 4, contentRev: 2, changelog: [] };
   db.matched = 1;
   db.missingImage = false;
@@ -47,6 +50,7 @@ describe('approving a lesson', () => {
   it('approves what was read, conditional on it still being so', async () => {
     await expect(approve('4.2')).resolves.toMatchObject({ status: 'approved' });
     expect(db.updates[0].filter).toMatchObject({ contentId: 'L', status: 'review', version: 4, contentRev: 2 });
+    expect(approveLessonItems).toHaveBeenCalledWith('L', 'lead');
   });
 
   it('refuses while an image is still missing', async () => {
@@ -58,5 +62,6 @@ describe('approving a lesson', () => {
   it('refuses when a change lands between the read and the write', async () => {
     db.matched = 0;
     await expect(approve('4.2')).rejects.toMatchObject({ code: 'CONFLICT' });
+    expect(approveLessonItems).not.toHaveBeenCalled();
   });
 });
