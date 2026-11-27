@@ -6,6 +6,7 @@ import { Block } from '@/lib/models/Block';
 import { Section } from '@/lib/models/Section';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { assertCanEditLessons, lessonsForBlocks } from '@/lib/lessonAccess';
+import { reopenForRevision } from '@/lib/publishedCopy';
 
 // Returns null if the URL doesn't match the Supabase media bucket.
 function deriveMediaPath(url) {
@@ -31,7 +32,7 @@ export async function PATCH(request, { params }) {
     const { id } = await params;
     const update  = await request.json();
     // The lesson it is in now, and the one it may be moving to.
-    await assertCanEditLessons(user, await lessonsForBlocks([id], [update?.sectionContentId, update?.sectionId]));
+    const lessons = await assertCanEditLessons(user, await lessonsForBlocks([id], [update?.sectionContentId, update?.sectionId]));
 
     const block = await Block.findOne({ contentId: id });
     if (!block) return err('البلوك غير موجود', 404);
@@ -49,6 +50,7 @@ export async function PATCH(request, { params }) {
       update.mediaPath = deriveMediaPath(update.content);
     }
 
+    const reopened = await reopenForRevision(lessons);
     const saved = await upsertBlock(
       {
         ...block.toObject(),
@@ -63,7 +65,7 @@ export async function PATCH(request, { params }) {
       user.name || ''
     );
 
-    return ok({ id: saved.contentId, mediaPath: saved.mediaPath ?? null });
+    return ok({ id: saved.contentId, mediaPath: saved.mediaPath ?? null, reopened });
   } catch (e) {
     if (e instanceof Response) return e;
     if (e instanceof VersionConflict) return Response.json({ ok: false, conflict: e.toJSON() }, { status: 409 });
@@ -80,9 +82,10 @@ export async function DELETE(request, { params }) {
     const actorId = user.role === 'admin'
       ? await ensureSystemSeedContributor()
       : user.id;
-    await assertCanEditLessons(user, await lessonsForBlocks([(await params).id]));
+    const owned = await assertCanEditLessons(user, await lessonsForBlocks([(await params).id]));
+    const reopened = await reopenForRevision(owned);
     await deleteBlock((await params).id, { byId: actorId, byName: user.name || '' });
-    return ok({ deleted: (await params).id });
+    return ok({ deleted: (await params).id, reopened });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/blocks/[id]]', e);
