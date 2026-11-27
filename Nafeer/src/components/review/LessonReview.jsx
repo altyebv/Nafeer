@@ -167,7 +167,7 @@ export function LessonReview({ item, onDone, endpoints = ADMIN_REVIEW_ENDPOINTS 
           <Part key={q.id} on={anchor.kind === 'question' && anchor.id === q.id} kind="question" sub={q.type} count={countOn('question', q.id)}
             onPick={() => pick('question', q.id, `السؤال ${i + 1}`)}>
             <p className="read t-body text-fg">{q.text}</p>
-            {q.answer && <p className="t-caption text-fg-subtle mt-1">الإجابة: {String(q.answer)}</p>}
+            <Answers item={q} />
           </Part>
         ))}
 
@@ -177,6 +177,8 @@ export function LessonReview({ item, onDone, endpoints = ADMIN_REVIEW_ENDPOINTS 
             onPick={() => pick('feed', f.id, `البطاقة ${i + 1}`)}>
             <p className="read t-body text-fg">{f.text}</p>
             {f.back && <p className="t-caption text-fg-subtle mt-1">الوجه الخلفي: {f.back}</p>}
+            <Answers item={f} />
+            {f.held && <p className="t-caption text-warn mt-1">لن تُعتمد مع الدرس: {f.held}</p>}
           </Part>
         ))}
       </article>
@@ -254,7 +256,7 @@ export function LessonReview({ item, onDone, endpoints = ADMIN_REVIEW_ENDPOINTS 
             {!checklistDone && <p className="t-caption text-fg-subtle">أكمل قائمة المراجعة قبل الاعتماد.</p>}
             <div className="flex gap-2">
               <ConfirmButton variant="primary" size="md" tone="accent" confirmLabel="اعتمد" align="start" disabled={!!busy || !checklistDone}
-                title="اعتماد الدرس؟" onConfirm={() => decide('approved')}
+                title="اعتماد الدرس؟" description="يُعتمد معه ما فيه من أسئلة وبطاقات." onConfirm={() => decide('approved')}
                 description={comments.length ? `لديك ${comments.length} تعليق لم يُرسل — الاعتماد يتجاهلها.` : 'يصبح جاهزاً للنشر في صفحة المادة.'}>
                 {busy === 'approved' ? 'جارٍ…' : 'اعتماد'}
               </ConfirmButton>
@@ -306,6 +308,27 @@ function BlockText({ block }) {
   if (!text) return <span className="t-caption text-warn">عنصر فارغ</span>;
   const shown = text.startsWith('{') || text.startsWith('[') ? `${text.slice(0, 160)}…` : text;
   return <p className={`read ${block.type === 'HEADING' ? 't-title text-fg-strong' : 't-body text-fg'} whitespace-pre-wrap`} dir="auto">{shown}</p>;
+}
+
+// Everything an approval covers: the choices with the right one marked, or the
+// answer, and the explanation.
+function Answers({ item }) {
+  const answer = item.answer == null ? '' : String(item.answer);
+  return (
+    <>
+      {item.choices?.length ? (
+        <ul className="mt-1">
+          {item.choices.map((c, i) => (
+            <li key={i} className={`t-label font-normal ${c === answer ? 'text-success' : 'text-fg-muted'}`} dir="auto">
+              {c === answer ? '✓ ' : '· '}{c}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {answer && !item.choices?.includes(answer) && <p className="t-caption text-fg-subtle mt-1">الإجابة: {answer}</p>}
+      {item.explanation && <p className="t-caption text-fg-subtle mt-1">الشرح: {item.explanation}</p>}
+    </>
+  );
 }
 
 // ─── Concepts, feed cards and questions sent on their own ─────────────────────
