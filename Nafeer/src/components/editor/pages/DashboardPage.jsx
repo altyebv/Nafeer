@@ -7,6 +7,7 @@ import { useAnnouncementStore } from '@/store/announcementStore';
 import { formatDate, formatNumber } from '@/lib/format';
 import { ActivityGraph, Card } from '@/components/ui';
 import { NextStepCard, UnitProgressCard } from './DashboardNext';
+import WaitingList, { waitingOwner } from './DashboardWaiting';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
@@ -442,8 +443,11 @@ export default function DashboardPage({ contributor }) {
       {/* ── Welcome hero ── */}
       <WelcomeHero contributor={contributor} isFirstVisit={isFirstVisit} />
 
+      {/* ── What is waiting for the member (lib/waiting.js) ── */}
+      <WaitingList me={waitingOwner(contributor)} />
+
       {/* ── What to do next, and where the subject stands (DS2 step 8) ── */}
-      <NextStepCard me={contributor?.role === 'admin' ? null : (contributor?.id ? String(contributor.id) : null)} />
+      <NextStepCard me={waitingOwner(contributor)} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8 items-start">
         <UnitProgressCard />
