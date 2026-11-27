@@ -7,6 +7,7 @@ import { BLOCK_TYPE_CONFIG, HIGHLIGHT_STYLES, HEADING_LEVELS, QUESTION_TYPE_CONF
 import { LessonTableEditor } from '@/components/editor/blocks/TableEditor';
 import { useUndoStore } from '@/store/undoStore';
 import MediaPicker from '@/components/editor/media/MediaPicker';
+import { Textarea } from '@/components/ui';
 import ImageMarkerEditor from '@/components/editor/media/ImageMarkerEditor';
 import { sanitiseMarkers } from '@/lib/markerUtils';
 
@@ -589,7 +590,8 @@ function MediaBlockEditor({ block, update, subjectId }) {
   const replaceImage = (url, meta) => {
     if (url === block.content) return true;
     if (markers.length && !window.confirm(`تغيير الصورة يحذف علاماتها (${markers.length}). متابعة؟`)) return false;
-    update({ content: url, metadata: { ...(block.metadata || {}), ...meta, markers: [], pins: undefined, aspectRatio: undefined } });
+    // A picture answers whatever was asked for (lib/imageRequests.js).
+    update({ content: url, metadata: { ...(block.metadata || {}), ...meta, markers: [], pins: undefined, aspectRatio: undefined, imageRequest: undefined } });
     return true;
   };
   const handleSelect = (item) => {
@@ -617,6 +619,17 @@ function MediaBlockEditor({ block, update, subjectId }) {
           <ImageIcon size={16} strokeWidth={1.8} />
           <span>{hasUrl ? 'تغيير الصورة من المكتبة' : 'اختر صورة من المكتبة'}</span>
         </button>
+        {!hasUrl && (
+          <label className="flex flex-col gap-1">
+            <span className="t-caption text-fg-muted">لا تجد الصورة في المكتبة؟ صفها ليرفعها المشرف</span>
+            <Textarea rows={2} maxLength={500} value={block.metadata?.imageRequest?.note || ''}
+              onChange={(e) => update({ metadata: { ...(block.metadata || {}), imageRequest: e.target.value ? { note: e.target.value } : undefined } })}
+              placeholder="مثال: خريطة روافد النيل وعليها أسماؤها، من الكتاب المدرسي ص 42" />
+            {block.metadata?.imageRequest?.note && (
+              <span className="t-caption text-fg-subtle">يصل الطلب للمشرف بعد الحفظ. يمكنك إرسال الدرس للمراجعة، ولا يُعتمد قبل رفع الصورة.</span>
+            )}
+          </label>
+        )}
         <input type="text" value={block.caption || ''} onChange={(e) => update({ caption: e.target.value })}
           className="w-full px-3 py-2 bg-ink-950 border border-ink-800 rounded-lg text-sand-200 text-sm focus:ring-1 focus:ring-sand-600 focus:outline-none font-arabic placeholder-ink-600 hover:border-ink-700 transition-colors"
           placeholder="وصف الصورة (اختياري)…" />
