@@ -205,7 +205,7 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
       reviewedBy: adminObjId,
       changelog:  [...existing.slice(-9), entry],
       // An approved lesson is no longer "returned", whatever happened before.
-      ...(type === 'lesson' && newStatus === 'approved' && { 'reviewState.returned': false }),
+      ...(type === 'lesson' && newStatus === 'approved' && { 'reviewState.returned': false, revising: false }),
     },
   });
   if (onlyFromReview && !res.matchedCount) {
