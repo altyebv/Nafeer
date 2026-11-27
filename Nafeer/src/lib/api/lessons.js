@@ -11,6 +11,7 @@ import { savePublishedCopy, dropPublishedCopy } from '@/lib/publishedCopy';
 import { trackStat } from '@/lib/trackStat';
 import { assertCanSubmit, ReviewError } from '@/lib/review';
 import { hasMissingImage, MISSING_IMAGE } from '@/lib/imageRequests';
+import { approveLessonItems } from '@/lib/lessonItems';
 
 export { writeHistory };
 
@@ -221,6 +222,9 @@ export async function updateLessonStatus(
     note,
     diff:         null,
   });
+
+  // Its questions and cards go with it (lib/lessonItems.js).
+  if (newStatus === 'approved') await approveLessonItems(contentId, contributorId);
 
   // Credit the original author of the lesson, not whoever approved it.
   if (newStatus === 'approved') {
