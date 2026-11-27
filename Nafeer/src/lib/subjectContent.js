@@ -10,6 +10,7 @@ import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
 import { Piece } from '@/lib/models/Piece';
+import { PublishedCopy } from '@/lib/models/PublishedCopy';
 import { LessonHistory } from '@/lib/models/LessonHistory';
 import { lessonOwnerId } from '@/lib/credits';
 import { unclaimedOwners } from '@/lib/lessonAccess';
@@ -24,6 +25,7 @@ import { reconcileAuthoredStatsLater } from '@/lib/authoredStats';
 /** Collections that hold a subject's content, keyed by `subjectId`. */
 export const SUBJECT_CONTENT_MODELS = {
   Subject, Unit, Lesson, Section, Block, Concept, Tag, FeedItem, Question, Exam, Piece,
+  PublishedCopy,
 };
 
 /**
