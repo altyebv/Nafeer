@@ -8,6 +8,7 @@ import { getFeedItemsForSubject, createFeedItem, updateFeedItem,
 import { Concept } from '@/lib/models/Concept';
 import { connectDB } from '@/lib/db'
 import { readBody, assertInput, invalidData } from '@/lib/limits';
+import { reopenForItem, reopenForNewItem } from '@/lib/publishedCopy';
 
 
 const generateId = (prefix) =>
@@ -49,7 +50,8 @@ export async function POST(request) {
     }
 
     const user = await requireSubjectAccess(subjectId, { write: true });
-    await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [body.contentId], [body.lessonContentId]));
+    const linkedLessons = await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [body.contentId], [body.lessonContentId]));
+    await reopenForNewItem(linkedLessons);
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const item = await createFeedItem(
       { ...body,
@@ -97,7 +99,8 @@ export async function PUT(request, { params }) {
     // It stays in its subject, and only the lessons' owners move it.
     if (user.role !== 'admin') delete safeUpdates.subjectId;
     await assertInSubject(user, Lesson, [safeUpdates.lessonContentId]);
-    await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id], [safeUpdates.lessonContentId]));
+    const lessons = await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id], [safeUpdates.lessonContentId]));
+    const reopened = await reopenForItem(lessons, FeedItem, (await params).id);
 
     const item = await updateFeedItem(      // ← was createFeedItem
       (await params).id,
@@ -108,7 +111,7 @@ export async function PUT(request, { params }) {
     );
     if (!item) return err('عنصر التغذية غير موجود', 404);
 
-    return ok(item);
+    return ok(item, { reopened });
   } catch (e) {
     if (e instanceof Response) return e;
     const bad = invalidData(e);
@@ -122,12 +125,17 @@ export async function PUT(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const { user } = await requireContentAccess(FeedItem, (await params).id, { write: true });
-    await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id]));
+    const linked = await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id]));
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
     const { status, note } = await readBody(request);
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
+
+    // Withdrawing an approved card changes what students have.
+    if (status !== 'approved') {
+      await reopenForItem(linked.filter((l) => l.status === 'approved'), FeedItem, (await params).id);
+    }
 
     // ── Validate concept linkage BEFORE writing anything ──────────────────────
     if (status === 'approved') {
@@ -153,9 +161,10 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { user } = await requireContentAccess(FeedItem, (await params).id, { write: true });
-    await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id]));
+    const owned = await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id]));
+    const reopened = await reopenForItem(owned, FeedItem, (await params).id);
     await deleteFeedItem((await params).id);
-    return ok({ deleted: (await params).id });
+    return ok({ deleted: (await params).id, reopened });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/feed-items/[id]]', e);
