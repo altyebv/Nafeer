@@ -9,6 +9,7 @@ import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateQuestion, updateQuestionStatus, deleteQuestion } from '@/lib/api/questions';
 import { connectDB } from '@/lib/db'
 import { assertCanEditLessons, lessonsForLinked } from '@/lib/lessonAccess';
+import { reopenForCheckpoint } from '@/lib/publishedCopy';
 import { markerIssues } from '@/lib/markerQuestion';
 
 
@@ -42,11 +43,12 @@ export async function PUT(request, { params }) {
       assertInSubject(user, Concept, Array.isArray(safeUpdates.conceptIds) ? safeUpdates.conceptIds : []),
     ]);
     // The lesson it is in, and the one it may move to (lib/lessonAccess.js).
-    await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id], [safeUpdates.lessonContentId]));
+    const lessons = await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id], [safeUpdates.lessonContentId]));
 
     const issues = markerIssues(safeUpdates);
     if (issues.length) return err(issues[0], 422);
 
+    await reopenForCheckpoint(lessons, (await params).id, safeUpdates);
     const question = await updateQuestion((await params).id, safeUpdates, actorId, note || '');
     if (!question) return err('السؤال غير موجود', 404);
 
@@ -84,7 +86,8 @@ export async function DELETE(request, { params }) {
   try {
     await connectDB();
     const { user } = await requireContentAccess(Question, (await params).id, { write: true });
-    await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id]));
+    const owned = await assertCanEditLessons(user, await lessonsForLinked(Question, [(await params).id]));
+    await reopenForCheckpoint(owned, (await params).id);
     await deleteQuestion((await params).id);
     return ok({ deleted: (await params).id });
   } catch (e) {
