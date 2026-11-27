@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useDataStore }    from '@/store/dataStore';
+import { openNotes }       from '@/lib/waiting';
 import { useShallow } from 'zustand/react/shallow';
 import { useAtlasSync }    from '@/hooks/useAtlasSync';
 import { getLessonStatus, STATUS_CONFIG } from '@/lib/LessonStatus';
@@ -124,6 +125,10 @@ export default function LessonEditorPage({
   useEffect(() => {
     try { setLivePreview(localStorage.getItem(LIVE_PREVIEW_KEY) === '1'); } catch { /* storage blocked */ }
   }, []);
+  // The home screen's list links here with ?notes=1 to open the comments.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('notes') === '1') setShowNotes(true);
+  }, [lessonId]);
   // Feeds the lessons list's «تابع من حيث توقفت» strip — browser only.
   useEffect(() => { if (lessonId) rememberLessonOpened(lessonId); }, [lessonId]);
   const toggleLivePreview = () => {
@@ -282,6 +287,12 @@ export default function LessonEditorPage({
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resolved }),
       });
       if (!res.ok) throw new Error();
+      // The home screen's list reads the open comments from the store.
+      const rest = (lesson?.comments || []).filter((c) => c.id !== noteId);
+      const note = before.find((c) => c._id === noteId);
+      useSubjectStore.getState().updateLesson(lessonId, {
+        comments: resolved || !note ? rest : [...rest, ...openNotes([{ ...note, resolved: false }])],
+      });
     } catch {
       setReviewComments(before);
     } finally {
