@@ -6,6 +6,7 @@ import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { lessonReadiness, recentLessons } from '@/lib/lessonReadiness';
 import { pickNextStep } from '@/lib/nextStep';
+import { useWaiting } from './DashboardWaiting';
 import { lessonHref, NAV_BY_ID } from '@/components/editor/layout/nav';
 import { Card } from '@/components/ui';
 
@@ -38,10 +39,14 @@ export function NextStepCard({ me = null }) {
   const progress = useSubjectProgress();
   const [recent, setRecent] = useState([]);
   useEffect(() => { setRecent(recentLessons()); }, []);
+  const waiting = useWaiting(me);
   if (!progress) return null;
 
-  const step = pickNextStep(progress.all, recent, me);
+  const listed = new Set(waiting.filter((i) => i.kind === 'returned').map((i) => i.lessonId));
+  const step = pickNextStep(progress.all.filter((x) => !listed.has(x.lesson.id)), recent, me);
   if (!step) {
+    // The list above, or its «nothing waiting» line, has said enough.
+    if (me) return null;
     return (
       <Card tone="accent" className="mb-8">
         <p className="t-body text-fg">
