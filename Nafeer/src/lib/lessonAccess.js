@@ -82,20 +82,22 @@ export async function unclaimedOwners(ownerIds) {
 }
 
 /**
- * Throws a 403 unless `user` may change every one of these lessons. Ids with
- * no lesson yet pass — whoever creates a lesson is its author. An unclaimed
+ * Throws a 403 unless `user` may change every one of these lessons. Returns
+ * them (none for the platform owner, whose content edits need no review —
+ * lib/publishedCopy.js). Ids with no lesson yet pass — whoever creates a lesson is its author. An unclaimed
  * lesson is refused like anyone else's until it is claimed (claimLesson).
  */
 export async function assertCanEditLessons(user, lessonIds, now = new Date()) {
-  if (user?.role === 'admin') return;
+  if (user?.role === 'admin') return [];
   const ids = [...new Set((lessonIds || []).filter((x) => typeof x === 'string' && x))];
-  if (!ids.length) return;
+  if (!ids.length) return [];
 
   await connectDB();
   const lessons = await Lesson.find({ contentId: { $in: ids } })
-    .select('contentId subjectId title createdBy ownerId intervention').lean();
+    .select('contentId subjectId title status createdBy ownerId intervention').lean();
   const denied = lessons.find((l) => !lessonAccess(l, user, now).canEdit);
   if (denied) throw notOwner(denied.title);
+  return lessons;
 }
 
 export class ClaimError extends Error {
