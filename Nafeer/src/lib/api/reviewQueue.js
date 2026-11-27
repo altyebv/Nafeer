@@ -284,7 +284,7 @@ export async function getLessonForReview(contentId) {
   if (!lesson) return null;
 
   const [questions, feedItems, author, guide] = await Promise.all([
-    Question.find({ lessonContentId: contentId, isCheckpoint: { $ne: true }, status: { $ne: 'archived' } }, 'contentId textAr type difficulty correctAnswer options explanation conceptIds').sort({ createdAt: 1 }).lean(),
+    Question.find({ lessonContentId: contentId, isCheckpoint: { $ne: true }, status: { $ne: 'archived' } }, 'contentId textAr type difficulty correctAnswer options explanation conceptIds sourceDetails').sort({ createdAt: 1 }).lean(),
     FeedItem.find({ lessonContentId: contentId, status: { $ne: 'archived' } }, 'contentId type contentAr back correctAnswer options explanation conceptContentId status').sort({ order: 1 }).lean(),
     // Seeded lessons are created by the seed actor; the author is whoever
     // wrote in it, so take the first real person of creator and last editor.
@@ -336,6 +336,7 @@ export async function getLessonForReview(contentId) {
     questions: questions.map((q) => ({
       id: q.contentId, text: q.textAr, type: q.type, difficulty: q.difficulty, answer: q.correctAnswer,
       choices: choicesOf(q.options), explanation: q.explanation || null,
+      sourceDetails: q.sourceDetails || null,
     })),
     feed: feedItems.map((f) => ({
       id: f.contentId, type: f.type, text: f.contentAr, back: f.back, answer: f.correctAnswer || null,
