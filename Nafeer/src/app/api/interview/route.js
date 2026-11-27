@@ -3,6 +3,7 @@ import { connectDB }        from '@/lib/db';
 import { Contributor }      from '@/lib/models/Contributor';
 import { ContributorRole }  from '@/lib/models/ContributorRole';
 import { MIN_ANSWER_LENGTH as MIN_LENGTH, questionsFor } from '@/lib/interview';
+import { readBody, MAX_ANSWER, MAX_ANSWERS } from '@/lib/limits';
 
 // The questions come from the snapshot taken when the invite went out
 // (lib/interview.js), so the page and the submit check always agree, whatever
@@ -79,7 +80,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { token, answers, microTask } = await request.json();
+    const { token, answers, microTask } = await readBody(request, 1_000_000);
 
     // Must be a string: it goes straight into a Mongo filter, where an object
     // such as { "$ne": null } would match another applicant's interview.
@@ -89,6 +90,13 @@ export async function POST(request) {
 
     if (!Array.isArray(answers) || answers.length === 0) {
       return NextResponse.json({ ok: false, error: 'لم يتم إرسال أي إجابات' }, { status: 400 });
+    }
+
+    // This form is open to anyone with a link, and its answers are listed on the
+    // owner's dashboard (lib/limits.js).
+    const tooLong = (v) => v != null && (typeof v !== 'string' || v.length > MAX_ANSWER);
+    if (answers.length > MAX_ANSWERS || answers.some((a) => tooLong(a?.answer)) || tooLong(microTask)) {
+      return NextResponse.json({ ok: false, error: `الإجابة أطول من المسموح (${MAX_ANSWER} حرف)` }, { status: 400 });
     }
 
     await connectDB();
@@ -168,6 +176,7 @@ export async function POST(request) {
       message: 'وصلت إجاباتك. سنتواصل معك قريباً.',
     });
   } catch (err) {
+    if (err instanceof Response) return err;
     console.error('[POST /api/interview]', err);
     return NextResponse.json({ ok: false, error: 'حدث خطأ في الخادم' }, { status: 500 });
   }
