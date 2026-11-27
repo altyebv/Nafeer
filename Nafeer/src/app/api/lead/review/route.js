@@ -6,6 +6,7 @@ import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { approveOrReject, returnLesson } from '@/lib/api/reviewQueue';
 import { ReviewError } from '@/lib/review';
+import { STALE_APPROVAL } from '@/lib/reviewStamp';
 import { notifyLessonReviewed } from '@/lib/reviewNotify';
 import { creditLesson, isOwnWork } from '@/lib/credits';
 import { recordAudit } from '@/lib/audit';
@@ -23,12 +24,12 @@ import { trackStat } from '@/lib/trackStat';
 //     their stats — and the decision goes to the audit log.
 
 const MODELS = { lesson: Lesson, concept: Concept, feedItem: FeedItem, question: Question };
-const REVIEW_ERROR_STATUS = { NOT_FOUND: 404, NOT_IN_REVIEW: 409, CONFLICT: 409 };
+const REVIEW_ERROR_STATUS = { NOT_FOUND: 404, NOT_IN_REVIEW: 409, CONFLICT: 409, STALE: 409, MISSING_IMAGE: 409 };
 
 export async function PATCH(request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { contentId, type, status, note, comments } = body;
+    const { contentId, type, status, note, comments, seen } = body;
 
     const Model = MODELS[type];
     if (!Model) return err('نوع محتوى غير صالح');
@@ -41,6 +42,7 @@ export async function PATCH(request) {
       return err('لا تراجع عملك بنفسك — يراجعه القائد الآخر أو المالك', 403);
     }
     if (doc.status !== 'review') return err('العنصر ليس بانتظار المراجعة', 409);
+    if (type === 'lesson' && status === 'approved' && typeof seen !== 'string') return err(STALE_APPROVAL, 409);
 
     const reviewer = isAdmin
       ? { id: user.id, name: 'المالك', role: 'admin' }
@@ -50,7 +52,7 @@ export async function PATCH(request) {
     if (type === 'lesson' && status === 'draft') {
       result = await returnLesson(contentId, { comments: comments ?? [], summary: note || '' }, reviewer);
     } else {
-      result = await approveOrReject(contentId, type, status, user.id, note || '', { onlyFromReview: true });
+      result = await approveOrReject(contentId, type, status, user.id, note || '', { onlyFromReview: true, seen });
     }
 
     // After the response, side by side: none of these depends on another, and
