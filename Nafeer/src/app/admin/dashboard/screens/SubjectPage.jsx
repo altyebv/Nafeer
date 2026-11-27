@@ -10,6 +10,7 @@ import { formatDate, formatRelative } from '@/lib/format';
 import { SUBJECTS_CATALOG, TRACK_CONFIG } from '@/shared/curriculum';
 import { parseTarget, MAX_TARGET } from '@/lib/unitTarget';
 import { ScreenBody } from './AdminFrame';
+import { OmittedList } from '@/components/review/OmittedList';
 
 // ─── Subject page ─────────────────────────────────────────────────────────────
 // One page per subject (DS5 step 1, canvas board AdSubject): the unit/lesson
@@ -442,11 +443,11 @@ function PublishCard({ data, onPublished }) {
   const publish = async () => {
     setBusy(true); setResult(null);
     try {
-      await api('/api/content/publish', {
+      const done = await api('/api/content/publish', {
         method: 'POST',
         body: { subjectId: data.id, mode: mode === 'full' ? 'full' : 'delta', ...(mode === 'major' ? { bump: 'major' } : {}) },
       });
-      setResult({ ok: true, text: 'نُشرت. يصل التحديث للطلاب عند فتح التطبيق.' });
+      setResult({ ok: true, text: 'نُشرت. يصل التحديث للطلاب عند فتح التطبيق.', omitted: done?.stats?.omitted });
       onPublished();
     } catch (e) { setResult({ ok: false, text: e.message }); }
     finally { setBusy(false); }
@@ -464,6 +465,7 @@ function PublishCard({ data, onPublished }) {
           {reason ? `انشر ${data.nameAr} · ${reason}` : `انشر ${data.nameAr}`}
         </Button>
         {result && <p role="status" className={`t-label ${result.ok ? 'text-success' : 'text-danger'}`}>{result.text}</p>}
+        <OmittedList items={result?.omitted} />
         <button type="button" aria-expanded={advanced} onClick={() => setAdvanced((v) => !v)}
           className="self-start t-label text-fg-accent hover:underline">
           {advanced ? 'إخفاء الخيارات المتقدمة' : 'خيارات متقدمة'}
