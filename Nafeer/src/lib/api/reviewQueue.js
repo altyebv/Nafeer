@@ -228,6 +228,7 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
       changelog:  [...existing.slice(-9), entry],
       // An approved lesson is no longer "returned", whatever happened before.
       ...(type === 'lesson' && newStatus === 'approved' && { 'reviewState.returned': false, revising: false }),
+      ...(type === 'concept' && newStatus === 'approved' && { published: null }),
     },
   });
   if ((onlyFromReview || readOnly) && !res.matchedCount) {
@@ -245,6 +246,19 @@ export async function approveOrReject(contentId, type, newStatus, adminObjId, no
 
   return { contentId, status: newStatus };
 }
+// The titles of the concepts among `ids` that are not in the app: neither
+// approved, nor being edited from an approved version.
+async function unapprovedConcepts(ids) {
+  const used = [...new Set(ids.filter(Boolean))];
+  if (!used.length) return [];
+  const found = await Concept.find({ contentId: { $in: used } }).select('contentId titleAr status +published').lean();
+  const byId = new Map(found.map((c) => [c.contentId, c]));
+  return used.flatMap((id) => {
+    const c = byId.get(id);
+    return c && (c.status === 'approved' || c.published) ? [] : [c?.titleAr || id];
+  });
+}
+
 // Options are stored as a list or as its JSON text.
 function choicesOf(options) {
   let list = options;
@@ -270,7 +284,7 @@ export async function getLessonForReview(contentId) {
   if (!lesson) return null;
 
   const [questions, feedItems, author, guide] = await Promise.all([
-    Question.find({ lessonContentId: contentId, isCheckpoint: { $ne: true }, status: { $ne: 'archived' } }, 'contentId textAr type difficulty correctAnswer options explanation').sort({ createdAt: 1 }).lean(),
+    Question.find({ lessonContentId: contentId, isCheckpoint: { $ne: true }, status: { $ne: 'archived' } }, 'contentId textAr type difficulty correctAnswer options explanation conceptIds').sort({ createdAt: 1 }).lean(),
     FeedItem.find({ lessonContentId: contentId, status: { $ne: 'archived' } }, 'contentId type contentAr back correctAnswer options explanation conceptContentId status').sort({ order: 1 }).lean(),
     // Seeded lessons are created by the seed actor; the author is whoever
     // wrote in it, so take the first real person of creator and last editor.
@@ -280,6 +294,11 @@ export async function getLessonForReview(contentId) {
   ]);
 
   const held = await heldCards(feedItems.filter((f) => f.status !== 'approved'));
+  const draftConcepts = await unapprovedConcepts([
+    ...lesson.sections.flatMap((s) => [...(s.conceptIds || []), ...s.blocks.map((b) => b.conceptRef)]),
+    ...questions.flatMap((q) => q.conceptIds || []),
+    ...feedItems.map((f) => f.conceptContentId),
+  ]);
 
   const review = (lesson.notes || [])
     .filter((n) => n.noteType === 'review_feedback')
@@ -297,6 +316,8 @@ export async function getLessonForReview(contentId) {
     summary: lesson.summary,
     status: lesson.status,
     version: lesson.version,
+    // Concepts the lesson uses that a release would leave out.
+    draftConcepts,
     // Sent back with an approval (lib/reviewStamp.js). The lesson is read
     // before its content, so a change in between moves it past this.
     stamp: reviewStamp(lesson),
