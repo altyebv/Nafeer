@@ -13,6 +13,7 @@ import { ReviewError } from '@/lib/review';
 import { assertCanEditLessons, interventionOpen, lessonAccess, unclaimedOwners } from '@/lib/lessonAccess';
 import { lessonOwnerId } from '@/lib/credits';
 import { closeIntervention } from '@/lib/intervention';
+import { dropPublishedCopy } from '@/lib/publishedCopy';
 
 // GET /api/content/lessons/[id]
 // Returns lesson + sections + blocks (full content for editor), plus
@@ -163,7 +164,8 @@ export async function PATCH(request, { params }) {
 }
 
 // DELETE /api/content/lessons/[id]
-// Only drafts can be hard-deleted. Approved lessons must be archived.
+// Only drafts can be hard-deleted. Approved lessons, and ones being revised,
+// must be archived; curriculum lessons are removed by the owner only.
 export async function DELETE(request, { params }) {
   try {
     const { user } = await requireContentAccess(Lesson, (await params).id, { write: true });
@@ -173,8 +175,14 @@ export async function DELETE(request, { params }) {
     const lesson = await Lesson.findOne({ contentId: (await params).id });
     if (!lesson) return err('الدرس غير موجود', 404);
 
-    if (lesson.status === 'approved') {
+    if (lesson.status === 'approved' || (lesson.revising && lesson.status !== 'archived')) {
       return err('لا يمكن حذف درس معتمد. استخدم الأرشفة بدلاً من الحذف.');
+    }
+
+    // Created by no person: the textbook's scaffold, claimed or not. Deleting
+    // it would leave a hole in the unit.
+    if (user.role !== 'admin' && (await unclaimedOwners([lesson.createdBy])).size) {
+      return err('هذا درس من المنهج ولا يمكن حذفه. اطلب من المشرف إن كان يجب إزالته.', 403);
     }
 
     // Cascade: delete sections + blocks
@@ -189,6 +197,7 @@ export async function DELETE(request, { params }) {
       Section.deleteMany({ lessonContentId: (await params).id }),
       deleteCheckpointQuestionsForSections(sectionIds),
       sectionIds.length ? Block.deleteMany({ sectionContentId: { $in: sectionIds } }) : null,
+      dropPublishedCopy((await params).id),
     ]);
     recountAuthoredLater([lesson.createdBy, ...blockAuthors]);
 
