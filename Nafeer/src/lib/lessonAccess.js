@@ -3,7 +3,7 @@ import { Lesson }    from '@/lib/models/Lesson';
 import { Section }   from '@/lib/models/Section';
 import { Block }     from '@/lib/models/Block';
 import { Contributor } from '@/lib/models/Contributor';
-import { REAL_PEOPLE } from '@/lib/SeedActor';
+import { REAL_PEOPLE, ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { creditLesson, lessonOwnerId } from '@/lib/credits';
 import { leadCan } from '@/lib/leads';
 
@@ -70,29 +70,40 @@ const notOwner = (title) =>
   );
 
 /**
- * Of these owner ids, the ones that are no real person — the seed actor's
- * placeholder id, the system_seed account, or no account at all. One read.
+ * Who these owner ids are, in one read: `names` for the real people, and
+ * `unclaimed` for the rest — the seed actor's placeholder id, the system_seed
+ * account, or no account at all.
  */
-export async function unclaimedOwners(ownerIds) {
+export async function ownerDirectory(ownerIds) {
   const ids = [...new Set(ownerIds.filter(Boolean).map(String))];
-  if (!ids.length) return new Set();
-  const real = await Contributor.find({ _id: { $in: ids }, ...REAL_PEOPLE }).select('_id').lean();
-  const realIds = new Set(real.map((c) => String(c._id)));
-  return new Set(ids.filter((id) => !realIds.has(id)));
+  if (!ids.length) return { names: new Map(), unclaimed: new Set() };
+  const real = await Contributor.find({ _id: { $in: ids }, ...REAL_PEOPLE }).select('_id name').lean();
+  const names = new Map(real.map((c) => [String(c._id), c.name || '']));
+  return { names, unclaimed: new Set(ids.filter((id) => !names.has(id))) };
+}
+
+/** Of these owner ids, the ones that are no real person. */
+export async function unclaimedOwners(ownerIds) {
+  return (await ownerDirectory(ownerIds)).unclaimed;
 }
 
 /**
  * Throws a 403 unless `user` may change every one of these lessons. Returns
- * them (none for the platform owner, whose content edits need no review —
+ * them (for the platform owner, only those waiting for review —
  * lib/publishedCopy.js). Ids with no lesson yet pass — whoever creates a lesson is its author. An unclaimed
  * lesson is refused like anyone else's until it is claimed (claimLesson).
  */
 export async function assertCanEditLessons(user, lessonIds, now = new Date()) {
-  if (user?.role === 'admin') return [];
+  const isAdmin = user?.role === 'admin';
   const ids = [...new Set((lessonIds || []).filter((x) => typeof x === 'string' && x))];
   if (!ids.length) return [];
 
   await connectDB();
+  // The platform owner may change anything, and approves their own edits; only a
+  // lesson waiting for a reviewer needs to know it moved (lib/reviewStamp.js).
+  if (isAdmin) {
+    return Lesson.find({ contentId: { $in: ids }, status: 'review' }).select('contentId status').lean();
+  }
   const lessons = await Lesson.find({ contentId: { $in: ids } })
     .select('contentId subjectId title status createdBy ownerId intervention').lean();
   const denied = lessons.find((l) => !lessonAccess(l, user, now).canEdit);
@@ -127,12 +138,40 @@ export async function claimLesson(user, contentId, now = new Date()) {
 
   const res = await Lesson.updateOne(
     { contentId, ownerId: lesson.ownerId ?? null },
-    { $set: { ownerId: user.id } },
+    { $set: { ownerId: user.id, claimedAt: now } },
     { timestamps: false },
   );
   if (!res.matchedCount) throw new ClaimError('تولّاه زميل للتو', 409);
   // The scaffold was nobody's writing: whoever claims it is its author.
   await creditLesson(contentId, { contributorId: user.id, name: user.name || '', kind: 'author' });
+  return { contentId, title: lesson.title };
+}
+
+/**
+ * The owner gives a draft back: it becomes anyone's to claim, with whatever
+ * was written in it. Not while it waits for review, and not approved work.
+ * Credit for what they did stays. Throws ClaimError.
+ */
+export async function releaseLesson(user, contentId) {
+  await connectDB();
+  const lesson = await Lesson.findOne({ contentId })
+    .select('contentId title status revising createdBy ownerId').lean();
+  if (!lesson) throw new ClaimError('الدرس غير موجود', 404);
+  if (lessonOwnerId(lesson) !== idOf(user?.id)) throw new ClaimError('هذا الدرس ليس في عهدتك', 403);
+  if (lesson.status === 'review') throw new ClaimError('الدرس بانتظار المراجعة — يُعاد للمتاح بعد قرار المراجِع');
+  if (lesson.status !== 'draft' || lesson.revising) throw new ClaimError('لا يُترك درس معتمد — اطلب من قائد الفريق إسناده');
+
+  // A curriculum lesson falls back to its creator, who is nobody. One a person
+  // created has to be handed to the placeholder instead.
+  const creatorIsNobody = (await unclaimedOwners([idOf(lesson.createdBy)])).size > 0;
+  const ownerId = creatorIsNobody ? null : await ensureSystemSeedContributor();
+
+  const res = await Lesson.updateOne(
+    { contentId, ownerId: lesson.ownerId ?? null, status: 'draft' },
+    { $set: { ownerId, claimedAt: null } },
+    { timestamps: false },
+  );
+  if (!res.matchedCount) throw new ClaimError('تغيّر الدرس للتو — حدّث الصفحة', 409);
   return { contentId, title: lesson.title };
 }
 
