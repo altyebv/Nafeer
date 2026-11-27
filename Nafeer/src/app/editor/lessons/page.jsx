@@ -3,5 +3,5 @@ import LessonsPage from '@/components/editor/pages/LessonsPage';
 
 export default async function LessonsRoute() {
   const contributor = await getCurrentUser();
-  return <LessonsPage subjectId={contributor?.subject} />;
+  return <LessonsPage subjectId={contributor?.subject} contributor={contributor} />;
 }
