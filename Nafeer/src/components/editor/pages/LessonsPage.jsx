@@ -10,7 +10,9 @@ import { formatRelative } from '@/lib/format';
 import { lessonHref } from '@/components/editor/layout/nav';
 import { EmptyState, Input, Segmented, cx } from '@/components/ui';
 import UnitCard from '@/components/editor/units/UnitCard';
-import LessonItem from '@/components/editor/lesson/LessonItem';
+import LessonItem, { ViewerContext } from '@/components/editor/lesson/LessonItem';
+import { BOARD_STATES, lessonState } from '@/lib/board';
+import { waitingOwner } from './DashboardWaiting';
 import EditorPage from '@/components/editor/layout/EditorPage';
 
 // ─── Lessons ──────────────────────────────────────────────────────────────────
@@ -20,16 +22,17 @@ import EditorPage from '@/components/editor/layout/EditorPage';
 // Everything is computed from the stores the editor already loaded; the old
 // per-page coverage request is gone.
 
+// The board's states (lib/board.js), with «دروسي» for a member.
 const FILTERS = [
   { id: 'all', label: 'الكل' },
-  { id: 'started', label: 'فيه عمل' },
-  { id: 'returned', label: 'أُعيد' },
-  { id: 'review', label: 'بانتظار المراجعة' },
-  { id: 'approved', label: 'معتمد' },
+  { id: 'mine', label: 'دروسي' },
+  ...BOARD_STATES,
   { id: 'untitled', label: 'عنوان تلقائي' },
 ];
 
-export default function LessonsPage() {
+export default function LessonsPage({ contributor = null }) {
+  const me = waitingOwner(contributor);
+  const filters = me ? FILTERS : FILTERS.filter((f) => f.id !== 'mine');
   const { subject, units, lessons, sections, blocks, questions, feedItems } = useDataStore(
     useShallow((s) => ({ subject: s.subject, units: s.units, lessons: s.lessons, sections: s.sections, blocks: s.blocks, questions: s.questions, feedItems: s.feedItems })),
   );
@@ -51,18 +54,16 @@ export default function LessonsPage() {
   const is = (id, l) => {
     const r = info[l.id];
     switch (id) {
-      case 'started': return r.counts.sections > 0;
-      case 'returned': return !!l.reviewState?.returned;
-      case 'review': return l.atlasStatus === 'review';
-      case 'approved': return l.atlasStatus === 'approved';
+      case 'all': return true;
+      case 'mine': return l.owner === me && !l.unclaimed;
       case 'untitled': return isAutoTitle(l.title);
-      default: return true;
+      default: return lessonState(l, r.counts.sections > 0) === id;
     }
   };
   const q = query.trim();
   const unitTitle = (l) => sortedUnits.find((u) => u.id === l.unitId)?.title || '';
   const results = ordered.filter((l) => is(filter, l) && (!q || l.title?.includes(q) || unitTitle(l).includes(q)));
-  const counts = Object.fromEntries(FILTERS.map((f) => [f.id, ordered.filter((l) => is(f.id, l)).length]));
+  const counts = Object.fromEntries(filters.map((f) => [f.id, ordered.filter((l) => is(f.id, l)).length]));
 
   if (!subject) {
     return <div className="py-40 text-center t-body text-fg-subtle">جارٍ التحميل…</div>;
@@ -71,14 +72,17 @@ export default function LessonsPage() {
   const catalog = SUBJECTS_BY_ID[subject.id];
   const track = catalog ? TRACK_CONFIG[catalog.track] : null;
   const ready = ordered.filter((l) => info[l.id].done === 6).length;
-  const working = counts.started - ready;
+  const started = ordered.filter((l) => l.started || info[l.id].counts.sections > 0).length;
+  const working = Math.max(0, started - ready);
   const pct = (n) => (ordered.length ? (n / ordered.length) * 100 : 0);
 
   // «تابع من حيث توقفت»: lessons of this subject opened here, newest first,
   // then the first lesson in order that nobody has started.
   const byId = Object.fromEntries(ordered.map((l) => [l.id, l]));
   const recentHere = recent.filter((r) => byId[r.id]).slice(0, 2);
-  const nextEmpty = ordered.find((l) => info[l.id].counts.sections === 0 && !recentHere.some((r) => r.id === l.id));
+  // Only a lesson nobody holds: someone else's is not this member's to start.
+  const nextEmpty = ordered.find((l) => (!me || l.unclaimed) && !l.started && info[l.id].counts.sections === 0
+    && !recentHere.some((r) => r.id === l.id));
   const where = (l) => `الوحدة ${unitPos[l.unitId]} · الدرس ${lessons.filter((x) => x.unitId === l.unitId).sort((a, b) => a.order - b.order).indexOf(l) + 1}`;
 
   return (
@@ -90,7 +94,7 @@ export default function LessonsPage() {
             <h1 className="t-h1 text-fg-strong">الدروس</h1>
             <span className="t-label text-fg-muted">
               {units.length} وحدات · {ordered.length} درساً · <strong className="text-fg-strong">{ready} جاهز</strong>
-              {counts.review ? ` · ${counts.review} بانتظار المراجعة` : ''}{counts.returned ? ` · ${counts.returned} أُعيد إليك` : ''}
+              {counts.submitted ? ` · ${counts.submitted} بانتظار المراجعة` : ''}{counts.available ? ` · ${counts.available} متاح` : ''}
             </span>
           </div>
           <div className="w-full sm:w-72 flex flex-col gap-1.5">
@@ -100,7 +104,7 @@ export default function LessonsPage() {
               <span className="bg-accent" style={{ width: `${pct(working)}%` }} />
             </span>
             <span className="flex gap-3 t-caption text-fg-subtle">
-              <span>● جاهز {ready}</span><span>● قيد العمل {working}</span><span>● لم يبدأ {ordered.length - counts.started}</span>
+              <span>● جاهز {ready}</span><span>● قيد العمل {working}</span><span>● لم يبدأ {ordered.length - ready - working}</span>
             </span>
           </div>
         </div>
@@ -141,10 +145,11 @@ export default function LessonsPage() {
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث بعنوان الدرس أو الوحدة…" className="ps-9" />
           </label>
           <Segmented label="تصفية حسب الحالة" size="sm" value={filter} onChange={setFilter}
-            className="overflow-x-auto" items={FILTERS.map((f) => ({ ...f, label: `${f.label} · ${counts[f.id]}` }))} />
+            className="overflow-x-auto" items={filters.map((f) => ({ ...f, label: `${f.label} · ${counts[f.id]}` }))} />
         </div>
       </header>
 
+      <ViewerContext.Provider value={{ me, name: contributor?.name || '' }}>
       {filter === 'all' && !q ? (
         <div className="space-y-6">
           {(() => {
@@ -171,6 +176,7 @@ export default function LessonsPage() {
       ) : (
         <EmptyState title="لا دروس هنا" description={q ? `لا شيء يطابق «${q}» في هذا التصنيف.` : 'لا درس في هذه الحالة الآن.'} />
       )}
+      </ViewerContext.Provider>
     </EditorPage>
   );
 }
