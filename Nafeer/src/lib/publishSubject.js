@@ -11,6 +11,7 @@ import { FeedItem }               from '@/lib/models/FeedItem';
 import { Question }               from '@/lib/models/Question';
 import { Exam }                   from '@/lib/models/Exam';
 import { Piece }                  from '@/lib/models/Piece';
+import { revisingCopies, mergePublished } from '@/lib/publishedCopy';
 import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, questionGoesToApp, questionForApp } from '@/lib/appExport';
 import { uploadFile, getPublicUrl } from '@/lib/supabase';
 import { getMathNotation }        from '@/shared/curriculum';
@@ -81,8 +82,8 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
 
     // ── 1. Fetch all approved content for this subject ────────────────────────
     const [
-      subject, units, lessons, sections, blocks,
-      concepts, tags, feedItems, questions, exams, pieces,
+      subject, units, approved, liveSections, liveBlocks,
+      concepts, tags, feedItems, liveQuestions, exams, pieces, copies,
     ] = await Promise.all([
       Subject.findOne({ subjectId }).lean(),
       Unit.find({ subjectId }).sort({ order: 1 }).lean(),
@@ -99,7 +100,14 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
       Exam.find({ subjectId, status: 'approved' }).lean(),
       // Every piece goes: one missing from a full export is retired on the device.
       Piece.find({ subjectId, status: { $ne: 'archived' } }).sort({ order: 1, createdAt: 1 }).lean(),
+      revisingCopies(subjectId),
     ]);
+
+    // A lesson being revised ships as it was last approved (lib/publishedCopy.js).
+    const { lessons, sections, blocks, questions } = mergePublished(
+      { lessons: approved, sections: liveSections, blocks: liveBlocks, questions: liveQuestions },
+      copies,
+    );
 
     if (!subject) {
       return NextResponse.json({ ok: false, error: 'المادة غير موجودة' }, { status: 404 });
