@@ -7,6 +7,7 @@ import { getFeedItemsForSubject, createFeedItem, updateFeedItem,
   updateFeedItemStatus, deleteFeedItem, getFeedItemById } from '@/lib/api/feedItems';
 import { Concept } from '@/lib/models/Concept';
 import { connectDB } from '@/lib/db'
+import { readBody, assertInput, invalidData } from '@/lib/limits';
 
 
 const generateId = (prefix) =>
@@ -40,7 +41,8 @@ export async function GET(request) {
 // POST /api/content/feed-items
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body = await readBody(request);
+    assertInput(body);
     const { subjectId, conceptContentId, type } = body;
     if (!subjectId || !conceptContentId || !type) {
       return err('الحقول المطلوبة: subjectId, conceptContentId, type');
@@ -61,6 +63,8 @@ export async function POST(request) {
   } catch (e) {
     if (e instanceof Response) return e;
     if (e.code === 11000) return err('معرّف عنصر التغذية موجود مسبقاً');
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[POST /api/content/feed-items]', e);
     return err('خطأ في الخادم', 500);
   }
@@ -77,7 +81,8 @@ export async function PUT(request, { params }) {
     // they were signed in, so any contributor could change any subject's cards.
     const { user } = await requireContentAccess(FeedItem, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
-    const body = await request.json();
+    const body = await readBody(request);
+    assertInput(body);
     const { note, ...updates } = body;
 
     const allowed = [
@@ -106,6 +111,8 @@ export async function PUT(request, { params }) {
     return ok(item);
   } catch (e) {
     if (e instanceof Response) return e;
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[PUT /api/content/feed-items/[id]]', e);
     return err('خطأ في الخادم', 500);
   }
@@ -117,7 +124,7 @@ export async function PATCH(request, { params }) {
     const { user } = await requireContentAccess(FeedItem, (await params).id, { write: true });
     await assertCanEditLessons(user, await lessonsForLinked(FeedItem, [(await params).id]));
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
-    const { status, note } = await request.json();
+    const { status, note } = await readBody(request);
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) return err('حالة غير صالحة');
     if (status === 'approved' && user.role !== 'admin') return err('الاعتماد متاح للمشرفين فقط', 403);
