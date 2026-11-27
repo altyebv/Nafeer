@@ -6,23 +6,27 @@ import { SUBJECT_IDS } from '@/shared/curriculum';
 import { Unit } from '@/lib/models/Unit';
 import { Lesson } from '@/lib/models/Lesson';
 import { Section } from '@/lib/models/Section';
+import { unclaimedOwners } from '@/lib/lessonAccess';
+import { lessonOwnerId } from '@/lib/credits';
 import bcrypt from 'bcryptjs';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 const USERNAME_RE = /^[\w؀-ۿ._-]{3,20}$/; // same rule as models/Contributor.js
 
-// The first lesson of the subject, in unit then lesson order, with no section yet.
+// The first lesson of the subject, in unit then lesson order, that nobody has
+// taken and nobody has written in: one the newcomer can claim.
 async function firstEmptyLesson(subjectId) {
   if (!subjectId) return null;
   const [units, lessons, started] = await Promise.all([
     Unit.find({ subjectId }, 'contentId order').sort({ order: 1 }).lean(),
-    Lesson.find({ subjectId, status: 'draft' }, 'contentId unitContentId order').sort({ order: 1 }).lean(),
+    Lesson.find({ subjectId, status: 'draft' }, 'contentId unitContentId order createdBy ownerId').sort({ order: 1 }).lean(),
     Section.distinct('lessonContentId', { subjectId }),
   ]);
   const busy = new Set(started);
+  const unclaimed = await unclaimedOwners(lessons.map(lessonOwnerId));
   for (const u of units) {
-    const hit = lessons.find((l) => l.unitContentId === u.contentId && !busy.has(l.contentId));
+    const hit = lessons.find((l) => l.unitContentId === u.contentId && !busy.has(l.contentId) && unclaimed.has(lessonOwnerId(l)));
     if (hit) return hit.contentId;
   }
   return null;
