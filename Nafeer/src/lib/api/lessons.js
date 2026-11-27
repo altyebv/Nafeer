@@ -6,7 +6,8 @@ import { writeHistory } from '@/lib/api/contentHistory';
 import { Section } from '@/lib/models/Section';
 import { Block } from '@/lib/models/Block';
 import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
-import { VersionConflict, updateAtVersion } from '@/lib/api/versionCheck';
+import { VersionConflict, updateAtVersion, hasBaseVersion } from '@/lib/api/versionCheck';
+import { savePublishedCopy, dropPublishedCopy } from '@/lib/publishedCopy';
 import { trackStat } from '@/lib/trackStat';
 import { assertCanSubmit } from '@/lib/review';
 
@@ -115,6 +116,14 @@ export async function updateLesson(
     skipRedraft
   );
 
+  // Redrafting an approved lesson keeps what students have (lib/publishedCopy.js).
+  // Not for a stale save, which is about to be refused.
+  const stale = hasBaseVersion(baseVersion) && Number(baseVersion) !== (current.version || 1);
+  if (current.status === 'approved' && bumpedUpdates.status === 'draft' && !stale) {
+    await savePublishedCopy(current.toObject ? current.toObject() : current);
+    bumpedUpdates.revising = true;
+  }
+
   const updated = await updateAtVersion(
     Lesson, contentId, baseVersion, current, { $set: bumpedUpdates }, { runValidators: true }
   );
@@ -171,6 +180,17 @@ export async function updateLessonStatus(
     changelog:  [...existing.slice(-4), entry],
     reviewedBy: newStatus === 'approved' ? contributorId : current.reviewedBy,
   };
+
+  // Withdrawing an approved lesson to rework it keeps its approved version in
+  // the app; approving ends the revision; archiving retires both.
+  if (current.status === 'approved' && (newStatus === 'draft' || newStatus === 'review')) {
+    await savePublishedCopy(current.toObject ? current.toObject() : current);
+    setPayload.revising = true;
+  }
+  if (newStatus === 'approved' || newStatus === 'archived') {
+    setPayload.revising = false;
+    await dropPublishedCopy(contentId);
+  }
 
   if (newStatus === 'approved') {
     setPayload.reviewedAt = new Date();
