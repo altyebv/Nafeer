@@ -513,6 +513,7 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const json = await res.json();
+      markReopened(json.reopened);
       let atlasStatus = 'draft';
       if (!json.ok && res.status === 404) {
         const created = await apiFetch('/api/content/feed-items', {
@@ -565,6 +566,7 @@ const syncLesson = useCallback(async (lessonId, subjectId) => {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const json = await res.json();
+      markReopened(json.reopened);
       let atlasStatus = 'draft';
       if (!json.ok && res.status === 404) {
         const created = await apiFetch('/api/content/questions', {
