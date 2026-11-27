@@ -4,9 +4,11 @@ import { SUBJECTS_CATALOG_REF } from '../constants';
 import { SectionHeader, EmptyState, Spinner, StatChips } from './ui/shared';
 import { Btn } from './ui/Btn';
 import { formatDate } from '@/lib/format';
+import { MAX_UPLOAD_BYTES, UPLOAD_LIMIT_LABEL } from '@/lib/uploadLimits';
+import ImageRequests from './ImageRequests';
 
 const ACCEPT    = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml';
-const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_BYTES = MAX_UPLOAD_BYTES;
 
 const MEDIA_TYPE_BADGE = {
   IMAGE: { label: 'صورة',   bg: 'bg-green-900/30',  text: 'text-green-400',  border: 'border-green-800/40'  },
@@ -138,7 +140,7 @@ export function MediaSection() {
     for (let i = 0; i < list.length; i++) {
       const file = list[i];
       if (file.size > MAX_BYTES) {
-        setUploadProgress((p) => p.map((x, j) => j === i ? { ...x, status: 'error', msg: 'أكبر من 10 MB' } : x));
+        setUploadProgress((p) => p.map((x, j) => j === i ? { ...x, status: 'error', msg: `أكبر من ${UPLOAD_LIMIT_LABEL}` } : x));
         continue;
       }
       setUploadProgress((p) => p.map((x, j) => j === i ? { ...x, status: 'uploading' } : x));
@@ -204,6 +206,8 @@ export function MediaSection() {
 
         <div className="px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
 
+          <ImageRequests onUploaded={(m) => setMedia((prev) => [m, ...prev])} />
+
           {/* Upload panel */}
           <div className="rounded-xl border border-ink-800/60 overflow-hidden">
             <div className="px-4 py-3 bg-ink-900/70 border-b border-ink-800/60 flex items-center gap-2">
@@ -254,7 +258,7 @@ export function MediaSection() {
                 {uploading ? (
                   <><span className="w-5 h-5 border-2 border-sand-500 border-t-transparent rounded-full animate-spin" /><span className="text-ink-500 text-sm font-arabic">جاري الرفع…</span></>
                 ) : (
-                  <><span className="text-2xl text-ink-600 select-none">⬆</span><span className="text-sm text-ink-400 font-arabic">اسحب الملفات هنا أو اضغط للتصفح</span><span className="text-xs text-ink-700 font-mono">JPEG · PNG · GIF · WebP · SVG — حتى 10 MB</span></>
+                  <><span className="text-2xl text-ink-600 select-none">⬆</span><span className="text-sm text-ink-400 font-arabic">اسحب الملفات هنا أو اضغط للتصفح</span><span className="text-xs text-ink-700 font-mono">JPEG · PNG · GIF · WebP · SVG — حتى 4 MB</span></>
                 )}
               </div>
               <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" onChange={(e) => handleUpload(e.target.files)} />
