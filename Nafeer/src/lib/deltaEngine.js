@@ -229,7 +229,9 @@ function computeDelta(currentEntities, prevIndex, prevPublishedAt) {
 
     if (changedIds.length > 0) changedByType[entityType] = changedIds;
     if (deletedIds.length > 0) deletedByType[entityType] = deletedIds;
-    if (Object.keys(typeIndex).length > 0) newEntityIndex[entityType] = typeIndex;
+    // An empty kind is listed too: the app removes what a listed kind no longer
+    // has, and leaves a kind that is missing alone.
+    newEntityIndex[entityType] = typeIndex;
   }
 
   return { changedByType, deletedByType, newEntityIndex };
