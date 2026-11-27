@@ -184,7 +184,6 @@ export async function upsertBlock(data, contributorId, byName = '', context = {}
     if (existingWasCheckpoint && nextType !== 'QUESTION') {
       await deleteCheckpointQuestionForBlock(existing);
     }
-    await syncCheckpointQuestionForBlock(block, contributorId);
     const historyContext = await resolveHistoryContext(block.sectionContentId);
     await writeItemHistory({
       lessonContentId: historyContext.lessonContentId,
@@ -216,7 +215,6 @@ export async function upsertBlock(data, contributorId, byName = '', context = {}
     createdBy:        contributorId,
     changelog:        initialChangelog(contributorId),
   });
-  await syncCheckpointQuestionForBlock(block.toObject(), contributorId);
   const historyContext = await resolveHistoryContext(block.sectionContentId);
   await writeItemHistory({
     lessonContentId: historyContext.lessonContentId,
@@ -304,109 +302,12 @@ export async function deleteLessonContent(lessonContentId) {
   ]);
 }
 
-async function syncCheckpointQuestionForBlock(block, contributorId) {
-  if (block.type !== 'QUESTION') return null;
-
-  const payload = getCheckpointPayload(block);
-  const textAr = payload.textAr || payload.questionText || payload.text || block.content;
-  const correctAnswer = payload.correctAnswer ?? payload.answer;
-
-  if (!block.subjectId || !block.sectionContentId || isBlank(textAr) || isBlank(correctAnswer)) {
-    return null;
-  }
-
-  const section = await Section.findOne({ contentId: block.sectionContentId })
-    .select('lessonContentId conceptIds')
-    .lean();
-
-  const contentId = payload.questionId || payload.contentId || payload.id || checkpointQuestionId(block.contentId);
-  const updates = {
-    contentId,
-    subjectId: block.subjectId,
-    type: payload.type || 'MCQ',
-    textAr,
-    textEn: payload.textEn || null,
-    correctAnswer,
-    options: payload.options || null,
-    explanation: payload.explanation || null,
-    mistakeNote: payload.mistakeNote || null,
-    optionNotes: payload.optionNotes || [],
-    acceptedAnswers: payload.acceptedAnswers || [],
-    imageUrl: payload.imageUrl || null,
-    tableData: payload.tableData || null,
-    difficulty: payload.difficulty || 1,
-    points: payload.points || 1,
-    estimatedSeconds: payload.estimatedSeconds || 60,
-    cognitiveLevel: payload.cognitiveLevel || 'RECALL',
-    source: payload.source || 'ORIGINAL',
-    sourceExamContentId: payload.sourceExamContentId || payload.sourceExamId || null,
-    sourceDetails: payload.sourceDetails || null,
-    sourceYear: payload.sourceYear || null,
-    feedEligible: false,
-    unitContentId: payload.unitContentId || payload.unitId || null,
-    lessonContentId: payload.lessonContentId || payload.lessonId || section?.lessonContentId || null,
-    sectionContentId: block.sectionContentId,
-    isCheckpoint: true,
-    conceptIds: payload.conceptIds || section?.conceptIds || [],
-    markers: payload.markers || [],
-  };
-
-  const existing = await Question.findOne({ contentId });
-  if (existing) {
-    const { updates: bumpedUpdates } = applyVersionBump(
-      updates,
-      existing,
-      contributorId,
-      'edited',
-      'Synced from checkpoint block',
-      '',
-      false
-    );
-    return Question.findOneAndUpdate(
-      { contentId },
-      { $set: bumpedUpdates },
-      { new: true, runValidators: true }
-    ).lean();
-  }
-
-  return Question.create({
-    ...updates,
-    status: block.status || 'draft',
-    createdBy: contributorId,
-    changelog: initialChangelog(contributorId),
-  });
-}
-
+// A checkpoint block's question goes with it: the block is where the lesson asks it.
+// Its content is the question's id.
 async function deleteCheckpointQuestionForBlock(block) {
-  const payload = getCheckpointPayload(block);
-  const questionId = payload.questionId || payload.contentId || payload.id || checkpointQuestionId(block.contentId);
+  const questionId = String(block.content ?? '').trim();
+  if (!questionId) return null;
   return Question.deleteOne({ contentId: questionId, isCheckpoint: true });
-}
-
-function getCheckpointPayload(block) {
-  const metadata = block.metadata && typeof block.metadata === 'object' ? block.metadata : {};
-  const parsedContent = parseMaybeJson(block.content);
-  const contentObject = parsedContent && typeof parsedContent === 'object' ? parsedContent : {};
-  return {
-    ...contentObject,
-    ...metadata,
-    ...(contentObject.question || {}),
-    ...(metadata.question || {}),
-    ...(metadata.checkpoint || {}),
-  };
-}
-
-function parseMaybeJson(value) {
-  if (!value || typeof value !== 'string') return null;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
-function checkpointQuestionId(blockId) {
-  return `q_${blockId}`;
 }
 
 function normalizeBlockInput(data) {
@@ -414,8 +315,4 @@ function normalizeBlockInput(data) {
     ...data,
     sectionContentId: data.sectionContentId || data.sectionId,
   };
-}
-
-function isBlank(value) {
-  return value === null || value === undefined || String(value).trim() === '';
 }
