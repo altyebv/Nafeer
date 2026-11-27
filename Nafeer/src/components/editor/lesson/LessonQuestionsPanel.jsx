@@ -63,16 +63,14 @@ function MCQQuickForm({ options, correctIndex, onOptionsChange, onCorrectChange 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, subjectId }) {
-  const { questions, sections, concepts, addQuestion, deleteQuestion } = useDataStore(
-    useShallow((s) => ({ questions: s.questions, sections: s.sections, concepts: s.concepts, addQuestion: s.addQuestion, deleteQuestion: s.deleteQuestion })),
+  const { questions, addQuestion, deleteQuestion } = useDataStore(
+    useShallow((s) => ({ questions: s.questions, addQuestion: s.addQuestion, deleteQuestion: s.deleteQuestion })),
   );
   const { deleteQuestion: atlasDeleteQuestion, syncQuestion } = useAtlasSync();
 
-  const lessonQuestions = questions.filter((q) => q.lessonId === lessonId);
-
-  // Separate: practice questions (quizbank) vs checkpoint questions (in-body gates)
-  const practiceQuestions   = lessonQuestions.filter((q) => !q.isCheckpoint);
-  const checkpointQuestions = lessonQuestions.filter((q) =>  q.isCheckpoint);
+  // Practice questions only: the lesson's checkpoints are listed above this
+  // panel (StepQuestions) and written on their blocks in the content.
+  const practiceQuestions = questions.filter((q) => q.lessonId === lessonId && !q.isCheckpoint);
 
   const [isOpen,        setIsOpen]        = useState(false);
   const [showForm,      setShowForm]      = useState(false);
@@ -81,10 +79,12 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [mcqOptions,    setMcqOptions]    = useState(['', '', '', '']);
   const [correctIndex,  setCorrectIndex]  = useState(-1);
+  const [explanation,   setExplanation]   = useState('');
 
   const resetForm = () => {
     setTextAr(''); setCorrectAnswer('');
     setMcqOptions(['', '', '', '']); setCorrectIndex(-1);
+    setExplanation('');
   };
 
   const handleTypeChange = (t) => {
@@ -112,6 +112,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
       textAr,
       correctAnswer: finalAnswer,
       options:       finalOptions,
+      explanation:   explanation.trim() || null,
       lessonId,
       unitId,
       isCheckpoint:     false,   // ← always false here; checkpoints live in section blocks
@@ -148,10 +149,10 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
         className="w-full flex items-center gap-3 px-4 py-3 bg-ink-800/40 hover:bg-ink-800/70 transition-colors text-right"
       >
         <Target size={17} strokeWidth={1.9} className="text-sand-500" />
-        <span className="flex-1 text-sm font-semibold text-ink-200 font-arabic">أسئلة الدرس</span>
-        {lessonQuestions.length > 0 && (
+        <span className="flex-1 text-sm font-semibold text-ink-200 font-arabic">أسئلة التدريب</span>
+        {practiceQuestions.length > 0 && (
           <span className="text-xs font-mono px-2 py-0.5 rounded border bg-sand-900/40 text-sand-400 border-sand-700/40">
-            {lessonQuestions.length}
+            {practiceQuestions.length}
           </span>
         )}
         <ChevronLeft size={14} strokeWidth={2} className={`text-ink-600 transition-transform duration-200 ${isOpen ? '-rotate-90' : ''}`} />
@@ -160,47 +161,9 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
       {isOpen && (
         <div className="p-4 space-y-4">
 
-          {/* ── Checkpoint questions (read-only reference) ─────────── */}
-          {checkpointQuestions.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-xs text-amber-600/80 font-arabic font-semibold mb-1.5">
-                <CircleDot size={12} strokeWidth={2} className="inline ml-1" /> نقاط تحقق ({checkpointQuestions.length}) — تُعدَّل من داخل القسم
-              </p>
-              {checkpointQuestions.map((q) => {
-                const cfg    = QUESTION_TYPE_CONFIG[q.type];
-                const Icon   = QUESTION_ICONS[q.type] || CircleDot;
-                const sec    = sections.find((s) => s.id === q.sectionId);
-                return (
-                  <div
-                    key={q.id}
-                    className="flex items-center gap-3 px-3 py-2 bg-amber-950/20 rounded-lg border border-amber-900/30"
-                  >
-                    <span className="text-xs font-mono text-amber-600/70 w-5 text-center shrink-0">
-                      <Icon size={13} strokeWidth={1.9} />
-                    </span>
-                    <span className="flex-1 text-sm text-ink-300 line-clamp-1 font-arabic">
-                      {q.textAr}
-                    </span>
-                    {sec && (
-                      <span className="text-xs text-ink-500 font-arabic shrink-0 hidden sm:block truncate max-w-[100px]">
-                        {sec.title}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-amber-700/60 font-arabic shrink-0">تحقق</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
           {/* ── Practice / quizbank questions ─────────────────────── */}
           {practiceQuestions.length > 0 && (
             <div className="space-y-1">
-              {checkpointQuestions.length > 0 && (
-                <p className="text-xs text-ink-500 font-arabic font-semibold mb-1.5">
-                  أسئلة التدريب ({practiceQuestions.length})
-                </p>
-              )}
               {practiceQuestions.map((q) => {
                 const cfg    = QUESTION_TYPE_CONFIG[q.type];
                 const Icon   = QUESTION_ICONS[q.type] || CircleDot;
@@ -234,7 +197,7 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
           )}
 
           {/* Empty state */}
-          {lessonQuestions.length === 0 && (
+          {practiceQuestions.length === 0 && (
             <div className="py-6 text-center border border-dashed border-ink-800/50 rounded-xl">
               <Target size={30} strokeWidth={1.6} className="mx-auto mb-2 text-ink-600" />
               <p className="text-sm text-ink-500 font-arabic">لا توجد أسئلة تدريب لهذا الدرس</p>
@@ -321,6 +284,15 @@ export default function LessonQuestionsPanel({ lessonId, unitId, onOpenGlobal, s
                   placeholder={type === 'FILL_BLANK' ? 'الكلمة الصحيحة...' : 'الإجابة النموذجية...'}
                 />
               )}
+
+              {/* Shown to the student after answering, in practice and in the feed. */}
+              <textarea
+                value={explanation}
+                onChange={(e) => setExplanation(e.target.value)}
+                className={`${inputClass} resize-y min-h-[56px]`}
+                placeholder="الشرح بعد الإجابة: لماذا هذه هي الإجابة؟ (اختياري)"
+                aria-label="الشرح بعد الإجابة"
+              />
 
               {/* Actions */}
               <div className="flex gap-2 pt-1">
