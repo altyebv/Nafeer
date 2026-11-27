@@ -11,7 +11,7 @@ import { FeedItem } from '@/lib/models/FeedItem';
 import { Question } from '@/lib/models/Question';
 import { Exam } from '@/lib/models/Exam';
 import { Piece } from '@/lib/models/Piece';
-import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, questionGoesToApp, questionForApp } from '@/lib/appExport';
+import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, blockTypeForApp, blockContentForApp, questionGoesToApp, questionForApp } from '@/lib/appExport';
 import { getManifest } from '@/lib/FirebaseAdmin';
 import { getMathNotation } from '@/shared/curriculum';
 
@@ -87,7 +87,7 @@ export async function GET(request) {
 
     const scopedSectionIds = new Set(scopedSections.map((section) => section.contentId));
     const scopedBlocks = blocks.filter((block) => (
-      scopedSectionIds.has(block.sectionContentId) && blockGoesToApp(block.type)
+      scopedSectionIds.has(block.sectionContentId) && blockGoesToApp(block.type, block.content)
     ));
     // Marker questions in the app's terms, as in the published file (lib/appExport.js).
     const scopedQuestions = questions.filter((question) => (
@@ -185,8 +185,8 @@ export async function GET(request) {
             status: section.status || 'draft',
             blocks: (blocksBySection[section.contentId] || []).map((block) => ({
               id: block.contentId,
-              type: block.type,
-              content: block.content || '',
+              type: blockTypeForApp(block.type),
+              content: blockContentForApp(block.type, block.content),
               order: block.order,
               conceptRef: block.conceptRef || null,
               caption: block.caption || null,
