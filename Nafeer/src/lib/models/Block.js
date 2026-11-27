@@ -11,6 +11,7 @@ const BLOCK_TYPES = [
   'HIGHLIGHT_BOX', 'EXAMPLE', 'TIP', 'LIST', 'TABLE', 'QUOTE', 'DIVIDER',
   'VERSE',   // Quran or poetry (docs/contract.md §3)
   'WIDGET',  // not authored here yet; kept so restored subjects that have one still load
+  'QUESTION', // where a recall question is asked; content = its question's id. CHECKPOINT in the app.
 ];
 
 const BlockSchema = new mongoose.Schema(
