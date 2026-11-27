@@ -332,6 +332,7 @@ function Answers({ item }) {
       ) : null}
       {answer && !item.choices?.includes(answer) && <p className="t-caption text-fg-subtle mt-1">الإجابة: {answer}</p>}
       {item.explanation && <p className="t-caption text-fg-subtle mt-1">الشرح: {item.explanation}</p>}
+      {item.sourceDetails && <p className="t-caption text-fg-subtle mt-1">المصدر: {item.sourceDetails}</p>}
     </>
   );
 }
