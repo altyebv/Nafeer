@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useEditorStore }  from '@/store/editorStore';
 import { useAtlasSync }    from '@/hooks/useAtlasSync';
+import { ContributorContext } from './ContributorContext';
 import { useLayout }       from '@/hooks/useBreakpoint';
 import EditorSidebar       from '@/components/editor/layout/EditorSidebar';
 import SyncBanner          from '@/components/editor/layout/SyncBanner';
@@ -73,7 +74,7 @@ export default function EditorChrome({ contributor, children }) {
         {!isLessonEditor && <SyncBanner />}
         {contributor?.paused && <PausedBanner paused={contributor.paused} />}
         {notOpened && <NotOpenedBanner />}
-        {children}
+        <ContributorContext.Provider value={contributor}>{children}</ContributorContext.Provider>
       </main>
     </div>
   );
