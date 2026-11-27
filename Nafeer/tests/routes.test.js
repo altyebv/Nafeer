@@ -40,6 +40,7 @@ const { Lesson }      = await import('@/lib/models/Lesson');
 const { Section }     = await import('@/lib/models/Section');
 const { Block }       = await import('@/lib/models/Block');
 const content         = await import('@/lib/api/content');
+const lessons         = await import('@/lib/api/lessons');
 
 const onboard     = await import('@/app/api/auth/onboard/route.js');
 const interview   = await import('@/app/api/interview/route.js');
@@ -136,6 +137,20 @@ describe('content routes stay inside the contributor\'s subject', () => {
     const res = await lessonById.DELETE(del(), params('les_geo'));
     expect(res.status).toBe(200);
     expect(Lesson.deleteOne).toHaveBeenCalledWith({ contentId: 'les_geo' });
+  });
+
+  it('keeps a member from archiving approved or revising lessons', async () => {
+    for (const extra of [{ status: 'approved' }, { status: 'draft', revising: true }]) {
+      Lesson.seed([{ contentId: 'les_geo', subjectId: 'GEOGRAPHY', createdBy: 'c_geo', ...extra }]);
+      const res = await lessonById.PATCH(patch({ status: 'archived' }), params('les_geo'));
+      expect(res.status).toBe(403);
+    }
+    expect(lessons.updateLessonStatus).not.toHaveBeenCalled();
+  });
+
+  it('still lets a member archive their own unpublished draft', async () => {
+    Lesson.seed([{ contentId: 'les_geo', subjectId: 'GEOGRAPHY', createdBy: 'c_geo', status: 'draft' }]);
+    expect((await lessonById.PATCH(patch({ status: 'archived' }), params('les_geo'))).status).toBe(200);
   });
 
   it('refuses to re-parent a lesson under another subject\'s lesson', async () => {
