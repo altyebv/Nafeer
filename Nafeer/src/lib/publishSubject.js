@@ -14,7 +14,7 @@ import { Piece }                  from '@/lib/models/Piece';
 import { revisingCopies, mergePublished } from '@/lib/publishedCopy';
 import { closeReferences } from '@/lib/releaseLinks';
 import { describeOmissions } from '@/lib/omissions';
-import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, questionGoesToApp, questionForApp } from '@/lib/appExport';
+import { blockMetadataForApp, pieceLessons, pieceForApp, blockGoesToApp, blockTypeForApp, blockContentForApp, questionGoesToApp, questionForApp } from '@/lib/appExport';
 import { uploadFile, getPublicUrl } from '@/lib/supabase';
 import { getMathNotation }        from '@/shared/curriculum';
 import { getManifest, upsertDeltaSubjectEntry } from '@/lib/FirebaseAdmin';
@@ -237,12 +237,12 @@ export async function publishSubject({ subjectId, mode = 'delta', bump = null, d
     // ── Blocks (flat — carry sectionId FK)
     const approvedSectionIds = new Set(sectionsExport.map((s) => s.id));
     const blocksExport = blocks
-      .filter((b) => approvedSectionIds.has(b.sectionContentId) && blockGoesToApp(b.type))
+      .filter((b) => approvedSectionIds.has(b.sectionContentId) && blockGoesToApp(b.type, b.content))
       .map((block) => ({
         id:         block.contentId,
         sectionId:  block.sectionContentId,          // FK for delta patches
-        type:       block.type,
-        content:    block.content    || '',
+        type:       blockTypeForApp(block.type),
+        content:    blockContentForApp(block.type, block.content),
         order:      block.order,
         conceptRef: block.conceptRef || null,
         caption:    block.caption    || null,
@@ -674,11 +674,11 @@ function assembleFullExport({
             learningType: section.learningType || 'UNDERSTANDING', kind: section.kind || 'GENERAL',
             conceptIds:   section.conceptIds   || [],
             blocks: (blocksBySection[section.contentId] || [])
-              .filter((block) => blockGoesToApp(block.type))
+              .filter((block) => blockGoesToApp(block.type, block.content))
               .map((block) => ({
               id:         block.contentId,
-              type:       block.type,
-              content:    block.content    || '',
+              type:       blockTypeForApp(block.type),
+              content:    blockContentForApp(block.type, block.content),
               order:      block.order,
               conceptRef: block.conceptRef || null,
               caption:    block.caption    || null,
