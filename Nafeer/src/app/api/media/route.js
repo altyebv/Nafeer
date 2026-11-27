@@ -7,6 +7,7 @@ import { uploadMedia }     from '@/lib/supabase';
 import { optimizeImage, getOptimizedExtension } from '@/lib/imageOptimizer';
 import { randomUUID }      from 'crypto';
 import { SUBJECT_IDS }     from '@/shared/curriculum';
+import { MAX_UPLOAD_BYTES, UPLOAD_LIMIT_LABEL } from '@/lib/uploadLimits';
 
 async function getUser() {
   return (await getCurrentUser()) ?? (await getAdminAsUser());
@@ -89,10 +90,8 @@ export async function POST(request) {
     );
   }
 
-  // 10 MB cap on original upload
-  const MAX_BYTES = 10 * 1024 * 1024;
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ ok: false, error: 'حجم الملف يتجاوز 10 ميغابايت' }, { status: 400 });
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return NextResponse.json({ ok: false, error: `حجم الملف يتجاوز ${UPLOAD_LIMIT_LABEL}` }, { status: 400 });
   }
 
   const rawBuffer = Buffer.from(await file.arrayBuffer());
