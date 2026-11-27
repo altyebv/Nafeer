@@ -5,6 +5,7 @@ import {
   updateConceptStatus, deleteConcept,
 } from '@/lib/api/concepts';
 import { connectDB } from '@/lib/db';
+import { readBody, assertInput, invalidData } from '@/lib/limits';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -36,7 +37,8 @@ export async function GET(request) {
 // POST /api/content/concepts
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body = await readBody(request);
+    assertInput(body);
     const { subjectId, type, titleAr } = body;
     if (!subjectId || !type || !titleAr) return err('الحقول المطلوبة: subjectId, type, titleAr');
 
@@ -56,6 +58,8 @@ export async function POST(request) {
   } catch (e) {
     if (e instanceof Response) return e;
     if (e.code === 11000) return err('معرّف المفهوم موجود مسبقاً');
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[POST /api/content/concepts]', e);
     return err('خطأ في الخادم', 500);
   }
