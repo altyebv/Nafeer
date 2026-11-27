@@ -253,11 +253,16 @@ export function LessonReview({ item, onDone, endpoints = ADMIN_REVIEW_ENDPOINTS 
         {!mine && (
           <div className="flex flex-col gap-2">
             {result && <p role="alert" className="t-label text-danger">{result}</p>}
+            {lesson.draftConcepts?.length > 0 && (
+              <p role="note" className="t-label font-normal p-3 rounded-card bg-warn-surface border border-warn-border text-warn">
+                مفاهيم لم تُعتمد بعد: {lesson.draftConcepts.join('، ')}. إن اعتمدت الدرس الآن يصل التطبيق دون ربطه بها، ودون بطاقاتها. لتصل كاملة: تُرسَل للمراجعة من صفحة المفاهيم وتُعتمد قبل الدرس.
+              </p>
+            )}
             {!checklistDone && <p className="t-caption text-fg-subtle">أكمل قائمة المراجعة قبل الاعتماد.</p>}
             <div className="flex gap-2">
               <ConfirmButton variant="primary" size="md" tone="accent" confirmLabel="اعتمد" align="start" disabled={!!busy || !checklistDone}
-                title="اعتماد الدرس؟" description="يُعتمد معه ما فيه من أسئلة وبطاقات." onConfirm={() => decide('approved')}
-                description={comments.length ? `لديك ${comments.length} تعليق لم يُرسل — الاعتماد يتجاهلها.` : 'يصبح جاهزاً للنشر في صفحة المادة.'}>
+                title="اعتماد الدرس؟" onConfirm={() => decide('approved')}
+                description={comments.length ? `لديك ${comments.length} تعليق لم يُرسل — الاعتماد يتجاهلها.` : 'يُعتمد معه ما فيه من أسئلة وبطاقات، ويصبح جاهزاً للنشر.'}>
                 {busy === 'approved' ? 'جارٍ…' : 'اعتماد'}
               </ConfirmButton>
               <ConfirmButton variant="secondary" size="md" tone="accent" confirmLabel="أعِده" align="start" disabled={!!busy || !comments.length}
