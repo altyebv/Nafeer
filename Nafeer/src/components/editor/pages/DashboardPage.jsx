@@ -8,6 +8,7 @@ import { formatDate, formatNumber } from '@/lib/format';
 import { ActivityGraph, Card } from '@/components/ui';
 import { NextStepCard, UnitProgressCard } from './DashboardNext';
 import WaitingList, { waitingOwner } from './DashboardWaiting';
+import LeadBoard from './DashboardLead';
 
 const SUBJECT_MAP = Object.fromEntries(SUBJECTS_CATALOG.map((s) => [s.id, s]));
 
@@ -445,6 +446,9 @@ export default function DashboardPage({ contributor }) {
 
       {/* ── What is waiting for the member (lib/waiting.js) ── */}
       <WaitingList me={waitingOwner(contributor)} />
+
+      {/* ── A lead's team, from their inbox ── */}
+      <LeadBoard />
 
       {/* ── What to do next, and where the subject stands (DS2 step 8) ── */}
       <NextStepCard me={waitingOwner(contributor)} />
