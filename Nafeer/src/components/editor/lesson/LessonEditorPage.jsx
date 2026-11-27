@@ -47,6 +47,7 @@ import { Badge, Button, Card as UiCard, Drawer, EmptyState, Field as UiField, Ic
 import { arCount, changesLabel as changesLabelShort, formatNumber } from '@/lib/format';
 import { SECTION_KIND_CONFIG } from '@/shared/constants';
 import { rememberLessonOpened } from '@/lib/lessonReadiness';
+import { checkpointIssues, sectionWithRecall } from '@/lib/checkpoints';
 
 const SCAFFOLD_TITLE_RE = /^الدرس\s+\d+$/;
 // Whether the content tab shows the phone beside it — a per-browser choice.
@@ -551,7 +552,8 @@ export default function LessonEditorPage({
         <TabPanel idBase="lesson" id="questions" active={activeTab === 'questions'}>
           <StepQuestions
             lessonId={lessonId} unitId={unitId} subjectId={subjectId} lessonSections={lessonSections}
-            lessonQuestions={lessonQuestions} onOpenGlobal={openGlobal}
+            lessonBlocks={lessonBlocks} lessonQuestions={lessonQuestions} onOpenGlobal={openGlobal}
+            onJump={(id) => jumpTo('body', id)}
             onPrev={() => setActiveTab('body')} onNext={() => setActiveTab('feed')}
           />
         </TabPanel>
@@ -902,9 +904,17 @@ function StepBody({ lesson, lessonSections, lessonBlocks, subjectId, lessonId, u
 }
 
 // ─── Step 3: Questions ────────────────────────────────────────────────────────
-function StepQuestions({ lessonId, unitId, subjectId, lessonSections, lessonQuestions, onOpenGlobal, onPrev, onNext }) {
+function StepQuestions({ lessonId, unitId, subjectId, lessonSections, lessonBlocks = [], lessonQuestions, onOpenGlobal, onJump, onPrev, onNext }) {
+  // Checkpoints in the order the student meets them, each with where it is asked
+  // (lib/checkpoints.js): its block, or the end of its section when no block places it.
+  const sectionsInOrder = [...lessonSections].sort((a, b) => (a.partIndex ?? 0) - (b.partIndex ?? 0) || a.order - b.order);
+  const placedCheckpoints = sectionsInOrder.flatMap((s) =>
+    sectionWithRecall(lessonBlocks.filter((b) => b.sectionId === s.id), lessonQuestions, s.id)
+      .filter((step) => step.kind === 'recall')
+      .map((step) => ({ question: step.question, section: s, anchor: step.placed ? step.block.id : step.question.id, placed: step.placed })));
   const checkpoints = lessonQuestions.filter(q =>  q.isCheckpoint);
   const standalone  = lessonQuestions.filter(q => !q.isCheckpoint);
+  const sectionsWithCheckpoint = new Set(placedCheckpoints.map((c) => c.section.id)).size;
   return (
     <div className="space-y-4 max-w-2xl">
       <div className="pb-1">
@@ -921,20 +931,23 @@ function StepQuestions({ lessonId, unitId, subjectId, lessonSections, lessonQues
               label="نقاط تحقق"
               sublabel="مدمجة في الأقسام"
               value={checkpoints.length}
-              note={checkpoints.length > 0 ? `في ${[...new Set(checkpoints.map(q => q.sectionId).filter(Boolean))].length} قسم` : null}
+              note={lessonSections.length > 0 ? `في ${sectionsWithCheckpoint} من ${lessonSections.length} ${lessonSections.length === 1 ? 'قسم' : 'أقسام'}` : null}
             />
             <StatCard label="أسئلة تدريب" sublabel="بنك أسئلة الدرس" value={standalone.length} />
           </div>
-          {checkpoints.length > 0 && (
+          {placedCheckpoints.length > 0 && (
             <div className="mt-4 space-y-1.5">
-              {checkpoints.map((q) => {
-                const sec = lessonSections.find((s) => s.id === q.sectionId);
+              {placedCheckpoints.map(({ question: q, section, anchor, placed }) => {
+                const issues = checkpointIssues(q);
                 return (
-                  <div key={q.id} className="flex items-center gap-2 text-xs font-arabic px-3 py-1.5 bg-amber-950/15 border border-amber-900/25 rounded-lg text-ink-400">
-                    <CircleDot size={12} strokeWidth={1.9} className="text-amber-600/70" />
-                    <span className="flex-1 truncate">{q.textAr}</span>
-                    {sec && <span className="text-ink-600 truncate max-w-[100px]">{sec.title}</span>}
-                  </div>
+                  <button key={q.id} type="button" onClick={() => onJump?.(anchor)}
+                    title={issues.length ? issues.join(' · ') : 'افتح مكانها في المحتوى'}
+                    className={`w-full text-start flex items-center gap-2 text-xs font-arabic px-3 py-1.5 rounded-lg border transition-colors hover:bg-hover touch-target ${issues.length ? 'border-warn-border bg-warn-surface text-warn' : 'bg-amber-950/15 border-amber-900/25 text-ink-400'}`}>
+                    <CircleDot size={12} strokeWidth={1.9} className="shrink-0 text-amber-600/70" />
+                    <span className="flex-1 truncate">{q.textAr || 'بلا نص'}</span>
+                    {!placed && <span className="shrink-0 text-ink-600">نهاية القسم</span>}
+                    <span className="text-ink-600 truncate max-w-[120px]">{section.title}</span>
+                  </button>
                 );
               })}
             </div>
