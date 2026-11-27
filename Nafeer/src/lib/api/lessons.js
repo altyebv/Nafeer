@@ -9,7 +9,8 @@ import { applyVersionBump, initialChangelog } from '@/lib/models/versioning';
 import { VersionConflict, updateAtVersion, hasBaseVersion } from '@/lib/api/versionCheck';
 import { savePublishedCopy, dropPublishedCopy } from '@/lib/publishedCopy';
 import { trackStat } from '@/lib/trackStat';
-import { assertCanSubmit } from '@/lib/review';
+import { assertCanSubmit, ReviewError } from '@/lib/review';
+import { hasMissingImage, MISSING_IMAGE } from '@/lib/imageRequests';
 
 export { writeHistory };
 
@@ -154,6 +155,10 @@ export async function updateLessonStatus(
   // A lesson returned with comments goes back to review only once every
   // comment of that round is resolved (lib/review.js). Throws ReviewError.
   if (newStatus === 'review') assertCanSubmit(current);
+  // The owner approving from the editor meets the same bar as a reviewer.
+  if (newStatus === 'approved' && await hasMissingImage(contentId)) {
+    throw new ReviewError(MISSING_IMAGE, 'MISSING_IMAGE');
+  }
 
   const action =
     newStatus === 'approved' ? 'approved' :
