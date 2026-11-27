@@ -7,6 +7,7 @@ import { Section } from '@/lib/models/Section';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { assertCanEditLessons, lessonsForBlocks } from '@/lib/lessonAccess';
 import { reopenForRevision } from '@/lib/publishedCopy';
+import { readBody, assertInput, invalidData } from '@/lib/limits';
 
 // Returns null if the URL doesn't match the Supabase media bucket.
 function deriveMediaPath(url) {
@@ -30,7 +31,8 @@ export async function PATCH(request, { params }) {
       : user.id;
 
     const { id } = await params;
-    const update  = await request.json();
+    const update  = await readBody(request);
+    assertInput(update);
     // The lesson it is in now, and the one it may be moving to.
     const lessons = await assertCanEditLessons(user, await lessonsForBlocks([id], [update?.sectionContentId, update?.sectionId]));
 
@@ -69,6 +71,8 @@ export async function PATCH(request, { params }) {
   } catch (e) {
     if (e instanceof Response) return e;
     if (e instanceof VersionConflict) return Response.json({ ok: false, conflict: e.toJSON() }, { status: 409 });
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[PATCH /api/content/blocks/[id]]', e);
     return err('خطأ في الخادم', 500);
   }
