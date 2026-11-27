@@ -16,6 +16,9 @@ import AddBlockMenu   from '@/components/editor/blocks/AddBlockMenu';
 import ConceptLinker  from '@/components/editor/shared/ConceptLinker';
 import { useUndoStore } from '@/store/undoStore';
 import { ConflictCard, UnsavedBar, UnsavedDot, useConflict } from '@/components/editor/lesson/SyncMarks';
+import CheckpointEditor from '@/components/editor/blocks/CheckpointEditor';
+import { unplacedCheckpoints } from '@/lib/checkpoints';
+import { useAtlasSync } from '@/hooks/useAtlasSync';
 
 // ─── SectionEditor ────────────────────────────────────────────────────────────
 // DS2 step 4 (canvas board EdContentTab). The header says what the section is
@@ -73,12 +76,14 @@ function SortableBlockItem({ block, index, count, subjectId, lessonId, unitId, s
 }
 
 export default function SectionEditor({ section, index = 0, maxPart = 0, subjectId, lessonId, unitId }) {
-  const { blocks, concepts, updateSection, addBlock, updateBlock, reorderBlocks } = useDataStore(
+  const { blocks, concepts, questions, updateSection, addBlock, updateBlock, reorderBlocks, deleteQuestion } = useDataStore(
     useShallow((s) => ({
-      blocks: s.blocks, concepts: s.concepts, updateSection: s.updateSection,
-      addBlock: s.addBlock, updateBlock: s.updateBlock, reorderBlocks: s.reorderBlocks,
+      blocks: s.blocks, concepts: s.concepts, questions: s.questions, updateSection: s.updateSection,
+      addBlock: s.addBlock, updateBlock: s.updateBlock, reorderBlocks: s.reorderBlocks, deleteQuestion: s.deleteQuestion,
     })),
   );
+  const { deleteQuestion: deleteQuestionRemote } = useAtlasSync();
+  const pendingQuestionIds = useUndoStore(useShallow((s) => s.pending.map((p) => p.questionId).filter(Boolean)));
   const conflict = useConflict(lessonId, section.id);
 
   const [isEditingTitle, setIsEditingTitle] = useState(!section.title || /^قسم \d+$/.test(section.title.trim()));
@@ -89,6 +94,12 @@ export default function SectionEditor({ section, index = 0, maxPart = 0, subject
   const [activeBlockId, setActiveBlockId] = useState(null);
 
   const sectionBlocks = blocks.filter((b) => b.sectionId === section.id).sort((a, b) => a.order - b.order);
+  // Checkpoints no block places (restored, or made in the quiz bank): the app
+  // asks them after the last block, so that is where they are shown.
+  const unplaced = unplacedCheckpoints(sectionBlocks, questions, section.id)
+    .filter((q) => !pendingQuestionIds.includes(q.id));
+  const placeCheckpoint = (q) => addBlock({ sectionId: section.id, type: 'QUESTION', content: q.id, conceptRef: null });
+  const removeCheckpoint = (q) => { deleteQuestion(q.id); deleteQuestionRemote(q.id); };
   const linkedConcepts = concepts.filter((c) => section.conceptIds?.includes(c.id));
   const purpose = section.learningType || 'UNDERSTANDING';
   const kind = section.kind || 'GENERAL';
@@ -281,6 +292,14 @@ export default function SectionEditor({ section, index = 0, maxPart = 0, subject
               )}
             </DragOverlay>
           </DndContext>
+
+          {unplaced.map((q) => (
+            <div key={q.id} data-sync-id={q.id}>
+              <CheckpointEditor question={q} placed={false} sectionId={section.id}
+                lessonId={lessonId} unitId={unitId} subjectId={subjectId}
+                onPlace={() => placeCheckpoint(q)} onRemove={() => removeCheckpoint(q)} />
+            </div>
+          ))}
 
           {menu ? (
             <AddBlockMenu onSelect={pickType} onClose={() => setMenu(null)}
