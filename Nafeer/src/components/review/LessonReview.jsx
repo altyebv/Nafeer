@@ -38,7 +38,7 @@ export async function reviewCall(url, options, loginHref) {
   const res = await fetch(url, options && { ...options, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(options.body) });
   if (res.status === 401) { window.location.href = loginHref; return null; }
   const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json.ok) throw new Error(json.error || 'تعذّر الاتصال بالخادم');
+  if (!res.ok || !json.ok) throw Object.assign(new Error(json.error || 'تعذّر الاتصال بالخادم'), { status: res.status });
   return json;
 }
 
@@ -79,11 +79,21 @@ export function LessonReview({ item, onDone, endpoints = ADMIN_REVIEW_ENDPOINTS 
         method: 'PATCH',
         body: {
           contentId: item.contentId, type: 'lesson', status,
+          // Only what was read can be approved (lib/reviewStamp.js).
+          ...(status === 'approved' ? { seen: lesson.stamp } : {}),
           ...(status === 'draft' ? { comments: comments.map(({ text, anchor: a }) => ({ text, anchor: { kind: a.kind, id: a.id, label: a.label } })) } : {}),
         },
       }, endpoints.loginHref);
       onDone();
-    } catch (e) { setResult(e.message); setBusy(null); }
+    } catch (e) {
+      setResult(e.message); setBusy(null);
+      // Changed under the reviewer: show it as it is now, to be read again.
+      if (e.status === 409 && status === 'approved') {
+        reviewCall(endpoints.detail(item.contentId), undefined, endpoints.loginHref)
+          .then((j) => { if (j) { setLesson(j.data); setTicked(new Set()); } })
+          .catch(() => {});
+      }
+    }
   };
 
   if (error) return <EmptyState title="تعذّر فتح الدرس" description={error} />;
