@@ -55,7 +55,7 @@ write each block as:
 | `content` | string | yes | Never null; `""` when empty. Meaning depends on the type. |
 | `order` | int | yes | Position in the section, 1-based. |
 | `conceptRef` | string? | no | A concept id of the same subject. |
-| `caption` | string? | no | Shown under images, verses, examples. |
+| `caption` | string? | no | Plain text, no `$…$`. The label above an `EXAMPLE` (default «مثال محلول»), `FORMULA` («قانون») or `TABLE` («جدول»); the line under an image, GIF, interactive image, verse or `QUOTE` (its source). Nafeer edits it on each of these. |
 | `metadata` | **string**? | no | A JSON object **serialised to a string**. Basheer's `BlockJson.metadata` is `String?`: a raw object here fails the import. Nafeer stores it as an object and turns it into a string on export (`blockMetadataForApp` in `src/lib/appExport.js`). |
 | `mediaPath` | string? | no | Supabase path of an IMAGE/GIF. Informational; not used to name the saved file. |
 | `sectionId` | string? | delta only | Present in flat delta patches; ignored in full exports. |
@@ -66,9 +66,9 @@ Extra keys (`status`, …) are ignored (`ignoreUnknownKeys`).
 `BlockType.valueOf(type)`, which throws. In a full seed the whole subject is
 rolled back; in a delta patch the exception is rethrown. Two consequences:
 
-- Nafeer must never export a type Basheer does not have. `QUESTION` blocks are
-  Nafeer-only (checkpoint placeholders) and are dropped from every export.
-- A subject that contains `VERSE` or `WIDGET` blocks only imports on Basheer
+- Nafeer must never export a type Basheer does not have. Nafeer's `QUESTION`
+  block is exported as `CHECKPOINT` (§2a), and only once it names its question.
+- A subject that contains `VERSE`, `WIDGET` or `CHECKPOINT` blocks only imports on Basheer
   builds that know those types, and Basheer does not check the manifest's
   `minAppVersion`. Nothing has been published yet, so both are always exported
   (decided 2026-11-27). Once builds are in students' hands, a block type added
@@ -101,6 +101,7 @@ The export envelope's `version` is `"1.0"`, matching
 | `INTERACTIVE_IMAGE` | yes | picture URL | `{ markers, aspectRatio? }` |
 | `VERSE` | **yes** (since 2026-11-27) | the lines | see §3 |
 | `WIDGET` | **no**: not yet editable in Nafeer | the invitation line | see §4 |
+| `CHECKPOINT` | **yes** (since 2026-11-27), as Nafeer's `QUESTION` block | the recall question's id | none; see §2a |
 
 Metadata of every type is read leniently. Bad JSON never breaks a lesson; what
 each type falls back to is listed below.
@@ -120,6 +121,13 @@ when `hasConceptLinks` is true or the content starts with `[`, a JSON array of
 `{ text, conceptRef?, children? }`. An array that cannot be read falls back to
 one item per line. Nafeer stores `BULLET` / `NUMBERED` and lower-cases them on
 export, as for HIGHLIGHT_BOX.
+
+`children` go one level deep (a string or `{ text, conceptRef? }` each); an
+item with a `conceptRef` is underlined and opens that concept. Item text is
+plain: no `$…$`. Nafeer edits a list one row per item, with a concept and a
+sub-item switch on each (`src/lib/listItems.js`), and writes the JSON form only
+when an item has a link or sub-items. A release drops item links to concepts it
+does not carry and reports them (`trimListItems` in `src/lib/releaseLinks.js`).
 
 ### IMAGE / GIF
 `{ "aspectRatio": 1.5 }`. A ratio of 0 or less, or none, means "measure the
@@ -149,11 +157,96 @@ always writes `markers` (dropping `pins`).
 `{ "interactive": true, "steps": [ "…", { "text": "…", "predict": { "choices": ["right", "wrong", …], "answer": 0 } } ] }`.
 A step is a string, or an object when the student predicts it first. A
 prediction is used only with at least two non-blank choices and an `answer`
-pointing at one of them; otherwise the step is shown plainly.
+pointing at one of them; otherwise the step is shown plainly. The first step
+is always shown, so a prediction on it is never asked. Nafeer says when a
+prediction will not be asked (`predictionIssue` in `src/lib/exampleSteps.js`).
 
 ### TABLE
 Its data is in `content`, not `metadata`: `{"headers": [...], "rows": [[...], ...]}`.
 A row may also be `{ "cells": [...] }`. Content that cannot be read: an empty table.
+
+## 2a. Recall checkpoints
+
+A recall question is a question with `isCheckpoint: true` and a `sectionId`.
+The reader asks it inside the lesson, in that section, and only types it can
+ask there: `MCQ`, `TRUE_FALSE`, `ORDER` (`INLINE_QUESTION_TYPES`). Any other
+type is left out. A section may have several.
+
+Where it is asked is a `CHECKPOINT` block whose `content` is the question's id
+(trimmed). The reader asks it where the block stands
+(`SectionUiModel.withRecall`, `RecallPlacement.kt`). A recall question that no
+block names is asked after the section's last block, which is how every
+checkpoint was asked before this block existed. A `CHECKPOINT` block naming a
+question that is not a recall question of its section is skipped, and so is a
+second block naming the same question. The block itself never draws anything.
+
+| Field | Shown in the app |
+|---|---|
+| `explanation` | after every answer, right or wrong |
+| `optionNotes[i]` | after a wrong answer, for the choice the student picked (MCQ) |
+| `mistakeNote` | after a wrong answer, when the picked choice has no note |
+
+Only the first answer is recorded; one retry is offered after a wrong one.
+
+In Nafeer the block is `QUESTION` (`src/lib/models/Block.js`), and
+`src/lib/checkpoints.js` mirrors the placement rule for the editor and the
+preview. The export maps the type (`blockTypeForApp` in
+`src/lib/appExport.js`) and leaves out a block that names no question yet, and
+a restore maps `CHECKPOINT` back (`blockTypeFromApp`). A checkpoint with no
+block shows at the end of its section, where the app asks it, with
+«ضعها في مكان داخل القسم» to give it one. Deleting the block deletes its
+question.
+
+## 2b. Fill-in-the-blank questions
+
+A `FILL_BLANK` question's `textAr` holds one gap: two or more underscores
+(`____`). The app fills the first gap and shows any other as written.
+
+`options` is the word bank, a JSON array of strings the student picks from
+(`FillBlankCard.kt`). It must contain `correctAnswer` exactly: the picked word
+is compared with `correctAnswer` (or an `acceptedAnswers` entry), trimmed.
+**The app shows the words in the order stored, without mixing them.** With no
+`options` the student writes the answer and judges it against the model one
+(`isSelfGraded`), and then `acceptedAnswers` are the other spellings that count.
+
+In Nafeer the author writes the right word and the wrong ones; the bank is
+built by `wordBank` (`src/lib/fillBlank.js`), which places the right word at a
+spot that depends on the words, so it is not always first and stays put across
+saves. A bank of the right word alone is not a bank: it is saved as none.
+
+## 2c. Compare and table questions
+
+Both are marked by the app only when their structure is complete; otherwise
+the student sees the model answer and judges it (`isSelfGraded`). Nafeer
+builds both shapes in `src/lib/answerGrids.js`.
+
+**COMPARE** (`CompareCard.kt`, `compareKey`)
+
+```json
+options:       {"item1Label": "الكتلة", "item2Label": "الوزن", "aspects": ["الوحدة", "يتغير بالمكان؟"]}
+correctAnswer: {"comparisons": [{"first": "كجم", "second": "نيوتن"}, {"first": "لا", "second": "نعم"}]}
+```
+
+Both labels are needed, and one pair per aspect, in the same order. The app
+makes the pool from every answer and mixes it.
+
+**TABLE**, variant `FILL_MISSING` (`TableCard.kt`, `tableKey`)
+
+```json
+tableData:     {"variant": "FILL_MISSING", "headers": ["المثال", "النوع"],
+                "rows": [["إن الرسول لنور", "؟"]], "suggestions": ["بليغ", "تام"]}
+correctAnswer: [["إن الرسول لنور", "بليغ"]]
+```
+
+A cell holding `؟` is one the student fills; `correctAnswer` is the rows
+filled in, cell for cell (headers not included). `suggestions` is the pool.
+**The app shows it in the stored order**, mixing it only when it has to add an
+answer the blanks need, so Nafeer stores every needed answer (as many times as
+needed) plus the author's wrong ones, mixed by `stableMix`. The
+`MATCH_COLUMNS` variant is not authored in Nafeer.
+
+A question whose answer was written as plain text before these editors keeps
+it until the author fills the editor, which shows the old text to copy.
 
 ## 3. VERSE
 
