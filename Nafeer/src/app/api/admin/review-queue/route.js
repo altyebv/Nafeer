@@ -1,13 +1,14 @@
 import { verifyAdminToken } from '@/lib/adminAuth';
 import { getReviewQueue, approveOrReject, returnLesson } from '@/lib/api/reviewQueue';
 import { ReviewError } from '@/lib/review';
+import { STALE_APPROVAL } from '@/lib/reviewStamp';
 import { after } from 'next/server';
 import { notifyLessonReviewed } from '@/lib/reviewNotify';
 import { connectDB } from '@/lib/db';
 import { Contributor } from '@/lib/models/Contributor';
 import { isLeadAvailable } from '@/lib/leads';
 
-const REVIEW_ERROR_STATUS = { NOT_FOUND: 404, NOT_IN_REVIEW: 409, CONFLICT: 409 };
+const REVIEW_ERROR_STATUS = { NOT_FOUND: 404, NOT_IN_REVIEW: 409, CONFLICT: 409, STALE: 409, MISSING_IMAGE: 409 };
 
 // The owner's fallback (docs/team-leads.md L2): for each subject in the queue,
 // whether a lead is around to review it — 'available', 'away' (leads exist but
@@ -65,7 +66,7 @@ export async function PATCH(request) {
     const admin = await verifyAdminToken();
     if (!admin) return err('غير مصرح', 401);
 
-    const { contentId, type, status, note, comments } = await request.json();
+    const { contentId, type, status, note, comments, seen } = await request.json();
 
     if (!contentId || !type) return err('contentId و type مطلوبان');
     if (!['approved', 'draft'].includes(status)) return err('حالة غير صالحة. استخدم approved أو draft');
@@ -80,7 +81,9 @@ export async function PATCH(request) {
       return ok(result);
     }
 
-    const result = await approveOrReject(contentId, type, status, admin.id, note || '');
+    if (type === 'lesson' && status === 'approved' && typeof seen !== 'string') return err(STALE_APPROVAL, 409);
+
+    const result = await approveOrReject(contentId, type, status, admin.id, note || '', { seen });
     if (type === 'lesson' && status === 'approved') after(() => notifyLessonReviewed(contentId, 'approved'));
     return ok(result);
   } catch (e) {
