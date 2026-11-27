@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { HIGHLIGHT_STYLES, SECTION_KIND_CONFIG } from '@/shared/constants';
+import { HIGHLIGHT_STYLES, QUESTION_TYPE_CONFIG, SECTION_KIND_CONFIG } from '@/shared/constants';
+import { INLINE_TYPES, optionList, sectionWithRecall } from '@/lib/checkpoints';
+import { listRows } from '@/lib/listItems';
 import FormulaPreview from '@/components/editor/shared/FormulaPreview';
 import MathText from '@/components/editor/shared/MathText';
 import { MarkedImage } from '@/components/media/MarkerPin';
@@ -176,28 +178,24 @@ export function LessonPhone({ lesson, sections, blocks, questions, focusSectionI
         )}
 
         {activeSections.map((section) => {
-          const sectionBlocks = blocks
-            .filter((b) => b.sectionId === section.id)
-            .sort((a, b) => a.order - b.order);
-          const checkpoint = questions.find((q) => q.sectionId === section.id && q.isCheckpoint);
+          // Blocks with the recall questions where the app asks them (lib/checkpoints.js);
+          // a type the app cannot ask inside a lesson is left out, as the app leaves it.
+          const steps = sectionWithRecall(blocks.filter((b) => b.sectionId === section.id), questions, section.id)
+            .filter((s) => (s.kind === 'recall' ? INLINE_TYPES.includes(s.question.type) : s.block.type !== 'QUESTION'));
 
           return (
             <div key={section.id} data-preview-id={section.id}>
               {/* Section header */}
               <SectionHeader title={section.title} type={section.learningType} kind={section.kind} />
 
-              {/* Blocks */}
               <div className="px-4 space-y-3 py-2">
-                {sectionBlocks.map((block) => (
-                  <BlockPreview key={block.id} block={block} />
-                ))}
-                {sectionBlocks.length === 0 && (
+                {steps.map((s) => (s.kind === 'recall'
+                  ? <div key={`recall_${s.question.id}`} className="-mx-4"><CheckpointPreview question={s.question} /></div>
+                  : <BlockPreview key={s.block.id} block={s.block} />))}
+                {steps.length === 0 && (
                   <div className="py-4 text-center text-white/20 text-xs font-arabic">قسم فارغ</div>
                 )}
               </div>
-
-              {/* Checkpoint card */}
-              {checkpoint && <CheckpointPreview question={checkpoint} />}
             </div>
           );
         })}
@@ -293,6 +291,7 @@ function BlockPreview({ block }) {
     case 'FORMULA':
       return (
         <div className="rounded-xl px-4 py-4 text-center" style={{ background: '#1a1713' }}>
+          <p className="text-xs font-arabic font-semibold mb-2 text-right text-white/60">{block.caption || 'قانون'}</p>
           <FormulaPreview latex={block.content || ''} className="text-white/90" />
           {!block.content && (
             <p className="font-mono text-xs mt-1" style={{ color: '#5c5648' }}>معادلة</p>
@@ -330,7 +329,7 @@ function BlockPreview({ block }) {
       return (
         <div className="rounded-xl overflow-hidden" style={{ background: '#0a1f1c', border: '1px solid #134e4a' }}>
           <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: '1px solid #134e4a' }}>
-            <span className="text-xs inline-flex items-center gap-1" style={{ color: '#2dd4bf' }}><Pencil size={12} strokeWidth={1.9} /> مثال</span>
+            <span className="text-xs inline-flex items-center gap-1" style={{ color: '#2dd4bf' }}><Pencil size={12} strokeWidth={1.9} /> {block.caption || 'مثال محلول'}</span>
             {interactive && <span className="text-[10px] px-1.5 py-0.5 rounded font-arabic inline-flex items-center gap-1" style={{ background: '#134e4a', color: '#5eead4' }}><Zap size={10} strokeWidth={1.9} /> تفاعلي</span>}
           </div>
           <div className="p-3 space-y-2">
@@ -360,18 +359,24 @@ function BlockPreview({ block }) {
 
     case 'LIST': {
       const style = styleKey(block.metadata?.style, 'BULLET');
-      const items = (block.content || '').split('\n').filter(Boolean);
+      // As the app reads it: items, sub-items, and linked items underlined. Item text is plain there.
+      const rows = listRows(block.content, block.metadata);
+      let n = 0;
+      let sub = 0;
       return (
         <div className="space-y-1.5">
-          {items.length === 0 && <p className="text-white/20 text-xs font-arabic">قائمة فارغة</p>}
-          {items.map((item, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <span className="text-sm shrink-0 mt-0.5" style={{ color: '#d4891e' }}>
-                {style === 'NUMBERED' ? `${i + 1}.` : '•'}
-              </span>
-              <p className="text-sm font-arabic text-white/80"><MathText text={item} /></p>
-            </div>
-          ))}
+          {rows.length === 0 && <p className="text-white/20 text-xs font-arabic">قائمة فارغة</p>}
+          {rows.map((row, i) => {
+            if (row.level === 0) { n += 1; sub = 0; } else sub += 1;
+            return (
+              <div key={i} className={`flex items-start gap-2 ${row.level === 1 ? 'ps-5' : ''}`}>
+                <span className="text-sm shrink-0 mt-0.5" style={{ color: '#d4891e' }}>
+                  {style === 'NUMBERED' ? `${row.level === 0 ? n : sub}.` : row.level === 0 ? '•' : '◦'}
+                </span>
+                <p className={`text-sm font-arabic text-white/80 ${row.conceptRef ? 'underline decoration-dotted underline-offset-4' : ''}`}>{row.text}</p>
+              </div>
+            );
+          })}
         </div>
       );
     }
@@ -381,6 +386,8 @@ function BlockPreview({ block }) {
       try { parsed = JSON.parse(block.content); } catch { /* ignore */ }
       if (!parsed?.headers) return <p className="text-white/20 text-xs font-arabic text-center py-3">جدول</p>;
       return (
+        <div className="space-y-1.5">
+        <p className="text-xs font-arabic font-semibold text-white/60">{block.caption || 'جدول'}</p>
         <div className="rounded-xl overflow-hidden text-xs" style={{ border: '1px solid #2a2520' }}>
           <div className="grid font-semibold" style={{ gridTemplateColumns: `repeat(${parsed.headers.length}, 1fr)`, background: '#1a1713' }}>
             {parsed.headers.map((h, i) => (
@@ -395,6 +402,7 @@ function BlockPreview({ block }) {
             </div>
           ))}
         </div>
+        </div>
       );
     }
 
@@ -402,6 +410,7 @@ function BlockPreview({ block }) {
       return (
         <div className="pr-3" style={{ borderRight: '3px solid #4a4540' }}>
           <p className="text-sm italic font-arabic text-white/50 leading-relaxed">{block.content || '…'}</p>
+          {block.caption && <p className="text-xs font-arabic text-white/40 mt-1">— {block.caption}</p>}
         </div>
       );
 
@@ -429,6 +438,10 @@ function BlockPreview({ block }) {
 
 // ─── Checkpoint card ──────────────────────────────────────────────────────────
 function CheckpointPreview({ question }) {
+  // As the app asks it: choices as written, the items to order mixed up (by a fixed turn, so the preview is steady).
+  const opts = optionList(question.options);
+  const items = question.type === 'ORDER' && opts.length > 1 ? [...opts.slice(1), opts[0]] : opts;
+  const choices = question.type === 'TRUE_FALSE' ? ['صح', 'خطأ'] : items;
   return (
     <div className="mx-4 my-3 rounded-xl p-3" style={{ background: '#0f1620', border: '1px solid #1e3a5f' }}>
       <div className="flex items-center gap-2 mb-2">
@@ -436,22 +449,20 @@ function CheckpointPreview({ question }) {
           <Target size={12} strokeWidth={1.9} /> نقطة تحقق
         </span>
         <span className="text-[10px] px-1.5 py-0.5 rounded font-arabic" style={{ background: '#1e3a5f', color: '#93c5fd' }}>
-          {question.type}
+          {QUESTION_TYPE_CONFIG[question.type]?.label || question.type}
         </span>
       </div>
-      <p className="text-sm font-arabic text-white/80 leading-relaxed mb-3">{question.textAr || 'السؤال'}</p>
+      <p className="text-sm font-arabic text-white/80 leading-relaxed mb-3"><MathText text={question.textAr || 'السؤال'} /></p>
       <div className="space-y-1.5">
-        {(() => {
-          let opts = [];
-          try { opts = JSON.parse(question.options || '[]'); } catch { opts = []; }
-          return opts.slice(0, 4).map((opt, i) => (
-            <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: '#1a1713' }}>
-              <div className="w-4 h-4 rounded-full border flex-shrink-0" style={{ borderColor: '#3b4a5a' }} />
-              <span className="text-xs font-arabic text-white/60">{opt}</span>
-            </div>
-          ));
-        })()}
-        {!question.options && (
+        {choices.map((opt, i) => (
+          <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: '#1a1713' }}>
+            {question.type === 'ORDER'
+              ? <span className="w-4 text-center text-[10px] font-mono flex-shrink-0" style={{ color: '#3b4a5a' }}>⋮⋮</span>
+              : <div className="w-4 h-4 rounded-full border flex-shrink-0" style={{ borderColor: '#3b4a5a' }} />}
+            <span className="text-xs font-arabic text-white/60">{opt}</span>
+          </div>
+        ))}
+        {choices.length === 0 && (
           <p className="text-xs text-white/30 font-arabic text-center py-1">لا توجد خيارات</p>
         )}
       </div>
