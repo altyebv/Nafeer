@@ -7,6 +7,7 @@ import { useConceptStore } from '@/store/conceptStore';
 import { useFeedStore } from '@/store/feedStore';
 import { useQuizStore } from '@/store/quizStore';
 import { lessonPayload, sectionPayload, blockPayload } from '@/lib/editorSync';
+import { noticeFields } from '@/lib/waiting';
 
 // ─── useAtlasSync ─────────────────────────────────────────────────────────────
 // Exposes explicit save functions for each content type.
@@ -132,6 +133,7 @@ export function useAtlasSync() {
               atlasStatus:      l.status             || 'draft',
               reviewState:      l.reviewState        ?? null,
               revising:         !!l.revising,
+              ...noticeFields(l),
               // Whose it is, and whether it is unclaimed scaffold (lib/api/subject.js).
               owner:            l.owner              ?? null,
               unclaimed:        !!l.unclaimed,
