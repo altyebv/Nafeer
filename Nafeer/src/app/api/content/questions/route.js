@@ -8,6 +8,7 @@ import {
 } from '@/lib/api/questions';
 import { trackStat } from '@/lib/trackStat';
 import { markerIssues } from '@/lib/markerQuestion';
+import { readBody, assertInput, invalidData } from '@/lib/limits';
 
 const generateId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -37,7 +38,8 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body = await readBody(request);
+    assertInput(body);
     const { subjectId, type, textAr, correctAnswer } = body;
     if (!subjectId || !type || !textAr || !correctAnswer) {
       return err('الحقول المطلوبة: subjectId, type, textAr, correctAnswer');
@@ -67,6 +69,8 @@ export async function POST(request) {
   } catch (e) {
     if (e instanceof Response) return e;
     if (e.code === 11000) return err('معرّف السؤال موجود مسبقاً');
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[POST /api/content/questions]', e);
     return err('خطأ في الخادم', 500);
   }
