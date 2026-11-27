@@ -1,5 +1,6 @@
 import { requireContentAccess, ok, err } from '@/lib/api/guard';
 import { assertCanEditLessons, lessonsForSections } from '@/lib/lessonAccess';
+import { reopenForRevision } from '@/lib/publishedCopy';
 import { Section } from '@/lib/models/Section';
 import { deleteCheckpointQuestionsForSections, deleteSection } from '@/lib/api/content';
 import { connectDB } from '@/lib/db';
@@ -14,7 +15,8 @@ export async function DELETE(request, { params }) {
       ? await ensureSystemSeedContributor()
       : user.id;
     await connectDB();
-    await assertCanEditLessons(user, await lessonsForSections([(await params).id]));
+    const lessons = await assertCanEditLessons(user, await lessonsForSections([(await params).id]));
+    const reopened = await reopenForRevision(lessons);
 
     const { id } = await params;
 
@@ -24,7 +26,7 @@ export async function DELETE(request, { params }) {
     await deleteSection(id, { byId: actorId, byName: user.name || '' });
     recountAuthoredLater(authors);
 
-    return ok({ deleted: id });
+    return ok({ deleted: id, reopened });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[DELETE /api/content/sections/[id]]', e);
