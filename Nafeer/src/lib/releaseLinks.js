@@ -11,7 +11,8 @@
 //
 // Pure. Takes and returns database documents.
 
-import { questionGoesToApp } from '@/lib/appExport';
+import { metadataObject, questionGoesToApp } from '@/lib/appExport';
+import { listWithKnownConcepts } from '@/lib/listItems';
 
 const ids = (docs) => new Set(docs.map((d) => d.contentId));
 const stamp = (d) => new Date(d.updatedAt || d.createdAt || 0).toISOString();
@@ -36,6 +37,17 @@ function trim(doc, links, report, kind, label) {
   if (!dropped.length) return doc;
   report.push({ kind, id: doc.contentId, label, missing: dropped });
   return { ...doc, ...changes, updatedAt: `${stamp(doc)}|-${dropped.join(',')}` };
+}
+
+// A list's items carry their concept links inside its content (lib/listItems.js).
+// The app does not refuse an unknown one, but the item would be underlined and
+// open nothing, so it goes out without the link, reported like any other.
+function trimListItems(block, conceptIds, report, label) {
+  if (block.type !== 'LIST') return block;
+  const { content, dropped } = listWithKnownConcepts(block.content, metadataObject(block.metadata), conceptIds);
+  if (!dropped.length) return block;
+  report.push({ kind: 'block', id: block.contentId, label, missing: dropped });
+  return { ...block, content, updatedAt: `${stamp(block)}|-${dropped.join(',')}` };
 }
 
 export function closeReferences({
@@ -77,7 +89,8 @@ export function closeReferences({
     lessons: keptLessons,
     sections: keptSections,
     blocks: blocks.filter((b) => sectionIds.has(b.sectionContentId))
-      .map((b) => trim(b, { conceptRef: conceptIds }, omitted, 'block', sectionTitle.get(b.sectionContentId))),
+      .map((b) => trim(b, { conceptRef: conceptIds }, omitted, 'block', sectionTitle.get(b.sectionContentId)))
+      .map((b) => trimListItems(b, conceptIds, omitted, sectionTitle.get(b.sectionContentId))),
     concepts: concepts.map((c) => trim(c, { tagIds }, omitted, 'concept', c.titleAr)),
     questions: keptQuestions,
     exams: exams.map((e) => trim(e, { questionContentIds: questionIds }, omitted, 'exam', e.titleAr)),
