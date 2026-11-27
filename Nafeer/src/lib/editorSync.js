@@ -13,6 +13,7 @@
 // a request of its own: the save request and the lesson GET already happen.
 
 import { metadataObject } from '@/lib/appExport';
+import { noticeFields } from '@/lib/waiting';
 
 export const LESSON_FIELDS = [
   'title', 'estimatedMinutes', 'summary', 'metadata', 'parentLesson',
@@ -40,6 +41,9 @@ export const fromServerLesson = (l) => ({
   reviewState:      l.reviewState      ?? null,
   // An approved version is still in the app while this one is worked on.
   revising:         !!l.revising,
+  // Open comments and the decision date, for «ينتظرك» (lib/waiting.js). Only
+  // from a document that carries the comments.
+  ...(l.notes !== undefined && noticeFields(l)),
   // Whose it is (docs/team-leads.md L4) — server-owned too. `owner` comes
   // from the subject list; a lesson GET carries ownerId / createdBy.
   ...ownership(l),
@@ -198,6 +202,7 @@ export function mergeLesson(local, incoming) {
   const reviewState = incoming.reviewState !== undefined ? incoming.reviewState : local.reviewState;
   // Ownership is the server's, like the status: never kept from a stale copy.
   const owned = {
+    ...(incoming.comments !== undefined && { comments: incoming.comments, reviewedAt: incoming.reviewedAt }),
     revising:  incoming.revising  !== undefined ? incoming.revising  : local.revising,
     owner:     incoming.owner     !== undefined ? incoming.owner     : local.owner,
     unclaimed: incoming.unclaimed !== undefined ? incoming.unclaimed : local.unclaimed,
