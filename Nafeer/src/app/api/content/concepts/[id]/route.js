@@ -4,6 +4,7 @@ import { Concept } from '@/lib/models/Concept';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { updateConcept, updateConceptStatus, deleteConcept } from '@/lib/api/concepts';
 import { connectDB } from '@/lib/db';
+import { readBody, assertInput, invalidData } from '@/lib/limits';
 
 // PUT /api/content/concepts/[id]
 export async function PUT(request, { params }) {
@@ -11,7 +12,8 @@ export async function PUT(request, { params }) {
     await connectDB();
     const { user } = await requireContentAccess(Concept, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
-    const body = await request.json();
+    const body = await readBody(request);
+    assertInput(body);
     const { note, ...updates } = body;
 
     const allowed = [
@@ -30,6 +32,8 @@ export async function PUT(request, { params }) {
     return ok(concept);
   } catch (e) {
     if (e instanceof Response) return e;
+    const bad = invalidData(e);
+    if (bad) return bad;
     console.error('[PUT /api/content/concepts/[id]]', e);
     return err('خطأ في الخادم', 500);
   }
@@ -41,7 +45,7 @@ export async function PATCH(request, { params }) {
     await connectDB();
     const { user } = await requireContentAccess(Concept, (await params).id, { write: true });
     const actorId = user.role === 'admin' ? await ensureSystemSeedContributor() : user.id;
-    const { status, note } = await request.json();
+    const { status, note } = await readBody(request);
 
     if (!['draft', 'review', 'approved', 'archived'].includes(status)) {
       return err('حالة غير صالحة');
