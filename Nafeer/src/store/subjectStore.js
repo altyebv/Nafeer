@@ -117,9 +117,10 @@ export const useSubjectStore = create(
           lessons: state.lessons.map((l) => {
             if (l.id !== sent.id) return l;
             const atlasStatus = doc.status || l.atlasStatus;
+            const revising = doc.revising ?? l.revising;
             return l === sent
-              ? { ...l, atlasStatus, _v: doc.version ?? 1, _dirty: false }
-              : { ...l, atlasStatus, _v: doc.version ?? 1 };
+              ? { ...l, atlasStatus, revising, _v: doc.version ?? 1, _dirty: false }
+              : { ...l, atlasStatus, revising, _v: doc.version ?? 1 };
           }),
         })),
 
