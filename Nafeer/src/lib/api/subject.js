@@ -5,7 +5,8 @@ import { Lesson } from '@/lib/models/Lesson';
 import { initialChangelog } from '@/lib/models/versioning';
 import { SUBJECTS_CATALOG, SUBJECTS_BY_ID } from '@/shared/curriculum';
 import { lessonOwnerId } from '@/lib/credits';
-import { unclaimedOwners } from '@/lib/lessonAccess';
+import { ownerDirectory } from '@/lib/lessonAccess';
+import { Section } from '@/lib/models/Section';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 
 // ─── getSubject ───────────────────────────────────────────────────────────────
@@ -193,18 +194,23 @@ export async function renameBook(subjectId, bookId, title) {
 export async function getUnitsWithLessons(subjectId) {
   await connectDB();
 
-  const [units, lessons] = await Promise.all([
+  const [units, lessons, startedIds] = await Promise.all([
     Unit.find({ subjectId }).sort({ order: 1 }).lean(),
     Lesson.find({ subjectId }).sort({ order: 1 }).lean(),
+    // Which lessons have any writing, for the board (lib/board.js).
+    Section.distinct('lessonContentId', { subjectId }),
   ]);
+  const started = new Set(startedIds);
 
   // Whose each lesson is, and whether it is still unclaimed scaffold — the
   // editor shows a member their own lessons and offers unclaimed ones
   // (docs/team-leads.md L4). One read over the distinct owners.
-  const unclaimed = await unclaimedOwners(lessons.map(lessonOwnerId));
+  const { names, unclaimed } = await ownerDirectory(lessons.map(lessonOwnerId));
   for (const l of lessons) {
     l.owner = lessonOwnerId(l);
     l.unclaimed = unclaimed.has(l.owner);
+    l.ownerName = names.get(l.owner) || '';
+    l.started = started.has(l.contentId);
   }
 
   const lessonsByUnit = lessons.reduce((acc, l) => {
