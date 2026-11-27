@@ -140,8 +140,8 @@ export async function PATCH(request, { params }) {
     // ── Validate concept linkage BEFORE writing anything ──────────────────────
     if (status === 'approved') {
       const feedItem = await getFeedItemById((await params).id); // or FeedItem.findOne(...)
-      const concept  = feedItem && await Concept.findOne({ contentId: feedItem.conceptContentId }).lean();
-      if (!concept || concept.status !== 'approved') {
+      const concept  = feedItem && await Concept.findOne({ contentId: feedItem.conceptContentId }).select('+published').lean();
+      if (!concept || (concept.status !== 'approved' && !concept.published)) {
         return err('يجب اعتماد المفهوم المرتبط أولاً قبل اعتماد عنصر التغذية', 422);
       }
     }
