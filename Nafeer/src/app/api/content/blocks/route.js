@@ -6,6 +6,7 @@ import { withEditorNames } from '@/lib/api/versionCheck';
 import { trackStat } from '@/lib/trackStat';
 import { ensureSystemSeedContributor } from '@/lib/SeedActor';
 import { assertCanEditLessons, lessonsForBlocks } from '@/lib/lessonAccess';
+import { reopenForRevision } from '@/lib/publishedCopy';
 
 // POST /api/content/blocks
 // Body: { blocks: [...] }  — batch upsert. A block may carry `baseVersion`;
@@ -38,7 +39,7 @@ export async function POST(request) {
     const affectedLessons = await lessonsForBlocks(
       blocks.map((b) => b?.contentId), blocks.map((b) => b?.sectionContentId || b?.sectionId),
     );
-    await assertCanEditLessons(user, affectedLessons);
+    const reopened = await reopenForRevision(await assertCanEditLessons(user, affectedLessons));
 
     const { saved, conflicts } = await batchUpsertBlocks(blocks, actorId, user.name || '');
 
@@ -47,7 +48,7 @@ export async function POST(request) {
       trackStat(actorId, 'blocksAdded', { amount: saved.length });
     }
 
-    return ok(saved, { total: saved.length, conflicts: await withEditorNames(conflicts) });
+    return ok(saved, { total: saved.length, conflicts: await withEditorNames(conflicts), reopened });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error('[POST /api/content/blocks]', e);
